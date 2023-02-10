@@ -54,8 +54,8 @@ namespace log {
             ++count_;
             if (count_ >= check_every_n_) {
                 count_ = 0;
-                time_t now = ::time(nullptr);
-                time_t thisPeriod_ = now / SECONDS_PER_ROLL * SECONDS_PER_ROLL;
+                auto now = ::time(nullptr);
+                auto thisPeriod_ = now / SECONDS_PER_ROLL * SECONDS_PER_ROLL;
                 if (thisPeriod_ != start_of_period_) {
                     rollFile();
                 } else if (now - last_flush_ > flush_interval_) {
@@ -69,8 +69,8 @@ namespace log {
     bool File::rollFile()
     {
         time_t now = 0;
-        std::string file_name = getLogFileName(base_name_, &now);
-        time_t start = now / SECONDS_PER_ROLL * SECONDS_PER_ROLL;
+        auto file_name = getLogFileName(base_name_, &now);
+        auto start = now / SECONDS_PER_ROLL * SECONDS_PER_ROLL;
 
         if (now > last_roll_) {
             last_roll_ = now;

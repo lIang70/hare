@@ -12,9 +12,9 @@ namespace detail {
 
     static const int32_t SECONDS_PER_DAY = 24 * 60 * 60;
 
-    inline void fillHMS(unsigned seconds, struct time::DateTime* dt)
+    inline void fillHMS(uint32_t seconds, struct time::DateTime* dt)
     {
-        unsigned minutes = seconds / 60;
+        auto minutes = seconds / 60;
         dt->hour = minutes / 60;
         dt->minute = minutes - dt->hour * 60;
         dt->second = seconds - minutes * 60;
@@ -23,8 +23,8 @@ namespace detail {
     time::DateTime breakTime(int64_t t)
     {
         struct time::DateTime dt;
-        int32_t seconds = static_cast<int32_t>(t % SECONDS_PER_DAY);
-        int32_t days = static_cast<int32_t>(t / SECONDS_PER_DAY);
+        auto seconds = static_cast<int32_t>(t % SECONDS_PER_DAY);
+        auto days = static_cast<int32_t>(t / SECONDS_PER_DAY);
         // C++11 rounds towards zero.
         if (seconds < 0) {
             seconds += SECONDS_PER_DAY;
@@ -95,7 +95,7 @@ struct TimeZone::Data {
 
     void addTransition(int64_t utc_time, int32_t local_time_idx)
     {
-        LocalTime& lt = local_times.at(local_time_idx);
+        auto& lt = local_times.at(local_time_idx);
         transitions.emplace_back(Transition(utc_time, utc_time + lt.utc_offset, local_time_idx));
     }
 
@@ -122,7 +122,7 @@ const TimeZone::Data::LocalTime* TimeZone::Data::findLocalTime(int64_t utc_time)
         local = &local_times.front();
     } else {
         Transition sentry(utc_time, 0, 0);
-        std::vector<Transition>::const_iterator trans_iter = std::upper_bound(transitions.begin(), transitions.end(), sentry, CompareUtcTime());
+        auto trans_iter = std::upper_bound(transitions.begin(), transitions.end(), sentry, CompareUtcTime());
         HARE_ASSERT(trans_iter != transitions.begin(), "Fail to upper_bound.");
         if (trans_iter != transitions.end()) {
             --trans_iter;
@@ -138,7 +138,7 @@ const TimeZone::Data::LocalTime* TimeZone::Data::findLocalTime(int64_t utc_time)
 
 const TimeZone::Data::LocalTime* TimeZone::Data::findLocalTime(const struct time::DateTime& lt, bool post_transition) const
 {
-    const int64_t local_time = fromUtcTime(lt);
+    const auto local_time = fromUtcTime(lt);
 
     if (transitions.empty() || local_time < transitions.front().local_time) {
         // FIXME: should be first non dst time zone
@@ -146,7 +146,7 @@ const TimeZone::Data::LocalTime* TimeZone::Data::findLocalTime(const struct time
     }
 
     Transition sentry(0, local_time, 0);
-    std::vector<Transition>::const_iterator trans_iter = std::upper_bound(transitions.begin(), transitions.end(), sentry, CompareLocalTime());
+    auto trans_iter = std::upper_bound(transitions.begin(), transitions.end(), sentry, CompareLocalTime());
     HARE_ASSERT(trans_iter != transitions.begin(), "Fail to upper_bound.");
 
     if (trans_iter == transitions.end()) {
@@ -154,8 +154,8 @@ const TimeZone::Data::LocalTime* TimeZone::Data::findLocalTime(const struct time
         return &local_times[transitions.back().local_time_idx];
     }
 
-    Transition prior_trans = *(trans_iter - 1);
-    int64_t prior_second = trans_iter->utc_time - 1 + local_times[prior_trans.local_time_idx].utc_offset;
+    auto prior_trans = *(trans_iter - 1);
+    auto prior_second = trans_iter->utc_time - 1 + local_times[prior_trans.local_time_idx].utc_offset;
 
     // row UTC time             isdst  offset  Local time (PRC)     Prior second local time
     //  1  1989-09-16 17:00:00Z   0      8.0   1989-09-17 01:00:00
@@ -215,7 +215,7 @@ struct time::DateTime TimeZone::toLocalTime(int64_t seconds, int32_t* utc_offset
     struct time::DateTime localTime;
     HARE_ASSERT(data_, "");
 
-    const Data::LocalTime* local = data_->findLocalTime(seconds);
+    auto local = data_->findLocalTime(seconds);
 
     if (local) {
         localTime = detail::breakTime(seconds + local->utc_offset);
@@ -230,8 +230,8 @@ struct time::DateTime TimeZone::toLocalTime(int64_t seconds, int32_t* utc_offset
 int64_t TimeZone::fromLocalTime(const struct time::DateTime& localtime, bool post_transition) const
 {
     HARE_ASSERT(data_, "Fail to get data of TimeZone.");
-    const Data::LocalTime* local = data_->findLocalTime(localtime, post_transition);
-    const int64_t local_seconds = fromUtcTime(localtime);
+    auto local = data_->findLocalTime(localtime, post_transition);
+    const auto local_seconds = fromUtcTime(localtime);
     if (local) {
         return local_seconds - local->utc_offset;
     }
@@ -247,7 +247,7 @@ time::DateTime TimeZone::toUtcTime(int64_t secondsSinceEpoch)
 int64_t TimeZone::fromUtcTime(const DateTime& dt)
 {
     time::Date date(dt.year, dt.month, dt.day);
-    int32_t seconds_in_day = dt.hour * 3600 + dt.minute * 60 + dt.second;
+    auto seconds_in_day = dt.hour * 3600 + dt.minute * 60 + dt.second;
     int64_t days = date.julianDayNumber() - time::Date::JULIAN_DAY_OF_19700101;
     return days * detail::SECONDS_PER_DAY + seconds_in_day;
 }

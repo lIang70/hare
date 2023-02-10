@@ -3,8 +3,8 @@
 #include <hare/base/detail/log_util.h>
 #include <hare/base/logging.h>
 
-#include <assert.h>
-#include <string.h>
+#include <cassert>
+#include <cstring>
 
 namespace hare {
 namespace log {
@@ -45,8 +45,8 @@ namespace log {
 
     void defaultOutput(const char* msg, int len)
     {
-        size_t n = ::fwrite(msg, 1, len, stdout);
-        (void)n;
+        auto n = ::fwrite(msg, 1, len, stdout);
+        H_UNUSED(n);
     }
 
     void defaultFlush()
@@ -63,9 +63,9 @@ namespace log {
 
 struct Helper {
     const char* str_;
-    const unsigned len_;
+    const std::size_t len_;
 
-    Helper(const char* str, unsigned len)
+    Helper(const char* str, std::size_t len)
         : str_(str)
         , len_(len)
     {
@@ -89,7 +89,7 @@ Logger::Data::Data(log::LogLevel level, int old_errno, const FilePath& file, int
     formatTime();
     current_thread::tid();
 
-    stream_ << Helper(current_thread::tidStr(), current_thread::tidStrSize());
+    stream_ << Helper(current_thread::tidString().c_str(), current_thread::tidString().length());
     stream_ << Helper(log::LogLevelName[static_cast<int32_t>(level)], 9);
 
     if (old_errno != 0) {
@@ -112,10 +112,10 @@ void Logger::Data::formatTime()
             dt = TimeZone::toUtcTime(seconds);
         }
 
-        int len = snprintf(log::t_time, sizeof(log::t_time), "%4d-%02d-%02d %02d:%02d:%02d",
+        auto len = snprintf(log::t_time, sizeof(log::t_time), "%4d-%02d-%02d %02d:%02d:%02d",
             dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second);
         assert(len == 19);
-        (void)len;
+        H_UNUSED(len);
     }
 
     if (log::g_log_time_zone) {

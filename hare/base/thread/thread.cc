@@ -87,7 +87,7 @@ static std::atomic_int32_t num_of_thread_ { 0 };
 
 static void setDefaultName(std::string& name)
 {
-    int32_t id = num_of_thread_.fetch_add(1, std::memory_order_acquire);
+    auto id = num_of_thread_.fetch_add(1, std::memory_order_acquire);
     if (name.empty()) {
         name = "Thread-" + std::to_string(id);
     }

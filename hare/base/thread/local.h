@@ -25,14 +25,9 @@ namespace current_thread {
         return t_data.tid_;
     }
 
-    inline const char* tidStr()
+    inline const std::string tidString()
     {
-        return t_data.tid_string_.c_str();
-    }
-
-    inline std::size_t tidStrSize()
-    {
-        return t_data.tid_string_.size();
+        return t_data.tid_string_;
     }
 
     inline const char* threadName()

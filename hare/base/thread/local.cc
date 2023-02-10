@@ -24,7 +24,7 @@ namespace current_thread {
         if (t_data.tid_ == 0) {
             std::ostringstream oss;
             oss << std::this_thread::get_id();
-            t_data.tid_string_ = oss.str();
+            t_data.tid_string_ = oss.str() + "\0";
             t_data.tid_ = std::stoull(t_data.tid_string_);
         }
     }
@@ -44,18 +44,18 @@ namespace current_thread {
 #ifdef H_OS_WIN32
         void* pStack[MAX_STACK_FRAMES];
 
-        HANDLE process = GetCurrentProcess();
+        auto process = GetCurrentProcess();
         SymInitialize(process, NULL, TRUE);
-        WORD frames = CaptureStackBackTrace(0, MAX_STACK_FRAMES, pStack, NULL);
+        auto frames = CaptureStackBackTrace(0, MAX_STACK_FRAMES, pStack, NULL);
 
         std::ostringstream oss;
         oss << "stack traceback: " << std::endl;
         for (WORD i = 0; i < frames; ++i) {
-            DWORD64 address = (DWORD64)(pStack[i]);
+            auto address = (DWORD64)(pStack[i]);
 
             DWORD64 displacementSym = 0;
             char buffer[sizeof(SYMBOL_INFO) + MAX_SYM_NAME * sizeof(TCHAR)];
-            PSYMBOL_INFO pSymbol = (PSYMBOL_INFO)buffer;
+            auto pSymbol = (PSYMBOL_INFO)buffer;
             pSymbol->SizeOfStruct = sizeof(SYMBOL_INFO);
             pSymbol->MaxNameLen = MAX_SYM_NAME;
 
@@ -64,8 +64,8 @@ namespace current_thread {
             // SymSetOptions(SYMOPT_LOAD_LINES);
             line.SizeOfStruct = sizeof(IMAGEHLP_LINE64);
 
-            if (SymFromAddr(process, address, &displacementSym, pSymbol)
-                && SymGetLineFromAddr64(process, address, &displacementLine, &line)) {
+            if (SymFromAddr(process, address, &displacementSym, pSymbol) && 
+                SymGetLineFromAddr64(process, address, &displacementLine, &line)) {
                 oss << "\t" << pSymbol->Name << " at " << line.FileName << ":" << line.LineNumber << "(0x" << std::hex << pSymbol->Address << std::dec << ")" << std::endl;
             } else {
                 oss << "\terror: " << GetLastError() << std::endl;
@@ -75,11 +75,11 @@ namespace current_thread {
 #elif defined(H_OS_LINUX)
         std::string stack;
         void* frame[MAX_STACK_FRAMES];
-        int nptrs = ::backtrace(frame, MAX_STACK_FRAMES);
-        char** strings = ::backtrace_symbols(frame, nptrs);
+        auto nptrs = ::backtrace(frame, MAX_STACK_FRAMES);
+        auto strings = ::backtrace_symbols(frame, nptrs);
         if (strings) {
             size_t len = 256;
-            char* demangled = demangle ? static_cast<char*>(::malloc(len)) : nullptr;
+            auto demangled = demangle ? static_cast<char*>(::malloc(len)) : nullptr;
             for (int i = 1; i < nptrs; ++i) {
                 // skipping the 0-th, which is this function.
                 if (demangle) {
@@ -87,7 +87,7 @@ namespace current_thread {
                     // bin/exception_test(_ZN3Bar4testEv+0x79) [0x401909]
                     char* left_par = nullptr;
                     char* plus = nullptr;
-                    for (char* p = strings[i]; *p; ++p) {
+                    for (auto p = strings[i]; *p; ++p) {
                         if (*p == '(')
                             left_par = p;
                         else if (*p == '+')
@@ -96,8 +96,8 @@ namespace current_thread {
 
                     if (left_par && plus) {
                         *plus = '\0';
-                        int status = 0;
-                        char* ret = abi::__cxa_demangle(left_par + 1, demangled, &len, &status);
+                        auto status = 0;
+                        auto ret = abi::__cxa_demangle(left_par + 1, demangled, &len, &status);
                         *plus = '+';
                         if (status == 0) {
                             demangled = ret; // ret could be realloc()

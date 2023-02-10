@@ -23,7 +23,7 @@ void ThreadPool::start(int num_of_thread)
     HARE_ASSERT(threads_.empty(), "Thread pool is not empty.");
     running_ = true;
     threads_.reserve(num_of_thread);
-    for (int i = 0; i < num_of_thread; ++i) {
+    for (auto i = 0; i < num_of_thread; ++i) {
         threads_.emplace_back(new Thread(std::bind(&ThreadPool::loop, this), name_ + std::to_string(i)));
         threads_[i]->start();
     }
@@ -78,7 +78,7 @@ Thread::Task ThreadPool::take()
     }
     Thread::Task task;
     if (!queue_.empty()) {
-        task = queue_.front();
+        task = std::move(queue_.front());
         queue_.pop_front();
         if (max_queue_size_ > 0) {
             cv_for_not_full_.notify_one();
@@ -100,7 +100,7 @@ void ThreadPool::loop()
             pool_init_callback_();
         }
         while (running_) {
-            Thread::Task task(take());
+            auto task(take());
             if (task) {
                 task();
             }

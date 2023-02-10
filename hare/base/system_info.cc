@@ -17,8 +17,8 @@ namespace util {
 
         struct SystemInfo {
             int32_t pid { 0 };
-            char host_name[NAME_LENGTH] { "UNLNOWN" };
-            char system_dir[NAME_LENGTH] { "NULL" };
+            char host_name[NAME_LENGTH] {};
+            char system_dir[NAME_LENGTH] {};
 
             SystemInfo()
             {

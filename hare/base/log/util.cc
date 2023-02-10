@@ -45,7 +45,7 @@ namespace log {
         */
         std::string formatSI(int64_t s)
         {
-            double n = static_cast<double>(s);
+            auto n = static_cast<double>(s);
             char buf[64];
             if (s < 1000)
                 snprintf(buf, sizeof(buf), "%" PRId64, s);
@@ -93,7 +93,7 @@ namespace log {
         */
         std::string formatIEC(int64_t s)
         {
-            double n = static_cast<double>(s);
+            auto n = static_cast<double>(s);
             char buf[64];
             const double Ki = 1024.0;
             const double Mi = Ki * 1024.0;

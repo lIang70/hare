@@ -19,10 +19,10 @@ namespace log {
         std::size_t convert(char buf[], T value)
         {
             T i = value;
-            char* p = buf;
+            auto p = buf;
 
             do {
-                int32_t lsd = static_cast<int32_t>(i % 10);
+                auto lsd = static_cast<int32_t>(i % 10);
                 i /= 10;
                 *p++ = zero[lsd];
             } while (i != 0);
@@ -38,11 +38,11 @@ namespace log {
 
         std::size_t convertHex(char buf[], uintptr_t value)
         {
-            uintptr_t i = value;
-            char* p = buf;
+            auto i = value;
+            auto p = buf;
 
             do {
-                int32_t lsd = static_cast<int32_t>(i % 16);
+                auto lsd = static_cast<int32_t>(i % 16);
                 i /= 16;
                 *p++ = c_digits_hex[lsd];
             } while (i != 0);
@@ -71,7 +71,7 @@ namespace log {
     void Stream::formatInteger(T v)
     {
         if (buffer_.avail() >= MAX_NUMERSIC_SIZE) {
-            std::size_t len = detail::convert(buffer_.current(), v);
+            auto len = detail::convert(buffer_.current(), v);
             buffer_.add(len);
         }
     }
@@ -126,12 +126,12 @@ namespace log {
 
     Stream& Stream::operator<<(const void* p)
     {
-        uintptr_t v = reinterpret_cast<uintptr_t>(p);
+        auto v = reinterpret_cast<uintptr_t>(p);
         if (buffer_.avail() >= MAX_NUMERSIC_SIZE) {
-            char* buf = buffer_.current();
+            auto buf = buffer_.current();
             buf[0] = '0';
             buf[1] = 'x';
-            std::size_t len = detail::convertHex(buf + 2, v);
+            auto len = detail::convertHex(buf + 2, v);
             buffer_.add(len + 2);
         }
         return *this;
@@ -141,7 +141,7 @@ namespace log {
     Stream& Stream::operator<<(double v)
     {
         if (buffer_.avail() >= MAX_NUMERSIC_SIZE) {
-            int len = snprintf(buffer_.current(), MAX_NUMERSIC_SIZE, "%.12g", v);
+            auto len = snprintf(buffer_.current(), MAX_NUMERSIC_SIZE, "%.12g", v);
             buffer_.add(len);
         }
         return *this;
