@@ -16,7 +16,7 @@ namespace core {
         Cycle* owner_cycle_ { nullptr };
 
     protected:
-        using EventMap = std::map<socket_t, Event*>;
+        using EventMap = std::map<socket_t, std::shared_ptr<Event>>;
         EventMap events_;
 
     public:
@@ -26,23 +26,23 @@ namespace core {
 
         //! @brief Polls the I/O events.
         //!  Must be called in the cycle thread.
-        virtual Timestamp poll(int timeout_microseconds, Cycle::EventList& active_events) = 0;
+        virtual Timestamp poll(int32_t timeout_microseconds, Cycle::EventList& active_events) = 0;
 
         //! @brief Changes the interested I/O events.
         //!  Must be called in the cycle thread.
-        virtual void updateEvent(Event* event) = 0;
+        virtual void updateEvent(std::shared_ptr<Event>& event) = 0;
 
         //! @brief Remove the event, when it destructs.
         //!  Must be called in the cycle thread.
-        virtual void removeEvent(Event* event) = 0;
+        virtual void removeEvent(std::shared_ptr<Event>& event) = 0;
 
         //! @brief Detects whether the event is in the reactor.
         //!  Must be called in the cycle thread.
-        virtual bool checkEvent(Event* event) const;
+        virtual bool checkEvent(std::shared_ptr<Event>& event) const;
 
-        inline void assertInLoopThread() const
+        inline void assertInCycleThread() const
         {
-            owner_cycle_->assertInLoopThread();
+            owner_cycle_->assertInCycleThread();
         }
 
     protected:

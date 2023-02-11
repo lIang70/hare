@@ -1,6 +1,6 @@
 #include "hare/net/core/reactor.h"
+#include "hare/net/core/event.h"
 #include <hare/base/exception.h>
-#include <hare/net/event.h>
 
 #ifdef HARE__HAVE_EPOLL
 #include "hare/net/core/reactor/reactor_epoll.h"
@@ -22,9 +22,9 @@ namespace core {
         return nullptr;
     }
 
-    bool Reactor::checkEvent(Event* event) const
+    bool Reactor::checkEvent(std::shared_ptr<Event>& event) const
     {
-        assertInLoopThread();
+        assertInCycleThread();
         auto iter = events_.find(event->fd());
         return iter != events_.end() && iter->second == event;
     }

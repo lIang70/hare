@@ -1,10 +1,27 @@
-#include "hare/net/core/event_data.h"
+#include "hare/net/core/event.h"
 
 namespace hare {
-namespace detail {
+namespace core {
 
-} // namespace detail
+    Event::~Event()
+    {
+    }
 
+    std::string Event::flagsToString()
+    {
+    }
 
+    void Event::deactive()
+    {
+    }
 
+    void Event::update()
+    {
+    }
+
+    void Event::handleEvent(Timestamp receive_time)
+    {
+    }
+
+} // namespace core
 } // namespace hare

@@ -3,29 +3,34 @@
 
 #include "hare/net/core/reactor.h"
 
+#ifdef HARE__HAVE_EPOLL
+#include <sys/epoll.h>
+
 namespace hare {
 namespace core {
 
     class EpollReactor : public Reactor {
         using EPEventList = std::vector<struct epoll_event>;
 
-        socket_t epoll_fd_;
-        EPEventList epoll_events_;
+        socket_t epoll_fd_ { -1 };
+        EPEventList epoll_events_ {};
 
     public:
         EpollReactor(Cycle* cycle);
         ~EpollReactor() override;
 
-        Timestamp poll(int timeout_microseconds, Cycle::EventList& active_events) override;
-        void updateEvent(Event* event) override;
-        void removeEvent(Event* event) override;
+        Timestamp poll(int32_t timeout_microseconds, Cycle::EventList& active_events) override;
+        void updateEvent(std::shared_ptr<Event>& event) override;
+        void removeEvent(std::shared_ptr<Event>& event) override;
 
     private:
-        void fillActiveEvents(int num_of_events, Cycle::EventList& active_events) const;
-        void update(int operation, Event* channel);
+        void fillActiveEvents(int32_t num_of_events, Cycle::EventList& active_events);
+        void update(int32_t operation, std::shared_ptr<Event>& channel);
     };
 
 } // namespace core
 } // namespace hare
+
+#endif // HARE__HAVE_EPOLL
 
 #endif // !_HARE_NET_REACTOR_EPOLL_H_
