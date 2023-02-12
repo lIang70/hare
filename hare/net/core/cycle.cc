@@ -52,7 +52,7 @@ namespace core {
 
             void eventCallBack(int32_t events) override
             {
-                HARE_ASSERT(ownerCycle() == t_local_cycle, "");
+                HARE_ASSERT(ownerCycle() == t_local_cycle, "Cycle is wrong.");
 
                 if (events == EV_READ) {
                     auto one = (uint64_t)0;

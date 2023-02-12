@@ -24,6 +24,11 @@ namespace socket {
         return fd;
     }
 
+    int32_t close(socket_t fd)
+    {
+        return ::close(fd);
+    }
+
     ssize_t write(socket_t fd, const void* buf, size_t size)
     {
         return ::send(fd, buf, size, MSG_NOSIGNAL);
