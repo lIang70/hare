@@ -50,7 +50,7 @@ namespace core {
                 }
             }
 
-            void eventCallBack(int32_t events) override
+            void eventCallBack(int32_t events, Timestamp& receive_time) override
             {
                 HARE_ASSERT(ownerCycle() == t_local_cycle, "Cycle is wrong.");
 

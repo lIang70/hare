@@ -27,6 +27,7 @@
 #endif
 
 #define H_UNUSED(x) (void)(x)
+#define H_ALIGNAS(n) alignas(n)
 
 namespace hare {
 

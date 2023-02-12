@@ -11,7 +11,7 @@ namespace hare {
 namespace core {
 
     class Cycle;
-    class Event {
+    class H_ALIGNAS(8) Event {
     public:
         enum class Status : int8_t {
             NEW = 0,
@@ -65,7 +65,7 @@ namespace core {
 
         inline void setRFlags(int32_t flags) { revent_flags_ = flags; }
 
-        void handleEvent(Timestamp receive_time);
+        void handleEvent(Timestamp& receive_time);
 
         //! @brief Tie this channel to the owner object managed by shared_ptr,
         //!  prevent the owner object being destroyed in handleEvent.
@@ -76,7 +76,7 @@ namespace core {
     protected:
         void active();
 
-        virtual void eventCallBack(int32_t events) = 0;
+        virtual void eventCallBack(int32_t events, Timestamp& receive_time) = 0;
     };
 
 } // namespace core

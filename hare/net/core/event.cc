@@ -61,7 +61,7 @@ namespace core {
         return detail::flagsToString(fd_, revent_flags_);
     }
 
-    void Event::handleEvent(Timestamp receive_time)
+    void Event::handleEvent(Timestamp& receive_time)
     {
         std::shared_ptr<void> object;
         if (tied_) {
@@ -70,7 +70,7 @@ namespace core {
                 return;
         }
         event_handle_.exchange(true);
-        eventCallBack(revent_flags_);
+        eventCallBack(revent_flags_, receive_time);
         event_handle_.exchange(false);
     }
 
