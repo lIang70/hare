@@ -5,10 +5,7 @@
 #include <hare/base/logging.h>
 #include <hare/net/util.h>
 
-#ifdef H_OS_WIN32
-#else
-#include <sys/socket.h>
-#endif
+#include <algorithm>
 
 namespace hare {
 namespace core {
@@ -20,12 +17,10 @@ namespace core {
     } // namespace detail
 
     Cycle::Cycle(std::string& reactor_type)
-        : wake_up_event_(new Event)
+        : wake_up_event_(nullptr) // todo
         , reactor_(core::Reactor::createByType(reactor_type, this))
     {
         LOG_TRACE() << "Cycle[" << this << "] is being initialized...";
-        wake_up_event_->cycle_ = this;
-        wake_up_event_->fd_ = socket::createNonblockingOrDie(AF_INET);
         wake_up_event_->setFlags(EV_READ | EV_PERSIST);
     }
 
@@ -61,7 +56,7 @@ namespace core {
             event_handling_.exchange(true);
 
             for (auto& event : active_events_) {
-                current_active_event_ = event.lock();
+                current_active_event_ = event;
                 current_active_event_->handleEvent(reactor_time_);
             }
             current_active_event_ = nullptr;
@@ -118,33 +113,34 @@ namespace core {
     void Cycle::wakeup()
     {
         uint64_t one = 1;
-        ssize_t n = socket::write(wake_up_event_->fd_, &one, sizeof(one));
+        auto n = socket::write(wake_up_event_->fd_, &one, sizeof(one));
         if (n != sizeof(one)) {
             LOG_ERROR() << "Cycle::wakeup() writes " << n << " bytes instead of " << sizeof(one);
         }
     }
 
-    void Cycle::updateEvent(std::shared_ptr<Event>& event)
+    void Cycle::updateEvent(Event* event)
     {
         HARE_ASSERT(event->ownerCycle() == this, "The event is not part of the cycle.");
         assertInCycleThread();
         reactor_->updateEvent(event);
     }
 
-    void Cycle::removeEvent(std::shared_ptr<Event>& event)
+    void Cycle::removeEvent(Event* event)
     {
         HARE_ASSERT(event->ownerCycle() == this, "The event is not part of the cycle.");
         assertInCycleThread();
         if (event_handling_) {
-            HARE_ASSERT(current_active_event_ != event, "Event is actived!");
+            HARE_ASSERT(
+                current_active_event_ != event || std::find(active_events_.begin(), active_events_.end(), event) == active_events_.end(),
+                "Event is actived!");
         }
         reactor_->removeEvent(event);
     }
 
-    bool Cycle::checkEvent(std::shared_ptr<Event>& event)
+    bool Cycle::checkEvent(Event* event)
     {
         HARE_ASSERT(event->ownerCycle() == this, "The event is not part of the cycle.");
-        assertInCycleThread();
         return reactor_->checkEvent(event);
     }
 
@@ -175,8 +171,7 @@ namespace core {
     void Cycle::printActiveEvents() const
     {
         for (const auto& event : active_events_) {
-            if (auto e = event.lock())
-                LOG_TRACE() << "event[" << e->fd() << "] debug info: " << e->flagsToString() << ".";
+            LOG_TRACE() << "event[" << event->fd() << "] debug info: " << event->flagsToString() << ".";
         }
     }
 

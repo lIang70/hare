@@ -22,7 +22,7 @@ namespace core {
         return nullptr;
     }
 
-    bool Reactor::checkEvent(std::shared_ptr<Event>& event) const
+    bool Reactor::checkEvent(Event* event) const
     {
         assertInCycleThread();
         auto iter = events_.find(event->fd());

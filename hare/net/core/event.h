@@ -4,14 +4,14 @@
 #include <hare/base/timestamp.h>
 #include <hare/net/util.h>
 
+#include <atomic>
 #include <memory>
 
 namespace hare {
 namespace core {
 
     class Cycle;
-    class Event
-        : public std::enable_shared_from_this<Event> {
+    class Event {
     public:
         friend class Cycle;
 
@@ -27,13 +27,20 @@ namespace core {
         Status status_ { Status::NEW };
         int32_t event_flags_ { EV_DEFAULT };
         int32_t revent_flags_ { EV_DEFAULT };
-        Cycle* cycle_ { nullptr };
+        Cycle* owner_cycle_ { nullptr };
+
+        std::atomic<bool> event_handle_ { false };
+        std::atomic<bool> added_to_cycle_ { false };
+
+        std::atomic<bool> tied_ { false };
+        std::weak_ptr<void> tie_object_;
 
     public:
+        Event(Cycle* cycle, socket_t fd);
         virtual ~Event();
 
         inline socket_t fd() const { return fd_; }
-        inline Cycle* ownerCycle() const { return cycle_; }
+        inline Cycle* ownerCycle() const { return owner_cycle_; }
         inline bool isNoneEvent() const { return event_flags_ == EV_DEFAULT; };
         inline Status status() { return status_; }
         inline void setStatus(Status status) { status_ = status; }
@@ -42,32 +49,35 @@ namespace core {
         inline void setFlags(int32_t flags)
         {
             event_flags_ |= flags;
-            update();
+            active();
         }
         inline void clearFlags(int32_t flags)
         {
             event_flags_ &= ~flags;
-            update();
+            active();
         }
         inline void clearAllFlags()
         {
             event_flags_ = EV_DEFAULT;
-            update();
+            active();
         }
 
         std::string flagsToString();
+        std::string rflagsToString();
 
         inline void setRFlags(int32_t flags) { revent_flags_ = flags; }
+
+        //! @brief Tie this channel to the owner object managed by shared_ptr,
+        //!  prevent the owner object being destroyed in handleEvent.
+        void tie(const std::shared_ptr<void>& object);
 
         void deactive();
 
     protected:
-        void update();
+        void active();
         void handleEvent(Timestamp receive_time);
 
-    private:
-        Event() = default;
-
+        virtual void notify(int32_t events) = 0;
     };
 
 } // namespace core

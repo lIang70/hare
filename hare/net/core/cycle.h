@@ -17,7 +17,7 @@ namespace core {
 
     class Cycle : public NonCopyable {
     public:
-        using EventList = std::vector<std::weak_ptr<Event>>;
+        using EventList = std::vector<Event*>;
 
     private:
         Timestamp reactor_time_ {};
@@ -31,7 +31,7 @@ namespace core {
         std::unique_ptr<core::Reactor> reactor_ { nullptr };
 
         EventList active_events_ {};
-        std::shared_ptr<Event> current_active_event_ { nullptr };
+        Event* current_active_event_ { nullptr };
 
         mutable std::mutex mutex_ {};
         std::list<Thread::Task> pending_funcs_ {};
@@ -93,9 +93,9 @@ namespace core {
         std::size_t queueSize() const;
 
         void wakeup();
-        void updateEvent(std::shared_ptr<Event>& event);
-        void removeEvent(std::shared_ptr<Event>& event);
-        bool checkEvent(std::shared_ptr<Event>& event);
+        void updateEvent(Event* event);
+        void removeEvent(Event* event);
+        bool checkEvent(Event* event);
 
     private:
         void abortNotInLoopThread();

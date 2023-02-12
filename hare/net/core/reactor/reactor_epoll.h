@@ -20,12 +20,12 @@ namespace core {
         ~EpollReactor() override;
 
         Timestamp poll(int32_t timeout_microseconds, Cycle::EventList& active_events) override;
-        void updateEvent(std::shared_ptr<Event>& event) override;
-        void removeEvent(std::shared_ptr<Event>& event) override;
+        void updateEvent(Event* event) override;
+        void removeEvent(Event* event) override;
 
     private:
         void fillActiveEvents(int32_t num_of_events, Cycle::EventList& active_events);
-        void update(int32_t operation, std::shared_ptr<Event>& channel);
+        void update(int32_t operation, Event* channel);
     };
 
 } // namespace core

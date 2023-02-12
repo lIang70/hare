@@ -99,9 +99,11 @@ namespace core {
     Timestamp EpollReactor::poll(int32_t timeout_microseconds, Cycle::EventList& active_events)
     {
         LOG_TRACE() << "Active events total count: " << active_events.size();
+
         auto event_num = ::epoll_wait(epoll_fd_,
             &*epoll_events_.begin(), static_cast<int32_t>(epoll_events_.size()),
             timeout_microseconds);
+
         auto saved_errno = errno;
         Timestamp now(Timestamp::now());
         if (event_num > 0) {
@@ -122,7 +124,7 @@ namespace core {
         return now;
     }
 
-    void EpollReactor::updateEvent(std::shared_ptr<Event>& event)
+    void EpollReactor::updateEvent(Event* event)
     {
         Reactor::assertInCycleThread();
         auto status = event->status();
@@ -157,7 +159,7 @@ namespace core {
         }
     }
 
-    void EpollReactor::removeEvent(std::shared_ptr<Event>& event)
+    void EpollReactor::removeEvent(Event* event)
     {
         Reactor::assertInCycleThread();
         auto fd = event->fd();
@@ -198,12 +200,12 @@ namespace core {
         }
     }
 
-    void EpollReactor::update(int32_t operation, std::shared_ptr<Event>& event)
+    void EpollReactor::update(int32_t operation, Event* event)
     {
         struct epoll_event ep_event;
         setZero(&ep_event, sizeof(ep_event));
         ep_event.events = detail::decode(event->flags());
-        ep_event.data.ptr = event.get();
+        ep_event.data.ptr = event;
         auto fd = event->fd();
         LOG_TRACE() << "epoll_ctl op = " << detail::operationToString(operation)
                     << "\n fd = " << fd << " event = { " << detail::eventsToString(detail::decode(event->flags())) << " }";

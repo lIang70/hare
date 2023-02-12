@@ -33,7 +33,8 @@ enum : int32_t {
     //! @brief Detects connection close events. You can use this to detect when a
     //!  connection has been closed, without having to read all the pending data
     //!  from a connection.
-    EV_CLOSED = 0x40
+    EV_CLOSED = 0x40,
+    EV_ERROR = 0x80
 };
 
 } // namespace hare
