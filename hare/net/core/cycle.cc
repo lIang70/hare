@@ -7,42 +7,102 @@
 
 #include <algorithm>
 
+#ifdef HARE__HAVE_EVENTFD
+#include <sys/eventfd.h>
+#endif
+
 namespace hare {
 namespace core {
     namespace detail {
 
-        const int32_t pool_time_micros { 10000 };
+        const int32_t POLL_TIME_MICROSECONDS { 10000 };
         thread_local Cycle* t_local_cycle { nullptr };
+
+        socket_t createWakeFd()
+        {
+#ifdef HARE__HAVE_EVENTFD
+            auto evtfd = ::eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
+            if (evtfd < 0) {
+                SYS_FATAL() << "Failed in ::eventfd";
+            }
+            return evtfd;
+#endif
+        }
+
+        class NotifyEvent : public Event {
+        public:
+            NotifyEvent(Cycle* cycle)
+                : Event(cycle, createWakeFd())
+            {
+            }
+
+            ~NotifyEvent() override
+            {
+                socket::close(fd());
+            }
+
+            void sendNotify()
+            {
+                auto one = (uint64_t)1;
+                auto n = socket::write(fd(), &one, sizeof(one));
+                if (n != sizeof(one)) {
+                    LOG_ERROR() << "Write[" << n << " B] instead of " << sizeof(one);
+                }
+            }
+
+            void eventCallBack(int32_t events) override
+            {
+                HARE_ASSERT(ownerCycle() == t_local_cycle, "");
+
+                if (events == EV_READ) {
+                    auto one = (uint64_t)0;
+                    auto n = socket::read(fd(), &one, sizeof(one));
+                    if (n != sizeof(one) && one != (uint64_t)1) {
+                        LOG_ERROR() << "Read notify[" << n << " B] instead of " << sizeof(one);
+                    }
+                } else {
+                    SYS_FATAL() << "An error occurred while accepting notify in fd[" << fd() << "].";
+                }
+            }
+        };
 
     } // namespace detail
 
     Cycle::Cycle(std::string& reactor_type)
-        : wake_up_event_(nullptr) // todo
+        : notify_event_(new detail::NotifyEvent(this))
         , reactor_(core::Reactor::createByType(reactor_type, this))
+        , tid_(current_thread::tid())
     {
         LOG_TRACE() << "Cycle[" << this << "] is being initialized...";
-        wake_up_event_->setFlags(EV_READ | EV_PERSIST);
+        if (detail::t_local_cycle) {
+            LOG_FATAL() << "Another Cycle[" << detail::t_local_cycle
+                        << "] exists in this thread[" << tid_ << "].";
+        } else {
+            detail::t_local_cycle = this;
+        }
+        notify_event_->setFlags(EV_READ | EV_PERSIST);
     }
 
     Cycle::~Cycle()
     {
-        wake_up_event_->clearAllFlags();
-        wake_up_event_->deactive();
-        wake_up_event_.reset();
+        assertInCycleThread();
+        notify_event_->clearAllFlags();
+        notify_event_.reset();
+        detail::t_local_cycle = nullptr;
     }
 
     void Cycle::loop()
     {
         HARE_ASSERT(!is_running_, "Cycle has been running.");
+        assertInCycleThread();
         is_running_.exchange(true);
         quit_.exchange(false);
-        detail::t_local_cycle = this;
 
         LOG_TRACE() << "Cycle[" << this << "] start running...";
 
         while (!quit_) {
             active_events_.clear();
-            reactor_time_ = reactor_->poll(detail::pool_time_micros, active_events_);
+            reactor_time_ = reactor_->poll(detail::POLL_TIME_MICROSECONDS, active_events_);
 
 #ifdef HARE_DEBUG
             ++cycle_index_;
@@ -67,7 +127,6 @@ namespace core {
         }
 
         is_running_.exchange(false);
-        detail::t_local_cycle = nullptr;
 
         LOG_TRACE() << "Cycle[" << this << "] stop running.";
     }
@@ -79,7 +138,7 @@ namespace core {
         //! @brief There is a chance that loop() just executes while(!quit_) and exits,
         //!  then Cycle destructs, then we are accessing an invalid object.
         if (!isInLoopThread()) {
-            wakeup();
+            notify();
         }
     }
 
@@ -100,7 +159,7 @@ namespace core {
         }
 
         if (!isInLoopThread() || calling_pending_funcs_) {
-            wakeup();
+            notify();
         }
     }
 
@@ -108,15 +167,6 @@ namespace core {
     {
         std::lock_guard<std::mutex> lock(mutex_);
         return pending_funcs_.size();
-    }
-
-    void Cycle::wakeup()
-    {
-        uint64_t one = 1;
-        auto n = socket::write(wake_up_event_->fd_, &one, sizeof(one));
-        if (n != sizeof(one)) {
-            LOG_ERROR() << "Cycle::wakeup() writes " << n << " bytes instead of " << sizeof(one);
-        }
     }
 
     void Cycle::updateEvent(Event* event)
@@ -142,6 +192,14 @@ namespace core {
     {
         HARE_ASSERT(event->ownerCycle() == this, "The event is not part of the cycle.");
         return reactor_->checkEvent(event);
+    }
+
+    void Cycle::notify()
+    {
+        if (auto notify = static_cast<detail::NotifyEvent*>(notify_event_.get()))
+            notify->sendNotify();
+        else
+            SYS_FATAL() << "Cannot cast to NotifyEvent.";
     }
 
     void Cycle::abortNotInLoopThread()

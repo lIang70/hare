@@ -61,6 +61,19 @@ namespace core {
         return detail::flagsToString(fd_, revent_flags_);
     }
 
+    void Event::handleEvent(Timestamp receive_time)
+    {
+        std::shared_ptr<void> object;
+        if (tied_) {
+            object = tie_object_.lock();
+            if (!object)
+                return;
+        }
+        event_handle_.exchange(true);
+        eventCallBack(revent_flags_);
+        event_handle_.exchange(false);
+    }
+
     void Event::tie(const std::shared_ptr<void>& object)
     {
         tie_object_ = object;
@@ -78,19 +91,6 @@ namespace core {
     {
         added_to_cycle_.exchange(false);
         owner_cycle_->updateEvent(this);
-    }
-
-    void Event::handleEvent(Timestamp receive_time)
-    {
-        std::shared_ptr<void> object;
-        if (tied_) {
-            object = tie_object_.lock();
-            if (!object)
-                return;
-        }
-        event_handle_.exchange(true);
-        notify(revent_flags_);
-        event_handle_.exchange(false);
     }
 
 } // namespace core

@@ -13,8 +13,6 @@ namespace core {
     class Cycle;
     class Event {
     public:
-        friend class Cycle;
-
         enum class Status : int8_t {
             NEW = 0,
             ADD = 1,
@@ -67,6 +65,8 @@ namespace core {
 
         inline void setRFlags(int32_t flags) { revent_flags_ = flags; }
 
+        void handleEvent(Timestamp receive_time);
+
         //! @brief Tie this channel to the owner object managed by shared_ptr,
         //!  prevent the owner object being destroyed in handleEvent.
         void tie(const std::shared_ptr<void>& object);
@@ -75,9 +75,8 @@ namespace core {
 
     protected:
         void active();
-        void handleEvent(Timestamp receive_time);
 
-        virtual void notify(int32_t events) = 0;
+        virtual void eventCallBack(int32_t events) = 0;
     };
 
 } // namespace core

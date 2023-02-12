@@ -27,7 +27,7 @@ namespace core {
         std::atomic<bool> event_handling_ { false };
         std::atomic<bool> calling_pending_funcs_ { false };
 
-        std::unique_ptr<Event> wake_up_event_ { nullptr };
+        std::unique_ptr<Event> notify_event_ { nullptr };
         std::unique_ptr<core::Reactor> reactor_ { nullptr };
 
         EventList active_events_ {};
@@ -92,12 +92,12 @@ namespace core {
 
         std::size_t queueSize() const;
 
-        void wakeup();
         void updateEvent(Event* event);
         void removeEvent(Event* event);
         bool checkEvent(Event* event);
 
     private:
+        void notify();
         void abortNotInLoopThread();
         void doPendingFuncs();
 

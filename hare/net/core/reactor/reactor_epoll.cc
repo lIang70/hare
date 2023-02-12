@@ -47,7 +47,7 @@ namespace core {
         {
             int32_t flags = EV_DEFAULT;
             if (events & EPOLLERR) {
-                flags = EV_READ | EV_WRITE;
+                flags = EV_READ | EV_WRITE | EV_ERROR;
             } else if ((events & EPOLLHUP) && !(events & EPOLLRDHUP)) {
                 flags = EV_READ | EV_WRITE;
             } else {

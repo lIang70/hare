@@ -8,6 +8,7 @@ namespace socket {
 
     extern socket_t createNonblockingOrDie(int8_t family);
     
+    extern int32_t close(socket_t fd);
     extern ssize_t write(socket_t fd, const void* buf, size_t count);
     extern ssize_t read(socket_t fd, const void* buf, size_t count);
 
