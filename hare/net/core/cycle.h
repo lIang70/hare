@@ -13,7 +13,10 @@
 #include <vector>
 
 namespace hare {
-class Timer;
+
+namespace net {
+    class Timer;
+}
 
 namespace core {
     class Reactor;
@@ -21,10 +24,10 @@ namespace core {
 
     namespace detail {
         struct TimerInfo {
-            std::weak_ptr<Timer> timer_ {};
+            std::weak_ptr<net::Timer> timer_ {};
             Timestamp timestamp_ {};
 
-            TimerInfo(std::shared_ptr<Timer>& timer, int64_t ms_time)
+            TimerInfo(std::shared_ptr<net::Timer>& timer, int64_t ms_time)
                 : timer_(timer)
                 , timestamp_(ms_time)
             {
@@ -125,7 +128,7 @@ namespace core {
         void removeEvent(Event* event);
         bool checkEvent(Event* event);
 
-        void addTimer(std::shared_ptr<Timer>& timer);
+        void addTimer(std::shared_ptr<net::Timer>& timer);
 
     private:
         void notify();

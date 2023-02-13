@@ -16,27 +16,27 @@ namespace core {
         decltype(pollfd::events) decodePoll(int32_t event_flags)
         {
             decltype(pollfd::events) events = 0;
-            if (event_flags & EV_READ)
+            if (event_flags & net::EV_READ)
                 events |= (POLLIN | POLLPRI);
-            if (event_flags & EV_WRITE)
+            if (event_flags & net::EV_WRITE)
                 events |= (POLLOUT);
             return events;
         }
 
         int32_t encodePoll(decltype(pollfd::events) events)
         {
-            int32_t flags = EV_DEFAULT;
+            int32_t flags = net::EV_DEFAULT;
             if (events & POLLERR) {
-                flags = EV_READ | EV_WRITE;
+                flags = net::EV_READ | net::EV_WRITE;
             } else if ((events & POLLHUP) && !(events & POLLRDHUP)) {
-                flags = EV_READ | EV_WRITE;
+                flags = net::EV_READ | net::EV_WRITE;
             } else {
                 if (events & POLLIN)
-                    flags |= EV_READ;
+                    flags |= net::EV_READ;
                 if (events & POLLOUT)
-                    flags |= EV_WRITE;
+                    flags |= net::EV_WRITE;
                 if (events & POLLRDHUP)
-                    flags |= EV_CLOSED;
+                    flags |= net::EV_CLOSED;
             }
             return flags;
         }

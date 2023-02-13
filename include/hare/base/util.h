@@ -31,6 +31,12 @@
 
 namespace hare {
 
+#ifdef H_OS_WIN32
+using socket_t = intptr_t;
+#else
+using socket_t = int;
+#endif
+
 inline HARE_API void setZero(void* p, size_t n)
 {
     memset(p, 0, n);

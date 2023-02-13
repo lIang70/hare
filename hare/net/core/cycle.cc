@@ -55,7 +55,7 @@ namespace core {
             {
                 HARE_ASSERT(ownerCycle() == t_local_cycle, "Cycle is wrong.");
 
-                if (events == EV_READ) {
+                if (events == net::EV_READ) {
                     auto one = (uint64_t)0;
                     auto n = socket::read(fd(), &one, sizeof(one));
                     if (n != sizeof(one) && one != (uint64_t)1) {
@@ -81,7 +81,7 @@ namespace core {
         } else {
             detail::t_local_cycle = this;
         }
-        notify_event_->setFlags(EV_READ);
+        notify_event_->setFlags(net::EV_READ);
     }
 
     Cycle::~Cycle()
@@ -196,7 +196,7 @@ namespace core {
         return reactor_->checkEvent(event);
     }
 
-    void Cycle::addTimer(std::shared_ptr<Timer>& timer)
+    void Cycle::addTimer(std::shared_ptr<net::Timer>& timer)
     {
         assertInCycleThread();
         priority_timers_.emplace(timer, Timestamp::now().microSecondsSinceEpoch() + timer->timeout());
