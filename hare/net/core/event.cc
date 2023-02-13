@@ -21,10 +21,6 @@ namespace core {
                     oss << "READ ";
                 if (event_flags_ & EV_WRITE)
                     oss << "WRITE ";
-                if (event_flags_ & EV_SIGNAL)
-                    oss << "SIGNAL ";
-                if (event_flags_ & EV_PERSIST)
-                    oss << "PERSIST ";
                 if (event_flags_ & EV_ET)
                     oss << "ET ";
                 if (event_flags_ & EV_CLOSED)

@@ -56,8 +56,8 @@ public:
         return static_cast<time_t>(microseconds_since_epoch_ / MICROSECONDS_PER_SECOND);
     }
 
-    inline bool operator==(const Timestamp& ts) { return microseconds_since_epoch_ == ts.microseconds_since_epoch_; }
-    inline bool operator<(const Timestamp& ts) { return microseconds_since_epoch_ < ts.microseconds_since_epoch_; }
+    inline bool operator==(const Timestamp& ts) const { return microseconds_since_epoch_ == ts.microseconds_since_epoch_; }
+    inline bool operator<(const Timestamp& ts) const { return microseconds_since_epoch_ < ts.microseconds_since_epoch_; }
 
     std::string toString() const;
     std::string toFormattedString(bool show_microseconds = true) const;

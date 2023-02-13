@@ -3,9 +3,11 @@
 
 #include <hare/base/thread.h>
 
+#include <memory>
+
 namespace hare {
 
-class Timer {
+class Timer : public std::enable_shared_from_this<Timer> {
     int64_t ms_timeout_ { -1 };
     Thread::Task task_ {};
     bool persist_ { false };

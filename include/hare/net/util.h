@@ -21,20 +21,13 @@ enum : int32_t {
     EV_READ = 0x02,
     //! @brief Wait for a socket or FD to become writeable.
     EV_WRITE = 0x04,
-    //! @brief Wait for a POSIX signal to be raised.
-    EV_SIGNAL = 0x08,
-    //! @brief Persistent event: won't get removed automatically when activated.
-    //! 
-    //!  When a persistent event with a timeout becomes activated, its timeout
-    //!  is reset to 0.
-    EV_PERSIST = 0x10,
     //! @brief Select edge-triggered behavior, if supported by the backend.
-    EV_ET = 0x20,
+    EV_ET = 0x10,
     //! @brief Detects connection close events. You can use this to detect when a
     //!  connection has been closed, without having to read all the pending data
     //!  from a connection.
-    EV_CLOSED = 0x40,
-    EV_ERROR = 0x80
+    EV_CLOSED = 0x20,
+    EV_ERROR = 0x30
 };
 
 } // namespace hare

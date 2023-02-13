@@ -7,13 +7,40 @@
 #include <hare/base/timestamp.h>
 
 #include <atomic>
+#include <memory>
 #include <mutex>
+#include <queue>
 #include <vector>
 
 namespace hare {
+class Timer;
+
 namespace core {
     class Reactor;
     class Event;
+
+    namespace detail {
+        struct TimerInfo {
+            std::weak_ptr<Timer> timer_ {};
+            Timestamp timestamp_ {};
+
+            TimerInfo(std::shared_ptr<Timer>& timer, int64_t ms_time)
+                : timer_(timer)
+                , timestamp_(ms_time)
+            {
+            }
+        };
+
+        struct TimerPriority {
+            bool operator()(const TimerInfo& _x, const TimerInfo& _y)
+            {
+                return _x.timestamp_ < _y.timestamp_;
+            }
+        };
+
+        using PriorityTimer = std::priority_queue<TimerInfo, std::vector<TimerInfo>, TimerPriority>;
+
+    } // namespace detail
 
     class Cycle : public NonCopyable {
     public:
@@ -28,10 +55,12 @@ namespace core {
         std::atomic<bool> calling_pending_funcs_ { false };
 
         std::unique_ptr<Event> notify_event_ { nullptr };
-        std::unique_ptr<core::Reactor> reactor_ { nullptr };
+        std::unique_ptr<Reactor> reactor_ { nullptr };
 
         EventList active_events_ {};
         Event* current_active_event_ { nullptr };
+
+        detail::PriorityTimer priority_timers_;
 
         mutable std::mutex mutex_ {};
         std::list<Thread::Task> pending_funcs_ {};
@@ -96,10 +125,15 @@ namespace core {
         void removeEvent(Event* event);
         bool checkEvent(Event* event);
 
+        void addTimer(std::shared_ptr<Timer>& timer);
+
     private:
         void notify();
         void abortNotInLoopThread();
         void doPendingFuncs();
+        void notifyTimer();
+
+        int32_t getWaitTime();
 
         void printActiveEvents() const;
     };

@@ -3,6 +3,7 @@
 #include "hare/net/core/reactor.h"
 #include "hare/net/socket_op.h"
 #include <hare/base/logging.h>
+#include <hare/net/timer.h>
 #include <hare/net/util.h>
 
 #include <algorithm>
@@ -70,7 +71,7 @@ namespace core {
 
     Cycle::Cycle(std::string& reactor_type)
         : notify_event_(new detail::NotifyEvent(this))
-        , reactor_(core::Reactor::createByType(reactor_type, this))
+        , reactor_(Reactor::createByType(reactor_type, this))
         , tid_(current_thread::tid())
     {
         LOG_TRACE() << "Cycle[" << this << "] is being initialized...";
@@ -80,7 +81,7 @@ namespace core {
         } else {
             detail::t_local_cycle = this;
         }
-        notify_event_->setFlags(EV_READ | EV_PERSIST);
+        notify_event_->setFlags(EV_READ);
     }
 
     Cycle::~Cycle()
@@ -102,7 +103,7 @@ namespace core {
 
         while (!quit_) {
             active_events_.clear();
-            reactor_time_ = reactor_->poll(detail::POLL_TIME_MICROSECONDS, active_events_);
+            reactor_time_ = reactor_->poll(getWaitTime(), active_events_);
 
 #ifdef HARE_DEBUG
             ++cycle_index_;
@@ -123,6 +124,7 @@ namespace core {
 
             event_handling_.exchange(false);
 
+            notifyTimer();
             doPendingFuncs();
         }
 
@@ -194,6 +196,12 @@ namespace core {
         return reactor_->checkEvent(event);
     }
 
+    void Cycle::addTimer(std::shared_ptr<Timer>& timer)
+    {
+        assertInCycleThread();
+        priority_timers_.emplace(timer, Timestamp::now().microSecondsSinceEpoch() + timer->timeout());
+    }
+
     void Cycle::notify()
     {
         if (auto notify = static_cast<detail::NotifyEvent*>(notify_event_.get()))
@@ -224,6 +232,32 @@ namespace core {
         }
 
         calling_pending_funcs_.exchange(false);
+    }
+
+    void Cycle::notifyTimer()
+    {
+        while (!priority_timers_.empty()) {
+            auto top = priority_timers_.top();
+            if (reactor_time_ < top.timestamp_)
+                break;
+            if (auto timer = top.timer_.lock()) {
+                timer->callback();
+                if (timer->isPersist()) {
+                    priority_timers_.emplace(timer, reactor_time_.microSecondsSinceEpoch() + timer->timeout());
+                }
+            }
+            priority_timers_.pop();
+        }
+    }
+
+    int32_t Cycle::getWaitTime()
+    {
+        if (priority_timers_.empty()) {
+            return detail::POLL_TIME_MICROSECONDS;
+        } else {
+            auto t = (int32_t)(priority_timers_.top().timestamp_.microSecondsSinceEpoch() - Timestamp::now().microSecondsSinceEpoch());
+            return t <= 0 ? (int32_t)1 : std::min(t, detail::POLL_TIME_MICROSECONDS);
+        }
     }
 
     void Cycle::printActiveEvents() const

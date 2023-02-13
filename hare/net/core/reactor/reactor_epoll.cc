@@ -192,11 +192,6 @@ namespace core {
 #endif
             event->setRFlags(detail::encode(epoll_events_[i].events));
             active_events.push_back(e);
-
-            // Remove non-persist.
-            if (!(event->flags() & EV_PERSIST)) {
-                removeEvent(e);
-            }
         }
     }
 
