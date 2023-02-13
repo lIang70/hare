@@ -13,8 +13,8 @@ namespace core {
     class Cycle;
     class H_ALIGNAS(8) Event {
     public:
-        enum class Status : int8_t {
-            NEW = 0,
+        enum Status : int32_t {
+            NEW = -1,
             ADD = 1,
             DELETE = 2,
             STATUS_CNT
@@ -22,7 +22,7 @@ namespace core {
 
     private:
         socket_t fd_ { -1 };
-        Status status_ { Status::NEW };
+        int32_t index_ { Status::NEW };
         int32_t event_flags_ { EV_DEFAULT };
         int32_t revent_flags_ { EV_DEFAULT };
         Cycle* owner_cycle_ { nullptr };
@@ -40,8 +40,8 @@ namespace core {
         inline socket_t fd() const { return fd_; }
         inline Cycle* ownerCycle() const { return owner_cycle_; }
         inline bool isNoneEvent() const { return event_flags_ == EV_DEFAULT; };
-        inline Status status() { return status_; }
-        inline void setStatus(Status status) { status_ = status; }
+        inline int32_t index() { return index_; }
+        inline void setIndex(int32_t index) { index_ = index; }
 
         inline int32_t flags() { return event_flags_; }
         inline void setFlags(int32_t flags)

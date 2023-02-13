@@ -31,7 +31,7 @@ namespace core {
             }
         }
 
-        decltype(epoll_event::events) decode(int32_t event_flags)
+        decltype(epoll_event::events) decodeEpoll(int32_t event_flags)
         {
             decltype(epoll_event::events) events = 0;
             if (event_flags & EV_READ)
@@ -43,7 +43,7 @@ namespace core {
             return events;
         }
 
-        int32_t encode(decltype(epoll_event::events) events)
+        int32_t encodeEpoll(decltype(epoll_event::events) events)
         {
             int32_t flags = EV_DEFAULT;
             if (events & EPOLLERR) {
@@ -127,31 +127,31 @@ namespace core {
     void EpollReactor::updateEvent(Event* event)
     {
         Reactor::assertInCycleThread();
-        auto status = event->status();
+        auto index = event->index();
         LOG_TRACE() << "fd = " << event->fd()
-                    << " flags = " << event->flags() << " status = " << static_cast<int8_t>(status);
-        if (status == Event::Status::NEW || status == Event::Status::DELETE) {
+                    << " flags = " << event->flags() << " index = " << index;
+        if (index == Event::Status::NEW || index == Event::Status::DELETE) {
             // a new one, add with EPOLL_CTL_ADD
             auto fd = event->fd();
-            if (status == Event::Status::NEW) {
-                HARE_ASSERT(events_.find(fd) == events_.end(), "Cannot find event.");
+            if (index == Event::Status::NEW) {
+                HARE_ASSERT(events_.find(fd) == events_.end(), "Error in event.");
                 events_[fd] = event;
-            } else { // status == Event::Status::DELETE
-                HARE_ASSERT(events_.find(fd) != events_.end(), "Event is incorrect.");
+            } else { // index == Event::Status::DELETE
+                HARE_ASSERT(events_.find(fd) != events_.end(), "Cannot find event.");
                 HARE_ASSERT(events_[fd] == event, "Event is incorrect.");
             }
 
-            event->setStatus(Event::Status::ADD);
+            event->setIndex(Event::Status::ADD);
             update(EPOLL_CTL_ADD, event);
         } else {
             // update existing one with EPOLL_CTL_MOD/DEL
             auto fd = event->fd();
             HARE_ASSERT(events_.find(fd) != events_.end(), "Cannot find event.");
             HARE_ASSERT(events_[fd] == event, "Event is incorrect.");
-            HARE_ASSERT(status == Event::Status::ADD, "Event is incorrect.");
+            HARE_ASSERT(index == Event::Status::ADD, "Event is incorrect.");
             H_UNUSED(fd);
             if (event->isNoneEvent()) {
-                event->setStatus(Event::Status::DELETE);
+                event->setIndex(Event::Status::DELETE);
                 update(EPOLL_CTL_DEL, event);
             } else {
                 update(EPOLL_CTL_MOD, event);
@@ -167,15 +167,15 @@ namespace core {
         HARE_ASSERT(events_.find(fd) != events_.end(), "Cannot find event.");
         HARE_ASSERT(events_[fd] == event, "Event is incorrect.");
         HARE_ASSERT(event->isNoneEvent(), "Event is incorrect.");
-        auto status = event->status();
-        HARE_ASSERT(status == Event::Status::ADD || status == Event::Status::DELETE, "Incorrect status.");
+        auto index = event->index();
+        HARE_ASSERT(index == Event::Status::ADD || index == Event::Status::DELETE, "Incorrect status.");
         auto n = events_.erase(fd);
         HARE_ASSERT(n == 1, "Erase error.");
 
-        if (status == Event::Status::ADD) {
+        if (index == Event::Status::ADD) {
             update(EPOLL_CTL_DEL, event);
         }
-        event->setStatus(Event::Status::NEW);
+        event->setIndex(Event::Status::NEW);
     }
 
     void EpollReactor::fillActiveEvents(int32_t num_of_events, Cycle::EventList& active_events)
@@ -190,20 +190,20 @@ namespace core {
             HARE_ASSERT(it != events_.end(), "Cannot find event.");
             HARE_ASSERT(it->second == e, "Event is incorrect.");
 #endif
-            event->setRFlags(detail::encode(epoll_events_[i].events));
+            event->setRFlags(detail::encodeEpoll(epoll_events_[i].events));
             active_events.push_back(e);
         }
     }
 
     void EpollReactor::update(int32_t operation, Event* event)
     {
-        struct epoll_event ep_event;
+        struct epoll_event ep_event {};
         setZero(&ep_event, sizeof(ep_event));
-        ep_event.events = detail::decode(event->flags());
+        ep_event.events = detail::decodeEpoll(event->flags());
         ep_event.data.ptr = event;
         auto fd = event->fd();
         LOG_TRACE() << "epoll_ctl op = " << detail::operationToString(operation)
-                    << "\n fd = " << fd << " event = { " << detail::eventsToString(detail::decode(event->flags())) << " }";
+                    << "\n fd = " << fd << " event = { " << detail::eventsToString(detail::decodeEpoll(event->flags())) << " }";
         if (::epoll_ctl(epoll_fd_, operation, fd, &ep_event) < 0) {
             if (operation == EPOLL_CTL_DEL) {
                 SYS_ERROR() << "epoll_ctl op =" << detail::operationToString(operation) << " fd =" << fd;
