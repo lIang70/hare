@@ -1,7 +1,7 @@
 #ifndef _HARE_BASE_UTIL_SYSTEM_INFO_H_
 #define _HARE_BASE_UTIL_SYSTEM_INFO_H_
 
-#include <inttypes.h>
+#include <cinttypes>
 #include <string>
 
 namespace hare {

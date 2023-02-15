@@ -22,14 +22,12 @@ namespace log {
             return *this;
         }
 
-        Stream& operator<<(short);
-        Stream& operator<<(unsigned short);
-        Stream& operator<<(int);
-        Stream& operator<<(unsigned int);
-        Stream& operator<<(long);
-        Stream& operator<<(unsigned long);
-        Stream& operator<<(long long);
-        Stream& operator<<(unsigned long long);
+        Stream& operator<<(int16_t);
+        Stream& operator<<(uint16_t);
+        Stream& operator<<(int32_t);
+        Stream& operator<<(uint32_t);
+        Stream& operator<<(int64_t);
+        Stream& operator<<(uint64_t);
 
         Stream& operator<<(const void*);
 

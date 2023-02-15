@@ -1,8 +1,9 @@
 #include "hare/base/thread/local.h"
 #include <hare/base/system_check.h>
 
+#include <algorithm>
+#include <cstdlib>
 #include <sstream>
-#include <stdlib.h>
 
 #ifdef H_OS_WIN32
 #include <Windows.h>
@@ -18,14 +19,36 @@ thread_local struct ThreadLocal t_data;
 
 namespace current_thread {
 
-    void
-    cacheThreadId()
+    namespace detail {
+        static const char c_digits_hex[] = "0123456789ABCDEF";
+        static_assert(sizeof(c_digits_hex) == 17, "wrong number of c_digits_hex");
+
+        void convertHex(std::string& buf, uintptr_t value)
+        {
+            buf.clear();
+            auto p = buf.begin();
+
+            do {
+                auto lsd = static_cast<int32_t>(value % 16);
+                value /= 16;
+                *p++ = c_digits_hex[lsd];
+            } while (value != 0);
+
+            buf.push_back('x');
+            buf.push_back('0');
+            std::reverse(buf.begin(), buf.end());
+            buf.push_back('\0');
+        }
+    } // namespace detail
+
+    void cacheThreadId()
     {
         if (t_data.tid_ == 0) {
             std::ostringstream oss;
             oss << std::this_thread::get_id();
             t_data.tid_string_ = oss.str() + "\0";
             t_data.tid_ = std::stoull(t_data.tid_string_);
+            detail::convertHex(t_data.tid_string_, t_data.tid_);
         }
     }
 
@@ -64,8 +87,7 @@ namespace current_thread {
             // SymSetOptions(SYMOPT_LOAD_LINES);
             line.SizeOfStruct = sizeof(IMAGEHLP_LINE64);
 
-            if (SymFromAddr(process, address, &displacementSym, pSymbol) && 
-                SymGetLineFromAddr64(process, address, &displacementLine, &line)) {
+            if (SymFromAddr(process, address, &displacementSym, pSymbol) && SymGetLineFromAddr64(process, address, &displacementLine, &line)) {
                 oss << "\t" << pSymbol->Name << " at " << line.FileName << ":" << line.LineNumber << "(0x" << std::hex << pSymbol->Address << std::dec << ")" << std::endl;
             } else {
                 oss << "\terror: " << GetLastError() << std::endl;
@@ -80,7 +102,7 @@ namespace current_thread {
         if (strings) {
             size_t len = 256;
             auto demangled = demangle ? static_cast<char*>(::malloc(len)) : nullptr;
-            for (int i = 1; i < nptrs; ++i) {
+            for (auto i = 1; i < nptrs; ++i) {
                 // skipping the 0-th, which is this function.
                 if (demangle) {
                     // https://panthema.net/2008/0901-stacktrace-demangled/

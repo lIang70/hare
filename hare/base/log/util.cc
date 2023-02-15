@@ -1,7 +1,7 @@
 #include <hare/base/detail/log_util.h>
 #include <hare/base/logging.h>
 
-#include <inttypes.h>
+#include <cinttypes>
 
 namespace hare {
 namespace log {

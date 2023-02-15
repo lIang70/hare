@@ -4,7 +4,7 @@
 #include <hare/base/detail/datetime.h>
 #include <hare/base/util.h>
 
-#include <inttypes.h>
+#include <cinttypes>
 #include <memory>
 
 namespace hare {

@@ -5,7 +5,7 @@
 #include <hare/base/thread.h>
 #include <hare/base/timestamp.h>
 
-#include <assert.h>
+#include <cassert>
 
 namespace hare {
 namespace log {

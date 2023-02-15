@@ -2,7 +2,7 @@
 #define _HARE_BASE_TIME_DATETIME_H_
 
 #include <string>
-#include <time.h>
+#include <ctime>
 #include <utility>
 
 namespace hare {

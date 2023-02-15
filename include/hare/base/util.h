@@ -4,7 +4,7 @@
 #include <hare/base/system_check.h>
 
 #include <list>
-#include <string.h>
+#include <cstring>
 #include <string>
 
 #ifdef H_OS_WIN32

@@ -3,7 +3,7 @@
 
 #include <hare/base/util.h>
 
-#include <stdint.h>
+#include <cstdint>
 #include <string>
 #include <utility>
 

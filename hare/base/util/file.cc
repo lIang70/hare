@@ -3,7 +3,7 @@
 #include <hare/base/logging.h>
 #include <hare/base/util.h>
 
-#include <stdio.h>
+#include <cstdio>
 
 #ifdef H_OS_WIN32
 #include <Windows.h>

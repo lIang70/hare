@@ -4,7 +4,7 @@
 #include <hare/base/detail/log_util.h>
 
 #include <atomic>
-#include <inttypes.h>
+#include <cinttypes>
 #include <memory>
 #include <vector>
 

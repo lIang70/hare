@@ -18,7 +18,7 @@ namespace log {
         template <typename T>
         std::size_t convert(char buf[], T value)
         {
-            T i = value;
+            auto i = value;
             auto p = buf;
 
             do {
@@ -76,49 +76,37 @@ namespace log {
         }
     }
 
-    Stream& Stream::operator<<(short v)
+    Stream& Stream::operator<<(int16_t v)
     {
-        *this << static_cast<int>(v);
+        *this << static_cast<int32_t>(v);
         return *this;
     }
 
-    Stream& Stream::operator<<(unsigned short v)
+    Stream& Stream::operator<<(uint16_t v)
     {
-        *this << static_cast<unsigned int>(v);
+        *this << static_cast<uint32_t>(v);
         return *this;
     }
 
-    Stream& Stream::operator<<(int v)
-    {
-        formatInteger(v);
-        return *this;
-    }
-
-    Stream& Stream::operator<<(unsigned int v)
+    Stream& Stream::operator<<(int32_t v)
     {
         formatInteger(v);
         return *this;
     }
 
-    Stream& Stream::operator<<(long v)
+    Stream& Stream::operator<<(uint32_t v)
     {
         formatInteger(v);
         return *this;
     }
 
-    Stream& Stream::operator<<(unsigned long v)
+    Stream& Stream::operator<<(int64_t v)
     {
         formatInteger(v);
         return *this;
     }
 
-    Stream& Stream::operator<<(long long v)
-    {
-        formatInteger(v);
-        return *this;
-    }
-
-    Stream& Stream::operator<<(unsigned long long v)
+    Stream& Stream::operator<<(uint64_t v)
     {
         formatInteger(v);
         return *this;
