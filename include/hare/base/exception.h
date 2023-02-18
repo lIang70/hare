@@ -4,27 +4,20 @@
 #include <hare/base/util.h>
 
 #include <exception>
-#include <string>
 
 namespace hare {
 
 class HARE_API Exception : std::exception {
-    std::string what_ {};
-    std::string stack_ {};
+    class Data;
+    Data* d_ { nullptr };
 
 public:
     Exception(std::string what);
-    ~Exception() = default;
+    ~Exception();
 
-    inline const char* what() const noexcept override
-    {
-        return what_.c_str();
-    }
+    const char* what() const noexcept override;
 
-    inline const char* stackTrace() const noexcept
-    {
-        return stack_.c_str();
-    }
+    const char* stackTrace() const noexcept;
 };
 
 }

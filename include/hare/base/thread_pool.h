@@ -4,32 +4,21 @@
 #include <hare/base/detail/non_copyable.h>
 #include <hare/base/thread.h>
 
-#include <condition_variable>
-#include <mutex>
-#include <queue>
-#include <vector>
-
 namespace hare {
 
 class ThreadPool : public NonCopyable {
-    mutable std::recursive_mutex mutex_ {};
-    std::condition_variable_any cv_for_not_empty_ {};
-    std::condition_variable_any cv_for_not_full_ {};
-    std::string name_ {};
-    Thread::Task pool_init_callback_ {};
-    std::vector<std::unique_ptr<Thread>> threads_ {};
-    std::deque<Thread::Task> queue_ {};
-    size_t max_queue_size_ { 0 };
-    bool running_ { false };
+    class Data;
+    Data* d_ { nullptr };
 
 public:
     explicit ThreadPool(const std::string& name = std::string("ThreadPool"));
     ~ThreadPool();
 
+    const std::string& name() const;
+
     // Must be called before start().
-    inline void setMaxQueueSize(size_t max_size) { max_queue_size_ = max_size; }
-    inline void setThreadInitCallback(const Thread::Task& cb) { pool_init_callback_ = cb; }
-    inline const std::string& name() const { return name_; }
+    void setMaxQueueSize(size_t max_size);
+    void setThreadInitCallback(const Thread::Task& cb);
 
     void start(int32_t num_of_thread);
     void stop();
@@ -47,7 +36,6 @@ public:
 private:
     bool isFull() const;
     Thread::Task take();
-
     void loop();
 };
 

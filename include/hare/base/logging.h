@@ -21,7 +21,7 @@ namespace log {
         NUM_LOG_LEVELS
     };
 
-    extern HARE_API const char* strErrorno(int errorno);
+    HARE_API const char* strErrorno(int errorno);
 
 }
 
@@ -30,7 +30,7 @@ public:
     using Output = std::function<void(const char*, int)>;
     using Flush = std::function<void()>;
 
-    struct FilePath {
+    struct HARE_API FilePath {
         const char* data_ { nullptr };
         int32_t size_ { 0 };
 
@@ -66,7 +66,7 @@ public:
     };
 
 private:
-    struct Data {
+    struct HARE_API Data {
         Timestamp time_ {};
         log::Stream stream_ {};
         log::LogLevel level_ {};
@@ -78,7 +78,7 @@ private:
         void formatTime();
         void finish();
     };
-    struct Data data_;
+    struct Data d_;
 
 public:
     Logger(FilePath file, int line);
@@ -87,7 +87,7 @@ public:
     Logger(FilePath file, int line, bool to_abort);
     ~Logger();
 
-    log::Stream& stream() { return data_.stream_; }
+    log::Stream& stream() { return d_.stream_; }
 
     static log::LogLevel logLevel();
     static void setLogLevel(log::LogLevel level);

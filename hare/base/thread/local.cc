@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <cstdlib>
 #include <sstream>
+#include <thread>
 
 #ifdef H_OS_WIN32
 #include <Windows.h>

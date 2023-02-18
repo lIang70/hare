@@ -1,15 +1,17 @@
 #ifndef _HARE_BASE_UTIL_SYSTEM_INFO_H_
 #define _HARE_BASE_UTIL_SYSTEM_INFO_H_
 
+#include <hare/base/util.h>
+
 #include <cinttypes>
 #include <string>
 
 namespace hare {
 namespace util {
 
-    extern std::string systemdir();
-    extern int32_t pid();
-    extern std::string hostname();
+    HARE_API std::string systemdir();
+    HARE_API int32_t pid();
+    HARE_API std::string hostname();
 
 } // namespace util
 } // namespace hare

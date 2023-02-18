@@ -1,6 +1,7 @@
 #include <hare/base/detail/log_stream.h>
 
 #include <algorithm>
+#include <cassert>
 #include <limits>
 
 namespace hare {
@@ -52,6 +53,28 @@ namespace log {
 
             return p - buf;
         }
+
+        template <typename T>
+        Fmt::Fmt(const char* fmt, T val)
+        {
+            static_assert(std::is_arithmetic<T>::value == true, "Must be arithmetic type");
+
+            length_ = snprintf(buf_, sizeof(buf_), fmt, val);
+            assert(static_cast<size_t>(length_) < sizeof(buf_));
+        }
+
+        // Explicit instantiations
+        template Fmt::Fmt(const char* fmt, char);
+
+        template Fmt::Fmt(const char* fmt, int16_t);
+        template Fmt::Fmt(const char* fmt, uint16_t);
+        template Fmt::Fmt(const char* fmt, int32_t);
+        template Fmt::Fmt(const char* fmt, uint32_t);
+        template Fmt::Fmt(const char* fmt, int64_t);
+        template Fmt::Fmt(const char* fmt, uint64_t);
+
+        template Fmt::Fmt(const char* fmt, float);
+        template Fmt::Fmt(const char* fmt, double);
 
     } // namespace detail
 

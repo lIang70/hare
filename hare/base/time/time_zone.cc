@@ -204,18 +204,23 @@ TimeZone TimeZone::UTC()
 }
 
 TimeZone::TimeZone(int32_t east_of_utc, const char* name)
-    : data_(new TimeZone::Data)
+    : d_(new TimeZone::Data)
 {
-    data_->addLocalTime(east_of_utc, false, 0);
-    data_->abbreviation = name;
+    d_->addLocalTime(east_of_utc, false, 0);
+    d_->abbreviation = name;
+}
+
+TimeZone::~TimeZone()
+{
+    delete d_;
 }
 
 struct time::DateTime TimeZone::toLocalTime(int64_t seconds, int32_t* utc_offset) const
 {
     struct time::DateTime localTime;
-    HARE_ASSERT(data_, "");
+    HARE_ASSERT(d_, "");
 
-    auto local = data_->findLocalTime(seconds);
+    auto local = d_->findLocalTime(seconds);
 
     if (local) {
         localTime = detail::breakTime(seconds + local->utc_offset);
@@ -229,8 +234,8 @@ struct time::DateTime TimeZone::toLocalTime(int64_t seconds, int32_t* utc_offset
 
 int64_t TimeZone::fromLocalTime(const struct time::DateTime& localtime, bool post_transition) const
 {
-    HARE_ASSERT(data_, "Fail to get data of TimeZone.");
-    auto local = data_->findLocalTime(localtime, post_transition);
+    HARE_ASSERT(d_, "Fail to get data of TimeZone.");
+    auto local = d_->findLocalTime(localtime, post_transition);
     const auto local_seconds = fromUtcTime(localtime);
     if (local) {
         return local_seconds - local->utc_offset;
@@ -250,11 +255,6 @@ int64_t TimeZone::fromUtcTime(const DateTime& dt)
     auto seconds_in_day = dt.hour * 3600 + dt.minute * 60 + dt.second;
     int64_t days = date.julianDayNumber() - time::Date::JULIAN_DAY_OF_19700101;
     return days * detail::SECONDS_PER_DAY + seconds_in_day;
-}
-
-TimeZone::TimeZone(std::unique_ptr<Data> data)
-    : data_(std::move(data))
-{
 }
 
 } // namespace hare

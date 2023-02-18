@@ -1,9 +1,11 @@
 #ifndef _HARE_BASE_NON_COPYABLE_H_
 #define _HARE_BASE_NON_COPYABLE_H_
 
+#include <hare/base/util.h>
+
 namespace hare {
 
-class NonCopyable {
+class HARE_API NonCopyable {
 public:
     NonCopyable(const NonCopyable&) = delete;
     NonCopyable operator=(const NonCopyable&) = delete;

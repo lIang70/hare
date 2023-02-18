@@ -1,6 +1,6 @@
+#include "hare/base/log/util.h"
 #include "hare/base/thread/local.h"
 #include <hare/base/detail/datetime.h>
-#include <hare/base/detail/log_util.h>
 #include <hare/base/logging.h>
 
 #include <cassert>
@@ -135,36 +135,36 @@ void Logger::Data::finish()
 }
 
 Logger::Logger(FilePath file, int line)
-    : data_(log::LogLevel::INFO, 0, file, line)
+    : d_(log::LogLevel::INFO, 0, file, line)
 {
 }
 
 Logger::Logger(FilePath file, int line, log::LogLevel level, const char* func)
-    : data_(level, 0, file, line)
+    : d_(level, 0, file, line)
 {
-    data_.stream_ << func << ' ';
+    d_.stream_ << func << ' ';
 }
 
 Logger::Logger(FilePath file, int line, log::LogLevel level)
-    : data_(level, 0, file, line)
+    : d_(level, 0, file, line)
 {
 }
 
 Logger::Logger(FilePath file, int line, bool abort)
-    : data_(abort ? log::LogLevel::FATAL : log::LogLevel::Error, errno, file, line)
+    : d_(abort ? log::LogLevel::FATAL : log::LogLevel::Error, errno, file, line)
 {
 }
 
 Logger::~Logger()
 {
-    data_.finish();
+    d_.finish();
 
-    if (data_.level_ >= log::g_log_level) {
+    if (d_.level_ >= log::g_log_level) {
         const log::Stream::Buffer& buf(stream().buffer());
         log::g_output(buf.data(), buf.length());
     }
 
-    if (data_.level_ == log::LogLevel::FATAL) {
+    if (d_.level_ == log::LogLevel::FATAL) {
         log::g_flush();
         std::abort();
     }

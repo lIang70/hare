@@ -1,6 +1,8 @@
 #ifndef _HARE_BASE_TIME_DATETIME_H_
 #define _HARE_BASE_TIME_DATETIME_H_
 
+#include <hare/base/util.h>
+
 #include <string>
 #include <ctime>
 #include <utility>
@@ -10,7 +12,7 @@ namespace time {
 
     // Local time in unspecified timezone.
     // A minute is always 60 seconds, no leap seconds.
-    struct DateTime {
+    struct HARE_API DateTime {
         DateTime() = default;
         explicit DateTime(const struct tm&);
         DateTime(int32_t _year, int32_t _month, int32_t _day, int32_t _hour, int32_t _minute, int32_t _second)
@@ -34,7 +36,7 @@ namespace time {
         int32_t second { 0 }; // [0, 59]
     };
 
-    class Date {
+    class HARE_API Date {
         int32_t julian_day_number_ { 0 };
 
     public:
@@ -100,12 +102,12 @@ namespace time {
         int32_t julianDayNumber() const { return julian_day_number_; }
     };
 
-    inline bool operator<(Date x, Date y)
+    HARE_API inline bool operator<(Date x, Date y)
     {
         return x.julianDayNumber() < y.julianDayNumber();
     }
 
-    inline bool operator==(Date x, Date y)
+    HARE_API inline bool operator==(Date x, Date y)
     {
         return x.julianDayNumber() == y.julianDayNumber();
     }
