@@ -8,7 +8,7 @@
 
 namespace hare {
 
-class Thread : public NonCopyable {
+class HARE_API Thread : public NonCopyable {
 public:
     using Task = std::function<void()>;
     using Id = size_t;

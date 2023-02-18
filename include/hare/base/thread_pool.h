@@ -6,7 +6,7 @@
 
 namespace hare {
 
-class ThreadPool : public NonCopyable {
+class HARE_API ThreadPool : public NonCopyable {
     class Data;
     Data* d_ { nullptr };
 
