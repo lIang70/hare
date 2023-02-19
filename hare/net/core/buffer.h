@@ -92,7 +92,6 @@ namespace core {
         static const std::size_t MAX_READ_DEFAULT = 4096;
 
     private:
-        std::mutex buffer_mutex_ {};
         //!
         //! @code
         //! +-------++-------++-------++-------++-------++-------+
@@ -123,8 +122,8 @@ namespace core {
 
         std::size_t remove(void* buffer, std::size_t length);
 
-        int64_t read(socket_t fd, int64_t howmuch);
-        int64_t write(socket_t fd, int64_t howmuch = -1);
+        int64_t read(util_socket_t fd, int64_t howmuch);
+        int64_t write(util_socket_t fd, int64_t howmuch = -1);
 
     private:
         BlockList::iterator insertBlock(Block* block);

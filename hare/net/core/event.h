@@ -21,7 +21,7 @@ namespace core {
         };
 
     private:
-        socket_t fd_ { -1 };
+        util_socket_t fd_ { -1 };
         int32_t index_ { Status::NEW };
         int32_t event_flags_ { net::EV_DEFAULT };
         int32_t revent_flags_ { net::EV_DEFAULT };
@@ -34,10 +34,10 @@ namespace core {
         std::weak_ptr<void> tie_object_;
 
     public:
-        Event(Cycle* cycle, socket_t fd);
+        Event(Cycle* cycle, util_socket_t fd);
         virtual ~Event();
 
-        inline socket_t fd() const { return fd_; }
+        inline util_socket_t fd() const { return fd_; }
         inline Cycle* ownerCycle() const { return owner_cycle_; }
         inline bool isNoneEvent() const { return event_flags_ == net::EV_DEFAULT; };
         inline int32_t index() { return index_; }

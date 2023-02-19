@@ -8,7 +8,7 @@ namespace hare {
 namespace core {
 
     namespace detail {
-        std::string flagsToString(socket_t fd, int32_t event_flags_)
+        std::string flagsToString(util_socket_t fd, int32_t event_flags_)
         {
             std::ostringstream oss {};
             oss << fd << ": ";
@@ -32,7 +32,7 @@ namespace core {
         }
     } // namespace detail
 
-    Event::Event(Cycle* cycle, socket_t fd)
+    Event::Event(Cycle* cycle, util_socket_t fd)
         : owner_cycle_(cycle)
         , fd_(fd)
     {

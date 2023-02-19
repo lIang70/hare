@@ -12,7 +12,7 @@ namespace core {
     class EpollReactor : public Reactor {
         using EPEventList = std::vector<struct epoll_event>;
 
-        socket_t epoll_fd_ { -1 };
+        util_socket_t epoll_fd_ { -1 };
         EPEventList epoll_events_ {};
 
     public:

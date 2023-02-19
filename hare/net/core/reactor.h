@@ -16,7 +16,7 @@ namespace core {
         Cycle* owner_cycle_ { nullptr };
 
     protected:
-        using EventMap = std::map<socket_t, Event*>;
+        using EventMap = std::map<util_socket_t, Event*>;
         EventMap events_;
 
     public:

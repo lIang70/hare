@@ -19,7 +19,7 @@ namespace core {
         const int32_t POLL_TIME_MICROSECONDS { 10000 };
         thread_local Cycle* t_local_cycle { nullptr };
 
-        socket_t createWakeFd()
+        util_socket_t createWakeFd()
         {
 #ifdef HARE__HAVE_EVENTFD
             auto evtfd = ::eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);

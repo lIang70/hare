@@ -75,7 +75,6 @@ namespace core {
 
     void Buffer::clearAll()
     {
-        std::unique_lock<std::mutex> locker(buffer_mutex_);
         drain(total_len_);
     }
 
@@ -85,7 +84,6 @@ namespace core {
             return false;
         }
 
-        std::unique_lock<std::mutex> locker(buffer_mutex_);
         decltype(write_iter_) curr {};
         std::size_t remain { 0 };
         if (write_iter_ == block_chain_.end()) {
@@ -131,7 +129,6 @@ namespace core {
     std::size_t Buffer::remove(void* buffer, std::size_t length)
     {
         std::size_t n = 0;
-        std::unique_lock<std::mutex> locker(buffer_mutex_);
         n = copyout(buffer, length);
         if (n > 0) {
             return drain(length) ? n : 0;
@@ -139,7 +136,7 @@ namespace core {
         return n;
     }
 
-    int64_t Buffer::read(socket_t fd, int64_t howmuch)
+    int64_t Buffer::read(util_socket_t fd, int64_t howmuch)
     {
         auto n = socket::getBytesReadableOnSocket(fd);
         auto nvecs = 2;
@@ -147,8 +144,6 @@ namespace core {
             n = max_read_;
         if (howmuch < 0 || howmuch > n)
             howmuch = n;
-
-        std::unique_lock<std::mutex> locker(buffer_mutex_);
 
 #ifdef USE_IOVEC_IMPL
         if (!expandFast(howmuch)) {
@@ -214,11 +209,10 @@ namespace core {
         return n;
     }
 
-    int64_t Buffer::write(socket_t fd, int64_t howmuch)
+    int64_t Buffer::write(util_socket_t fd, int64_t howmuch)
     {
         auto n = -1;
 
-        std::unique_lock<std::mutex> locker(buffer_mutex_);
         if (howmuch < 0 || howmuch > total_len_)
             howmuch = total_len_;
 
