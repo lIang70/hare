@@ -1,6 +1,6 @@
 #include "hare/net/socket_op.h"
 #include "hare/base/system_check.h"
-#include "hare/net/internal.h"
+#include "hare/net/core/buffer.h"
 #include <hare/base/exception.h>
 #include <hare/base/logging.h>
 
@@ -58,18 +58,18 @@ namespace socket {
     std::size_t getBytesReadableOnSocket(socket_t fd)
     {
 #if defined(FIONREAD) && defined(H_OS_WIN32)
-        auto lng = net::MAX_READ_DEFAULT;
+        auto lng = core::Buffer::MAX_READ_DEFAULT;
         if (::ioctlsocket(fd, FIONREAD, &lng) < 0)
             return -1;
         /* Can overflow, but mostly harmlessly. XXXX */
         return (int)lng;
 #elif defined(FIONREAD)
-        auto n = net::MAX_READ_DEFAULT;
+        auto n = core::Buffer::MAX_READ_DEFAULT;
         if (::ioctl(fd, FIONREAD, &n) < 0)
             return -1;
         return n;
 #else
-        return net::MAX_READ_DEFAULT;
+        return core::Buffer::MAX_READ_DEFAULT;
 #endif
     }
 
