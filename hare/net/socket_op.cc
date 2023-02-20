@@ -176,18 +176,18 @@ namespace socket {
     std::size_t getBytesReadableOnSocket(util_socket_t fd)
     {
 #if defined(FIONREAD) && defined(H_OS_WIN32)
-        auto lng = core::Buffer::MAX_READ_DEFAULT;
+        auto lng = net::Buffer::MAX_READ_DEFAULT;
         if (::ioctlsocket(fd, FIONREAD, &lng) < 0)
             return -1;
         /* Can overflow, but mostly harmlessly. XXXX */
         return (int)lng;
 #elif defined(FIONREAD)
-        auto n = core::Buffer::MAX_READ_DEFAULT;
+        auto n = net::Buffer::MAX_READ_DEFAULT;
         if (::ioctl(fd, FIONREAD, &n) < 0)
             return -1;
         return n;
 #else
-        return core::Buffer::MAX_READ_DEFAULT;
+        return net::Buffer::MAX_READ_DEFAULT;
 #endif
     }
 

@@ -42,7 +42,7 @@
 #define MAX_TO_REALIGN_IN_EXPAND 2048
 
 namespace hare {
-namespace core {
+namespace net {
 
     namespace detail {
         //!
@@ -472,5 +472,5 @@ namespace core {
             return true;
     }
 
-} // namespace core
+} // namespace net
 } // namespace hare

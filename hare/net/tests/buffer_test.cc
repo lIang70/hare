@@ -4,7 +4,7 @@
 
 TEST(buffer_test, testBufferAdd)
 {
-    std::shared_ptr<hare::core::Buffer> shared_buffer(new hare::core::Buffer());
+    std::shared_ptr<hare::net::Buffer> shared_buffer(new hare::net::Buffer());
     
     char* tmp = new char[1024];
     EXPECT_EQ(shared_buffer->add(tmp, 1024), true);

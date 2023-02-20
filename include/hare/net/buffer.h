@@ -7,7 +7,7 @@
 #include <cstdint>
 
 namespace hare {
-namespace core {
+namespace net {
 
     class Buffer : public NonCopyable {
     public:
@@ -43,7 +43,7 @@ namespace core {
         bool expandFast(int64_t howmuch);
     };
 
-} // namespace core
+} // namespace net
 } // namespace hare
 
 #endif // !_HARE_NET_CORE_BUFFER_H_
