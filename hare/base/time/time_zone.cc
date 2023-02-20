@@ -90,13 +90,13 @@ struct TimeZone::Data {
 
     void addLocalTime(int32_t utc_offset, bool is_dst, int32_t desig_idx)
     {
-        local_times.emplace_back(LocalTime(utc_offset, is_dst, desig_idx));
+        local_times.emplace_back(utc_offset, is_dst, desig_idx);
     }
 
     void addTransition(int64_t utc_time, int32_t local_time_idx)
     {
         auto& lt = local_times.at(local_time_idx);
-        transitions.emplace_back(Transition(utc_time, utc_time + lt.utc_offset, local_time_idx));
+        transitions.emplace_back(utc_time, utc_time + lt.utc_offset, local_time_idx);
     }
 
     const LocalTime* findLocalTime(int64_t utc_time) const;
@@ -210,9 +210,24 @@ TimeZone::TimeZone(int32_t east_of_utc, const char* name)
     d_->abbreviation = name;
 }
 
+TimeZone::TimeZone(const TimeZone& tz)
+    : d_(new TimeZone::Data)
+{
+    *d_ = *tz.d_;
+}
+
 TimeZone::~TimeZone()
 {
     delete d_;
+}
+
+TimeZone& TimeZone::operator=(const TimeZone& tz)
+{
+    if (!d_)
+        d_ = new Data;
+
+    *d_ = *tz.d_;
+    return (*this);
 }
 
 struct time::DateTime TimeZone::toLocalTime(int64_t seconds, int32_t* utc_offset) const

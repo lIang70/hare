@@ -18,7 +18,10 @@ class HARE_API TimeZone {
 public:
     TimeZone() = default; // an invalid timezone
     TimeZone(int east_of_utc, const char* tz_name); // a fixed timezone
+    TimeZone(const TimeZone& tz);
     ~TimeZone();
+
+    TimeZone& operator=(const TimeZone& tz);
 
     static TimeZone UTC();
     // gmtime(3)
