@@ -88,9 +88,21 @@ namespace net {
         }
     }
 
+    HostAddress::HostAddress(const HostAddress& another)
+        : d_(new Data)
+    {
+        *d_ = *another.d_;
+    }
+
     HostAddress::~HostAddress()
     {
         delete d_;
+    }
+
+    HostAddress& HostAddress::operator=(const HostAddress& another)
+    {
+        *d_ = *another.d_;
+        return (*this);
     }
 
     sockaddr* HostAddress::getSockAddr() const

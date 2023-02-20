@@ -10,7 +10,7 @@ struct sockaddr_in6;
 namespace hare {
 namespace net {
 
-    class HARE_API HostAddress : public NonCopyable {
+    class HARE_API HostAddress {
     public:
         class Data;
 
@@ -30,12 +30,14 @@ namespace net {
         //! Constructs an endpoint with given ip and port.
         //! @c ip should be "1.2.3.4"
         HostAddress(const std::string& ip, uint16_t port, bool ipv6 = false);
+        HostAddress(const HostAddress& another);
         HostAddress(HostAddress&& another) noexcept
         {
             std::swap(d_, another.d_);
         }
         ~HostAddress();
 
+        HostAddress& operator=(const HostAddress& another);
         HostAddress& operator=(HostAddress&& another) noexcept
         {
             std::swap(d_, another.d_);

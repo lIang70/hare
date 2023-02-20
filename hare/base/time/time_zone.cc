@@ -204,16 +204,18 @@ TimeZone TimeZone::UTC()
 }
 
 TimeZone::TimeZone(int32_t east_of_utc, const char* name)
-    : d_(new TimeZone::Data)
+    : d_(new Data)
 {
     d_->addLocalTime(east_of_utc, false, 0);
     d_->abbreviation = name;
 }
 
 TimeZone::TimeZone(const TimeZone& tz)
-    : d_(new TimeZone::Data)
 {
-    *d_ = *tz.d_;
+    if (tz) {
+        d_ = new Data;
+        *d_ = *tz.d_;
+    }
 }
 
 TimeZone::~TimeZone()
@@ -223,10 +225,11 @@ TimeZone::~TimeZone()
 
 TimeZone& TimeZone::operator=(const TimeZone& tz)
 {
-    if (!d_)
-        d_ = new Data;
-
-    *d_ = *tz.d_;
+    if (tz) {
+        if (!d_)
+            d_ = new Data;
+        *d_ = *tz.d_;
+    }
     return (*this);
 }
 
