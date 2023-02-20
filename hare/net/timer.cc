@@ -10,7 +10,7 @@ namespace net {
     {
     }
 
-    void Timer::callback()
+    void Timer::run()
     {
         if (task_)
             task_();

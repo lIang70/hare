@@ -241,7 +241,7 @@ namespace core {
             if (reactor_time_ < top.timestamp_)
                 break;
             if (auto timer = top.timer_.lock()) {
-                timer->callback();
+                timer->run();
                 if (timer->isPersist()) {
                     priority_timers_.emplace(timer, reactor_time_.microSecondsSinceEpoch() + timer->timeout());
                 }

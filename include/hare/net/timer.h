@@ -3,12 +3,10 @@
 
 #include <hare/base/thread.h>
 
-#include <memory>
-
 namespace hare {
 namespace net {
 
-    class HARE_API Timer : public std::enable_shared_from_this<Timer> {
+    class HARE_API Timer {
         int64_t ms_timeout_ { -1 };
         Thread::Task task_ {};
         bool persist_ { false };
@@ -21,7 +19,7 @@ namespace net {
         inline int64_t timeout() { return ms_timeout_; }
         inline bool isPersist() { return persist_; }
 
-        void callback();
+        void run();
     };
 
 } // namespace net

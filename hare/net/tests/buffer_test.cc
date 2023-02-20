@@ -1,4 +1,4 @@
-#include "hare/net/core/buffer.h"
+#include <hare/net/buffer.h>
 
 #include <gtest/gtest.h>
 
