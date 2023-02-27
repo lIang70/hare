@@ -1,0 +1,59 @@
+#include "hare/net/core/cycle.h"
+#include "hare/net/core/cycle_thread.h"
+#include <hare/base/logging.h>
+
+namespace hare {
+namespace core {
+
+    CycleThread::CycleThread(const std::string& reactor_type, const std::string& name)
+        : Thread(std::bind(&CycleThread::run, this), name)
+        , reactor_type_(reactor_type)
+    {
+    }
+
+    CycleThread::~CycleThread()
+    {
+        exiting_ = true;
+        if (!cycle_) {
+            // still a tiny chance to call destructed object, if run exits just now.
+            // but when EventLoopThread destructs, usually programming is exiting anyway.
+            cycle_->exit();
+            join();
+        }
+    }
+
+    Cycle* CycleThread::startCycle()
+    {
+        HARE_ASSERT(!started(), "");
+        start();
+
+        Cycle* cycle { nullptr };
+        {
+            std::unique_lock<std::mutex> locker(mutex_);
+            while (cycle_ == NULL) {
+                cv_.wait(locker);
+            }
+            cycle = cycle_;
+        }
+
+        return cycle;
+    }
+
+    void CycleThread::run()
+    {
+        Cycle cycle(reactor_type_);
+
+        {
+            std::unique_lock<std::mutex> locker(mutex_);
+            cycle_ = &cycle;
+            cv_.notify_one();
+        }
+
+        cycle.loop();
+        // assert(exiting_);
+        std::unique_lock<std::mutex> locker(mutex_);
+        cycle_ = nullptr;
+    }
+
+} // namespace core
+} // namespace hare

@@ -15,10 +15,10 @@ namespace net {
     namespace detail {
 
         class TcpEvent : public core::Event {
-            TcpSession* session_ { nullptr };
+            std::weak_ptr<TcpSession> session_ {};
 
         public:
-            TcpEvent(core::Cycle* cycle, util_socket_t fd, TcpSession* session);
+            TcpEvent(core::Cycle* cycle, util_socket_t fd, STcpSession session);
             ~TcpEvent() override;
 
             void eventCallBack(int32_t events, Timestamp& receive_time) override;
@@ -33,7 +33,7 @@ namespace net {
         std::atomic<bool> reading_ { false };
 
         std::unique_ptr<Socket> socket_ { nullptr };
-        std::unique_ptr<core::Event> event_ { nullptr };
+        std::shared_ptr<core::Event> event_ { nullptr };
         const HostAddress local_addr_ {};
         const HostAddress peer_addr_ {};
 

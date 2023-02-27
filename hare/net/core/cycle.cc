@@ -196,7 +196,7 @@ namespace core {
         return reactor_->checkEvent(event);
     }
 
-    void Cycle::addTimer(std::shared_ptr<net::Timer>& timer)
+    void Cycle::addTimer(const std::shared_ptr<net::Timer>& timer)
     {
         assertInCycleThread();
         priority_timers_.emplace(timer, Timestamp::now().microSecondsSinceEpoch() + timer->timeout());

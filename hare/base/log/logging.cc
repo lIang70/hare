@@ -89,8 +89,8 @@ Logger::Data::Data(log::LogLevel level, int old_errno, const FilePath& file, int
     formatTime();
     current_thread::tid();
 
-    stream_ << Helper(current_thread::tidString().c_str(), current_thread::tidString().length());
     stream_ << Helper(log::LogLevelName[static_cast<int32_t>(level)], 9);
+    stream_ << Helper(current_thread::tidString().c_str(), current_thread::tidString().length()) << "# ";
 
     if (old_errno != 0) {
         stream_ << log::strErrorno(old_errno) << " (errno=" << old_errno << ") ";
@@ -131,7 +131,11 @@ void Logger::Data::formatTime()
 
 void Logger::Data::finish()
 {
-    stream_ << " - " << base_name_ << ':' << line_ << '\n';
+#ifndef HARE_DEBUG
+    if (level_ <=  log::LogLevel::DEBUG)
+#endif
+        stream_ << " - " << base_name_ << ':' << line_;
+    stream_ << '\n';
 }
 
 Logger::Logger(FilePath file, int line)
@@ -142,7 +146,9 @@ Logger::Logger(FilePath file, int line)
 Logger::Logger(FilePath file, int line, log::LogLevel level, const char* func)
     : d_(level, 0, file, line)
 {
+#ifdef HARE_DEBUG
     d_.stream_ << func << ' ';
+#endif
 }
 
 Logger::Logger(FilePath file, int line, log::LogLevel level)
