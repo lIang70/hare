@@ -9,6 +9,7 @@
 
 #include <atomic>
 #include <cassert>
+#include <utility>
 #include <vector>
 
 namespace hare {
@@ -33,8 +34,8 @@ namespace log {
         int64_t roll_size_ { LARGE_BUFFER * 16 };
         int32_t flush_interval_ { META_FLUSH_INTERVAL };
 
-        Data(const std::string& name, int64_t roll_size, int32_t flush_interval)
-            : name_(name)
+        Data(std::string  name, int64_t roll_size, int32_t flush_interval)
+            : name_(std::move(name))
             , roll_size_(roll_size)
             , flush_interval_(flush_interval)
             , thread_(std::bind(&Async::Data::run, this), "log::Async")

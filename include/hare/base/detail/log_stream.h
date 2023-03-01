@@ -141,7 +141,7 @@ namespace log {
         void resetBuffer() { buffer_.reset(); }
 
     private:
-        void staticCheck();
+        static void staticCheck();
 
         template <typename T>
         void formatInteger(T);

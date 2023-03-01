@@ -47,7 +47,7 @@ namespace current_thread {
         if (t_data.tid_ == 0) {
             std::ostringstream oss;
             oss << std::this_thread::get_id();
-            t_data.tid_string_ = oss.str() + "\0";
+            t_data.tid_string_ = oss.str();
             t_data.tid_ = std::stoull(t_data.tid_string_);
             detail::convertHex(t_data.tid_string_, t_data.tid_);
         }

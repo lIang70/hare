@@ -94,7 +94,6 @@ namespace util {
             break;
         default:
             throw Exception("Unknown type of ip.");
-            break;
         }
 
         while (if_addrs) {

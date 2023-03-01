@@ -25,7 +25,7 @@ namespace current_thread {
         return t_data.tid_;
     }
 
-    inline const std::string tidString()
+    inline std::string tidString()
     {
         return t_data.tid_string_;
     }

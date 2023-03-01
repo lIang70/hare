@@ -54,7 +54,8 @@ namespace time {
         return buf;
     }
 
-    const int32_t Date::JULIAN_DAY_OF_19700101 = detail::getJulianDayNumber(1970, 1, 1);
+    const int32_t Date::DAYS_PER_WEEK { 7 };
+    const int32_t Date::JULIAN_DAY_OF_19700101 { detail::getJulianDayNumber(1970, 1, 1) };
 
     Date::Date(int32_t y, int32_t m, int32_t d)
         : julian_day_number_(detail::getJulianDayNumber(y, m, d))

@@ -21,7 +21,7 @@ public:
     static Timestamp now();
     static Timestamp invalid()
     {
-        return Timestamp();
+        return {};
     }
 
     static Timestamp fromUnixTime(time_t t)

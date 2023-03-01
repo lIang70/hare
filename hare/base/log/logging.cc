@@ -5,6 +5,7 @@
 
 #include <cassert>
 #include <cstring>
+#include <utility>
 
 namespace hare {
 namespace log {
@@ -188,12 +189,12 @@ void Logger::setLogLevel(log::LogLevel level)
 
 void Logger::setOutput(Output output)
 {
-    log::g_output = output;
+    log::g_output = std::move(output);
 }
 
 void Logger::setFlush(Flush flush)
 {
-    log::g_flush = flush;
+    log::g_flush = std::move(flush);
 }
 
 void Logger::setTimeZone(const TimeZone& tz)

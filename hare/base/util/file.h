@@ -3,7 +3,7 @@
 
 #include <hare/base/detail/non_copyable.h>
 
-#include <stdint.h>
+#include <cstdint>
 #include <string>
 
 #include <sys/types.h> // for off_t

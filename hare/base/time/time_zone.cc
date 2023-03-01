@@ -100,12 +100,12 @@ struct TimeZone::Data {
     }
 
     const LocalTime* findLocalTime(int64_t utc_time) const;
-    const LocalTime* findLocalTime(const struct time::DateTime& local, bool post_transition) const;
+    const LocalTime* findLocalTime(const struct time::DateTime& lt, bool post_transition) const;
 };
 
 const TimeZone::Data::LocalTime* TimeZone::Data::findLocalTime(int64_t utc_time) const
 {
-    const LocalTime* local = nullptr;
+    const LocalTime* local { nullptr };
 
     // row UTC time             isdst  offset  Local time (PRC)
     //  1  1989-09-16 17:00:00Z   0      8.0   1989-09-17 01:00:00
@@ -200,7 +200,7 @@ const TimeZone::Data::LocalTime* TimeZone::Data::findLocalTime(const struct time
 // static
 TimeZone TimeZone::UTC()
 {
-    return TimeZone(0, "UTC");
+    return {0, "UTC"};
 }
 
 TimeZone::TimeZone(int32_t east_of_utc, const char* name)

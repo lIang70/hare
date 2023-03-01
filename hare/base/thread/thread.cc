@@ -6,6 +6,7 @@
 
 #include <atomic>
 #include <thread>
+#include <utility>
 
 #ifdef H_OS_WIN32
 #include <Windows.h>
@@ -47,9 +48,9 @@ public:
     bool started_ { false };
     std::shared_ptr<util::CountDownLatch> count_down_latch_ { nullptr };
 
-    Data(Thread::Task& task, const std::string& name)
+    Data(Thread::Task& task, std::string  name)
         : task_(std::move(task))
-        , name_()
+        , name_(std::move(name))
     {
     }
 
@@ -89,7 +90,7 @@ public:
             t_data.thread_name_ = "crashed";
             fprintf(stderr, "exception caught in Thread %s\n", name_.c_str());
             throw;
-        };
+        }
     }
 };
 

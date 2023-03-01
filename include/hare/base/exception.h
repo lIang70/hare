@@ -12,8 +12,8 @@ class HARE_API Exception : std::exception {
     Data* d_ { nullptr };
 
 public:
-    Exception(std::string what);
-    ~Exception();
+    explicit Exception(std::string what);
+    ~Exception() override;
 
     const char* what() const noexcept override;
 

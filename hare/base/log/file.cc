@@ -89,7 +89,7 @@ namespace log {
         file_name = basename;
 
         char time_buf[32];
-        struct tm tm;
+        struct tm tm {};
         *now = ::time(nullptr);
         gmtime_r(now, &tm); // FIXME: localtime_r ?
         strftime(time_buf, sizeof(time_buf), ".%Y%m%d-%H%M%S.", &tm);

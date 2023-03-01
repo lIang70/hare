@@ -1,7 +1,7 @@
 #include <hare/base/timestamp.h>
 
 #include <chrono>
-#include <inttypes.h>
+#include <cinttypes>
 
 namespace hare {
 
@@ -23,7 +23,7 @@ std::string Timestamp::toFormattedString(bool show_microseconds) const
 {
     char buffer[64] { 0 };
     auto seconds = secondsSinceEpoch();
-    struct tm tm_time;
+    struct tm tm_time {};
     ::gmtime_r(&seconds, &tm_time);
 
     if (show_microseconds) {

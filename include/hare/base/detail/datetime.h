@@ -46,7 +46,7 @@ namespace time {
             int32_t day; // [1..31]
         };
 
-        static const int32_t DAYS_PER_WEEK { 7 };
+        static const int32_t DAYS_PER_WEEK;
         static const int32_t JULIAN_DAY_OF_19700101;
 
         Date() = default;

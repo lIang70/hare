@@ -6,6 +6,7 @@
 #include <cstdio>
 #include <mutex>
 #include <queue>
+#include <utility>
 #include <vector>
 
 namespace hare {
@@ -22,8 +23,8 @@ public:
     size_t max_queue_size_ { 0 };
     bool running_ { false };
 
-    explicit Data(const std::string& name)
-        : name_(name)
+    explicit Data(std::string name)
+        : name_(std::move(name))
     {
     }
 };
