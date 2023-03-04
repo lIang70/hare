@@ -24,7 +24,7 @@ namespace net {
         explicit Buffer(std::size_t max_read = MAX_READ_DEFAULT);
         ~Buffer();
 
-        inline std::size_t length() { return total_len_; }
+        inline std::size_t length() const { return total_len_; }
         inline void setMaxRead(std::size_t max_read) { max_read_ = max_read; }
 
         void clearAll();

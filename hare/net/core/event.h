@@ -40,10 +40,10 @@ namespace core {
         inline util_socket_t fd() const { return fd_; }
         inline Cycle* ownerCycle() const { return owner_cycle_; }
         inline bool isNoneEvent() const { return event_flags_ == net::EV_DEFAULT; };
-        inline int32_t index() { return index_; }
+        inline int32_t index() const { return index_; }
         inline void setIndex(int32_t index) { index_ = index; }
 
-        inline int32_t flags() { return event_flags_; }
+        inline int32_t flags() const { return event_flags_; }
         inline void setFlags(int32_t flags)
         {
             event_flags_ |= flags;
@@ -82,4 +82,4 @@ namespace core {
 } // namespace core
 } // namespace hare
 
-#endif // !_HARE_NET_EVENT_H_
+#endif // !_HARE_NET_CORE_EVENT_H_

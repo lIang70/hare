@@ -24,7 +24,7 @@ namespace core {
         std::vector<Cycle*> cycles_ {};
 
     public:
-        CycleThreadPool(Cycle* base_cycle, const std::string& reactor_type, const std::string& name);
+        CycleThreadPool(Cycle* base_cycle, std::string  reactor_type, std::string  name);
         ~CycleThreadPool();
 
         inline void setThreadNum(int num_threads) { num_threads_ = num_threads; }

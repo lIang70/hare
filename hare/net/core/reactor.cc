@@ -30,7 +30,6 @@ namespace core {
 #endif
 
         throw Exception("A suitable reactor type was not found.");
-        return nullptr;
     }
 
     bool Reactor::checkEvent(Event* event) const

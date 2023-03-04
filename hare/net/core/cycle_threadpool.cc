@@ -3,13 +3,15 @@
 #include "hare/net/core/cycle_thread.h"
 #include <hare/base/logging.h>
 
+#include <utility>
+
 namespace hare {
 namespace core {
 
-    CycleThreadPool::CycleThreadPool(Cycle* base_cycle, const std::string& reactor_type, const std::string& name)
+    CycleThreadPool::CycleThreadPool(Cycle* base_cycle, std::string reactor_type, std::string name)
         : base_cycle_(base_cycle)
-        , reactor_type_(reactor_type)
-        , name_(name)
+        , reactor_type_(std::move(reactor_type))
+        , name_(std::move(name))
     {
     }
 
@@ -70,7 +72,7 @@ namespace core {
         base_cycle_->assertInCycleThread();
         HARE_ASSERT(started_, "");
         if (cycles_.empty()) {
-            return std::vector<Cycle*>(1, base_cycle_);
+            return { 1, base_cycle_ };
         } else {
             return cycles_;
         }

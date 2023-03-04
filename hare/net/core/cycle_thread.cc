@@ -30,7 +30,7 @@ namespace core {
         Cycle* cycle { nullptr };
         {
             std::unique_lock<std::mutex> locker(mutex_);
-            while (cycle_ == NULL) {
+            while (!cycle_) {
                 cv_.wait(locker);
             }
             cycle = cycle_;
@@ -49,8 +49,12 @@ namespace core {
             cv_.notify_one();
         }
 
+        LOG_TRACE() << "Thread of cycle is running...";
+
         cycle.loop();
-        // assert(exiting_);
+
+        LOG_TRACE() << "Cycle of thread is exited...";
+
         std::unique_lock<std::mutex> locker(mutex_);
         cycle_ = nullptr;
     }

@@ -69,12 +69,12 @@ namespace net {
             explicit Block(std::size_t size);
             ~Block();
 
-            inline void* writable() { return bytes_ + off_ + misalign_; }
-            inline std::size_t writableSize() { return buffer_len_ - off_ - misalign_; }
-            inline void* readable() { return bytes_ + misalign_; }
-            inline std::size_t readableSize() { return off_; }
-            inline bool isFull() { return off_ + misalign_ == buffer_len_; }
-            inline bool isEmpty() { return off_ == 0; }
+            inline void* writable() const { return bytes_ + off_ + misalign_; }
+            inline std::size_t writableSize() const { return buffer_len_ - off_ - misalign_; }
+            inline void* readable() const { return bytes_ + misalign_; }
+            inline std::size_t readableSize() const { return off_; }
+            inline bool isFull() const { return off_ + misalign_ == buffer_len_; }
+            inline bool isEmpty() const { return off_ == 0; }
 
             void clear();
             void write(void* bytes, std::size_t size);

@@ -47,7 +47,7 @@ namespace core {
                 auto one = (uint64_t)1;
                 auto n = socket::write(fd(), &one, sizeof(one));
                 if (n != sizeof(one)) {
-                    LOG_ERROR() << "Write[" << n << " B] instead of " << sizeof(one);
+                    SYS_ERROR() << "Write[" << n << " B] instead of " << sizeof(one);
                 }
             }
 
@@ -59,7 +59,7 @@ namespace core {
                     auto one = (uint64_t)0;
                     auto n = socket::read(fd(), &one, sizeof(one));
                     if (n != sizeof(one) && one != (uint64_t)1) {
-                        LOG_ERROR() << "Read notify[" << n << " B] instead of " << sizeof(one);
+                        SYS_ERROR() << "Read notify[" << n << " B] instead of " << sizeof(one);
                     }
                 } else {
                     SYS_FATAL() << "An error occurred while accepting notify in fd[" << fd() << "].";
@@ -69,14 +69,14 @@ namespace core {
 
     } // namespace detail
 
-    Cycle::Cycle(std::string& reactor_type)
+    Cycle::Cycle(const std::string& reactor_type)
         : notify_event_(new detail::NotifyEvent(this))
         , reactor_(Reactor::createByType(reactor_type, this))
         , tid_(current_thread::tid())
     {
         LOG_TRACE() << "Cycle[" << this << "] is being initialized...";
         if (detail::t_local_cycle) {
-            LOG_FATAL() << "Another Cycle[" << detail::t_local_cycle
+            SYS_FATAL() << "Another Cycle[" << detail::t_local_cycle
                         << "] exists in this thread[" << tid_ << "].";
         } else {
             detail::t_local_cycle = this;
@@ -212,7 +212,7 @@ namespace core {
 
     void Cycle::abortNotInLoopThread()
     {
-        LOG_FATAL() << "Cycle[" << this
+        SYS_FATAL() << "Cycle[" << this
                     << "] was created in thread[" << tid_
                     << "], current thread is: " << current_thread::tid();
     }

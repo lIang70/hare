@@ -73,7 +73,7 @@ namespace core {
 #endif
 
     public:
-        Cycle(std::string& reactor_type);
+        explicit Cycle(const std::string& reactor_type);
         virtual ~Cycle();
 
         //!
