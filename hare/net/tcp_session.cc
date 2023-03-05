@@ -42,7 +42,7 @@ namespace net {
                     << " fd=" << p_->socket_->socket();
 
         p_->socket_->setKeepAlive(true);
-        p_->event_.reset(new detail::TcpEvent(p_->cycle_, p_->socket_->socket(), shared_from_this()));
+        p_->event_.reset(new detail::TcpEvent(p_->cycle_, p_->socket_->socket()));
         p_->event_->tie(shared_from_this());
     }
 
