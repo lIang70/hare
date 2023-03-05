@@ -15,7 +15,7 @@ namespace core {
         PollFdList poll_fds_ {};
 
     public:
-        PollReactor(Cycle* cycle);
+        explicit PollReactor(Cycle* cycle);
         ~PollReactor() override;
 
         Timestamp poll(int32_t timeout_microseconds, Cycle::EventList& active_events) override;

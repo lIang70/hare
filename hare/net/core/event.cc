@@ -47,12 +47,12 @@ namespace core {
         }
     }
 
-    std::string Event::flagsToString()
+    std::string Event::flagsToString() const
     {
         return detail::flagsToString(fd_, event_flags_);
     }
 
-    std::string Event::rflagsToString()
+    std::string Event::rflagsToString() const
     {
         return detail::flagsToString(fd_, revent_flags_);
     }

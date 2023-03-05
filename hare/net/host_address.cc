@@ -33,7 +33,6 @@ namespace net {
     static_assert(offsetof(sockaddr_in6, sin6_family) == 0, "sin6_family offset 0");
     static_assert(offsetof(sockaddr_in, sin_port) == 2, "sin_port offset 2");
     static_assert(offsetof(sockaddr_in6, sin6_port) == 2, "sin6_port offset 2");
-    static_assert(sizeof(HostAddress::Data) == sizeof(struct sockaddr_in6), "InetAddress is same size as sockaddr_in6");
 
     bool HostAddress::resolve(const std::string& hostname, HostAddress* result)
     {
@@ -44,7 +43,7 @@ namespace net {
         setZero(&host_ent, sizeof(host_ent));
 
         int ret = ::gethostbyname_r(hostname.c_str(), &host_ent, detail::t_resolve_cache, sizeof(detail::t_resolve_cache), &host_p, &herrno);
-        if (ret == 0 && host_p != NULL) {
+        if (ret == 0 && host_p != nullptr) {
             HARE_ASSERT(host_p->h_addrtype == AF_INET && host_p->h_length == sizeof(uint32_t), "");
             result->d_->addr_in_.sin_addr = *reinterpret_cast<struct in_addr*>(host_p->h_addr);
             return true;
@@ -56,9 +55,30 @@ namespace net {
         }
     }
 
+    HostAddress HostAddress::localAddress(util_socket_t fd)
+    {
+        HostAddress local_addr {};
+        auto addr_len = static_cast<socklen_t>(sizeof(*local_addr.d_));
+        if (::getsockname(fd, socket::sockaddr_cast(&local_addr.d_->addr_in6_), &addr_len) < 0) {
+            SYS_ERROR() << "Cannot get local addr.";
+        }
+        return local_addr;
+    }
+
+    HostAddress HostAddress::peerAddress(util_socket_t fd)
+    {
+        HostAddress local_addr {};
+        auto addr_len = static_cast<socklen_t>(sizeof(*local_addr.d_));
+        if (::getpeername(fd, socket::sockaddr_cast(&local_addr.d_->addr_in6_), &addr_len) < 0) {
+            SYS_ERROR() << "Cannot get peer addr.";
+        }
+        return local_addr;
+    }
+
     HostAddress::HostAddress(uint16_t port, bool loopback_only, bool ipv6)
         : d_(new Data)
     {
+        static_assert(sizeof(HostAddress::Data) == sizeof(struct sockaddr_in6), "HostAddress is same size as sockaddr_in6");
         static_assert(offsetof(HostAddress::Data, addr_in6_) == 0, "addr_in6_ offset 0");
         static_assert(offsetof(HostAddress::Data, addr_in_) == 0, "addr_in_ offset 0");
         if (ipv6) {
@@ -88,10 +108,10 @@ namespace net {
         }
     }
 
-    HostAddress::HostAddress(const HostAddress& another)
+    HostAddress::HostAddress(const HostAddress& address) noexcept
         : d_(new Data)
     {
-        *d_ = *another.d_;
+        *d_ = *(address.d_);
     }
 
     HostAddress::~HostAddress()
@@ -99,9 +119,9 @@ namespace net {
         delete d_;
     }
 
-    HostAddress& HostAddress::operator=(const HostAddress& another)
+    HostAddress& HostAddress::operator=(const HostAddress& another) noexcept
     {
-        *d_ = *another.d_;
+        *d_ = *(another.d_);
         return (*this);
     }
 

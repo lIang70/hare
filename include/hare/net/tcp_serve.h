@@ -10,16 +10,16 @@ namespace net {
     class TcpServePrivate;
     class HARE_API TcpServe : public NonCopyable
                             , public std::enable_shared_from_this<TcpServe> {
+        friend class TcpServePrivate;
         TcpServePrivate* p_ { nullptr };
 
     public:
-        //! 
         //! @brief Construct a new Tcp Serve object
-        //! 
         //! @param type The type of reactor. EPOLL/POLL
         TcpServe(const std::string& type, int8_t family, const std::string& name = "HARE_SERVE");
         virtual ~TcpServe();
 
+        // Set before exec()
         void setReusePort(bool b);
         void setThreadNum(int32_t num);
         void listen(const HostAddress& address);
@@ -33,7 +33,7 @@ namespace net {
             return STcpSession(new TcpSession(p));
         }
 
-        virtual void newConnect(STcpSession& session) = 0;
+        virtual void newConnect(STcpSession session, Timestamp ts) = 0;
     };
 
 } // namespace net

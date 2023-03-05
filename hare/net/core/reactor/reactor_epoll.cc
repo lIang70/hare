@@ -195,7 +195,7 @@ namespace core {
         }
     }
 
-    void EpollReactor::update(int32_t operation, Event* event)
+    void EpollReactor::update(int32_t operation, Event* event) const
     {
         struct epoll_event ep_event {};
         setZero(&ep_event, sizeof(ep_event));

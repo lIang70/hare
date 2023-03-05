@@ -16,7 +16,7 @@ namespace core {
         EPEventList epoll_events_ {};
 
     public:
-        EpollReactor(Cycle* cycle);
+        explicit EpollReactor(Cycle* cycle);
         ~EpollReactor() override;
 
         Timestamp poll(int32_t timeout_microseconds, Cycle::EventList& active_events) override;
@@ -25,7 +25,7 @@ namespace core {
 
     private:
         void fillActiveEvents(int32_t num_of_events, Cycle::EventList& active_events);
-        void update(int32_t operation, Event* channel);
+        void update(int32_t operation, Event* channel) const;
     };
 
 } // namespace core

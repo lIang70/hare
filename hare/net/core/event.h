@@ -60,8 +60,8 @@ namespace core {
             active();
         }
 
-        std::string flagsToString();
-        std::string rflagsToString();
+        std::string flagsToString() const;
+        std::string rflagsToString() const;
 
         inline void setRFlags(int32_t flags) { revent_flags_ = flags; }
 
@@ -70,13 +70,14 @@ namespace core {
         //! @brief Tie this channel to the owner object managed by shared_ptr,
         //!  prevent the owner object being destroyed in handleEvent.
         void tie(const std::shared_ptr<void>& object);
+        std::weak_ptr<void> tiedObject() { return tie_object_; }
 
         void deactive();
 
     protected:
         void active();
 
-        virtual void eventCallBack(int32_t events, Timestamp& receive_time) = 0;
+        virtual void eventCallBack(int32_t events, const Timestamp& receive_time) = 0;
     };
 
 } // namespace core

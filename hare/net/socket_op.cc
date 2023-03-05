@@ -198,7 +198,7 @@ namespace socket {
         if (::getsockopt(fd, SOL_SOCKET, SO_ERROR, error_str, (socklen_t*)&error_len) != -1) {
             return error_str;
         }
-        return std::string();
+        return {};
     }
 
     void toIpPort(char* buf, size_t size, const struct sockaddr* addr)

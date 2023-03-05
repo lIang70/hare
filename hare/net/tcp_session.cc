@@ -6,9 +6,8 @@ namespace net {
 
     namespace detail {
 
-        TcpEvent::TcpEvent(core::Cycle* cycle, util_socket_t fd, STcpSession session)
+        TcpEvent::TcpEvent(core::Cycle* cycle, util_socket_t fd)
             : Event(cycle, fd)
-            , session_(session)
         {
         }
 
@@ -16,7 +15,7 @@ namespace net {
         {
         }
 
-        void TcpEvent::eventCallBack(int32_t events, Timestamp& receive_time)
+        void TcpEvent::eventCallBack(int32_t events, const Timestamp& receive_time)
         {
         }
 
@@ -44,6 +43,7 @@ namespace net {
 
         p_->socket_->setKeepAlive(true);
         p_->event_.reset(new detail::TcpEvent(p_->cycle_, p_->socket_->socket(), shared_from_this()));
+        p_->event_->tie(shared_from_this());
     }
 
 } // namespace net

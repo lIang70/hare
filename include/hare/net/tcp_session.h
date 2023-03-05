@@ -24,7 +24,23 @@ namespace net {
     public:
         virtual ~TcpSession();
 
+        const std::string& name() const;
+        const HostAddress& local_address() const;
+        const HostAddress& peer_address() const;
+
         void setHighWaterMark(std::size_t high_water = 64 * 1024 * 1024);
+
+        void shutdown(); // NOT thread safe, no simultaneous calling
+        void forceClose();
+        void forceCloseWithDelay(int64_t milliseconds);
+        void setTcpNoDelay(bool on);
+
+        // reading or not
+        void startRead();
+        void stopRead();
+
+        Buffer& in_buffer();
+        Buffer& out_buffer();
 
     protected:
         virtual void connection(int32_t flag) {}
@@ -33,7 +49,7 @@ namespace net {
         virtual void read(Buffer& b, Timestamp& ts) {}
 
     private:
-        TcpSession(TcpSessionPrivate* p);
+        explicit TcpSession(TcpSessionPrivate* p);
 
     };
 

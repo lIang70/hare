@@ -46,7 +46,7 @@ namespace core {
         }
 
     protected:
-        Reactor(Cycle* cycle)
+        explicit Reactor(Cycle* cycle)
             : owner_cycle_(cycle)
         {
         }

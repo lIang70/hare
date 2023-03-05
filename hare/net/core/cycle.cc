@@ -32,7 +32,7 @@ namespace core {
 
         class NotifyEvent : public Event {
         public:
-            NotifyEvent(Cycle* cycle)
+            explicit NotifyEvent(Cycle* cycle)
                 : Event(cycle, createWakeFd())
             {
             }
@@ -51,7 +51,7 @@ namespace core {
                 }
             }
 
-            void eventCallBack(int32_t events, Timestamp& receive_time) override
+            void eventCallBack(int32_t events, const Timestamp& receive_time) override
             {
                 HARE_ASSERT(ownerCycle() == t_local_cycle, "Cycle is wrong.");
 
@@ -204,7 +204,7 @@ namespace core {
 
     void Cycle::notify()
     {
-        if (auto notify = static_cast<detail::NotifyEvent*>(notify_event_.get()))
+        if (auto notify = dynamic_cast<detail::NotifyEvent*>(notify_event_.get()))
             notify->sendNotify();
         else
             SYS_FATAL() << "Cannot cast to NotifyEvent.";

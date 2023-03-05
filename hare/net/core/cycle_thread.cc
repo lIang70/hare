@@ -2,12 +2,14 @@
 #include "hare/net/core/cycle_thread.h"
 #include <hare/base/logging.h>
 
+#include <utility>
+
 namespace hare {
 namespace core {
 
-    CycleThread::CycleThread(const std::string& reactor_type, const std::string& name)
+    CycleThread::CycleThread(std::string  reactor_type, const std::string& name)
         : Thread(std::bind(&CycleThread::run, this), name)
-        , reactor_type_(reactor_type)
+        , reactor_type_(std::move(reactor_type))
     {
     }
 

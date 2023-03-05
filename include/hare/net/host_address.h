@@ -11,10 +11,7 @@ namespace hare {
 namespace net {
 
     class HARE_API HostAddress {
-    public:
         class Data;
-
-    private:
         Data* d_ { nullptr };
 
     public:
@@ -23,6 +20,9 @@ namespace net {
         //! thread safe
         static bool resolve(const std::string& hostname, HostAddress* result);
 
+        static HostAddress localAddress(util_socket_t fd);
+        static HostAddress peerAddress(util_socket_t fd);
+
         //! Constructs an endpoint with given port number.
         //! Mostly used in TcpServer listening.
         explicit HostAddress(uint16_t port = 0, bool loopback_only = false, bool ipv6 = false);
@@ -30,14 +30,14 @@ namespace net {
         //! Constructs an endpoint with given ip and port.
         //! @c ip should be "1.2.3.4"
         HostAddress(const std::string& ip, uint16_t port, bool ipv6 = false);
-        HostAddress(const HostAddress& another);
+        HostAddress(const HostAddress& another) noexcept;
         HostAddress(HostAddress&& another) noexcept
         {
             std::swap(d_, another.d_);
         }
         ~HostAddress();
 
-        HostAddress& operator=(const HostAddress& another);
+        HostAddress& operator=(const HostAddress& another) noexcept;
         HostAddress& operator=(HostAddress&& another) noexcept
         {
             std::swap(d_, another.d_);

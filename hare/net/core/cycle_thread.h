@@ -18,7 +18,7 @@ namespace core {
         std::mutex mutex_ {};
 
     public:
-        explicit CycleThread(const std::string& reactor_type, const std::string& name = "Cycle-Thread");
+        explicit CycleThread(std::string  reactor_type, const std::string& name = "Cycle-Thread");
         ~CycleThread();
 
         Cycle* startCycle();

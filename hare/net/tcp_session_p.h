@@ -8,6 +8,7 @@
 #include <hare/net/tcp_session.h>
 
 #include <atomic>
+#include <utility>
 
 namespace hare {
 namespace net {
@@ -15,13 +16,12 @@ namespace net {
     namespace detail {
 
         class TcpEvent : public core::Event {
-            std::weak_ptr<TcpSession> session_ {};
 
         public:
-            TcpEvent(core::Cycle* cycle, util_socket_t fd, STcpSession session);
+            TcpEvent(core::Cycle* cycle, util_socket_t fd);
             ~TcpEvent() override;
 
-            void eventCallBack(int32_t events, Timestamp& receive_time) override;
+            void eventCallBack(int32_t events, const Timestamp& receive_time) override;
         };
 
     } // namespace detail
@@ -42,14 +42,14 @@ namespace net {
         Buffer output_buffer_ {};
 
         TcpSessionPrivate(core::Cycle* cycle,
-            const std::string& name, util_socket_t fd,
-            const HostAddress& local_addr,
-            const HostAddress& peer_addr)
+            std::string name, util_socket_t fd,
+            HostAddress local_addr,
+            HostAddress peer_addr)
             : cycle_(cycle)
-            , name_(name)
+            , name_(std::move(name))
             , socket_(new Socket(fd))
-            , local_addr_(local_addr)
-            , peer_addr_(peer_addr)
+            , local_addr_(std::move(local_addr))
+            , peer_addr_(std::move(peer_addr))
         {
         }
     };

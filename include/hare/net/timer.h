@@ -16,8 +16,8 @@ namespace net {
 
         inline void setTask(Thread::Task& task) { task_ = task; }
         inline void setTimeout(int64_t ms) { ms_timeout_ = ms; }
-        inline int64_t timeout() { return ms_timeout_; }
-        inline bool isPersist() { return persist_; }
+        inline int64_t timeout() const { return ms_timeout_; }
+        inline bool isPersist() const { return persist_; }
 
         void run();
     };

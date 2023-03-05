@@ -18,8 +18,10 @@ namespace net {
     namespace detail {
 
         class Acceptor : public core::Event {
-            friend class net::TcpServe;
+            using NewSession = std::function<void(util_socket_t, const HostAddress& conn_address, const Timestamp&)>;
+        public:
             Socket socket_ { -1 };
+            NewSession new_session_ {};
 #ifdef H_OS_LINUX
             // Read the section named "The special problem of
             // accept()ing when you can't" in libev's doc.
@@ -27,7 +29,6 @@ namespace net {
             util_socket_t idle_fd_ { -1 };
 #endif
 
-        public:
             Acceptor(core::Cycle* cycle, util_socket_t fd, bool reuse_port)
                 : Event(cycle, fd)
                 , socket_(fd)
@@ -58,7 +59,7 @@ namespace net {
             }
 
         protected:
-            void eventCallBack(int32_t events, Timestamp& receive_time) override;
+            void eventCallBack(int32_t events, const Timestamp& receive_time) override;
 
         };
         
@@ -68,21 +69,21 @@ namespace net {
     public:
         std::string name_ {};
         // the acceptor loop
-        core::Cycle* cycle_ {};
-
+        std::unique_ptr<core::Cycle> cycle_ { nullptr };
         std::unique_ptr<detail::Acceptor> acceptor_ { nullptr };
+        std::shared_ptr<core::CycleThreadPool> thread_pool_ { nullptr };
+
         std::string reactor_type_ {};
         HostAddress listen_address_ {};
         bool reuse_port_ { false };
         int8_t family_ { 0 };
-
-        std::shared_ptr<core::CycleThreadPool> thread_pool_ { nullptr };
-        int32_t  thread_num_ { 0 };
-
-        std::string ip_port_ {};
+        int32_t thread_num_ { 0 };
         uint64_t session_id_ { 0 };
 
         std::atomic<bool> started_ { false };
+
+    public:
+        void newSession(util_socket_t fd, const HostAddress& address, const Timestamp& ts);
 
     };
 

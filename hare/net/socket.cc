@@ -48,8 +48,8 @@ namespace net {
 
     void Socket::setTcpNoDelay(bool on) const
     {
-        auto optval = on ? 1 : 0;
-        auto ret = ::setsockopt(socket_, IPPROTO_TCP, TCP_NODELAY, &optval, static_cast<socklen_t>(sizeof(optval)));
+        auto opt_val = on ? 1 : 0;
+        auto ret = ::setsockopt(socket_, IPPROTO_TCP, TCP_NODELAY, &opt_val, static_cast<socklen_t>(sizeof(opt_val)));
         if (ret < 0) {
             LOG_ERROR() << "Fail to set tcp no-delay.";
         }

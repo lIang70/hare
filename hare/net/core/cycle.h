@@ -144,4 +144,4 @@ namespace core {
 } // namespace core
 } // namespace hare
 
-#endif // !_HARE_NET_CYCLE_H_
+#endif // !_HARE_NET_CORE_CYCLE_H_
