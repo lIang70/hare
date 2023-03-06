@@ -12,20 +12,20 @@ namespace core {
         {
             std::ostringstream oss {};
             oss << fd << ": ";
-            if (event_flags_ == net::EV_DEFAULT)
+            if (event_flags_ == net::EVENT_DEFAULT)
                 oss << "DEFAULT";
             else {
                 if (event_flags_ & net::EV_TIMEOUT)
                     oss << "TIMEOUT ";
-                if (event_flags_ & net::EV_READ)
+                if (event_flags_ & net::EVENT_READ)
                     oss << "READ ";
-                if (event_flags_ & net::EV_WRITE)
+                if (event_flags_ & net::EVENT_WRITE)
                     oss << "WRITE ";
-                if (event_flags_ & net::EV_ET)
+                if (event_flags_ & net::EVENT_ET)
                     oss << "ET ";
-                if (event_flags_ & net::EV_CLOSED)
+                if (event_flags_ & net::EVENT_CLOSED)
                     oss << "CLOSED ";
-                if (event_flags_ & net::EV_ERROR)
+                if (event_flags_ & net::EVENT_ERROR)
                     oss << "ERROR ";
             }
             return oss.str();

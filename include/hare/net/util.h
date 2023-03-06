@@ -8,21 +8,19 @@ namespace net {
 
     enum : int32_t {
         //! @brief The default flag.
-        EV_DEFAULT = 0x00,
-        //! @brief Indicates that a timeout has occurred.
-        //!  It's not necessary to pass this flag to Event.
-        EV_TIMEOUT = 0x01,
+        EVENT_DEFAULT = 0x00,
         //! @brief Wait for a socket or FD to become readable.
-        EV_READ = 0x02,
+        EVENT_READ = 0x01,
         //! @brief Wait for a socket or FD to become writeable.
-        EV_WRITE = 0x04,
+        EVENT_WRITE = 0x02,
         //! @brief Select edge-triggered behavior, if supported by the backend.
-        EV_ET = 0x10,
+        EVENT_ET = 0x04,
         //! @brief Detects connection close events. You can use this to detect when a
         //!  connection has been closed, without having to read all the pending data
         //!  from a connection.
-        EV_CLOSED = 0x20,
-        EV_ERROR = 0x30
+        EVENT_CONNECTED = 0x08,
+        EVENT_CLOSED = 0x10,
+        EVENT_ERROR = 0x20
     };
 
 } // namespace net

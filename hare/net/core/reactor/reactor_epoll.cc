@@ -34,29 +34,29 @@ namespace core {
         decltype(epoll_event::events) decodeEpoll(int32_t event_flags)
         {
             decltype(epoll_event::events) events = 0;
-            if (event_flags & net::EV_READ)
+            if (event_flags & net::EVENT_READ)
                 events |= (EPOLLIN | EPOLLPRI);
-            if (event_flags & net::EV_WRITE)
+            if (event_flags & net::EVENT_WRITE)
                 events |= (EPOLLOUT);
-            if (event_flags & net::EV_ET)
+            if (event_flags & net::EVENT_ET)
                 events |= (EPOLLET);
             return events;
         }
 
         int32_t encodeEpoll(decltype(epoll_event::events) events)
         {
-            int32_t flags = net::EV_DEFAULT;
+            int32_t flags = net::EVENT_DEFAULT;
+            if ((events & EPOLLHUP) && !(events & EPOLLIN)) {
+                flags |= net::EVENT_CLOSED;
+            }
             if (events & EPOLLERR) {
-                flags = net::EV_READ | net::EV_WRITE;
-            } else if ((events & EPOLLHUP) && !(events & EPOLLRDHUP)) {
-                flags = net::EV_READ | net::EV_WRITE;
-            } else {
-                if (events & EPOLLIN)
-                    flags |= net::EV_READ;
-                if (events & EPOLLOUT)
-                    flags |= net::EV_WRITE;
-                if (events & EPOLLRDHUP)
-                    flags |= net::EV_CLOSED;
+                flags |= net::EVENT_ERROR;
+            }
+            if (events & (EPOLLIN | EPOLLPRI | EPOLLRDHUP)) {
+                flags |= net::EVENT_READ;
+            }
+            if (events & EPOLLOUT) {
+                flags |= net::EVENT_WRITE;
             }
             return flags;
         }

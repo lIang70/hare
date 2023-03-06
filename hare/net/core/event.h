@@ -23,8 +23,8 @@ namespace core {
     private:
         util_socket_t fd_ { -1 };
         int32_t index_ { Status::NEW };
-        int32_t event_flags_ { net::EV_DEFAULT };
-        int32_t revent_flags_ { net::EV_DEFAULT };
+        int32_t event_flags_ { net::EVENT_DEFAULT };
+        int32_t revent_flags_ { net::EVENT_DEFAULT };
         Cycle* owner_cycle_ { nullptr };
 
         std::atomic<bool> event_handle_ { false };
@@ -39,7 +39,7 @@ namespace core {
 
         inline util_socket_t fd() const { return fd_; }
         inline Cycle* ownerCycle() const { return owner_cycle_; }
-        inline bool isNoneEvent() const { return event_flags_ == net::EV_DEFAULT; };
+        inline bool isNoneEvent() const { return event_flags_ == net::EVENT_DEFAULT; };
         inline int32_t index() const { return index_; }
         inline void setIndex(int32_t index) { index_ = index; }
 
@@ -56,7 +56,7 @@ namespace core {
         }
         inline void clearAllFlags()
         {
-            event_flags_ = net::EV_DEFAULT;
+            event_flags_ = net::EVENT_DEFAULT;
             active();
         }
 

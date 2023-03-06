@@ -55,7 +55,7 @@ namespace core {
             {
                 HARE_ASSERT(ownerCycle() == t_local_cycle, "Cycle is wrong.");
 
-                if (events == net::EV_READ) {
+                if (events == net::EVENT_READ) {
                     auto one = (uint64_t)0;
                     auto n = socket::read(fd(), &one, sizeof(one));
                     if (n != sizeof(one) && one != (uint64_t)1) {
@@ -81,7 +81,7 @@ namespace core {
         } else {
             detail::t_local_cycle = this;
         }
-        notify_event_->setFlags(net::EV_READ);
+        notify_event_->setFlags(net::EVENT_READ);
     }
 
     Cycle::~Cycle()
