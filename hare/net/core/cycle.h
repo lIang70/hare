@@ -76,7 +76,6 @@ namespace core {
         explicit Cycle(const std::string& reactor_type);
         virtual ~Cycle();
 
-        //!
         //! @brief Time when reactor returns, usually means data arrival.
         inline Timestamp reactorReturnTime() const { return reactor_time_; }
 

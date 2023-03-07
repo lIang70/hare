@@ -3,6 +3,7 @@
 
 #include <hare/net/tcp_session.h>
 #include <hare/net/host_address.h>
+#include <hare/net/timer.h>
 
 namespace hare {
 namespace net {
@@ -23,6 +24,9 @@ namespace net {
         void setReusePort(bool b);
         void setThreadNum(int32_t num);
         void listen(const HostAddress& address);
+
+        bool isRunning() const;
+        bool addTimer(const std::shared_ptr<net::Timer>& timer);
 
         void exec();
         void exit();

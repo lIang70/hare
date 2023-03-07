@@ -14,18 +14,21 @@ namespace net {
             ownerCycle()->assertInCycleThread();
             if (events & EVENT_READ) {
                 HostAddress peer_addr {};
-                // FIXME loop until no more
-                auto conn_fd = socket_.accept(peer_addr);
-                if (conn_fd >= 0) {
-                    auto host_port = peer_addr.toIpPort();
-                    LOG_TRACE() << "Accepts of " << host_port;
+                // FIXME loop until no more ?
+                auto accepted { false };
+                util_socket_t conn_fd {};
+                while ((conn_fd = socket_.accept(peer_addr)) >= 0) {
+                    LOG_TRACE() << "Accepts of " << peer_addr.toIpPort();
                     if (new_session_) {
                         new_session_(conn_fd, peer_addr, receive_time);
                     } else {
                         socket::close(conn_fd);
                     }
-                } else {
+                    accepted = true;
+                }
+                if (!accepted) {
                     SYS_ERROR() << "Cannot accept new connect";
+#ifdef H_OS_LINUX
                     // Read the section named "The special problem of
                     // accept()ing when you can't" in libev's doc.
                     // By Marc Lehmann, author of libev.
@@ -35,6 +38,7 @@ namespace net {
                         socket::close(idle_fd_);
                         idle_fd_ = ::open("/dev/null", O_RDONLY | O_CLOEXEC);
                     }
+#endif
                 }
             } else {
                 SYS_ERROR() << "Unexpected operation of acceptor.";
@@ -61,13 +65,16 @@ namespace net {
         auto tied_object = acceptor_->tiedObject().lock();
         if (tied_object) {
             auto tied_serve = static_cast<TcpServe*>(tied_object.get());
+            if (!tied_serve)
+                goto delete_session;
             auto session = tied_serve->createSession(p);
             session->connectEstablished();
-            work_cycle->runInLoop(std::bind(&TcpServe::newConnect, tied_serve, session, ts));
-        } else {
-            delete p;
-            SYS_ERROR() << "Cannot find TcpServe...";
+            work_cycle->runInLoop(std::bind(&TcpServe::newConnect, tied_serve->shared_from_this(), session, ts));
+            return;
         }
+    delete_session:
+        delete p;
+        SYS_ERROR() << "Cannot get TcpServe...";
     }
 
     TcpServe::TcpServe(const std::string& type, int8_t family, const std::string& name)
@@ -102,6 +109,20 @@ namespace net {
         p_->listen_address_ = address;
     }
 
+    bool TcpServe::isRunning() const
+    {
+        return p_->started_.load();
+    }
+
+    bool TcpServe::addTimer(const std::shared_ptr<net::Timer>& timer)
+    {
+        if (!isRunning())
+            return false;
+
+        p_->cycle_->addTimer(timer);
+        return true;
+    }
+
     void TcpServe::exec()
     {
         p_->cycle_.reset(new core::Cycle(p_->reactor_type_));
@@ -113,7 +134,7 @@ namespace net {
         p_->acceptor_->listen();
         p_->acceptor_->tie(shared_from_this());
 
-        p_->thread_pool_ = std::make_shared<core::CycleThreadPool>(p_->cycle_.get(), p_->reactor_type_, p_->name_);
+        p_->thread_pool_ = std::make_shared<core::CycleThreadPool>(p_->cycle_.get(), p_->reactor_type_, p_->name_ + "_WORKER");
         p_->thread_pool_->setThreadNum(p_->thread_num_);
         p_->thread_pool_->start();
 
