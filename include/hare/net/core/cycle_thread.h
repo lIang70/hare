@@ -3,15 +3,12 @@
 
 #include <hare/base/thread.h>
 
-#include <condition_variable>
-#include <mutex>
-
 namespace hare {
 namespace core {
 
     class Cycle;
     class CycleThreadPrivate;
-    class CycleThread : public Thread {
+    class HARE_API CycleThread : public Thread {
         CycleThreadPrivate* p_ { nullptr };
 
     public:
