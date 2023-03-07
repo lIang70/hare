@@ -15,8 +15,6 @@ namespace core {
             if (event_flags_ == net::EVENT_DEFAULT)
                 oss << "DEFAULT";
             else {
-                if (event_flags_ & net::EV_TIMEOUT)
-                    oss << "TIMEOUT ";
                 if (event_flags_ & net::EVENT_READ)
                     oss << "READ ";
                 if (event_flags_ & net::EVENT_WRITE)

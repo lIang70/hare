@@ -16,7 +16,6 @@ namespace net {
     namespace detail {
 
         class TcpEvent : public core::Event {
-
         public:
             TcpEvent(core::Cycle* cycle, util_socket_t fd);
             ~TcpEvent() override;
@@ -25,6 +24,8 @@ namespace net {
         };
 
     } // namespace detail
+
+
 
     class TcpSessionPrivate {
     public:

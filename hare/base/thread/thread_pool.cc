@@ -136,28 +136,14 @@ bool ThreadPool::isFull() const
 
 void ThreadPool::loop()
 {
-    try {
-        if (d_->pool_init_callback_) {
-            d_->pool_init_callback_();
+    if (d_->pool_init_callback_) {
+        d_->pool_init_callback_();
+    }
+    while (d_->running_) {
+        auto task(take());
+        if (task) {
+            task();
         }
-        while (d_->running_) {
-            auto task(take());
-            if (task) {
-                task();
-            }
-        }
-    } catch (const Exception& ex) {
-        fprintf(stderr, "exception caught in ThreadPool %s\n", d_->name_.c_str());
-        fprintf(stderr, "reason: %s\n", ex.what());
-        fprintf(stderr, "stack trace: %s\n", ex.stackTrace());
-        std::abort();
-    } catch (const std::exception& ex) {
-        fprintf(stderr, "exception caught in ThreadPool %s\n", d_->name_.c_str());
-        fprintf(stderr, "reason: %s\n", ex.what());
-        std::abort();
-    } catch (...) {
-        fprintf(stderr, "unknown exception caught in ThreadPool %s\n", d_->name_.c_str());
-        throw; // rethrow
     }
 }
 

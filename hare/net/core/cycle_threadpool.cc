@@ -1,6 +1,6 @@
 #include "hare/net/core/cycle_threadpool.h"
 #include "hare/net/core/cycle.h"
-#include "hare/net/core/cycle_thread.h"
+#include "hare/net/core/cycle_thread_p.h"
 #include <hare/base/logging.h>
 
 #include <utility>

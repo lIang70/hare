@@ -12,7 +12,7 @@ namespace net {
         void Acceptor::eventCallBack(int32_t events, const Timestamp& receive_time)
         {
             ownerCycle()->assertInCycleThread();
-            if (events & EV_READ) {
+            if (events & EVENT_READ) {
                 HostAddress peer_addr {};
                 // FIXME loop until no more
                 auto conn_fd = socket_.accept(peer_addr);
@@ -62,6 +62,7 @@ namespace net {
         if (tied_object) {
             auto tied_serve = static_cast<TcpServe*>(tied_object.get());
             auto session = tied_serve->createSession(p);
+            session->connectEstablished();
             work_cycle->runInLoop(std::bind(&TcpServe::newConnect, tied_serve, session, ts));
         } else {
             delete p;

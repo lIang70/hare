@@ -55,7 +55,7 @@ namespace net {
             inline void listen()
             {
                 socket_.listen();
-                setFlags(EV_READ);
+                setFlags(EVENT_READ);
             }
 
         protected:

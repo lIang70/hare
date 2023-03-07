@@ -94,7 +94,7 @@ public:
     }
 };
 
-static std::atomic_int32_t num_of_thread_ { 0 };
+static std::atomic<int32_t> num_of_thread_ { 0 };
 
 static void setDefaultName(std::string& name)
 {
@@ -162,6 +162,9 @@ void Thread::start()
         t_data.thread_name_ = "crashed";
         fprintf(stderr, "Fail to create thread! Detail:\n %s", e.what());
         std::abort();
+    } catch (...) {
+        fprintf(stderr, "unknown exception caught in thread %s\n", d_->name_.c_str());
+        throw; // rethrow
     }
 }
 

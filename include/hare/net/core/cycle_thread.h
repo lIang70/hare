@@ -10,12 +10,9 @@ namespace hare {
 namespace core {
 
     class Cycle;
+    class CycleThreadPrivate;
     class CycleThread : public Thread {
-        Cycle* cycle_ { nullptr };
-        std::string reactor_type_ {};
-        bool exiting_ { false };
-        std::condition_variable cv_ {};
-        std::mutex mutex_ {};
+        CycleThreadPrivate* p_ { nullptr };
 
     public:
         explicit CycleThread(std::string  reactor_type, const std::string& name = "Cycle-Thread");
