@@ -1,13 +1,7 @@
-add_custom_target(autogen_jemalloc ALL
-        COMMAND ./autogen.sh
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/jemalloc/
-        COMMENT "Original jemalloc autogen target")
-
 add_custom_target(build_jemalloc ALL
-        COMMAND make
+        COMMAND ./autogen.sh && make
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/jemalloc/
         COMMENT "Original jemalloc makefile target")
-add_dependencies(build_jemalloc autogen_jemalloc)
 
 set(JEMALLOC_INCLUDE ${CMAKE_CURRENT_SOURCE_DIR}/jemalloc/include)
 set(JEMALLOC_LIBRARY ${CMAKE_CURRENT_SOURCE_DIR}/jemalloc/lib/libjemalloc.so.2)
