@@ -19,7 +19,8 @@ list(APPEND FILES_TO_CHECK
     sys/time.h
     sys/param.h
 )
-if (WIN32)
+
+if(WIN32)
     list(APPEND FILES_TO_CHECK
         io.h
         winsock2.h
@@ -57,7 +58,7 @@ else()
     )
 endif()
 
-if (NOT "${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "Linux")
+if(NOT "${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "Linux")
     list(APPEND FILES_TO_CHECK sys/sysctl.h)
 endif()
 
@@ -65,6 +66,7 @@ endif()
 foreach(FILE ${FILES_TO_CHECK})
     CHECK_INCLUDE_FILE_CONCAT(${FILE} "HARE")
 endforeach()
+
 unset(FILES_TO_CHECK)
 
 # Check if symbol exist
@@ -91,7 +93,7 @@ list(APPEND SYMBOLS_TO_CHECK
     umask
 )
 
-if (WIN32)
+if(WIN32)
     list(APPEND SYMBOLS_TO_CHECK
         _gmtime64_s
         _gmtime64
@@ -140,71 +142,70 @@ CHECK_SYMBOLS_EXIST("${SYMBOLS_TO_CHECK}" "${CMAKE_EXTRA_INCLUDE_FILES}" "HARE")
 unset(SYMBOLS_TO_CHECK)
 set(HARE__HAVE_EPOLL ${HARE__HAVE_EPOLL_CREATE})
 set(HARE__HAVE_SIGNALFD ${HARE__HAVE_SYS_SIGNALFD_H})
+
 if(WIN32 AND NOT CYGWIN)
     set(HARE__HAVE_WEPOLL 1)
 endif()
+
 if(HAVE_PORT_H AND HAVE_PORT_CREATE)
     set(HARE__HAVE_EVENT_PORTS 1)
 endif()
 
-if (HARE__HAVE_EPOLL)
+if(HARE__HAVE_EPOLL)
     list(APPEND BACKENDS EPOLL)
 endif()
 
-if (HARE__HAVE_SELECT)
+if(HARE__HAVE_SELECT)
     list(APPEND BACKENDS SELECT)
 endif()
 
-if (HARE__HAVE_POLL)
+if(HARE__HAVE_POLL)
     list(APPEND BACKENDS POLL)
 endif()
 
-if (HARE__HAVE_WEPOLL)
+if(HARE__HAVE_WEPOLL)
     list(APPEND BACKENDS WEPOLL)
 endif()
 
-if (WIN32)
+if(WIN32)
     list(APPEND BACKENDS WIN32)
 endif()
 
 message(STATUS "Available event backends: ${BACKENDS}")
 
 configure_file(
-        ${CMAKE_CURRENT_SOURCE_DIR}/hare-config.h.cmake
-        ${CMAKE_CURRENT_BINARY_DIR}/include/hare/hare-config.h
-        NEWLINE_STYLE UNIX)
+    ${CMAKE_CURRENT_SOURCE_DIR}/hare-config.h.cmake
+    ${CMAKE_CURRENT_BINARY_DIR}/include/hare/hare-config.h
+    NEWLINE_STYLE UNIX)
 
 # Add hare-config
 include_directories(${CMAKE_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR}/include)
 
-# Add header
-include_directories(${CMAKE_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/include)
-
 # Add hare_base's src
 file(GLOB HARE_BASE_SOURCES "base/*.cc"
-                            "base/log/*.cc"
-                            "base/thread/*.cc"
-                            "base/time/*.cc"
-                            "base/util/*.cc")
+    "base/log/*.cc"
+    "base/thread/*.cc"
+    "base/time/*.cc"
+    "base/util/*.cc")
 
 # Add the source code to the project's executable。
 add_library(hare_base ${HARE__LIBRARY_TYPE} ${HARE_BASE_SOURCES})
+target_include_directories(hare_base PUBLIC ${CMAKE_SOURCE_DIR}/include)
 target_link_libraries(hare_base jemalloc)
 
 if(HARE__BUILD_TESTS)
     add_subdirectory(base/tests)
 endif(HARE__BUILD_TESTS)
 
-
 # Add hare_base's src
-file(GLOB HARE_NET_SOURCES  "net/*.cc"
-                            "net/core/*.cc"
-                            "net/core/reactor/*.cc")
+file(GLOB HARE_NET_SOURCES "net/*.cc"
+    "net/core/*.cc"
+    "net/core/reactor/*.cc")
 
 # Add the source code to the project's executable。
 add_library(hare_net ${HARE__LIBRARY_TYPE} ${HARE_NET_SOURCES})
+target_include_directories(hare_net PUBLIC ${CMAKE_SOURCE_DIR}/include)
 
 if(HARE__BUILD_TESTS)
     add_subdirectory(net/tests)
 endif(HARE__BUILD_TESTS)
-

@@ -1,3 +1,7 @@
-[submodule "3rdparty/jemalloc"]
+[submodule "jemalloc"]
 	path = 3rdparty/jemalloc
 	url = https://github.com/jemalloc/jemalloc.git
+
+[submodule "googletest"]
+	path = 3rdparty/googletest
+	url = https://github.com/google/googletest.git
