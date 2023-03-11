@@ -20,7 +20,7 @@ endif()
 message(STATUS "HARE__LIBRARY_TYPE: ${HARE__LIBRARY_TYPE}")
 
 if(NOT HARE__BUILD_TESTS)
-    option(HARE__BUILD_TESTS "Build all of own tests." OFF)
+    option(HARE__BUILD_TESTS "Build all of own tests." ON)
 endif()
 
 if(NOT BUILD_WITH_DEBUGINFO)

@@ -17,3 +17,7 @@ set_property(TARGET jemalloc APPEND PROPERTY IMPORTED_CONFIGURATIONS NOCONFIG)
 set_target_properties(jemalloc PROPERTIES IMPORTED_LOCATION_NOCONFIG ${JEMALLOC_LIBRARY}
                                           INTERFACE_INCLUDE_DIRECTORIES ${JEMALLOC_INCLUDE})
 add_dependencies(jemalloc build_jemalloc)
+
+if (NOT TARGET GoogleTest)
+    add_subdirectory(googletest)
+endif()
