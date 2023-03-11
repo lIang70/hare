@@ -8,39 +8,46 @@
 #include <hare/net/tcp_session.h>
 
 #include <atomic>
-#include <utility>
+#include <mutex>
 
 namespace hare {
 namespace net {
 
+    using SE_STATE = TcpSession::State;
+
     namespace detail {
 
         class TcpEvent : public core::Event {
+            Buffer in_buffer_ {};
+            Buffer out_buffer_ {};
+
+            TcpSessionPrivate* tsp_ { nullptr };
+
         public:
-            TcpEvent(core::Cycle* cycle, util_socket_t fd);
+            TcpEvent(core::Cycle* cycle, util_socket_t fd, TcpSessionPrivate* tsp);
             ~TcpEvent() override;
+
+            inline Buffer& inBuffer() { return in_buffer_; }
+            inline Buffer& outBuffer() { return out_buffer_; }
 
             void eventCallBack(int32_t events, const Timestamp& receive_time) override;
         };
 
     } // namespace detail
 
-
-
     class TcpSessionPrivate {
     public:
         core::Cycle* cycle_ { nullptr };
         const std::string name_ {};
         std::atomic<bool> reading_ { false };
+        SE_STATE state_ { SE_STATE::CONNECTING };
 
         std::unique_ptr<Socket> socket_ { nullptr };
-        std::shared_ptr<core::Event> event_ { nullptr };
+        std::shared_ptr<detail::TcpEvent> event_ { nullptr };
         const HostAddress local_addr_ {};
         const HostAddress peer_addr_ {};
 
         std::size_t high_water_mark_ { 64 * 1024 * 1024 };
-        Buffer input_buffer_ {};
-        Buffer output_buffer_ {};
 
         TcpSessionPrivate(core::Cycle* cycle,
             std::string name, util_socket_t fd,
@@ -52,7 +59,16 @@ namespace net {
             , local_addr_(std::move(local_addr))
             , peer_addr_(std::move(peer_addr))
         {
+            socket_->setKeepAlive(true);
+            event_.reset(new detail::TcpEvent(cycle_, socket_->socket(), this));
+            event_->setFlags(EVENT_READ);
         }
+
+        void handleRead(TcpSession* ts, const Timestamp& receive_time);
+        void handleWrite(TcpSession* ts);
+        void handleClose(TcpSession* ts);
+        void handleError(TcpSession* ts);
+
     };
 
 } // namespace net

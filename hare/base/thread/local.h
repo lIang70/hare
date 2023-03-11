@@ -2,6 +2,7 @@
 #define _HARE_BASE_LOCAL_H_
 
 #include <hare/base/thread.h>
+#include <hare/hare-config.h>
 
 namespace hare {
 

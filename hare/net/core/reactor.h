@@ -20,7 +20,7 @@ namespace core {
         EventMap events_;
 
     public:
-        static Reactor* createByType(const std::string& type, Cycle*);
+        static Reactor* createByType(const std::string& type, Cycle* cycle);
 
         virtual ~Reactor() = default;
 

@@ -54,6 +54,10 @@ namespace core {
             event_flags_ &= ~flags;
             active();
         }
+        inline bool checkFlag(int32_t flags) const
+        {
+            return (event_flags_ & flags);
+        }
         inline void clearAllFlags()
         {
             event_flags_ = net::EVENT_DEFAULT;

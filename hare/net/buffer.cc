@@ -99,7 +99,6 @@ namespace net {
             }
 
             bytes_ = new unsigned char[to_alloc];
-
             buffer_len_ = to_alloc;
         }
 
@@ -148,7 +147,6 @@ namespace net {
 
     class Buffer::Data {
     public:
-        //!
         //! @code
         //! +-------++-------++-------++-------++-------++-------+
         //! | block || block || block || block || block || block |
@@ -211,7 +209,7 @@ namespace net {
         }
 
         decltype(d_->write_iter_) curr {};
-        std::size_t remain { 0 };
+        std::size_t remain {};
         if (d_->write_iter_ == d_->block_chain_.end()) {
             curr = d_->insertBlock(new detail::Block(size));
             if (curr == d_->block_chain_.end())

@@ -2,6 +2,7 @@
 #define _HARE_NET_SOCKET_OP_H_
 
 #include <hare/net/util.h>
+#include <hare/hare-config.h>
 
 struct sockaddr_in;
 struct sockaddr_in6;

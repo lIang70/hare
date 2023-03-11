@@ -37,6 +37,7 @@ namespace log {
                 }
             }
 
+            char* begin() { return data_; }
             const char* data() const { return data_; }
             int length() const { return static_cast<int>(cur_ - data_); }
 

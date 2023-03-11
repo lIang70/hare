@@ -18,7 +18,6 @@ namespace core {
     CycleThreadPool::~CycleThreadPool()
     {
         LOG_DEBUG() << "Thread-Pool[" << this << "] of cycles was deleted.";
-        // todo
     }
 
     bool CycleThreadPool::start()

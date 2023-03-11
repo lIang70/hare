@@ -113,7 +113,7 @@ namespace core {
                 printActiveEvents();
             }
 
-            // TODO sort channel by priority
+            // TODO sort event by priority
             event_handling_.exchange(true);
 
             for (auto& event : active_events_) {
