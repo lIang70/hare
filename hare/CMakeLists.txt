@@ -148,7 +148,6 @@ if(HAVE_PORT_H AND HAVE_PORT_CREATE)
 endif()
 
 if (HARE__HAVE_EPOLL)
-    add_definitions(-DHARE__HAVE_EPOLL)
     list(APPEND BACKENDS EPOLL)
 endif()
 
@@ -169,6 +168,11 @@ if (WIN32)
 endif()
 
 message(STATUS "Available event backends: ${BACKENDS}")
+
+configure_file(
+        ${CMAKE_CURRENT_SOURCE_DIR}/hare-config.h.cmake
+        ${CMAKE_CURRENT_BINARY_DIR}/include/hare/hare-config.h
+        NEWLINE_STYLE UNIX)
 
 # Add header
 include_directories(${CMAKE_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/include)
