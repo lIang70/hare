@@ -497,8 +497,7 @@
 /* The size of 'time_t', as computer by sizeof */
 #define HARE__SIZEOF_TIME_T @HARE__SIZEOF_TIME_T@
 
-/* Define to `__inline__' or `__inline' if that's what the C compiler
-calls it, or to nothing if 'inline' is not supported under any name.  */
+/* Define to `__inline__' or `__inline' if that's what the C compilercallsit, or to nothing if'inline' is not supported under any name. */
 #ifndef __cplusplus
 /* why not c++?
 *
@@ -523,6 +522,6 @@ calls it, or to nothing if 'inline' is not supported under any name.  */
 #define HARE__socklen_t @HARE__socklen_t@
 
 /* Define to `int' if <sys/types.h> does not define. */
-#define HARE__ssize_t @HARE__ssize_t@
+# define HARE__ssize_t @HARE__ssize_t@
 
-#endif /* \_HARE_NET_CONFIG_H_ */
+# endif /* \_HARE_NET_CONFIG_H_ */
