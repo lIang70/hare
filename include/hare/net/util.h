@@ -3,6 +3,8 @@
 
 #include <hare/base/util.h>
 
+#include <cinttypes>
+
 namespace hare {
 namespace net {
 

@@ -10,7 +10,7 @@
 #include <memory>
 #include <mutex>
 #include <queue>
-#include <vector>
+#include <list>
 
 namespace hare {
 
