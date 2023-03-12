@@ -12,9 +12,8 @@ if(NOT TARGET jemalloc)
         copy_if_different "${JEMALLOC_LIBRARY}" "${CMAKE_SOURCE_DIR}/lib/"
     )
 
-    add_library(jemalloc STATIC IMPORTED GLOBAL)
-    set_property(TARGET jemalloc APPEND PROPERTY IMPORTED_CONFIGURATIONS NOCONFIG)
-    set_target_properties(jemalloc PROPERTIES IMPORTED_LOCATION_NOCONFIG ${JEMALLOC_LIBRARY}
+    add_library(jemalloc SHARED IMPORTED GLOBAL)
+    set_target_properties(jemalloc PROPERTIES IMPORTED_LOCATION ${JEMALLOC_LIBRARY}
         INTERFACE_INCLUDE_DIRECTORIES ${JEMALLOC_INCLUDE})
 endif()
 
