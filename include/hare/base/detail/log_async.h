@@ -4,6 +4,7 @@
 #include <hare/base/util.h>
 
 #include <cinttypes>
+#include <string>
 
 namespace hare {
 namespace log {

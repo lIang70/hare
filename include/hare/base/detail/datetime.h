@@ -3,9 +3,9 @@
 
 #include <hare/base/util.h>
 
-#include <string>
 #include <ctime>
-#include <utility>
+#include <cinttypes>
+#include <string>
 
 namespace hare {
 namespace time {

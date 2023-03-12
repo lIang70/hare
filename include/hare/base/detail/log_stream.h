@@ -4,6 +4,9 @@
 #include <hare/base/detail/non_copyable.h>
 #include <hare/base/util.h>
 
+#include <cinttypes>
+#include <string>
+
 namespace hare {
 namespace log {
     static const int32_t SMALL_BUFFER = 4 * 1024;

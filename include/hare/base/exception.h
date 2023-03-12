@@ -4,6 +4,7 @@
 #include <hare/base/util.h>
 
 #include <exception>
+#include <string>
 
 namespace hare {
 

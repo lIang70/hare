@@ -3,9 +3,7 @@
 
 #include <hare/base/system_check.h>
 
-#include <list>
 #include <cstring>
-#include <string>
 
 #ifdef H_OS_WIN32
 #ifndef HARE_STATIC
