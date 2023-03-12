@@ -19,8 +19,11 @@ namespace net {
         inline int64_t timeout() const { return ms_timeout_; }
         inline bool isPersist() const { return persist_; }
 
-        void run();
+        inline Thread::Task task() const { return task_; }
+
     };
+
+    using TimerId = uint64_t;
 
 } // namespace net
 } // namespace hare

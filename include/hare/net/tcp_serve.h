@@ -2,7 +2,6 @@
 #define _HARE_NET_TCP_SERVE_H_
 
 #include <hare/net/tcp_session.h>
-#include <hare/net/host_address.h>
 #include <hare/net/timer.h>
 
 namespace hare {
@@ -26,7 +25,9 @@ namespace net {
         void listen(const HostAddress& address);
 
         bool isRunning() const;
-        bool addTimer(const std::shared_ptr<net::Timer>& timer);
+
+        TimerId addTimer(net::Timer* timer);
+        void cancel(net::TimerId id);
 
         void exec();
         void exit();

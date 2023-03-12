@@ -5,8 +5,10 @@
 #include <hare/base/detail/non_copyable.h>
 #include <hare/base/thread.h>
 #include <hare/base/timestamp.h>
+#include <hare/net/timer.h>
 
 #include <atomic>
+#include <map>
 #include <memory>
 #include <mutex>
 #include <queue>
@@ -23,12 +25,13 @@ namespace core {
     class Event;
 
     namespace detail {
+
         struct TimerInfo {
-            std::weak_ptr<net::Timer> timer_ {};
+            net::TimerId timer_id_ {};
             Timestamp timestamp_ {};
 
-            TimerInfo(const std::shared_ptr<net::Timer>& timer, int64_t ms_time)
-                : timer_(timer)
+            TimerInfo(net::TimerId timer_id, int64_t ms_time)
+                : timer_id_(timer_id)
                 , timestamp_(ms_time)
             {
             }
@@ -63,7 +66,8 @@ namespace core {
         EventList active_events_ {};
         Event* current_active_event_ { nullptr };
 
-        detail::PriorityTimer priority_timers_;
+        detail::PriorityTimer priority_timers_ {};
+        std::map<net::TimerId, net::Timer*> manage_timers_ {};
 
         mutable std::mutex mutex_ {};
         std::list<Thread::Task> pending_funcs_ {};
@@ -127,7 +131,8 @@ namespace core {
         void removeEvent(Event* event);
         bool checkEvent(Event* event);
 
-        void addTimer(const std::shared_ptr<net::Timer>& timer);
+        net::TimerId addTimer(net::Timer* timer);
+        void cancel(net::TimerId id);
 
     private:
         void notify();

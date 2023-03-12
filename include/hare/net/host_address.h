@@ -4,6 +4,9 @@
 #include <hare/base/detail/non_copyable.h>
 #include <hare/base/util.h>
 
+#include <cinttypes>
+#include <string>
+
 struct sockaddr;
 struct sockaddr_in6;
 

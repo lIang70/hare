@@ -114,13 +114,17 @@ namespace net {
         return p_->started_.load();
     }
 
-    bool TcpServe::addTimer(const std::shared_ptr<net::Timer>& timer)
+    TimerId TcpServe::addTimer(net::Timer* timer)
     {
         if (!isRunning())
             return false;
 
-        p_->cycle_->addTimer(timer);
-        return true;
+        return p_->cycle_->addTimer(timer);
+    }
+
+    void TcpServe::cancel(net::TimerId id)
+    {
+        p_->cycle_->cancel(id);
     }
 
     void TcpServe::exec()

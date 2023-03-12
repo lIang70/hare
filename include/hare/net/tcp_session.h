@@ -3,6 +3,7 @@
 
 #include <hare/base/detail/non_copyable.h>
 #include <hare/base/util.h>
+#include <hare/net/host_address.h>
 #include <hare/base/timestamp.h>
 #include <hare/net/buffer.h>
 

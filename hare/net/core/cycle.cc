@@ -18,6 +18,7 @@ namespace core {
 
         const int32_t POLL_TIME_MICROSECONDS { 10000 };
         thread_local Cycle* t_local_cycle { nullptr };
+        std::atomic<net::TimerId> s_timer_id { 1 };
 
         util_socket_t createWakeFd()
         {
@@ -196,10 +197,19 @@ namespace core {
         return reactor_->checkEvent(event);
     }
 
-    void Cycle::addTimer(const std::shared_ptr<net::Timer>& timer)
+    net::TimerId Cycle::addTimer(net::Timer* timer)
     {
         assertInCycleThread();
-        priority_timers_.emplace(timer, Timestamp::now().microSecondsSinceEpoch() + timer->timeout());
+        auto id = detail::s_timer_id.fetch_add(1);
+        manage_timers_.insert(std::make_pair(id, timer));
+        priority_timers_.emplace(id, Timestamp::now().microSecondsSinceEpoch() + timer->timeout());
+        return id;
+    }
+
+    void Cycle::cancel(net::TimerId id)
+    {
+        assertInCycleThread();
+        manage_timers_.erase(id);
     }
 
     void Cycle::notify()
@@ -240,10 +250,13 @@ namespace core {
             auto top = priority_timers_.top();
             if (reactor_time_ < top.timestamp_)
                 break;
-            if (auto timer = top.timer_.lock()) {
-                timer->run();
-                if (timer->isPersist()) {
-                    priority_timers_.emplace(timer, reactor_time_.microSecondsSinceEpoch() + timer->timeout());
+            auto iter = manage_timers_.find(top.timer_id_);
+            if (iter != manage_timers_.end()) {
+                iter->second->task()();
+                if (iter->second->isPersist()) {
+                    priority_timers_.emplace(top.timer_id_, reactor_time_.microSecondsSinceEpoch() + iter->second->timeout());
+                } else {
+                    manage_timers_.erase(iter);
                 }
             }
             priority_timers_.pop();

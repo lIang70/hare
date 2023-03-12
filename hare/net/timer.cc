@@ -10,11 +10,5 @@ namespace net {
     {
     }
 
-    void Timer::run()
-    {
-        if (task_)
-            task_();
-    }
-
 } // namespace net
 } // namespace hare
