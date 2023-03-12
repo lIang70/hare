@@ -6,8 +6,6 @@
 #include <cstdint>
 #include <string>
 
-#include <sys/types.h> // for off_t
-
 namespace hare {
 namespace util {
 
