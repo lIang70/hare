@@ -181,9 +181,6 @@ configure_file(
 # Add hare-config
 include_directories(${CMAKE_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR}/include)
 
-# For Jemalloc
-add_definitions(-DJEMALLOC_NO_RENAME)
-
 # Add hare_base's src
 file(GLOB HARE_BASE_SOURCES "base/*.cc"
     "base/log/*.cc"

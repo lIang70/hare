@@ -6,8 +6,8 @@
 //
 // Do not rely on macros in this file existing in later versions.
 //
-#ifndef _HARE_NET_CONFIG_H_
-#define _HARE_NET_CONFIG_H_
+#ifndef _HARE_CONFIG_H_
+#define _HARE_CONFIG_H_
 
 /* Numeric representation of the version */
 #define HARE__NUMERIC_VERSION @HARE_NUMERIC_VERSION@
@@ -524,4 +524,4 @@
 /* Define to `int' if <sys/types.h> does not define. */
 # define HARE__ssize_t @HARE__ssize_t@
 
-# endif /* \_HARE_NET_CONFIG_H_ */
+# endif /* \_HARE_CONFIG_H_ */
