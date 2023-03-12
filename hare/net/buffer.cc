@@ -77,7 +77,7 @@ namespace net {
             inline bool isEmpty() const { return off_ == 0; }
 
             void clear();
-            void write(void* bytes, std::size_t size);
+            void write(const void* bytes, std::size_t size);
             void drain(std::size_t size);
             bool realign(std::size_t size);
         };
@@ -113,7 +113,7 @@ namespace net {
             off_ = 0;
         }
 
-        void Block::write(void* bytes, std::size_t size)
+        void Block::write(const void* bytes, std::size_t size)
         {
             HARE_ASSERT(size <= writableSize(), "");
             memcpy(writable(), bytes, size);
@@ -202,7 +202,7 @@ namespace net {
         drain(total_len_);
     }
 
-    bool Buffer::add(void* bytes, std::size_t size)
+    bool Buffer::add(const void* bytes, std::size_t size)
     {
         if (total_len_ + size > detail::Block::MAX_SIZE) {
             return false;

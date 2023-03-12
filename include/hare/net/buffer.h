@@ -29,7 +29,7 @@ namespace net {
 
         void clearAll();
 
-        bool add(void* bytes, std::size_t size);
+        bool add(const void* bytes, std::size_t size);
 
         std::size_t remove(void* buffer, std::size_t length);
 

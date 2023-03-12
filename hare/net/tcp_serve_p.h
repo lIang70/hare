@@ -3,6 +3,7 @@
 
 #include "hare/net/core/event.h"
 #include "hare/net/core/cycle_threadpool.h"
+#include "hare/net/socket_op.h"
 #include <hare/net/socket.h>
 #include <hare/net/tcp_serve.h>
 

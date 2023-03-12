@@ -10,6 +10,10 @@
 #include <memory>
 
 namespace hare {
+namespace core {
+    class Cycle;
+}
+
 namespace net {
 
     class TcpSessionPrivate;
@@ -44,7 +48,6 @@ namespace net {
 
         void shutdown(); // NOT thread safe, no simultaneous calling
         void forceClose();
-//        void forceCloseWithDelay(int64_t milliseconds);
         void setTcpNoDelay(bool on);
 
         // reading or not
@@ -60,10 +63,13 @@ namespace net {
     private:
         explicit TcpSession(TcpSessionPrivate* p);
 
-        void shutdownInLoop();
-        void forceCloseInLoop();
-        void startReadInLoop();
-        void stopReadInLoop();
+        core::Cycle* getCycle();
+
+        void shutdownInCycle();
+        void forceCloseInCycle();
+        void startReadInCycle();
+        void stopReadInCycle();
+        void writeInCycle();
 
         void connectEstablished();
         void connectDestroyed();

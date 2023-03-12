@@ -18,17 +18,11 @@ namespace net {
     namespace detail {
 
         class TcpEvent : public core::Event {
-            Buffer in_buffer_ {};
-            Buffer out_buffer_ {};
-
             TcpSessionPrivate* tsp_ { nullptr };
 
         public:
             TcpEvent(core::Cycle* cycle, util_socket_t fd, TcpSessionPrivate* tsp);
             ~TcpEvent() override;
-
-            inline Buffer& inBuffer() { return in_buffer_; }
-            inline Buffer& outBuffer() { return out_buffer_; }
 
             void eventCallBack(int32_t events, const Timestamp& receive_time) override;
         };
@@ -47,6 +41,10 @@ namespace net {
         const HostAddress local_addr_ {};
         const HostAddress peer_addr_ {};
 
+
+        Buffer in_buffer_ {};
+        std::mutex out_buffer_mutex_ {};
+        Buffer out_buffer_ {};
         std::size_t high_water_mark_ { 64 * 1024 * 1024 };
 
         TcpSessionPrivate(core::Cycle* cycle,
