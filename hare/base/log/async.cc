@@ -38,7 +38,7 @@ namespace log {
             : name_(std::move(name))
             , roll_size_(roll_size)
             , flush_interval_(flush_interval)
-            , thread_(std::bind(&Async::Data::run, this), "log::Async")
+            , thread_(std::bind(&Async::Data::run, this), "LOG_ASYNC")
         {
             current_block_->bzero();
             next_block_->bzero();
@@ -48,7 +48,7 @@ namespace log {
         void run()
         {
             if (!running_)
-                throw Exception("log::Async is not running.");
+                throw Exception("LOG_ASYNC is not running.");
             latch_.countDown();
 
             log::File output(name_, roll_size_, false);
