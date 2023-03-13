@@ -20,3 +20,7 @@ endif()
 if(NOT TARGET GoogleTest)
     add_subdirectory(googletest)
 endif()
+
+if(NOT TARGET Poco)
+    add_subdirectory(poco)
+endif()
