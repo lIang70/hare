@@ -1,7 +1,7 @@
 #include "hare/base/util/file.h"
+#include <hare/base/util/util.h>
 #include <hare/base/exception.h>
 #include <hare/base/logging.h>
-#include <hare/base/util.h>
 
 #include <cstdio>
 
@@ -37,7 +37,7 @@ namespace util {
             auto n = write(log_line + written, remain);
             if (n != remain) {
                 if (auto err = ::ferror(fp_)) {
-                    fprintf(stderr, "AppendFile::append() failed %s\n", log::strErrorno(err));
+                    ::fprintf(stderr, "AppendFile::append() failed %s\n", log::strErrorno(err));
                     break;
                 }
             }

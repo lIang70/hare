@@ -1,5 +1,5 @@
 #include "hare/base/util/file.h"
-#include <hare/base/detail/system_info.h>
+#include <hare/base/util/system_info.h>
 #include <hare/base/exception.h>
 #include <hare/base/system_check.h>
 

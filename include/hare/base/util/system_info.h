@@ -1,7 +1,7 @@
 #ifndef _HARE_BASE_UTIL_SYSTEM_INFO_H_
 #define _HARE_BASE_UTIL_SYSTEM_INFO_H_
 
-#include <hare/base/util.h>
+#include <hare/base/util/util.h>
 
 #include <cinttypes>
 #include <list>

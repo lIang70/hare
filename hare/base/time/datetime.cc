@@ -1,4 +1,4 @@
-#include <hare/base/detail/datetime.h>
+#include <hare/base/time/datetime.h>
 
 namespace hare {
 namespace time {

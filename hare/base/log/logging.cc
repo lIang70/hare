@@ -1,6 +1,6 @@
 #include "hare/base/log/util.h"
 #include "hare/base/thread/local.h"
-#include <hare/base/detail/datetime.h>
+#include <hare/base/time/datetime.h>
 #include <hare/base/logging.h>
 
 #include <cassert>

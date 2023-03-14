@@ -4,8 +4,6 @@
 #include <hare/base/logging.h>
 #include <hare/base/system_check.h>
 
-#include <atomic>
-#include <thread>
 #include <utility>
 
 #ifdef H_OS_WIN32
@@ -35,72 +33,13 @@ void setCurrentThreadName(LPCSTR ThreadName)
 
 namespace hare {
 
-class Thread::Data {
-public:
-    using UniqueThread = std::unique_ptr<std::thread>;
-    using Handle = std::thread::native_handle_type;
-
-    UniqueThread thread_ { nullptr };
-
-    Thread::Task task_ {};
-    std::string name_ {};
-    Thread::Id thread_id_ {};
-    bool started_ { false };
-    std::shared_ptr<util::CountDownLatch> count_down_latch_ { nullptr };
-
-    Data(Thread::Task& task, std::string  name)
-        : task_(std::move(task))
-        , name_(std::move(name))
-    {
-    }
-
-    void run()
-    {
-        thread_id_ = current_thread::tid();
-
-        if (count_down_latch_)
-            count_down_latch_->countDown();
-
-        t_data.thread_name_ = name_.empty() ? "HareThread" : name_.c_str();
-
-        // For debug
-#ifdef H_OS_WIN32
-        setCurrentThreadName(t_data.thread_name_);
-#elif defined(H_OS_LINUX)
-        ::prctl(PR_SET_NAME, t_data.thread_name_);
-#endif
-
-        try {
-            task_();
-            t_data.thread_name_ = "finished";
-            thread_id_ = 0;
-            started_ = false;
-        } catch (const Exception& e) {
-            t_data.thread_name_ = "crashed";
-            fprintf(stderr, "exception caught in Thread %s\n", name_.c_str());
-            fprintf(stderr, "reason: %s\n", e.what());
-            fprintf(stderr, "stack trace: %s\n", e.stackTrace());
-            std::abort();
-        } catch (const std::exception& e) {
-            t_data.thread_name_ = "crashed";
-            fprintf(stderr, "exception caught in Thread %s\n", name_.c_str());
-            fprintf(stderr, "reason: %s\n", e.what());
-            std::abort();
-        } catch (...) {
-            t_data.thread_name_ = "crashed";
-            fprintf(stderr, "exception caught in Thread %s\n", name_.c_str());
-            throw;
-        }
-    }
-};
-
 static std::atomic<int32_t> num_of_thread_ { 0 };
 
 static void setDefaultName(std::string& name)
 {
     auto id = num_of_thread_.fetch_add(1, std::memory_order_acquire);
     if (name.empty()) {
-        name = "Thread-" + std::to_string(id);
+        name = "THREAD-" + std::to_string(id);
     }
 }
 
@@ -109,49 +48,28 @@ int32_t Thread::threadCreated()
     return num_of_thread_.load(std::memory_order_relaxed);
 }
 
-Thread::Thread(Task task, const std::string& name)
-    : d_(new Data(task, name))
+Thread::Thread(Task task, std::string name)
+    : task_(std::move(task))
+    , name_(std::move(name))
 {
-    setDefaultName(d_->name_);
+    setDefaultName(name_);
 }
 
 Thread::~Thread()
 {
-    if (d_->thread_ && d_->thread_->joinable())
-        d_->thread_->join();
-
-    delete d_;
-}
-
-const std::string& Thread::name() const
-{
-    return d_->name_;
-}
-
-Thread::Id Thread::tid() const
-{
-    return d_->thread_id_;
-}
-
-bool Thread::started() const
-{
-    return d_->started_;
-}
-
-bool Thread::isRunning()
-{
-    return d_->started_;
+    if (thread_ && thread_->joinable())
+        thread_->join();
 }
 
 void Thread::start()
 {
-    HARE_ASSERT(!d_->started_, "Thread is stared.");
-    d_->started_ = true;
+    HARE_ASSERT(!started_, "Thread is stared.");
+    started_ = true;
 
     try {
-        d_->count_down_latch_.reset(new util::CountDownLatch(1));
-        d_->thread_ = Data::UniqueThread(new std::thread(&Data::run, d_));
-        d_->count_down_latch_->await();
+        count_down_latch_.reset(new util::CountDownLatch(1));
+        thread_ = UniqueThread(new std::thread(&Thread::run, this));
+        count_down_latch_->await();
     } catch (const Exception& e) {
         t_data.thread_name_ = "crashed";
         fprintf(stderr, "exception caught in tread created\n");
@@ -163,7 +81,7 @@ void Thread::start()
         fprintf(stderr, "Fail to create thread! Detail:\n %s", e.what());
         std::abort();
     } catch (...) {
-        fprintf(stderr, "unknown exception caught in thread %s\n", d_->name_.c_str());
+        fprintf(stderr, "unknown exception caught in thread %s\n", name_.c_str());
         throw; // rethrow
     }
 }
@@ -173,12 +91,51 @@ bool Thread::join()
     if (current_thread::tid() == tid())
         return false;
 
-    if (d_->thread_ && d_->thread_->joinable()) {
-        d_->thread_->join();
+    if (thread_ && thread_->joinable()) {
+        thread_->join();
         return true;
     }
 
     return false;
+}
+
+void Thread::run()
+{
+    thread_id_ = current_thread::tid();
+
+    if (count_down_latch_)
+        count_down_latch_->countDown();
+
+    t_data.thread_name_ = name_.empty() ? "HareThread" : name_.c_str();
+
+    // For debug
+#ifdef H_OS_WIN32
+    setCurrentThreadName(t_data.thread_name_);
+#elif defined(H_OS_LINUX)
+    ::prctl(PR_SET_NAME, t_data.thread_name_);
+#endif
+
+    try {
+        task_();
+        t_data.thread_name_ = "finished";
+        thread_id_ = 0;
+        started_ = false;
+    } catch (const Exception& e) {
+        t_data.thread_name_ = "crashed";
+        fprintf(stderr, "exception caught in Thread %s\n", name_.c_str());
+        fprintf(stderr, "reason: %s\n", e.what());
+        fprintf(stderr, "stack trace: %s\n", e.stackTrace());
+        std::abort();
+    } catch (const std::exception& e) {
+        t_data.thread_name_ = "crashed";
+        fprintf(stderr, "exception caught in Thread %s\n", name_.c_str());
+        fprintf(stderr, "reason: %s\n", e.what());
+        std::abort();
+    } catch (...) {
+        t_data.thread_name_ = "crashed";
+        fprintf(stderr, "exception caught in Thread %s\n", name_.c_str());
+        throw;
+    }
 }
 
 }

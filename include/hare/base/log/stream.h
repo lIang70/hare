@@ -1,8 +1,8 @@
 #ifndef _HARE_BASE_LOG_STREAM_H_
 #define _HARE_BASE_LOG_STREAM_H_
 
-#include <hare/base/detail/non_copyable.h>
-#include <hare/base/util.h>
+#include <hare/base/util/non_copyable.h>
+#include <hare/base/util/util.h>
 
 #include <cinttypes>
 #include <string>
@@ -21,6 +21,8 @@ namespace log {
             char* cur_ { nullptr };
 
         public:
+            using Ptr = std::shared_ptr<FixedBuffer<SIZE>>;
+
             FixedBuffer()
                 : cur_(data_)
             {

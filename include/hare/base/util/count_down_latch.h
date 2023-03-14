@@ -1,6 +1,8 @@
 #ifndef _HARE_BASE_COUNT_DOWN_LATCH_H_
 #define _HARE_BASE_COUNT_DOWN_LATCH_H_
 
+#include <hare/base/util/util.h>
+
 #include <condition_variable>
 #include <mutex>
 
@@ -13,6 +15,8 @@ namespace util {
         std::condition_variable cv_ {};
 
     public:
+        using Ptr = std::shared_ptr<CountDownLatch>;
+
         explicit CountDownLatch(uint32_t count)
             : count_(count)
         {

@@ -1,5 +1,5 @@
 #include "hare/base/log/file.h"
-#include <hare/base/detail/system_info.h>
+#include <hare/base/util/system_info.h>
 #include <hare/base/logging.h>
 
 namespace hare {

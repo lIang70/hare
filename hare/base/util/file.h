@@ -1,7 +1,7 @@
 #ifndef _HARE_BASE_FILE_H_
 #define _HARE_BASE_FILE_H_
 
-#include <hare/base/detail/non_copyable.h>
+#include <hare/base/util/non_copyable.h>
 
 #include <cstdint>
 #include <string>

@@ -1,4 +1,4 @@
-#include <hare/base/detail/log_stream.h>
+#include <hare/base/log/stream.h>
 
 #include <algorithm>
 #include <cassert>

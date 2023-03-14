@@ -1,6 +1,6 @@
-#include <hare/base/detail/datetime.h>
+#include <hare/base/time/datetime.h>
+#include <hare/base/time/time_zone.h>
 #include <hare/base/logging.h>
-#include <hare/base/time_zone.h>
 
 #include <algorithm>
 #include <string>

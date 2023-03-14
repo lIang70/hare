@@ -1,10 +1,10 @@
 #ifndef _HARE_BASE_LOGGING_H_
 #define _HARE_BASE_LOGGING_H_
 
-#include <hare/base/detail/log_stream.h>
-#include <hare/base/time_zone.h>
-#include <hare/base/timestamp.h>
-#include <hare/base/util.h>
+#include <hare/base/log/stream.h>
+#include <hare/base/time/time_zone.h>
+#include <hare/base/time/timestamp.h>
+#include <hare/base/util/util.h>
 
 #include <functional>
 

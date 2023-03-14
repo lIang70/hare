@@ -1,25 +1,38 @@
 #ifndef _HARE_BASE_THREAD_POOL_H_
 #define _HARE_BASE_THREAD_POOL_H_
 
-#include <hare/base/detail/non_copyable.h>
-#include <hare/base/thread.h>
+#include <hare/base/util/non_copyable.h>
+#include <hare/base/util/thread.h>
+
+#include <vector>
+#include <queue>
 
 namespace hare {
 
 class HARE_API ThreadPool : public NonCopyable {
-    class Data;
-    Data* d_ { nullptr };
+    mutable std::mutex mutex_ {};
+    std::condition_variable cv_for_not_empty_ {};
+    std::condition_variable cv_for_not_full_ {};
+    std::string name_ {};
+    Thread::Task pool_init_callback_ {};
+    std::vector<Thread::Ptr> threads_ {};
+    std::deque<Thread::Task> queue_ {};
+    size_t max_queue_size_ { 0 };
+    bool running_ { false };
 
 public:
-    explicit ThreadPool(const std::string& name = std::string("ThreadPool"));
+    using Ptr = std::shared_ptr<ThreadPool>;
+
+    explicit ThreadPool(std::string name = std::string("THREAD_POOL"));
     ~ThreadPool();
 
-    const std::string& name() const;
+    inline const std::string& name() const { return name_; }
 
     // Must be called before start().
-    void setMaxQueueSize(size_t max_size);
+    inline void setMaxQueueSize(size_t max_size) { max_queue_size_ = max_size; }
     void setThreadInitCallback(const Thread::Task& cb);
 
+    inline bool isRunning() const { return running_; } 
     void start(int32_t num_of_thread);
     void stop();
 
@@ -35,7 +48,9 @@ public:
 
 private:
     bool isFull() const;
+
     Thread::Task take();
+    
     void loop();
 };
 

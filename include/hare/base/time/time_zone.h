@@ -1,8 +1,8 @@
 #ifndef _HARE_BASE_TIME_ZONE_H_
 #define _HARE_BASE_TIME_ZONE_H_
 
-#include <hare/base/detail/datetime.h>
-#include <hare/base/util.h>
+#include <hare/base/time/datetime.h>
+#include <hare/base/util/util.h>
 
 #include <cinttypes>
 

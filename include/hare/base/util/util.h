@@ -4,6 +4,7 @@
 #include <hare/base/system_check.h>
 
 #include <cstring>
+#include <memory>
 
 #ifdef H_OS_WIN32
 #ifndef HARE_STATIC

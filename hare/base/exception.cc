@@ -5,36 +5,22 @@
 
 namespace hare {
 
-class Exception::Data {
-public:
-    std::string what_ {};
-    std::string stack_ {};
-
-    explicit Data(std::string  what)
-        : what_(std::move(what))
-    {
-    }
-};
-
 Exception::Exception(std::string what)
-    : d_(new Data(std::move(what)))
+    : what_(std::move(what))
+    , stack_(current_thread::stackTrace(false))
 {
-    d_->stack_ = current_thread::stackTrace(false);
 }
 
-Exception::~Exception()
-{
-    delete d_;
-}
+Exception::~Exception() = default;
 
 const char* Exception::what() const noexcept
 {
-    return d_->what_.c_str();
+    return what_.c_str();
 }
 
 const char* Exception::stackTrace() const noexcept
 {
-    return d_->stack_.c_str();
+    return stack_.c_str();
 }
 
 }

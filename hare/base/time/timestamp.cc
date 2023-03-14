@@ -1,4 +1,4 @@
-#include <hare/base/timestamp.h>
+#include <hare/base/time/timestamp.h>
 
 #include <chrono>
 #include <cinttypes>
