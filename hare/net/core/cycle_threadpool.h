@@ -1,7 +1,7 @@
 #ifndef _HARE_NET_CORE_CYCLE_THREADPOOL_H_
 #define _HARE_NET_CORE_CYCLE_THREADPOOL_H_
 
-#include <hare/base/detail/non_copyable.h>
+#include <hare/base/util/non_copyable.h>
 
 #include <functional>
 #include <memory>

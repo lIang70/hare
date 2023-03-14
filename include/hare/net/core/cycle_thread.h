@@ -1,18 +1,23 @@
 #ifndef _HARE_NET_CORE_CYCLE_THREAD_H_
 #define _HARE_NET_CORE_CYCLE_THREAD_H_
 
-#include <hare/base/thread.h>
+#include <hare/base/util/thread.h>
+
+#include <condition_variable>
+#include <mutex>
 
 namespace hare {
 namespace core {
 
     class Cycle;
-    class CycleThreadPrivate;
     class HARE_API CycleThread : public Thread {
-        CycleThreadPrivate* p_ { nullptr };
+        Cycle* cycle_ { nullptr };
+        std::string reactor_type_ {};
+        std::condition_variable cv_ {};
+        std::mutex mutex_ {};
 
     public:
-        explicit CycleThread(std::string  reactor_type, const std::string& name = "Cycle-Thread");
+        explicit CycleThread(std::string  reactor_type, const std::string& name = "CYCLE_THREAD");
         ~CycleThread();
 
         Cycle* startCycle();

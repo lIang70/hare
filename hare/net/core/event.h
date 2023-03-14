@@ -1,7 +1,7 @@
 #ifndef _HARE_NET_CORE_EVENT_H_
 #define _HARE_NET_CORE_EVENT_H_
 
-#include <hare/base/timestamp.h>
+#include <hare/base/time/timestamp.h>
 #include <hare/net/util.h>
 
 #include <atomic>

@@ -1,7 +1,7 @@
 #ifndef _HARE_NET_TIMER_H_
 #define _HARE_NET_TIMER_H_
 
-#include <hare/base/thread.h>
+#include <hare/base/util/thread.h>
 
 namespace hare {
 namespace net {

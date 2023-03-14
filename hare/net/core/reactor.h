@@ -2,8 +2,8 @@
 #define _HARE_NET_REACTOR_H_
 
 #include "hare/net/core/cycle.h"
-#include <hare/base/detail/non_copyable.h>
-#include <hare/base/timestamp.h>
+#include <hare/base/util/non_copyable.h>
+#include <hare/base/time/timestamp.h>
 #include <hare/net/util.h>
 
 #include <map>
