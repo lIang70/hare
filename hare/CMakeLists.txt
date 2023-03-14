@@ -182,11 +182,13 @@ configure_file(
 include_directories(${CMAKE_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR}/include)
 
 # Add hare_base's src
-file(GLOB HARE_BASE_SOURCES "base/*.cc"
+file(GLOB HARE_BASE_SOURCES
+    "base/*.cc"
     "base/log/*.cc"
     "base/thread/*.cc"
     "base/time/*.cc"
-    "base/util/*.cc")
+    "base/util/*.cc"
+)
 
 # Add the source code to the project's executable。
 add_library(hare_base ${HARE__LIBRARY_TYPE} ${HARE_BASE_SOURCES})
@@ -198,13 +200,16 @@ if(HARE__BUILD_TESTS)
 endif(HARE__BUILD_TESTS)
 
 # Add hare_base's src
-file(GLOB HARE_NET_SOURCES "net/*.cc"
+file(GLOB HARE_NET_SOURCES
+    "net/*.cc"
     "net/core/*.cc"
-    "net/core/reactor/*.cc")
+    "net/core/reactor/*.cc"
+)
 
 # Add the source code to the project's executable。
 add_library(hare_net ${HARE__LIBRARY_TYPE} ${HARE_NET_SOURCES})
 target_include_directories(hare_net PUBLIC ${CMAKE_SOURCE_DIR}/include)
+target_link_libraries(hare_net hare_base jemalloc)
 
 if(HARE__BUILD_TESTS)
     add_subdirectory(net/tests)
