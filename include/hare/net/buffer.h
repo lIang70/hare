@@ -21,6 +21,8 @@ namespace net {
         std::size_t max_read_ { MAX_READ_DEFAULT };
 
     public:
+        using Ptr = std::shared_ptr<Buffer>;
+
         explicit Buffer(std::size_t max_read = MAX_READ_DEFAULT);
         ~Buffer();
 

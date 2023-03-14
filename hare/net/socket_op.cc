@@ -90,20 +90,14 @@ namespace socket {
         return fd;
     }
 
-    void bindOrDie(int sockfd, const struct sockaddr* addr)
+    bool bind(int sockfd, const struct sockaddr* addr)
     {
-        auto ret = ::bind(sockfd, addr, static_cast<socklen_t>(sizeof(struct sockaddr_in6)));
-        if (ret < 0) {
-            SYS_FATAL() << "::bind error";
-        }
+        return ::bind(sockfd, addr, static_cast<socklen_t>(sizeof(struct sockaddr_in6))) >= 0;
     }
 
-    void listenOrDie(int sockfd)
+    bool listen(int sockfd)
     {
-        auto ret = ::listen(sockfd, SOMAXCONN);
-        if (ret < 0) {
-            SYS_FATAL() << "::listen error";
-        }
+        return ::listen(sockfd, SOMAXCONN) >= 0;
     }
 
     int32_t close(util_socket_t fd)

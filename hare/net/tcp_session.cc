@@ -147,6 +147,9 @@ namespace net {
                 } else {
                     p_->cycle_->runInLoop(std::bind(&TcpSession::writeInCycle, shared_from_this()));
                 }
+            } else if (p_->out_buffer_.length() > p_->high_water_mark_) {
+                locker.unlock();
+                highWaterMark();
             }
         }
         return false;

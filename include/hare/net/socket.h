@@ -8,32 +8,21 @@
 namespace hare {
 namespace net {
 
-    class HARE_API Socket : public NonCopyable {
+    class HARE_API Socket {
         util_socket_t socket_ { -1 };
 
     public:
-        explicit Socket(util_socket_t socket)
-            : socket_(socket)
-        {
-        }
-        Socket(Socket&& another) noexcept
-        {
-            std::swap(socket_, another.socket_);
-        }
-        ~Socket();
+        using Ptr = std::shared_ptr<Socket>;
 
-        Socket& operator=(Socket&& another) noexcept
-        {
-            std::swap(socket_, another.socket_);
-            return (*this);
-        }
+        explicit Socket(int8_t family, util_socket_t socket = -1);
+
+        ~Socket();
 
         inline util_socket_t socket() const { return socket_; }
 
-        //! abort if address in use
-        void bindAddress(const HostAddress& local_addr) const;
-        //! abort if address in use
-        void listen() const;
+        bool bindAddress(const HostAddress& local_addr) const;
+        bool listen() const;
+        void close();
 
         //! On success, returns a non-negative integer that is
         //! a descriptor for the accepted socket, which has been

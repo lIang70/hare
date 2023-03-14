@@ -26,6 +26,8 @@ namespace net {
         TcpSessionPrivate* p_ { nullptr };
 
     public:
+        using Ptr = std::shared_ptr<TcpSession>; 
+
         enum State : int8_t {
             CONNECTING = 0x00,
             CONNECTED,
@@ -74,9 +76,6 @@ namespace net {
         void connectEstablished();
         void connectDestroyed();
     };
-
-    using STcpSession = std::shared_ptr<TcpSession>;
-    using WTcpSession = std::weak_ptr<TcpSession>;
 
 } // namespace net
 } // namespace hare

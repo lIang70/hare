@@ -17,6 +17,8 @@ namespace core {
         std::mutex mutex_ {};
 
     public:
+        using Ptr = std::shared_ptr<CycleThread>;
+
         explicit CycleThread(std::string  reactor_type, const std::string& name = "CYCLE_THREAD");
         ~CycleThread();
 

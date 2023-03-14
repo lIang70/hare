@@ -51,8 +51,8 @@ namespace socket {
     extern const struct sockaddr_in6* sockaddr_in6_cast(const struct sockaddr* addr);
 
     extern util_socket_t createNonblockingOrDie(int8_t family);
-    extern void bindOrDie(util_socket_t fd, const struct sockaddr* addr);
-    extern void listenOrDie(util_socket_t fd);
+    extern bool bind(util_socket_t fd, const struct sockaddr* addr);
+    extern bool listen(util_socket_t fd);
 
     extern int32_t close(util_socket_t fd);
     extern util_socket_t accept(util_socket_t fd, struct sockaddr_in6* addr);

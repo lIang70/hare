@@ -18,6 +18,8 @@ namespace net {
         Data* d_ { nullptr };
 
     public:
+        using Ptr = std::shared_ptr<HostAddress>;
+
         //! resolve hostname to IP address, not changing port or sin_family
         //! return true on success.
         //! thread safe

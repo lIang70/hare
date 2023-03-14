@@ -12,6 +12,8 @@ class HARE_API Timestamp {
     int64_t microseconds_since_epoch_ { -1 };
 
 public:
+    using Ptr = std::shared_ptr<Timestamp>;
+
     static const int64_t MICROSECONDS_PER_SECOND { 1000 * 1000 };
 
     //!

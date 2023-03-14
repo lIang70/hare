@@ -14,6 +14,8 @@ namespace net {
         TcpServePrivate* p_ { nullptr };
 
     public:
+        using Ptr = std::shared_ptr<TcpServe>; 
+
         //! @brief Construct a new Tcp Serve object
         //! @param type The type of reactor. EPOLL/POLL
         TcpServe(const std::string& type, int8_t family, const std::string& name = "HARE_SERVE");
@@ -33,12 +35,12 @@ namespace net {
         void exit();
 
     protected:
-        virtual inline STcpSession createSession(TcpSessionPrivate* p)
+        virtual inline TcpSession::Ptr createSession(TcpSessionPrivate* p)
         {
-            return STcpSession(new TcpSession(p));
+            return TcpSession::Ptr(new TcpSession(p));
         }
 
-        virtual void newConnect(STcpSession session, Timestamp ts) = 0;
+        virtual void newConnect(TcpSession::Ptr session, Timestamp ts) = 0;
     };
 
 } // namespace net

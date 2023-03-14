@@ -34,6 +34,8 @@ namespace core {
         std::weak_ptr<void> tie_object_;
 
     public:
+        using Ptr = std::shared_ptr<Event>;
+
         Event(Cycle* cycle, util_socket_t fd);
         virtual ~Event();
 

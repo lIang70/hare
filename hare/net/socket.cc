@@ -13,6 +13,21 @@
 namespace hare {
 namespace net {
 
+    Socket::Socket(int8_t family, util_socket_t socket)
+        : socket_(socket)
+    {
+        if (socket == -1) {
+            switch (family) {
+            case AF_INET:
+            case AF_INET6:
+                socket = socket::createNonblockingOrDie(family);
+                break;
+            default:
+                LOG_FATAL() << "Unrecognized family.";
+            }
+        }
+    }
+
     Socket::~Socket()
     {
         if (socket_ != -1) {
@@ -20,14 +35,19 @@ namespace net {
         }
     }
 
-    void Socket::bindAddress(const HostAddress& local_addr) const
+    bool Socket::bindAddress(const HostAddress& local_addr) const
     {
-        socket::bindOrDie(socket_, local_addr.getSockAddr());
+        return socket::bind(socket_, local_addr.getSockAddr());
     }
 
-    void Socket::listen() const
+    bool Socket::listen() const
     {
-        socket::listenOrDie(socket_);
+        return socket::listen(socket_);
+    }
+
+    void Socket::close()
+    {
+        socket::close(socket_);
     }
 
     util_socket_t Socket::accept(HostAddress& peer_addr) const
