@@ -5,3 +5,8 @@
 [submodule "googletest"]
 	path = 3rdparty/googletest
 	url = https://github.com/google/googletest.git
+
+[submodule "openssl"]
+	path = 3rdparty/openssl
+	url = https://github.com/openssl/openssl.git
+	branch = openssl-3.1
