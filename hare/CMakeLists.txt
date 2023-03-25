@@ -215,12 +215,6 @@ if(HARE__BUILD_TESTS)
     add_subdirectory(base/tests)
 endif(HARE__BUILD_TESTS)
 
-# Add hare_base's src
-file(GLOB HARE_NET_SOURCES
-    "net/*.cc"
-    "net/core/*.cc"
-    "net/core/reactor/*.cc"
-)
 
 if(EXISTS "${CMAKE_SOURCE_DIR}/lib/openssl/" AND IS_DIRECTORY "${CMAKE_SOURCE_DIR}/lib/openssl/")
     message(STATUS "OpenSSL is built")
@@ -236,19 +230,28 @@ if(OPENSSL_FOUND)
     message(STATUS "OPENSSL_LIBRARIES = ${OPENSSL_LIBRARIES}")
 endif(OPENSSL_FOUND)
 
+# Add hare_net's src
+file(GLOB HARE_NET_SOURCES
+    "net/*.cc"
+    "net/core/*.cc"
+    "net/core/reactor/*.cc"
+)
+
 # Add the source code to the project's executable。
 add_library(hare_net ${HARE__LIBRARY_TYPE} ${HARE_NET_SOURCES})
 target_include_directories(hare_net PUBLIC ${CMAKE_SOURCE_DIR}/include)
 
 if(EXISTS "${CMAKE_SOURCE_DIR}/lib/jemalloc/" AND IS_DIRECTORY "${CMAKE_SOURCE_DIR}/lib/jemalloc/")
     target_link_libraries(hare_net hare_base PkgConfig::Jemalloc OpenSSL::SSL OpenSSL::Crypto)
+else()
+    target_link_libraries(hare_net hare_base OpenSSL::SSL OpenSSL::Crypto)
 endif()
 
 if(HARE__BUILD_TESTS)
     add_subdirectory(net/tests)
 endif(HARE__BUILD_TESTS)
 
-# Add hare_base's src
+# Add hare_core's src
 file(GLOB HARE_CORE_SOURCES
     "core/*.cc"
 )
@@ -259,4 +262,19 @@ target_include_directories(hare_core PUBLIC ${CMAKE_SOURCE_DIR}/include)
 
 if(EXISTS "${CMAKE_SOURCE_DIR}/lib/jemalloc/" AND IS_DIRECTORY "${CMAKE_SOURCE_DIR}/lib/jemalloc/")
     target_link_libraries(hare_core hare_net hare_base PkgConfig::Jemalloc OpenSSL::SSL OpenSSL::Crypto)
+else()
+    target_link_libraries(hare_core hare_net hare_base OpenSSL::SSL OpenSSL::Crypto)
+endif()
+
+# Add hare_main's src
+file(GLOB HARE_MAIN_SOURCES
+    "main/*.cc"
+)
+
+# Add the source code to the project's executable。
+add_executable(hare_main ${HARE_MAIN_SOURCES})
+if(EXISTS "${CMAKE_SOURCE_DIR}/lib/jemalloc/" AND IS_DIRECTORY "${CMAKE_SOURCE_DIR}/lib/jemalloc/")
+    target_link_libraries(hare_main hare_core hare_net hare_base PkgConfig::Jemalloc OpenSSL::SSL OpenSSL::Crypto)
+else()
+    target_link_libraries(hare_main hare_core hare_net hare_base OpenSSL::SSL OpenSSL::Crypto)
 endif()
