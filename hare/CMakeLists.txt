@@ -182,13 +182,14 @@ find_package(PkgConfig REQUIRED)
 
 if(EXISTS "${CMAKE_SOURCE_DIR}/lib/jemalloc/" AND IS_DIRECTORY "${CMAKE_SOURCE_DIR}/lib/jemalloc/")
     message(STATUS "Jemalloc is built")
-
+    option(FIND_JEMALLOC ON)
     if(PKG_CONFIG_FOUND)
         set(ENV{PKG_CONFIG_PATH} ${CMAKE_SOURCE_DIR}/lib/jemalloc/lib/pkgconfig:$ENV{PKG_CONFIG_PATH})
         pkg_search_module(Jemalloc REQUIRED IMPORTED_TARGET jemalloc>=5.3)
     endif(PKG_CONFIG_FOUND)
 else()
     message(STATUS "Jemalloc need to be built")
+    option(FIND_JEMALLOC OFF)
 endif()
 
 # Add hare-config
@@ -207,7 +208,7 @@ file(GLOB HARE_BASE_SOURCES
 add_library(hare_base ${HARE__LIBRARY_TYPE} ${HARE_BASE_SOURCES})
 target_include_directories(hare_base PUBLIC ${CMAKE_SOURCE_DIR}/include)
 
-if(EXISTS "${CMAKE_SOURCE_DIR}/lib/jemalloc/" AND IS_DIRECTORY "${CMAKE_SOURCE_DIR}/lib/jemalloc/")
+if(FIND_JEMALLOC)
     target_link_libraries(hare_base PkgConfig::Jemalloc)
 endif()
 
@@ -241,7 +242,7 @@ file(GLOB HARE_NET_SOURCES
 add_library(hare_net ${HARE__LIBRARY_TYPE} ${HARE_NET_SOURCES})
 target_include_directories(hare_net PUBLIC ${CMAKE_SOURCE_DIR}/include)
 
-if(EXISTS "${CMAKE_SOURCE_DIR}/lib/jemalloc/" AND IS_DIRECTORY "${CMAKE_SOURCE_DIR}/lib/jemalloc/")
+if(FIND_JEMALLOC)
     target_link_libraries(hare_net hare_base PkgConfig::Jemalloc OpenSSL::SSL OpenSSL::Crypto)
 else()
     target_link_libraries(hare_net hare_base OpenSSL::SSL OpenSSL::Crypto)
@@ -260,7 +261,7 @@ file(GLOB HARE_CORE_SOURCES
 add_library(hare_core ${HARE__LIBRARY_TYPE} ${HARE_CORE_SOURCES})
 target_include_directories(hare_core PUBLIC ${CMAKE_SOURCE_DIR}/include)
 
-if(EXISTS "${CMAKE_SOURCE_DIR}/lib/jemalloc/" AND IS_DIRECTORY "${CMAKE_SOURCE_DIR}/lib/jemalloc/")
+if(FIND_JEMALLOC)
     target_link_libraries(hare_core hare_net hare_base PkgConfig::Jemalloc OpenSSL::SSL OpenSSL::Crypto)
 else()
     target_link_libraries(hare_core hare_net hare_base OpenSSL::SSL OpenSSL::Crypto)
@@ -273,7 +274,7 @@ file(GLOB HARE_MAIN_SOURCES
 
 # Add the source code to the project's executable。
 add_executable(hare_main ${HARE_MAIN_SOURCES})
-if(EXISTS "${CMAKE_SOURCE_DIR}/lib/jemalloc/" AND IS_DIRECTORY "${CMAKE_SOURCE_DIR}/lib/jemalloc/")
+if(FIND_JEMALLOC)
     target_link_libraries(hare_main hare_core hare_net hare_base PkgConfig::Jemalloc OpenSSL::SSL OpenSSL::Crypto)
 else()
     target_link_libraries(hare_main hare_core hare_net hare_base OpenSSL::SSL OpenSSL::Crypto)
