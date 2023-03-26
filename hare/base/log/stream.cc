@@ -17,7 +17,7 @@ namespace log {
         static_assert(sizeof(c_digits_hex) == 17, "wrong number of c_digits_hex");
 
         template <typename T>
-        std::size_t convert(char buf[], T value)
+        auto convert(char buf[], T value) -> std::size_t
         {
             auto i = value;
             auto p = buf;
@@ -37,7 +37,7 @@ namespace log {
             return p - buf;
         }
 
-        std::size_t convertHex(char buf[], uintptr_t value)
+        auto convertHex(char buf[], uintptr_t value) -> std::size_t
         {
             auto i = value;
             auto p = buf;
@@ -57,7 +57,7 @@ namespace log {
         template <typename T>
         Fmt::Fmt(const char* fmt, T val)
         {
-            static_assert(std::is_arithmetic<T>::value == true, "Must be arithmetic type");
+            static_assert(std::is_arithmetic<T>::value, "Must be arithmetic type");
 
             length_ = snprintf(buf_, sizeof(buf_), fmt, val);
             assert(static_cast<size_t>(length_) < sizeof(buf_));
@@ -91,72 +91,72 @@ namespace log {
     }
 
     template <typename T>
-    void Stream::formatInteger(T v)
+    void Stream::formatInteger(T num)
     {
         if (buffer_.avail() >= MAX_NUMERSIC_SIZE) {
-            auto len = detail::convert(buffer_.current(), v);
+            auto len = detail::convert(buffer_.current(), num);
             buffer_.add(len);
         }
     }
 
-    Stream& Stream::operator<<(int16_t v)
+    auto Stream::operator<<(int16_t num) -> Stream&
     {
-        *this << static_cast<int32_t>(v);
+        *this << static_cast<int32_t>(num);
         return *this;
     }
 
-    Stream& Stream::operator<<(uint16_t v)
+    auto Stream::operator<<(uint16_t num) -> Stream&
     {
-        *this << static_cast<uint32_t>(v);
+        *this << static_cast<uint32_t>(num);
         return *this;
     }
 
-    Stream& Stream::operator<<(int32_t v)
+    auto Stream::operator<<(int32_t num) -> Stream&
     {
-        formatInteger(v);
+        formatInteger(num);
         return *this;
     }
 
-    Stream& Stream::operator<<(uint32_t v)
+    auto Stream::operator<<(uint32_t num) -> Stream&
     {
-        formatInteger(v);
+        formatInteger(num);
         return *this;
     }
 
-    Stream& Stream::operator<<(int64_t v)
+    auto Stream::operator<<(int64_t num) -> Stream&
     {
-        formatInteger(v);
+        formatInteger(num);
         return *this;
     }
 
-    Stream& Stream::operator<<(uint64_t v)
+    auto Stream::operator<<(uint64_t num) -> Stream&
     {
-        formatInteger(v);
+        formatInteger(num);
         return *this;
     }
 
-    Stream& Stream::operator<<(const void* p)
+    auto Stream::operator<<(const void* pointer) -> Stream&
     {
-        auto v = reinterpret_cast<uintptr_t>(p);
+        auto intptr = reinterpret_cast<uintptr_t>(pointer);
         if (buffer_.avail() >= MAX_NUMERSIC_SIZE) {
-            auto buf = buffer_.current();
+            auto* buf = buffer_.current();
             buf[0] = '0';
             buf[1] = 'x';
-            auto len = detail::convertHex(buf + 2, v);
+            auto len = detail::convertHex(buf + 2, intptr);
             buffer_.add(len + 2);
         }
         return *this;
     }
 
     // FIXME: replace this with Grisu3 by Florian Loitsch.
-    Stream& Stream::operator<<(double v)
+    auto Stream::operator<<(double num) -> Stream&
     {
         if (buffer_.avail() >= MAX_NUMERSIC_SIZE) {
-            auto len = snprintf(buffer_.current(), MAX_NUMERSIC_SIZE, "%.12g", v);
+            auto len = snprintf(buffer_.current(), MAX_NUMERSIC_SIZE, "%.12g", num);
             buffer_.add(len);
         }
         return *this;
     }
 
-}
-}
+} // namespace log
+} // namespace hare

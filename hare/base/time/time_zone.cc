@@ -1,3 +1,4 @@
+#include <cstdint>
 #include <hare/base/time/datetime.h>
 #include <hare/base/time/time_zone.h>
 #include <hare/base/logging.h>
@@ -6,38 +7,41 @@
 #include <string>
 #include <vector>
 
-namespace hare {
+#define HOURS_PER_DAY 24
+#define MINUTES_PER_HOUR 60
+#define SECONDS_PER_MINUTE 60
+#define SECONDS_PER_DAY (HOURS_PER_DAY * MINUTES_PER_HOUR * SECONDS_PER_MINUTE)
 
+namespace hare {
 namespace detail {
 
-    static const int32_t SECONDS_PER_DAY = 24 * 60 * 60;
-
-    inline void fillHMS(uint32_t seconds, struct time::DateTime* dt)
+    inline void fillHMS(uint32_t seconds, struct time::DateTime* sdt)
     {
-        auto minutes = seconds / 60;
-        dt->hour = minutes / 60;
-        dt->minute = minutes - dt->hour * 60;
-        dt->second = seconds - minutes * 60;
+        auto minutes = static_cast<int32_t>(seconds) / MINUTES_PER_HOUR;
+        sdt->hour() = minutes / MINUTES_PER_HOUR;
+        sdt->minute() = minutes - sdt->hour() * MINUTES_PER_HOUR;
+        sdt->second() = static_cast<int32_t>(seconds) - minutes * SECONDS_PER_MINUTE;
     }
 
-    time::DateTime breakTime(int64_t t)
+    auto breakTime(int64_t time) -> time::DateTime
     {
-        struct time::DateTime dt;
-        auto seconds = static_cast<int32_t>(t % SECONDS_PER_DAY);
-        auto days = static_cast<int32_t>(t / SECONDS_PER_DAY);
+        struct time::DateTime sdt;
+        auto seconds = static_cast<int32_t>(time % static_cast<int64_t>(SECONDS_PER_DAY));
+        auto days = static_cast<int32_t>(time / static_cast<int64_t>(SECONDS_PER_DAY));
         // C++11 rounds towards zero.
         if (seconds < 0) {
             seconds += SECONDS_PER_DAY;
             --days;
         }
-        detail::fillHMS(seconds, &dt);
+
+        detail::fillHMS(seconds, &sdt);
         time::Date date(days + time::Date::JULIAN_DAY_OF_19700101);
         time::Date::YearMonthDay ymd = date.yearMonthDay();
-        dt.year = ymd.year;
-        dt.month = ymd.month;
-        dt.day = ymd.day;
+        sdt.year() = ymd.year;
+        sdt.month() = ymd.month;
+        sdt.day() = ymd.day;
 
-        return dt;
+        return sdt;
     }
 
 } // namespace detail
@@ -57,14 +61,14 @@ struct TimeZone::Data {
     };
 
     struct CompareUtcTime {
-        bool operator()(const Transition& lhs, const Transition& rhs) const
+        auto operator()(const Transition& lhs, const Transition& rhs) const -> bool
         {
             return lhs.utc_time < rhs.utc_time;
         }
     };
 
     struct CompareLocalTime {
-        bool operator()(const Transition& lhs, const Transition& rhs) const
+        auto operator()(const Transition& lhs, const Transition& rhs) const -> bool
         {
             return lhs.local_time < rhs.local_time;
         }
@@ -83,10 +87,10 @@ struct TimeZone::Data {
         }
     };
 
-    std::vector<Transition> transitions;
-    std::vector<LocalTime> local_times;
-    std::string abbreviation;
-    std::string tz_string;
+    std::vector<Transition> transitions {};
+    std::vector<LocalTime> local_times {};
+    std::string abbreviation {};
+    std::string tz_string {};
 
     void addLocalTime(int32_t utc_offset, bool is_dst, int32_t desig_idx)
     {
@@ -95,15 +99,15 @@ struct TimeZone::Data {
 
     void addTransition(int64_t utc_time, int32_t local_time_idx)
     {
-        auto& lt = local_times.at(local_time_idx);
-        transitions.emplace_back(utc_time, utc_time + lt.utc_offset, local_time_idx);
+        auto& local = local_times.at(local_time_idx);
+        transitions.emplace_back(utc_time, utc_time + local.utc_offset, local_time_idx);
     }
 
-    const LocalTime* findLocalTime(int64_t utc_time) const;
-    const LocalTime* findLocalTime(const struct time::DateTime& lt, bool post_transition) const;
+    auto findLocalTime(int64_t utc_time) const -> const LocalTime*;
+    auto findLocalTime(const struct time::DateTime& tdt, bool post_transition) const -> const LocalTime*;
 };
 
-const TimeZone::Data::LocalTime* TimeZone::Data::findLocalTime(int64_t utc_time) const
+auto TimeZone::Data::findLocalTime(int64_t utc_time) const -> const TimeZone::Data::LocalTime*
 {
     const LocalTime* local { nullptr };
 
@@ -136,9 +140,9 @@ const TimeZone::Data::LocalTime* TimeZone::Data::findLocalTime(int64_t utc_time)
     return local;
 }
 
-const TimeZone::Data::LocalTime* TimeZone::Data::findLocalTime(const struct time::DateTime& lt, bool post_transition) const
+auto TimeZone::Data::findLocalTime(const struct time::DateTime& tdt, bool post_transition) const -> const TimeZone::Data::LocalTime*
 {
-    const auto local_time = fromUtcTime(lt);
+    const auto local_time = fromUtcTime(tdt);
 
     if (transitions.empty() || local_time < transitions.front().local_time) {
         // FIXME: should be first non dst time zone
@@ -171,9 +175,9 @@ const TimeZone::Data::LocalTime* TimeZone::Data::findLocalTime(const struct time
         // printf("SKIP: prev %ld local %ld start %ld\n", prior_second, localtime, transI->localtime);
         if (post_transition) {
             return &local_times[trans_iter->local_time_idx];
-        } else {
-            return &local_times[prior_trans.local_time_idx];
         }
+        
+        return &local_times[prior_trans.local_time_idx];
     }
 
     // input 1990-09-16 01:30:00, found row 4, looking at row 3
@@ -188,9 +192,9 @@ const TimeZone::Data::LocalTime* TimeZone::Data::findLocalTime(const struct time
         // printf("REPEAT: prev %ld local %ld start %ld\n", prior_second, localtime, transI->localtime);
         if (post_transition) {
             return &local_times[trans_iter->local_time_idx];
-        } else {
-            return &local_times[prior_trans.local_time_idx];
         }
+
+        return &local_times[prior_trans.local_time_idx];
     }
 
     // otherwise, it's unique
@@ -198,7 +202,7 @@ const TimeZone::Data::LocalTime* TimeZone::Data::findLocalTime(const struct time
 }
 
 // static
-TimeZone TimeZone::UTC()
+auto TimeZone::UTC() -> TimeZone
 {
     return {0, "UTC"};
 }
@@ -210,11 +214,11 @@ TimeZone::TimeZone(int32_t east_of_utc, const char* name)
     d_->abbreviation = name;
 }
 
-TimeZone::TimeZone(const TimeZone& tz)
+TimeZone::TimeZone(const TimeZone& another)
 {
-    if (tz) {
+    if (another) {
         d_ = new Data;
-        *d_ = *tz.d_;
+        *d_ = *another.d_;
     }
 }
 
@@ -223,26 +227,31 @@ TimeZone::~TimeZone()
     delete d_;
 }
 
-TimeZone& TimeZone::operator=(const TimeZone& tz)
+auto TimeZone::operator=(const TimeZone& another) -> TimeZone&
 {
-    if (tz) {
-        if (!d_)
+    if (this == &another) {
+        return (*this);
+    }
+        
+    if (another) {
+        if (d_ == nullptr) {
             d_ = new Data;
-        *d_ = *tz.d_;
+        }
+        *d_ = *another.d_;
     }
     return (*this);
 }
 
-struct time::DateTime TimeZone::toLocalTime(int64_t seconds, int32_t* utc_offset) const
+auto TimeZone::toLocalTime(int64_t seconds, int32_t* utc_offset) const -> struct time::DateTime
 {
     struct time::DateTime localTime;
     HARE_ASSERT(d_, "");
 
-    auto local = d_->findLocalTime(seconds);
+    const auto* local = d_->findLocalTime(seconds);
 
-    if (local) {
+    if (local != nullptr) {
         localTime = detail::breakTime(seconds + local->utc_offset);
-        if (utc_offset) {
+        if (utc_offset != nullptr) {
             *utc_offset = local->utc_offset;
         }
     }
@@ -250,29 +259,29 @@ struct time::DateTime TimeZone::toLocalTime(int64_t seconds, int32_t* utc_offset
     return localTime;
 }
 
-int64_t TimeZone::fromLocalTime(const struct time::DateTime& localtime, bool post_transition) const
+auto TimeZone::fromLocalTime(const struct time::DateTime& localtime, bool post_transition) const -> int64_t
 {
     HARE_ASSERT(d_, "Fail to get data of TimeZone.");
-    auto local = d_->findLocalTime(localtime, post_transition);
+    const auto* local = d_->findLocalTime(localtime, post_transition);
     const auto local_seconds = fromUtcTime(localtime);
-    if (local) {
+    if (local != nullptr) {
         return local_seconds - local->utc_offset;
     }
     // fallback as if it's UTC time.
     return local_seconds;
 }
 
-time::DateTime TimeZone::toUtcTime(int64_t secondsSinceEpoch)
+auto TimeZone::toUtcTime(int64_t seconds_since_epoch) -> time::DateTime
 {
-    return detail::breakTime(secondsSinceEpoch);
+    return detail::breakTime(seconds_since_epoch);
 }
 
-int64_t TimeZone::fromUtcTime(const DateTime& dt)
+auto TimeZone::fromUtcTime(const time::DateTime& tdt) -> int64_t
 {
-    time::Date date(dt.year, dt.month, dt.day);
-    auto seconds_in_day = dt.hour * 3600 + dt.minute * 60 + dt.second;
-    int64_t days = date.julianDayNumber() - time::Date::JULIAN_DAY_OF_19700101;
-    return days * detail::SECONDS_PER_DAY + seconds_in_day;
+    time::Date date(tdt.year(), tdt.month(), tdt.day());
+    auto seconds_in_day = tdt.hour() * (MINUTES_PER_HOUR * SECONDS_PER_MINUTE) + tdt.minute() * SECONDS_PER_MINUTE + tdt.second();
+    auto days = date.julianDayNumber() - time::Date::JULIAN_DAY_OF_19700101;
+    return days * SECONDS_PER_DAY + seconds_in_day;
 }
 
 } // namespace hare

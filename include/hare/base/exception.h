@@ -16,11 +16,11 @@ public:
     explicit Exception(std::string what);
     ~Exception() override;
 
-    const char* what() const noexcept override;
+    auto what() const noexcept -> const char* override;
 
-    const char* stackTrace() const noexcept;
+    auto stackTrace() const noexcept -> const char*;
 };
 
-}
+} // namespace hare
 
 #endif // !_HARE_BASE_EXCEPTION_H_

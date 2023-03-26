@@ -20,7 +20,7 @@ namespace core {
         LOG_DEBUG() << "Thread-Pool[" << this << "] of cycles was deleted.";
     }
 
-    bool CycleThreadPool::start()
+    auto CycleThreadPool::start() -> bool
     {
         HARE_ASSERT(!started_, "");
         base_cycle_->assertInCycleThread();
@@ -28,7 +28,7 @@ namespace core {
         started_ = true;
 
         for (auto i = 0; i < num_threads_; ++i) {
-            char buf[name_.size() + 32];
+            char buf[name_.size() + HARE_SMALL_FIXED_SIZE];
             snprintf(buf, sizeof(buf), "%s_%d", name_.c_str(), i);
             threads_.emplace_back(new CycleThread(reactor_type_, buf));
             cycles_.push_back(threads_[i]->startCycle());
@@ -37,11 +37,11 @@ namespace core {
         return num_threads_ != 0;
     }
 
-    Cycle* CycleThreadPool::getNextCycle()
+    auto CycleThreadPool::getNextCycle() -> Cycle*
     {
         base_cycle_->assertInCycleThread();
         HARE_ASSERT(started_, "");
-        auto cycle = base_cycle_;
+        auto* cycle = base_cycle_;
 
         if (!cycles_.empty()) {
             // round-robin
@@ -54,10 +54,10 @@ namespace core {
         return cycle;
     }
 
-    Cycle* CycleThreadPool::getLoopForHash(size_t hash_code)
+    auto CycleThreadPool::getLoopForHash(size_t hash_code) -> Cycle*
     {
         base_cycle_->assertInCycleThread();
-        auto cycle = base_cycle_;
+        auto* cycle = base_cycle_;
 
         if (!cycles_.empty()) {
             cycle = cycles_[hash_code % cycles_.size()];
@@ -66,15 +66,14 @@ namespace core {
         return cycle;
     }
 
-    std::vector<Cycle*> CycleThreadPool::getAllLoops()
+    auto CycleThreadPool::getAllLoops() -> std::vector<Cycle*>
     {
         base_cycle_->assertInCycleThread();
         HARE_ASSERT(started_, "");
         if (cycles_.empty()) {
             return { 1, base_cycle_ };
-        } else {
-            return cycles_;
         }
+        return cycles_;
     }
 
 } // namespace core

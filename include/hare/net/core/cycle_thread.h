@@ -19,10 +19,10 @@ namespace core {
     public:
         using Ptr = std::shared_ptr<CycleThread>;
 
-        explicit CycleThread(std::string  reactor_type, const std::string& name = "CYCLE_THREAD");
+        explicit CycleThread(std::string  reactor_type, std::string name = "CYCLE_THREAD");
         ~CycleThread();
 
-        Cycle* startCycle();
+        auto startCycle() -> Cycle*;
 
     protected:
         void run();

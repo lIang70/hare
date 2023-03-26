@@ -7,33 +7,40 @@
 #include <cinttypes>
 #include <string>
 
+#define HARE_START_YEAR 1900
+
 namespace hare {
 namespace time {
 
     // Local time in unspecified timezone.
     // A minute is always 60 seconds, no leap seconds.
-    struct HARE_API DateTime {
+    class HARE_API DateTime {
+        int32_t year_ { HARE_START_YEAR }; // [1900, 2500]
+        int32_t month_ { 1 }; // [1, 12]
+        int32_t day_ { 1 }; // [1, 31]
+        int32_t hour_ { 0 }; // [0, 23]
+        int32_t minute_ { 0 }; // [0, 59]
+        int32_t second_ { 0 }; // [0, 59]
+
+    public:
         DateTime() = default;
         explicit DateTime(const struct tm&);
-        DateTime(int32_t _year, int32_t _month, int32_t _day, int32_t _hour, int32_t _minute, int32_t _second)
-            : year(_year)
-            , month(_month)
-            , day(_day)
-            , hour(_hour)
-            , minute(_minute)
-            , second(_second)
-        {
-        }
 
         // "yyyy-MM-dd HH:MM:SS"
-        std::string toFmtString() const;
+        auto toFmtString() const -> std::string;
 
-        int32_t year { 1900 }; // [1900, 2500]
-        int32_t month { 1 }; // [1, 12]
-        int32_t day { 1 }; // [1, 31]
-        int32_t hour { 0 }; // [0, 23]
-        int32_t minute { 0 }; // [0, 59]
-        int32_t second { 0 }; // [0, 59]
+        inline auto year() -> int32_t& { return year_; }
+        inline auto year() const -> int32_t { return year_; }
+        inline auto month() -> int32_t& { return month_; }
+        inline auto month() const -> int32_t { return month_; }
+        inline auto day() -> int32_t& { return day_; }
+        inline auto day() const -> int32_t { return day_; }
+        inline auto hour() -> int32_t& { return hour_; }
+        inline auto hour() const -> int32_t { return hour_; }
+        inline auto minute() -> int32_t& { return minute_; }
+        inline auto minute() const -> int32_t { return minute_; }
+        inline auto second() -> int32_t& { return second_; }
+        inline auto second() const -> int32_t { return second_; }
     };
 
     class HARE_API Date {
@@ -71,45 +78,45 @@ namespace time {
             std::swap(julian_day_number_, that.julian_day_number_);
         }
 
-        bool valid() const { return julian_day_number_ > 0; }
+        auto valid() const -> bool { return julian_day_number_ > 0; }
 
         //! Converts to yyyy-mm-dd format.
-        std::string toFmtString() const;
+        auto toFmtString() const -> std::string;
 
-        struct YearMonthDay yearMonthDay() const;
+        auto yearMonthDay() const -> struct YearMonthDay;
 
-        int32_t year() const
+        auto year() const -> int32_t
         {
             return yearMonthDay().year;
         }
 
-        int32_t month() const
+        auto month() const -> int32_t
         {
             return yearMonthDay().month;
         }
 
-        int32_t day() const
+        auto day() const -> int32_t
         {
             return yearMonthDay().day;
         }
 
         // [0, 1, ..., 6] => [Sunday, Monday, ..., Saturday ]
-        int32_t weekDay() const
+        auto weekDay() const -> int32_t
         {
             return (julian_day_number_ + 1) % DAYS_PER_WEEK;
         }
 
-        int32_t julianDayNumber() const { return julian_day_number_; }
+        auto julianDayNumber() const -> int32_t { return julian_day_number_; }
     };
 
-    HARE_API inline bool operator<(Date x, Date y)
+    HARE_API inline auto operator<(Date date_x, Date date_y) -> bool
     {
-        return x.julianDayNumber() < y.julianDayNumber();
+        return date_x.julianDayNumber() < date_y.julianDayNumber();
     }
 
-    HARE_API inline bool operator==(Date x, Date y)
+    HARE_API inline auto operator==(Date date_x, Date date_y) -> bool
     {
-        return x.julianDayNumber() == y.julianDayNumber();
+        return date_x.julianDayNumber() == date_y.julianDayNumber();
     }
 
 } // namespace time

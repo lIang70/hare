@@ -4,6 +4,7 @@
 #include "hare/net/core/event.h"
 #include "hare/net/core/cycle_threadpool.h"
 #include "hare/net/socket_op.h"
+#include <cstdint>
 #include <hare/net/socket.h>
 #include <hare/net/tcp_serve.h>
 
@@ -30,9 +31,9 @@ namespace net {
             util_socket_t idle_fd_ { -1 };
 #endif
 
-            Acceptor(core::Cycle* cycle, util_socket_t fd, bool reuse_port)
-                : Event(cycle, fd)
-                , socket_(fd)
+            Acceptor(core::Cycle* cycle, int8_t family, util_socket_t target_fd, bool reuse_port)
+                : Event(cycle, target_fd)
+                , socket_(family, target_fd)
 #ifdef H_OS_LINUX
                 , idle_fd_( ::open("/dev/null", O_RDONLY | O_CLOEXEC) )
             {
@@ -83,8 +84,7 @@ namespace net {
 
         std::atomic<bool> started_ { false };
 
-    public:
-        void newSession(util_socket_t fd, const HostAddress& address, const Timestamp& ts);
+        void newSession(util_socket_t target_fd, const HostAddress& address, const Timestamp& time);
 
     };
 

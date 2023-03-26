@@ -17,16 +17,16 @@ namespace core {
 
     protected:
         using EventMap = std::map<util_socket_t, Event*>;
-        EventMap events_;
+        EventMap events_ {};
 
     public:
-        static Reactor* createByType(const std::string& type, Cycle* cycle);
+        static auto createByType(const std::string& type, Cycle* cycle) -> Reactor*;
 
         virtual ~Reactor() = default;
 
         //! @brief Polls the I/O events.
         //!  Must be called in the cycle thread.
-        virtual Timestamp poll(int32_t timeout_microseconds, Cycle::EventList& active_events) = 0;
+        virtual auto poll(int32_t timeout_microseconds, Cycle::EventList& active_events) -> Timestamp = 0;
 
         //! @brief Changes the interested I/O events.
         //!  Must be called in the cycle thread.
@@ -38,7 +38,7 @@ namespace core {
 
         //! @brief Detects whether the event is in the reactor.
         //!  Must be called in the cycle thread.
-        virtual bool checkEvent(Event* event) const;
+        virtual auto checkEvent(Event* event) const -> bool;
 
         inline void assertInCycleThread() const
         {

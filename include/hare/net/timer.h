@@ -15,11 +15,11 @@ namespace net {
         Timer(int64_t ms_timeout, Thread::Task task, bool persist = false);
 
         inline void setTask(Thread::Task& task) { task_ = task; }
-        inline void setTimeout(int64_t ms) { ms_timeout_ = ms; }
-        inline int64_t timeout() const { return ms_timeout_; }
-        inline bool isPersist() const { return persist_; }
+        inline void setTimeout(int64_t time_ms) { ms_timeout_ = time_ms; }
+        inline auto timeout() const -> int64_t { return ms_timeout_; }
+        inline auto isPersist() const -> bool { return persist_; }
 
-        inline Thread::Task task() const { return task_; }
+        inline auto task() const -> Thread::Task { return task_; }
 
     };
 

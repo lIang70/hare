@@ -13,14 +13,14 @@ Exception::Exception(std::string what)
 
 Exception::~Exception() = default;
 
-const char* Exception::what() const noexcept
+auto Exception::what() const noexcept -> const char*
 {
     return what_.c_str();
 }
 
-const char* Exception::stackTrace() const noexcept
+auto Exception::stackTrace() const noexcept -> const char*
 {
     return stack_.c_str();
 }
 
-}
+} // namespace hare

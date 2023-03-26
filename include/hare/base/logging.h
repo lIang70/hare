@@ -1,11 +1,14 @@
 #ifndef _HARE_BASE_LOGGING_H_
 #define _HARE_BASE_LOGGING_H_
 
+#include <cstddef>
 #include <hare/base/log/stream.h>
 #include <hare/base/time/time_zone.h>
 #include <hare/base/time/timestamp.h>
 #include <hare/base/util/util.h>
 
+#include <array>
+#include <cstdint>
 #include <functional>
 
 namespace hare {
@@ -21,19 +24,20 @@ namespace log {
         NUM_LOG_LEVELS
     };
 
-    HARE_API const char* strErrorno(int errorno);
+    HARE_API auto strErrorno(int errorno) -> const char*;
 
-}
+} // namespace log
 
 class HARE_API Logger {
 public:
     using Output = std::function<void(const char*, int)>;
     using Flush = std::function<void()>;
 
-    struct HARE_API FilePath {
+    class HARE_API FilePath {
         const char* data_ { nullptr };
         int32_t size_ { 0 };
 
+    public:
         template <int Length>
         FilePath(const char (&arr)[Length])
             : data_(arr)
@@ -58,21 +62,28 @@ public:
 #else
             const char* slash = strrchr(file_name, '/');
 #endif
-            if (slash) {
+            if (slash != nullptr) {
                 data_ = slash + 1;
             }
             size_ = static_cast<int32_t>(strlen(data_));
         }
+
+        inline auto data() const -> const char* { return data_; }
+        inline auto size() const -> int32_t { return size_; }
     };
 
 private:
-    struct HARE_API Data {
+    class HARE_API Data {
+        friend class Logger;
+
+    private:
         Timestamp time_ {};
         log::Stream stream_ {};
         log::LogLevel level_ {};
         int line_ {};
         FilePath base_name_;
 
+    public:
         Data(log::LogLevel level, int old_errno, const FilePath& file, int line);
 
         void formatTime();
@@ -87,16 +98,16 @@ public:
     Logger(FilePath file, int line, bool to_abort);
     ~Logger();
 
-    log::Stream& stream() { return d_.stream_; }
+    auto stream() -> log::Stream& { return d_.stream_; }
 
-    static log::LogLevel logLevel();
+    static auto logLevel() -> log::LogLevel;
     static void setLogLevel(log::LogLevel level);
     static void setOutput(Output output);
     static void setFlush(Flush flush);
-    static void setTimeZone(const TimeZone& tz);
+    static void setTimeZone(const TimeZone& time_zone);
 };
 
-}
+} // namespace hare
 
 #define LOG_TRACE() \
     hare::Logger(__FILE__, __LINE__, hare::log::LogLevel::TRACE, __func__).stream()

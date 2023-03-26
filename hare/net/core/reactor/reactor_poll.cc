@@ -13,49 +13,57 @@ namespace core {
     namespace detail {
         const int32_t INIT_EVENTS_CNT = 16;
 
-        decltype(pollfd::events) decodePoll(int32_t event_flags)
+        auto decodePoll(int32_t event_flags) -> decltype(pollfd::events)
         {
             decltype(pollfd::events) events = 0;
-            if (event_flags & net::EVENT_READ)
+            if ((event_flags & net::EVENT_READ) != 0) {
                 events |= (POLLIN | POLLPRI);
-            if (event_flags & net::EVENT_WRITE)
+            }
+            if ((event_flags & net::EVENT_WRITE) != 0) {
                 events |= (POLLOUT);
+            }
             return events;
         }
 
-        int32_t encodePoll(decltype(pollfd::events) events)
+        auto encodePoll(decltype(pollfd::events) events) -> int32_t
         {
             int32_t flags = net::EVENT_DEFAULT;
-            if ((events & POLLHUP) && !(events & POLLIN)) {
+            if (((events & POLLHUP) != 0) && ((events & POLLIN) == 0)) {
                 flags |= net::EVENT_CLOSED;
             }
-            if (events & (POLLERR | POLLNVAL)) {
+            if ((events & (POLLERR | POLLNVAL)) != 0) {
                 flags |= net::EVENT_ERROR;
             }
-            if (events & (POLLIN | POLLPRI | POLLRDHUP)) {
+            if ((events & (POLLIN | POLLPRI | POLLRDHUP)) != 0) {
                 flags |= net::EVENT_READ;
             }
-            if (events & POLLOUT) {
+            if ((events & POLLOUT) != 0) {
                 flags |= net::EVENT_WRITE;
             }
             return flags;
         }
 
-        std::string eventsToString(decltype(pollfd::events) event)
+        auto eventsToString(decltype(pollfd::events) event) -> std::string
         {
             std::ostringstream oss {};
-            if (event & POLLIN)
+            if ((event & POLLIN) != 0) {
                 oss << "IN ";
-            if (event & POLLPRI)
+            }
+            if ((event & POLLPRI) != 0) {
                 oss << "PRI ";
-            if (event & POLLOUT)
+            }
+            if ((event & POLLOUT) != 0) {
                 oss << "OUT ";
-            if (event & POLLHUP)
+            }
+            if ((event & POLLHUP) != 0) {
                 oss << "HUP ";
-            if (event & POLLRDHUP)
+            }
+            if ((event & POLLRDHUP) != 0) {
                 oss << "RDHUP ";
-            if (event & POLLERR)
+            }
+            if ((event & POLLERR) != 0) {
                 oss << "ERR ";
+            }
             return oss.str();
         }
 
@@ -68,7 +76,7 @@ namespace core {
 
     PollReactor::~PollReactor() = default;
 
-    Timestamp PollReactor::poll(int32_t timeout_microseconds, Cycle::EventList& active_events)
+    auto PollReactor::poll(int32_t timeout_microseconds, Cycle::EventList& active_events) -> Timestamp
     {
         auto event_num = ::poll(&*poll_fds_.begin(), poll_fds_.size(), timeout_microseconds);
         auto saved_errno = errno;
@@ -92,13 +100,13 @@ namespace core {
     {
         Reactor::assertInCycleThread();
         LOG_TRACE() << "fd = " << event->fd() << " events = " << event->flags();
-        auto fd = event->fd();
+        auto target_fd = event->fd();
         if (event->index() == Event::Status::NEW) {
             // a new one, add to pollfds_
-            HARE_ASSERT(events_.find(fd) == events_.end(), "Error in event.");
+            HARE_ASSERT(events_.find(target_fd) == events_.end(), "Error in event.");
             struct pollfd pfd { };
             setZero(&pfd, sizeof(pfd));
-            pfd.fd = fd;
+            pfd.fd = target_fd;
             pfd.events = detail::decodePoll(event->flags());
             pfd.revents = 0;
             poll_fds_.push_back(pfd);
@@ -107,18 +115,18 @@ namespace core {
             events_[pfd.fd] = event;
         } else {
             // update existing one
-            HARE_ASSERT(events_.find(fd) != events_.end(), "Cannot find event.");
-            HARE_ASSERT(events_[fd] == event, "Event is incorrect.");
+            HARE_ASSERT(events_.find(target_fd) != events_.end(), "Cannot find event.");
+            HARE_ASSERT(events_[target_fd] == event, "Event is incorrect.");
             auto index = event->index();
             HARE_ASSERT(0 <= index && index < static_cast<int32_t>(poll_fds_.size()), "Over size.");
             struct pollfd& pfd = poll_fds_[index];
-            HARE_ASSERT(pfd.fd == fd || pfd.fd == -fd - 1, "Error in event.");
-            pfd.fd = fd;
+            HARE_ASSERT(pfd.fd == target_fd || pfd.fd == -target_fd - 1, "Error in event.");
+            pfd.fd = target_fd;
             pfd.events = detail::decodePoll(event->flags());
             pfd.revents = 0;
             if (event->isNoneEvent()) {
                 // ignore this pollfd
-                pfd.fd = -fd - 1;
+                pfd.fd = -target_fd - 1;
             }
         }
     }
@@ -126,17 +134,17 @@ namespace core {
     void PollReactor::removeEvent(Event* event)
     {
         Reactor::assertInCycleThread();
-        auto fd = event->fd();
-        LOG_TRACE() << "fd = " << fd;
-        HARE_ASSERT(events_.find(fd) != events_.end(), "Cannot find event.");
-        HARE_ASSERT(events_[fd] == event, "Event is incorrect.");
+        auto target_fd = event->fd();
+        LOG_TRACE() << "fd = " << target_fd;
+        HARE_ASSERT(events_.find(target_fd) != events_.end(), "Cannot find event.");
+        HARE_ASSERT(events_[target_fd] == event, "Event is incorrect.");
         HARE_ASSERT(event->isNoneEvent(), "Event is incorrect.");
         int index = event->index();
         HARE_ASSERT(0 <= index && index < static_cast<int32_t>(poll_fds_.size()), "Over size.");
         const struct pollfd& pfd = poll_fds_[index];
-        HARE_ASSERT(pfd.fd == -fd - 1 && pfd.events == detail::decodePoll(event->flags()), "Error events.");
-        auto n = events_.erase(fd);
-        HARE_ASSERT(n == 1, "Error in erase.");
+        HARE_ASSERT(pfd.fd == -target_fd - 1 && pfd.events == detail::decodePoll(event->flags()), "Error events.");
+        auto erase_n = events_.erase(target_fd);
+        HARE_ASSERT(erase_n == 1, "Error in erase.");
         if (implicit_cast<size_t>(index) == poll_fds_.size() - 1) {
             poll_fds_.pop_back();
         } else {
@@ -159,7 +167,7 @@ namespace core {
                 --num_of_events;
                 auto event_iter = events_.find(pfd->fd);
                 HARE_ASSERT(event_iter != events_.end(), "The event does not exist in the reactor.");
-                auto event = event_iter->second;
+                auto* event = event_iter->second;
                 HARE_ASSERT(event->fd() == pfd->fd, "The event's fd does not match.");
                 event->setRFlags(detail::encodePoll(pfd->revents));
                 active_events.push_back(event);

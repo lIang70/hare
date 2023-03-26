@@ -21,7 +21,7 @@ namespace net {
             TcpSessionPrivate* tsp_ { nullptr };
 
         public:
-            TcpEvent(core::Cycle* cycle, util_socket_t fd, TcpSessionPrivate* tsp);
+            TcpEvent(core::Cycle* cycle, util_socket_t target_fd, TcpSessionPrivate* tsp);
             ~TcpEvent() override;
 
             void eventCallBack(int32_t events, const Timestamp& receive_time) override;
@@ -45,15 +45,15 @@ namespace net {
         Buffer in_buffer_ {};
         std::mutex out_buffer_mutex_ {};
         Buffer out_buffer_ {};
-        std::size_t high_water_mark_ { 64 * 1024 * 1024 };
+        std::size_t high_water_mark_ { TcpSession::DEFAULT_HIGH_WATER };
 
         TcpSessionPrivate(core::Cycle* cycle,
-            std::string name, util_socket_t fd,
+            std::string name, int8_t family, util_socket_t target_fd,
             HostAddress local_addr,
             HostAddress peer_addr)
             : cycle_(cycle)
             , name_(std::move(name))
-            , socket_(new Socket(fd))
+            , socket_(new Socket(family, target_fd))
             , local_addr_(std::move(local_addr))
             , peer_addr_(std::move(peer_addr))
         {
@@ -62,10 +62,10 @@ namespace net {
             event_->setFlags(EVENT_READ);
         }
 
-        void handleRead(TcpSession* ts, const Timestamp& receive_time);
-        void handleWrite(TcpSession* ts);
-        void handleClose(TcpSession* ts);
-        void handleError(TcpSession* ts);
+        void handleRead(TcpSession* session, const Timestamp& receive_time);
+        void handleWrite(TcpSession* session);
+        void handleClose(TcpSession* session);
+        void handleError(TcpSession* session);
 
     };
 

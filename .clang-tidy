@@ -1,0 +1,17 @@
+---
+Checks: "bugprone-*,\
+google-*,\
+misc-*,\
+modernize-*,\
+performance-*,\
+readability-*,\
+portability-*,\
+"
+HeaderFilterRegex: 'Source/cm[^/]*\.(h|hxx|cxx)$'
+CheckOptions:
+  - key:   modernize-use-default-member-init.UseAssignment
+    value: '1'
+  - key:   modernize-use-equals-default.IgnoreMacros
+    value: '0'
+  - key:   modernize-use-auto.MinTypeNameLength
+    value: '80'

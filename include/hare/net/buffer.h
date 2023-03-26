@@ -26,23 +26,23 @@ namespace net {
         explicit Buffer(std::size_t max_read = MAX_READ_DEFAULT);
         ~Buffer();
 
-        inline std::size_t length() const { return total_len_; }
+        inline auto length() const -> std::size_t { return total_len_; }
         inline void setMaxRead(std::size_t max_read) { max_read_ = max_read; }
 
         void clearAll();
 
-        bool add(const void* bytes, std::size_t size);
+        auto add(const void* bytes, std::size_t size) -> bool;
 
-        std::size_t remove(void* buffer, std::size_t length);
+        auto remove(void* buffer, std::size_t length) -> std::size_t;
 
-        int64_t read(util_socket_t fd, int64_t howmuch);
-        int64_t write(util_socket_t fd, int64_t howmuch = -1);
+        auto read(util_socket_t target_fd, int64_t howmuch) -> int64_t;
+        auto write(util_socket_t target_fd, int64_t howmuch = -1) -> int64_t;
 
     private:
-        std::size_t copyout(void* buffer, std::size_t length);
-        bool drain(std::size_t size);
+        auto copyout(void* buffer, std::size_t length) -> std::size_t;
+        auto drain(std::size_t size) -> bool;
 
-        bool expandFast(int64_t howmuch);
+        auto expandFast(int64_t howmuch) -> bool;
     };
 
 } // namespace net

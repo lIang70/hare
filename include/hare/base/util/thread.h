@@ -30,23 +30,23 @@ private:
 public:
     using Ptr = std::shared_ptr<Thread>;
 
-    static int32_t threadCreated();
+    static auto threadCreated() -> int32_t;
 
     explicit Thread(Task task, std::string name = std::string());
     ~Thread();
 
-    inline const std::string& name() const { return name_; }
-    inline Id tid() const { return thread_id_; }
-    inline bool started() const { return started_; }
+    inline auto name() const -> const std::string& { return name_; }
+    inline auto tid() const -> Id { return thread_id_; }
+    inline auto started() const -> bool { return started_; }
 
     void start();
-    bool join();
+    auto join() -> bool;
 
 private:
     void run();
 
 };
 
-}
+} // namespace hare
 
 #endif // !_HARE_BASE_THREAD_H_

@@ -1,3 +1,4 @@
+#include "hare/base/util/util.h"
 #include "hare/net/core/cycle.h"
 #include "hare/net/tcp_serve_p.h"
 #include "hare/net/tcp_session_p.h"
@@ -11,7 +12,7 @@ namespace net {
         void Acceptor::eventCallBack(int32_t events, const Timestamp& receive_time)
         {
             ownerCycle()->assertInCycleThread();
-            if (events & EVENT_READ) {
+            if ((events & EVENT_READ) != 0) {
                 HostAddress peer_addr {};
                 // FIXME loop until no more ?
                 auto accepted { false };
@@ -46,33 +47,34 @@ namespace net {
 
     } // namespace detail
 
-    void TcpServePrivate::newSession(util_socket_t fd, const HostAddress& address, const Timestamp& ts)
+    void TcpServePrivate::newSession(util_socket_t target_fd, const HostAddress& address, const Timestamp& time)
     {
         HARE_ASSERT(started_ == true, "Serve already stop...");
         cycle_->assertInCycleThread();
-        auto work_cycle = thread_pool_->getNextCycle();
-        char buf[64];
+        auto* work_cycle = thread_pool_->getNextCycle();
+        char buf[HARE_SMALL_FIXED_SIZE * 2];
         snprintf(buf, sizeof buf, "-%s#%lu", listen_address_.toIpPort().c_str(), session_id_++);
         auto session_name = name_ + buf;
         LOG_DEBUG() << "New session[" << session_name
                     << "] in serve[" << name_
                     << "] from " << listen_address_.toIpPort()
-                    << " in " << ts.toFormattedString();
+                    << " in " << time.toFormattedString();
 
-        auto local_addr = HostAddress::localAddress(fd);
-        auto p = new TcpSessionPrivate(work_cycle, session_name, fd, local_addr, address);
+        auto local_addr = HostAddress::localAddress(target_fd);
+        auto* tsp = new TcpSessionPrivate(work_cycle, session_name, family_, target_fd, local_addr, address);
         auto tied_object = acceptor_->tiedObject().lock();
         if (tied_object) {
-            auto tied_serve = static_cast<TcpServe*>(tied_object.get());
-            if (!tied_serve)
+            auto* tied_serve = static_cast<TcpServe*>(tied_object.get());
+            if (tied_serve == nullptr) {
                 goto delete_session;
-            auto session = tied_serve->createSession(p);
+            }
+            auto session = tied_serve->createSession(tsp);
             session->connectEstablished();
-            work_cycle->runInLoop(std::bind(&TcpServe::newConnect, tied_serve->shared_from_this(), session, ts));
+            work_cycle->runInLoop(std::bind(&TcpServe::newConnect, tied_serve->shared_from_this(), session, time));
             return;
         }
     delete_session:
-        delete p;
+        delete tsp;
         SYS_ERROR() << "Cannot get TcpServe...";
     }
 
@@ -90,10 +92,10 @@ namespace net {
         delete p_;
     }
 
-    void TcpServe::setReusePort(bool b)
+    void TcpServe::setReusePort(bool is_reuse)
     {
         HARE_ASSERT(p_->started_ == false, "The serve already running...");
-        p_->reuse_port_ = b;
+        p_->reuse_port_ = is_reuse;
     }
 
     void TcpServe::setThreadNum(int32_t num)
@@ -108,22 +110,23 @@ namespace net {
         p_->listen_address_ = address;
     }
 
-    bool TcpServe::isRunning() const
+    auto TcpServe::isRunning() const -> bool
     {
         return p_->started_.load();
     }
 
-    TimerId TcpServe::addTimer(net::Timer* timer)
+    auto TcpServe::addTimer(net::Timer* timer) -> TimerId
     {
-        if (!isRunning())
-            return false;
+        if (!isRunning()) {
+            return 0;
+        }
 
         return p_->cycle_->addTimer(timer);
     }
 
-    void TcpServe::cancel(net::TimerId id)
+    void TcpServe::cancel(net::TimerId timer_id)
     {
-        p_->cycle_->cancel(id);
+        p_->cycle_->cancel(timer_id);
     }
 
     void TcpServe::exec()
@@ -131,7 +134,7 @@ namespace net {
         p_->cycle_.reset(new core::Cycle(p_->reactor_type_));
         HARE_ASSERT(p_->cycle_ != nullptr, "Cannot create cycle.");
 
-        p_->acceptor_.reset(new detail::Acceptor(p_->cycle_.get(), socket::createNonblockingOrDie(p_->family_), p_->reuse_port_));
+        p_->acceptor_.reset(new detail::Acceptor(p_->cycle_.get(), p_->family_, socket::createNonblockingOrDie(p_->family_), p_->reuse_port_));
         p_->acceptor_->socket_.bindAddress(p_->listen_address_);
         p_->acceptor_->new_session_ = std::bind(&TcpServePrivate::newSession, p_, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
         p_->acceptor_->listen();

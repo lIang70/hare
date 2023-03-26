@@ -18,26 +18,26 @@ namespace current_thread {
 
     extern void cacheThreadId();
 
-    extern inline Thread::Id tid()
+    extern inline auto tid() -> Thread::Id
     {
-        if (__builtin_expect(t_data.tid_ == 0, 0)) {
+        if (__builtin_expect(t_data.tid_ == 0, 0) != 0) {
             cacheThreadId();
         }
         return t_data.tid_;
     }
 
-    inline std::string tidString()
+    inline auto tidString() -> std::string
     {
         return t_data.tid_string_;
     }
 
-    inline const char* threadName()
+    inline auto threadName() -> const char*
     {
         return t_data.thread_name_;
     }
 
-    extern bool isMainThread();
-    extern std::string stackTrace(bool demangle);
+    extern auto isMainThread() -> bool;
+    extern auto stackTrace(bool demangle) -> std::string;
 
 }
 }

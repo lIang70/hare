@@ -9,8 +9,8 @@ namespace net {
 
     namespace detail {
 
-        TcpEvent::TcpEvent(core::Cycle* cycle, util_socket_t fd, TcpSessionPrivate* tsp)
-            : Event(cycle, fd)
+        TcpEvent::TcpEvent(core::Cycle* cycle, util_socket_t target_fd, TcpSessionPrivate* tsp)
+            : Event(cycle, target_fd)
             , tsp_(tsp)
         {
         }
@@ -22,17 +22,17 @@ namespace net {
             ownerCycle()->assertInCycleThread();
             LOG_TRACE() << "tcp session[" << fd() << "] revents: " << rflagsToString();
             if (auto tied_object = tiedObject().lock()) {
-                auto tied_session = static_cast<TcpSession*>(tied_object.get());
-                if (events & EVENT_READ) {
+                auto* tied_session = static_cast<TcpSession*>(tied_object.get());
+                if ((events & EVENT_READ) != 0) {
                     tsp_->handleRead(tied_session, receive_time);
                 }
-                if (events & EVENT_WRITE) {
+                if ((events & EVENT_WRITE) != 0) {
                     tsp_->handleWrite(tied_session);
                 }
-                if (events & EVENT_CLOSED) {
+                if ((events & EVENT_CLOSED) != 0) {
                     tsp_->handleClose(tied_session);
                 }
-                if (events & EVENT_ERROR) {
+                if ((events & EVENT_ERROR) != 0) {
                     tsp_->handleError(tied_session);
                 }
             } else {
@@ -42,36 +42,36 @@ namespace net {
 
     } // namespace detail
 
-    void TcpSessionPrivate::handleRead(TcpSession* ts, const Timestamp& receive_time)
+    void TcpSessionPrivate::handleRead(TcpSession* session, const Timestamp& receive_time)
     {
-        auto n = in_buffer_.read(event_->fd(), -1);
-        if (n == 0) {
+        auto read_n = in_buffer_.read(event_->fd(), -1);
+        if (read_n == 0) {
             HARE_ASSERT(state_ != SE_STATE::CONNECTING, "");
             state_ = SE_STATE::CONNECTING;
             event_->clearAllFlags();
-            ts->connection(EVENT_CLOSED);
-        } else if (n > 0) {
-            ts->read(in_buffer_, receive_time);
+            session->connection(EVENT_CLOSED);
+        } else if (read_n > 0) {
+            session->read(in_buffer_, receive_time);
         } else {
-            handleError(ts);
+            handleError(session);
         }
     }
 
-    void TcpSessionPrivate::handleWrite(TcpSession* ts)
+    void TcpSessionPrivate::handleWrite(TcpSession* session)
     {
         if (event_->checkFlag(EVENT_WRITE)) {
             std::unique_lock<std::mutex> locker(out_buffer_mutex_);
-            auto n = out_buffer_.write(event_->fd(), -1);
-            if (n > 0) {
+            auto write_n = out_buffer_.write(event_->fd(), -1);
+            if (write_n > 0) {
                 if (out_buffer_.length() == 0) {
                     locker.unlock();
                     event_->clearFlags(EVENT_WRITE);
-                    cycle_->queueInLoop(std::bind(&TcpSession::writeComplete, ts->shared_from_this()));
+                    cycle_->queueInLoop(std::bind(&TcpSession::writeComplete, session->shared_from_this()));
                 } else {
                     locker.unlock();
                 }
                 if (state_ == SE_STATE::DISCONNECTING) {
-                    ts->shutdownInCycle();
+                    session->shutdownInCycle();
                 }
             } else {
                 locker.unlock();
@@ -82,18 +82,18 @@ namespace net {
         }
     }
 
-    void TcpSessionPrivate::handleClose(TcpSession* ts)
+    void TcpSessionPrivate::handleClose(TcpSession* session)
     {
         HARE_ASSERT(state_ != SE_STATE::CONNECTING, "");
         state_ = SE_STATE::CONNECTING;
         event_->clearAllFlags();
-        ts->connection(EVENT_CLOSED);
+        session->connection(EVENT_CLOSED);
     }
 
-    void TcpSessionPrivate::handleError(TcpSession* ts)
+    void TcpSessionPrivate::handleError(TcpSession* session)
     {
         SYS_ERROR() << "An error occurred while reading the socket, detail: " << socket::getSocketErrorInfo(event_->fd());
-        ts->connection(EVENT_ERROR);
+        session->connection(EVENT_ERROR);
     }
 
     TcpSession::~TcpSession()
@@ -149,7 +149,11 @@ namespace net {
                 }
             } else if (p_->out_buffer_.length() > p_->high_water_mark_) {
                 locker.unlock();
-                highWaterMark();
+                if (p_->cycle_->isInLoopThread()) {
+                    p_->cycle_->queueInLoop(std::bind(&TcpSession::highWaterMark, shared_from_this()));
+                } else {
+                    p_->cycle_->runInLoop(std::bind(&TcpSession::highWaterMark, shared_from_this()));
+                }
             }
         }
         return false;
@@ -172,9 +176,9 @@ namespace net {
         }
     }
 
-    void TcpSession::setTcpNoDelay(bool on)
+    void TcpSession::setTcpNoDelay(bool tcp_on)
     {
-        p_->socket_->setTcpNoDelay(on);
+        p_->socket_->setTcpNoDelay(tcp_on);
     }
 
     void TcpSession::startRead()
@@ -187,8 +191,8 @@ namespace net {
         p_->cycle_->runInLoop(std::bind(&TcpSession::stopReadInCycle, shared_from_this()));
     }
 
-    TcpSession::TcpSession(TcpSessionPrivate* p)
-        : p_(p)
+    TcpSession::TcpSession(TcpSessionPrivate* tsp)
+        : p_(tsp)
     {
         HARE_ASSERT(p_ != nullptr, "The private of TcpSession is NULL!");
         LOG_DEBUG() << "TcpSession::ctor[" << p_->name_ << "] at " << this

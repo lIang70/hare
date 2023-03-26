@@ -25,22 +25,23 @@ namespace log {
 
     public:
         const static int32_t SECONDS_PER_ROLL = 60 * 60 * 24;
+        const static int32_t CHECK_COUNT = 1024;
 
         File(const std::string& base_name,
             std::size_t roll_size,
             bool thread_safe = true,
             int32_t flush_interval = 3,
-            int32_t check_every_n = 1024);
+            int32_t check_every_n = CHECK_COUNT);
         ~File();
 
         void append(const char* log_line, int32_t len);
         void flush();
-        bool rollFile();
+        auto rollFile() -> bool;
 
     private:
         void append_unlocked(const char* log_line, int32_t len);
 
-        static std::string getLogFileName(const std::string& basename, time_t* now);
+        static auto getLogFileName(const std::string& basename, time_t* now) -> std::string;
     };
 
 } // namespace log

@@ -66,7 +66,7 @@ namespace log {
         }
     }
 
-    bool File::rollFile()
+    auto File::rollFile() -> bool
     {
         time_t now = 0;
         auto file_name = getLogFileName(base_name_, &now);
@@ -82,22 +82,23 @@ namespace log {
         return false;
     }
 
-    std::string File::getLogFileName(const std::string& basename, time_t* now)
+    auto File::getLogFileName(const std::string& basename, time_t* now) -> std::string
     {
+        
         std::string file_name;
-        file_name.reserve(basename.size() + 64);
+        file_name.reserve(basename.size() + static_cast<uint64_t>(HARE_SMALL_FIXED_SIZE * 2));
         file_name = basename;
 
-        char time_buf[32];
-        struct tm tm {};
+        char time_buf[HARE_SMALL_FIXED_SIZE];
+        struct tm stm {};
         *now = ::time(nullptr);
-        gmtime_r(now, &tm); // FIXME: localtime_r ?
-        strftime(time_buf, sizeof(time_buf), ".%Y%m%d-%H%M%S.", &tm);
+        gmtime_r(now, &stm); // FIXME: localtime_r ?
+        strftime(time_buf, sizeof(time_buf), ".%Y%m%d-%H%M%S.", &stm);
         file_name += time_buf;
 
         file_name += util::hostname();
 
-        char pid_buf[32];
+        char pid_buf[HARE_SMALL_FIXED_SIZE];
         snprintf(pid_buf, sizeof(pid_buf), ".%d", util::pid());
         file_name += pid_buf;
         file_name += ".log";

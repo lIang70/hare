@@ -1,4 +1,5 @@
 #include "hare/base/thread/local.h"
+#include <cstdint>
 #include <hare/base/system_check.h>
 
 #include <algorithm>
@@ -21,18 +22,19 @@ thread_local struct ThreadLocal t_data;
 namespace current_thread {
 
     namespace detail {
+        static const int32_t n_digits_hex = 16;
         static const char c_digits_hex[] = "0123456789ABCDEF";
-        static_assert(sizeof(c_digits_hex) == 17, "wrong number of c_digits_hex");
+        static_assert(sizeof(c_digits_hex) == n_digits_hex + 1, "wrong number of c_digits_hex");
 
         void convertHex(std::string& buf, uintptr_t value)
         {
             buf.clear();
-            auto p = buf.begin();
+            auto begin = buf.begin();
 
             do {
-                auto lsd = static_cast<int32_t>(value % 16);
-                value /= 16;
-                *p++ = c_digits_hex[lsd];
+                auto lsd = static_cast<int32_t>(value % n_digits_hex);
+                value /= n_digits_hex;
+                *begin++ = c_digits_hex[lsd];
             } while (value != 0);
 
             buf.push_back('x');
@@ -53,7 +55,7 @@ namespace current_thread {
         }
     }
 
-    bool isSameThread()
+    auto isSameThread() -> bool
     {
 #ifdef H_OS_WIN32
         return tid() == ::GetCurrentProcessId();
@@ -62,7 +64,7 @@ namespace current_thread {
 #endif
     }
 
-    std::string stackTrace(bool demangle)
+    auto stackTrace(bool demangle) -> std::string
     {
         static const int MAX_STACK_FRAMES = 20;
 #ifdef H_OS_WIN32
@@ -99,49 +101,51 @@ namespace current_thread {
         std::string stack;
         void* frame[MAX_STACK_FRAMES];
         auto nptrs = ::backtrace(frame, MAX_STACK_FRAMES);
-        auto strings = ::backtrace_symbols(frame, nptrs);
-        if (strings) {
-            size_t len = 256;
-            auto demangled = demangle ? static_cast<char*>(::malloc(len)) : nullptr;
-            for (auto i = 1; i < nptrs; ++i) {
-                // skipping the 0-th, which is this function.
-                if (demangle) {
-                    // https://panthema.net/2008/0901-stacktrace-demangled/
-                    // bin/exception_test(_ZN3Bar4testEv+0x79) [0x401909]
-                    char* left_par = nullptr;
-                    char* plus = nullptr;
-                    for (auto p = strings[i]; *p; ++p) {
-                        if (*p == '(')
-                            left_par = p;
-                        else if (*p == '+')
-                            plus = p;
-                    }
-
-                    if (left_par && plus) {
-                        *plus = '\0';
-                        auto status = 0;
-                        auto ret = abi::__cxa_demangle(left_par + 1, demangled, &len, &status);
-                        *plus = '+';
-                        if (status == 0) {
-                            demangled = ret; // ret could be realloc()
-                            stack.append(strings[i], left_par + 1);
-                            stack.append(demangled);
-                            stack.append(plus);
-                            stack.push_back('\n');
-                            continue;
-                        }
+        auto* strings = ::backtrace_symbols(frame, nptrs);
+        if (strings == nullptr) {
+            return stack;
+        }
+        size_t len = 256;
+        auto* demangled = demangle ? static_cast<char*>(::malloc(len)) : nullptr;
+        for (auto i = 1; i < nptrs; ++i) {
+            // skipping the 0-th, which is this function.
+            if (demangle) {
+                // https://panthema.net/2008/0901-stacktrace-demangled/
+                // bin/exception_test(_ZN3Bar4testEv+0x79) [0x401909]
+                char* left_par = nullptr;
+                char* plus = nullptr;
+                for (auto* ch = strings[i]; *ch != 0; ++ch) {
+                    if (*ch == '(') {
+                        left_par = ch;
+                    } else if (*ch == '+') {
+                        plus = ch;
                     }
                 }
-                // Fallback to mangled names
-                stack.append(strings[i]);
-                stack.push_back('\n');
+
+                if ((left_par != nullptr) && (plus != nullptr)) {
+                    *plus = '\0';
+                    auto status = 0;
+                    auto* ret = abi::__cxa_demangle(left_par + 1, demangled, &len, &status);
+                    *plus = '+';
+                    if (status == 0) {
+                        demangled = ret; // ret could be realloc()
+                        stack.append(strings[i], left_par + 1);
+                        stack.append(demangled);
+                        stack.append(plus);
+                        stack.push_back('\n');
+                        continue;
+                    }
+                }
             }
-            free(demangled);
-            free(strings);
+            // Fallback to mangled names
+            stack.append(strings[i]);
+            stack.push_back('\n');
         }
+        free(demangled);
+        free(strings);
         return stack;
 #endif
     }
 
-}
-}
+} // namespace current_thread
+} // namespace hare

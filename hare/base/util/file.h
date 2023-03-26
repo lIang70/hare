@@ -26,10 +26,10 @@ namespace util {
 
         void flush();
 
-        inline int64_t writtenBytes() const { return written_bytes_; }
+        inline auto writtenBytes() const -> int64_t { return written_bytes_; }
 
     private:
-        std::size_t write(const char* log_line, std::size_t len);
+        auto write(const char* log_line, std::size_t len) -> std::size_t;
     };
 
 } // namespace util

@@ -29,19 +29,19 @@ namespace core {
         ~CycleThreadPool();
 
         inline void setThreadNum(int num_threads) { num_threads_ = num_threads; }
-        inline bool started() const { return started_; }
-        const std::string& name() const { return name_; }
+        inline auto started() const -> bool { return started_; }
+        auto name() const -> const std::string& { return name_; }
 
-        bool start();
+        auto start() -> bool;
 
         // valid after calling start()
         // round-robin
-        Cycle* getNextCycle();
+        auto getNextCycle() -> Cycle*;
 
         // with the same hash code, it will always return the same EventLoop
-        Cycle* getLoopForHash(size_t hash_code);
+        auto getLoopForHash(size_t hash_code) -> Cycle*;
 
-        std::vector<Cycle*> getAllLoops();
+        auto getAllLoops() -> std::vector<Cycle*>;
 
     };
 

@@ -16,9 +16,9 @@ namespace core {
     namespace detail {
         const int32_t INIT_EVENTS_CNT = 16;
 
-        std::string operationToString(int32_t op)
+        auto operationToString(int32_t oper) -> std::string
         {
-            switch (op) {
+            switch (oper) {
             case EPOLL_CTL_ADD:
                 return "ADD";
             case EPOLL_CTL_DEL:
@@ -31,51 +31,60 @@ namespace core {
             }
         }
 
-        decltype(epoll_event::events) decodeEpoll(int32_t event_flags)
+        auto decodeEpoll(int32_t event_flags) -> decltype(epoll_event::events)
         {
             decltype(epoll_event::events) events = 0;
-            if (event_flags & net::EVENT_READ)
+            if ((event_flags & net::EVENT_READ) != 0) {
                 events |= (EPOLLIN | EPOLLPRI);
-            if (event_flags & net::EVENT_WRITE)
+            }
+            if ((event_flags & net::EVENT_WRITE) != 0) {
                 events |= (EPOLLOUT);
-            if (event_flags & net::EVENT_ET)
+            }
+            if ((event_flags & net::EVENT_ET) != 0) {
                 events |= (EPOLLET);
+            }
             return events;
         }
 
-        int32_t encodeEpoll(decltype(epoll_event::events) events)
+        auto encodeEpoll(decltype(epoll_event::events) events) -> int32_t
         {
             int32_t flags = net::EVENT_DEFAULT;
-            if ((events & EPOLLHUP) && !(events & EPOLLIN)) {
+            if (((events & EPOLLHUP) != 0U) && ((events & EPOLLIN) == 0U)) {
                 flags |= net::EVENT_CLOSED;
             }
-            if (events & EPOLLERR) {
+            if ((events & EPOLLERR) != 0U) {
                 flags |= net::EVENT_ERROR;
             }
-            if (events & (EPOLLIN | EPOLLPRI | EPOLLRDHUP)) {
+            if ((events & (EPOLLIN | EPOLLPRI | EPOLLRDHUP)) != 0U) {
                 flags |= net::EVENT_READ;
             }
-            if (events & EPOLLOUT) {
+            if ((events & EPOLLOUT) != 0U) {
                 flags |= net::EVENT_WRITE;
             }
             return flags;
         }
 
-        std::string eventsToString(decltype(epoll_event::events) event)
+        auto eventsToString(decltype(epoll_event::events) event) -> std::string
         {
             std::ostringstream oss {};
-            if (event & EPOLLIN)
+            if ((event & EPOLLIN) != 0U) {
                 oss << "IN ";
-            if (event & EPOLLPRI)
+            }
+            if ((event & EPOLLPRI) != 0U) {
                 oss << "PRI ";
-            if (event & EPOLLOUT)
+            }
+            if ((event & EPOLLOUT) != 0U) {
                 oss << "OUT ";
-            if (event & EPOLLHUP)
+            }
+            if ((event & EPOLLHUP) != 0U) {
                 oss << "HUP ";
-            if (event & EPOLLRDHUP)
+            }
+            if ((event & EPOLLRDHUP) != 0U) {
                 oss << "RDHUP ";
-            if (event & EPOLLERR)
+            }
+            if ((event & EPOLLERR) != 0U) {
                 oss << "ERR ";
+            }
             return oss.str();
         }
 
@@ -96,7 +105,7 @@ namespace core {
         ::close(epoll_fd_);
     }
 
-    Timestamp EpollReactor::poll(int32_t timeout_microseconds, Cycle::EventList& active_events)
+    auto EpollReactor::poll(int32_t timeout_microseconds, Cycle::EventList& active_events) -> Timestamp
     {
         LOG_TRACE() << "Active events total count: " << active_events.size();
 
@@ -132,24 +141,24 @@ namespace core {
                     << " flags = " << event->flags() << " index = " << index;
         if (index == Event::Status::NEW || index == Event::Status::DELETE) {
             // a new one, add with EPOLL_CTL_ADD
-            auto fd = event->fd();
+            auto target_fd = event->fd();
             if (index == Event::Status::NEW) {
-                HARE_ASSERT(events_.find(fd) == events_.end(), "Error in event.");
-                events_[fd] = event;
+                HARE_ASSERT(events_.find(target_fd) == events_.end(), "Error in event.");
+                events_[target_fd] = event;
             } else { // index == Event::Status::DELETE
-                HARE_ASSERT(events_.find(fd) != events_.end(), "Cannot find event.");
-                HARE_ASSERT(events_[fd] == event, "Event is incorrect.");
+                HARE_ASSERT(events_.find(target_fd) != events_.end(), "Cannot find event.");
+                HARE_ASSERT(events_[target_fd] == event, "Event is incorrect.");
             }
 
             event->setIndex(Event::Status::ADD);
             update(EPOLL_CTL_ADD, event);
         } else {
             // update existing one with EPOLL_CTL_MOD/DEL
-            auto fd = event->fd();
-            HARE_ASSERT(events_.find(fd) != events_.end(), "Cannot find event.");
-            HARE_ASSERT(events_[fd] == event, "Event is incorrect.");
+            auto target_fd = event->fd();
+            HARE_ASSERT(events_.find(target_fd) != events_.end(), "Cannot find event.");
+            HARE_ASSERT(events_[target_fd] == event, "Event is incorrect.");
             HARE_ASSERT(index == Event::Status::ADD, "Event is incorrect.");
-            H_UNUSED(fd);
+            H_UNUSED(target_fd);
             if (event->isNoneEvent()) {
                 event->setIndex(Event::Status::DELETE);
                 update(EPOLL_CTL_DEL, event);
@@ -162,15 +171,15 @@ namespace core {
     void EpollReactor::removeEvent(Event* event)
     {
         Reactor::assertInCycleThread();
-        auto fd = event->fd();
-        LOG_TRACE() << "fd = " << fd;
-        HARE_ASSERT(events_.find(fd) != events_.end(), "Cannot find event.");
-        HARE_ASSERT(events_[fd] == event, "Event is incorrect.");
+        auto target_fd = event->fd();
+        LOG_TRACE() << "fd = " << target_fd;
+        HARE_ASSERT(events_.find(target_fd) != events_.end(), "Cannot find event.");
+        HARE_ASSERT(events_[target_fd] == event, "Event is incorrect.");
         HARE_ASSERT(event->isNoneEvent(), "Event is incorrect.");
         auto index = event->index();
         HARE_ASSERT(index == Event::Status::ADD || index == Event::Status::DELETE, "Incorrect status.");
-        auto n = events_.erase(fd);
-        HARE_ASSERT(n == 1, "Erase error.");
+        auto erase_n = events_.erase(target_fd);
+        HARE_ASSERT(erase_n == 1, "Erase error.");
 
         if (index == Event::Status::ADD) {
             update(EPOLL_CTL_DEL, event);
@@ -182,8 +191,8 @@ namespace core {
     {
         HARE_ASSERT(implicit_cast<size_t>(num_of_events) <= epoll_events_.size(), "Oversize");
         for (auto i = 0; i < num_of_events; ++i) {
-            auto event = static_cast<Event*>(epoll_events_[i].data.ptr);
-            auto e = events_[event->fd()];
+            auto* event = static_cast<Event*>(epoll_events_[i].data.ptr);
+            auto* revent = events_[event->fd()];
 #ifdef HARE_DEBUG
             auto fd = event->fd();
             auto it = events_.find(fd);
@@ -191,7 +200,7 @@ namespace core {
             HARE_ASSERT(it->second == e, "Event is incorrect.");
 #endif
             event->setRFlags(detail::encodeEpoll(epoll_events_[i].events));
-            active_events.push_back(e);
+            active_events.push_back(revent);
         }
     }
 
@@ -201,14 +210,14 @@ namespace core {
         setZero(&ep_event, sizeof(ep_event));
         ep_event.events = detail::decodeEpoll(event->flags());
         ep_event.data.ptr = event;
-        auto fd = event->fd();
+        auto target_fd = event->fd();
         LOG_TRACE() << "epoll_ctl op = " << detail::operationToString(operation)
-                    << "\n fd = " << fd << " event = { " << detail::eventsToString(detail::decodeEpoll(event->flags())) << " }";
-        if (::epoll_ctl(epoll_fd_, operation, fd, &ep_event) < 0) {
+                    << "\n fd = " << target_fd << " event = { " << detail::eventsToString(detail::decodeEpoll(event->flags())) << " }";
+        if (::epoll_ctl(epoll_fd_, operation, target_fd, &ep_event) < 0) {
             if (operation == EPOLL_CTL_DEL) {
-                SYS_ERROR() << "epoll_ctl op =" << detail::operationToString(operation) << " fd =" << fd;
+                SYS_ERROR() << "epoll_ctl op =" << detail::operationToString(operation) << " fd =" << target_fd;
             } else {
-                SYS_FATAL() << "epoll_ctl op =" << detail::operationToString(operation) << " fd =" << fd;
+                SYS_FATAL() << "epoll_ctl op =" << detail::operationToString(operation) << " fd =" << target_fd;
             }
         }
     }

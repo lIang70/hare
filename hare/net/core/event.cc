@@ -8,31 +8,26 @@ namespace hare {
 namespace core {
 
     namespace detail {
-        std::string flagsToString(util_socket_t fd, int32_t event_flags_)
+        auto flagsToString(util_socket_t fd, int32_t event_flags_) -> std::string
         {
             std::ostringstream oss {};
             oss << fd << ": ";
-            if (event_flags_ == net::EVENT_DEFAULT)
+            if (event_flags_ == net::EVENT_DEFAULT) {
                 oss << "DEFAULT";
-            else {
-                if (event_flags_ & net::EVENT_READ)
-                    oss << "READ ";
-                if (event_flags_ & net::EVENT_WRITE)
-                    oss << "WRITE ";
-                if (event_flags_ & net::EVENT_ET)
-                    oss << "ET ";
-                if (event_flags_ & net::EVENT_CLOSED)
-                    oss << "CLOSED ";
-                if (event_flags_ & net::EVENT_ERROR)
-                    oss << "ERROR ";
+            } else {
+                if ((event_flags_ & net::EVENT_READ) != 0) { oss << "READ "; }
+                if ((event_flags_ & net::EVENT_WRITE) != 0) { oss << "WRITE "; }
+                if ((event_flags_ & net::EVENT_ET) != 0) { oss << "ET "; }
+                if ((event_flags_ & net::EVENT_CLOSED) != 0) { oss << "CLOSED "; }
+                if ((event_flags_ & net::EVENT_ERROR) != 0) { oss << "ERROR "; }
             }
             return oss.str();
         }
     } // namespace detail
 
-    Event::Event(Cycle* cycle, util_socket_t fd)
+    Event::Event(Cycle* cycle, util_socket_t target_fd)
         : owner_cycle_(cycle)
-        , fd_(fd)
+        , fd_(target_fd)
     {
     }
 
@@ -45,12 +40,12 @@ namespace core {
         }
     }
 
-    std::string Event::flagsToString() const
+    auto Event::flagsToString() const -> std::string
     {
         return detail::flagsToString(fd_, event_flags_);
     }
 
-    std::string Event::rflagsToString() const
+    auto Event::rflagsToString() const -> std::string
     {
         return detail::flagsToString(fd_, revent_flags_);
     }
@@ -60,8 +55,9 @@ namespace core {
         std::shared_ptr<void> object;
         if (tied_) {
             object = tie_object_.lock();
-            if (!object)
+            if (!object) {
                 return;
+            }
         }
         event_handle_.exchange(true);
         eventCallBack(revent_flags_, receive_time);

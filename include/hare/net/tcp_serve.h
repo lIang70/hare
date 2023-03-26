@@ -22,25 +22,25 @@ namespace net {
         virtual ~TcpServe();
 
         // Set before exec()
-        void setReusePort(bool b);
+        void setReusePort(bool is_reuse);
         void setThreadNum(int32_t num);
         void listen(const HostAddress& address);
 
-        bool isRunning() const;
+        auto isRunning() const -> bool;
 
-        TimerId addTimer(net::Timer* timer);
-        void cancel(net::TimerId id);
+        auto addTimer(net::Timer* timer) -> TimerId;
+        void cancel(net::TimerId timer_id);
 
         void exec();
         void exit();
 
     protected:
-        virtual inline TcpSession::Ptr createSession(TcpSessionPrivate* p)
+        virtual inline auto createSession(TcpSessionPrivate* tsp) -> TcpSession::Ptr
         {
-            return TcpSession::Ptr(new TcpSession(p));
+            return TcpSession::Ptr(new TcpSession(tsp));
         }
 
-        virtual void newConnect(TcpSession::Ptr session, Timestamp ts) = 0;
+        virtual void newConnect(TcpSession::Ptr session, Timestamp time) = 0;
     };
 
 } // namespace net

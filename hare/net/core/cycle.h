@@ -38,9 +38,9 @@ namespace core {
         };
 
         struct TimerPriority {
-            bool operator()(const TimerInfo& _x, const TimerInfo& _y)
+            auto operator()(const TimerInfo& time_x, const TimerInfo& time_y) -> bool
             {
-                return _x.timestamp_ < _y.timestamp_;
+                return time_x.timestamp_ < time_y.timestamp_;
             }
         };
 
@@ -81,7 +81,7 @@ namespace core {
         virtual ~Cycle();
 
         //! @brief Time when reactor returns, usually means data arrival.
-        inline Timestamp reactorReturnTime() const { return reactor_time_; }
+        inline auto reactorReturnTime() const -> Timestamp { return reactor_time_; }
 
         inline void assertInCycleThread()
         {
@@ -90,9 +90,9 @@ namespace core {
             }
         }
 
-        inline bool isInLoopThread() const { return tid_ == current_thread::tid(); }
+        inline auto isInLoopThread() const -> bool { return tid_ == current_thread::tid(); }
 
-        inline bool eventHandling() const { return event_handling_.load(); }
+        inline auto eventHandling() const -> bool { return event_handling_.load(); }
 
 #ifdef HARE_DEBUG
 
@@ -118,21 +118,21 @@ namespace core {
         //!  It wakes up the loop, and run the cb.
         //!  If in the same loop thread, cb is run within the function.
         //!  Safe to call from other threads.
-        void runInLoop(Thread::Task cb);
+        void runInLoop(Thread::Task task);
 
         //! @brief Queues callback in the loop thread.
         //!  Runs after finish pooling.
         //!  Safe to call from other threads.
-        void queueInLoop(Thread::Task cb);
+        void queueInLoop(Thread::Task task);
 
-        std::size_t queueSize() const;
+        auto queueSize() const -> std::size_t;
 
         void updateEvent(Event* event);
         void removeEvent(Event* event);
-        bool checkEvent(Event* event);
+        auto checkEvent(Event* event) -> bool;
 
-        net::TimerId addTimer(net::Timer* timer);
-        void cancel(net::TimerId id);
+        auto addTimer(net::Timer* timer) -> net::TimerId;
+        void cancel(net::TimerId timer_id);
 
     private:
         void notify();
@@ -140,7 +140,7 @@ namespace core {
         void doPendingFuncs();
         void notifyTimer();
 
-        int32_t getWaitTime();
+        auto getWaitTime() -> int32_t;
 
         void printActiveEvents() const;
     };

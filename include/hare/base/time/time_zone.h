@@ -9,29 +9,27 @@
 namespace hare {
 
 class HARE_API TimeZone {
-    using DateTime = struct time::DateTime;
-
     struct Data;
     Data* d_ { nullptr };
 
 public:
     TimeZone() = default; // an invalid timezone
     TimeZone(int east_of_utc, const char* tz_name); // a fixed timezone
-    TimeZone(const TimeZone& tz);
+    TimeZone(const TimeZone& another);
     ~TimeZone();
 
-    TimeZone& operator=(const TimeZone& tz);
+    auto operator=(const TimeZone& another) -> TimeZone&;
 
-    static TimeZone UTC();
+    static auto UTC() -> TimeZone;
     // gmtime(3)
-    static DateTime toUtcTime(int64_t seconds_since_epoch);
+    static auto toUtcTime(int64_t seconds_since_epoch) -> time::DateTime;
     // timegm(3)
-    static int64_t fromUtcTime(const DateTime&);
+    static auto fromUtcTime(const time::DateTime&) -> int64_t;
 
     inline explicit operator bool() const { return d_ != nullptr; }
 
-    DateTime toLocalTime(int64_t seconds_since_epoch, int* utc_offset = nullptr) const;
-    int64_t fromLocalTime(const DateTime&, bool post_transition = false) const;
+    auto toLocalTime(int64_t seconds_since_epoch, int* utc_offset = nullptr) const -> time::DateTime;
+    auto fromLocalTime(const time::DateTime&, bool post_transition = false) const -> int64_t;
 
 };
 

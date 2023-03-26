@@ -35,12 +35,12 @@ namespace net {
         }
     }
 
-    bool Socket::bindAddress(const HostAddress& local_addr) const
+    auto Socket::bindAddress(const HostAddress& local_addr) const -> bool
     {
         return socket::bind(socket_, local_addr.getSockAddr());
     }
 
-    bool Socket::listen() const
+    auto Socket::listen() const -> bool
     {
         return socket::listen(socket_);
     }
@@ -48,17 +48,18 @@ namespace net {
     void Socket::close()
     {
         socket::close(socket_);
+        socket_ = -1;
     }
 
-    util_socket_t Socket::accept(HostAddress& peer_addr) const
+    auto Socket::accept(HostAddress& peer_addr) const -> util_socket_t
     {
         struct sockaddr_in6 addr {};
         setZero(&addr, sizeof(addr));
-        auto fd = socket::accept(socket_, &addr);
-        if (fd >= 0) {
+        auto accept_fd = socket::accept(socket_, &addr);
+        if (accept_fd >= 0) {
             peer_addr.setSockAddrInet6(&addr);
         }
-        return fd;
+        return accept_fd;
     }
 
     void Socket::shutdownWrite() const
@@ -66,28 +67,28 @@ namespace net {
         socket::shutdownWrite(socket_);
     }
 
-    void Socket::setTcpNoDelay(bool on) const
+    void Socket::setTcpNoDelay(bool no_delay) const
     {
-        auto opt_val = on ? 1 : 0;
+        auto opt_val = no_delay ? 1 : 0;
         auto ret = ::setsockopt(socket_, IPPROTO_TCP, TCP_NODELAY, &opt_val, static_cast<socklen_t>(sizeof(opt_val)));
         if (ret < 0) {
             LOG_ERROR() << "Fail to set tcp no-delay.";
         }
     }
 
-    void Socket::setReuseAddr(bool on) const
+    void Socket::setReuseAddr(bool reuse) const
     {
-        auto optval = on ? 1 : 0;
+        auto optval = reuse ? 1 : 0;
         auto ret = ::setsockopt(socket_, IPPROTO_TCP, TCP_NODELAY, &optval, static_cast<socklen_t>(sizeof(optval)));
         if (ret < 0) {
             LOG_ERROR() << "Fail to set tcp no-delay.";
         }
     }
 
-    void Socket::setReusePort(bool on) const
+    void Socket::setReusePort(bool reuse) const
     {
 #ifdef SO_REUSEPORT
-        auto opt_val = on ? 1 : 0;
+        auto opt_val = reuse ? 1 : 0;
         auto ret = ::setsockopt(socket_, IPPROTO_TCP, SO_REUSEADDR, &opt_val, static_cast<socklen_t>(sizeof(opt_val)));
         if (ret < 0) {
             LOG_ERROR() << "Fail to set tcp no-delay.";
@@ -97,9 +98,9 @@ namespace net {
 #endif
     }
 
-    void Socket::setKeepAlive(bool on) const
+    void Socket::setKeepAlive(bool keep_alive) const
     {
-        auto optval = on ? 1 : 0;
+        auto optval = keep_alive ? 1 : 0;
         auto ret = ::setsockopt(socket_, IPPROTO_TCP, SO_KEEPALIVE, &optval, static_cast<socklen_t>(sizeof(optval)));
         if (ret < 0) {
             LOG_ERROR() << "Fail to set tcp no-delay.";

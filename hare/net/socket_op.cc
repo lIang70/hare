@@ -1,5 +1,6 @@
 #include "hare/net/socket_op.h"
 #include "hare/base/system_check.h"
+#include "hare/base/util/util.h"
 #include <hare/base/exception.h>
 #include <hare/base/logging.h>
 #include <hare/net/buffer.h>
@@ -35,18 +36,18 @@ namespace socket {
 
     namespace detail {
 #if defined(NO_ACCEPT4)
-        void setNonBlockAndCloseOnExec(int fd)
+        void setNonBlockAndCloseOnExec(int target_fd)
         {
             // non-block
-            auto flags = ::fcntl(fd, F_GETFL, 0);
+            auto flags = ::fcntl(target_fd, F_GETFL, 0);
             flags |= O_NONBLOCK;
-            auto ret = ::fcntl(fd, F_SETFL, flags);
+            auto ret = ::fcntl(target_fd, F_SETFL, flags);
             // FIXME check
 
             // close-on-exec
-            flags = ::fcntl(fd, F_GETFD, 0);
+            flags = ::fcntl(target_fd, F_GETFD, 0);
             flags |= FD_CLOEXEC;
-            ret = ::fcntl(fd, F_SETFD, flags);
+            ret = ::fcntl(target_fd, F_SETFD, flags);
             // FIXME check
 
             H_UNUSED(ret);
@@ -54,69 +55,69 @@ namespace socket {
 #endif
     } // namespace detail
 
-    const struct sockaddr* sockaddr_cast(const struct sockaddr_in6* addr)
+    auto sockaddr_cast(const struct sockaddr_in6* addr) -> const struct sockaddr*
     {
         return static_cast<const struct sockaddr*>(implicit_cast<const void*>(addr));
     }
 
-    struct sockaddr* sockaddr_cast(struct sockaddr_in6* addr)
+    auto sockaddr_cast(struct sockaddr_in6* addr) -> struct sockaddr*
     {
         return static_cast<struct sockaddr*>(implicit_cast<void*>(addr));
     }
 
-    const struct sockaddr* sockaddr_cast(const struct sockaddr_in* addr)
+    auto sockaddr_cast(const struct sockaddr_in* addr) -> const struct sockaddr*
     {
         return static_cast<const struct sockaddr*>(implicit_cast<const void*>(addr));
     }
 
-    const struct sockaddr_in* sockaddr_in_cast(const struct sockaddr* addr)
+    auto sockaddr_in_cast(const struct sockaddr* addr) -> const struct sockaddr_in*
     {
         return static_cast<const struct sockaddr_in*>(implicit_cast<const void*>(addr));
     }
 
-    const struct sockaddr_in6* sockaddr_in6_cast(const struct sockaddr* addr)
+    auto sockaddr_in6_cast(const struct sockaddr* addr) -> const struct sockaddr_in6*
     {
         return static_cast<const struct sockaddr_in6*>(implicit_cast<const void*>(addr));
     }
 
-    util_socket_t createNonblockingOrDie(int8_t family)
+    auto createNonblockingOrDie(int8_t family) -> util_socket_t
     {
 #ifdef H_OS_LINUX
-        auto fd = ::socket(family, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, IPPROTO_TCP);
-        if (fd < 0) {
+        auto target_fd = ::socket(family, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, IPPROTO_TCP);
+        if (target_fd < 0) {
             throw Exception("Cannot create non-blocking socket");
         }
 #endif
-        return fd;
+        return target_fd;
     }
 
-    bool bind(int sockfd, const struct sockaddr* addr)
+    auto bind(int target_fd, const struct sockaddr* addr) -> bool
     {
-        return ::bind(sockfd, addr, static_cast<socklen_t>(sizeof(struct sockaddr_in6))) >= 0;
+        return ::bind(target_fd, addr, static_cast<socklen_t>(sizeof(struct sockaddr_in6))) >= 0;
     }
 
-    bool listen(int sockfd)
+    auto listen(int target_fd) -> bool
     {
-        return ::listen(sockfd, SOMAXCONN) >= 0;
+        return ::listen(target_fd, SOMAXCONN) >= 0;
     }
 
-    int32_t close(util_socket_t fd)
+    auto close(util_socket_t target_fd) -> int32_t
     {
-        auto ret = ::close(fd);
+        auto ret = ::close(target_fd);
         if (ret < 0) {
-            SYS_ERROR() << "Close fd[" << fd << "], detail:" << socket::getSocketErrorInfo(fd);
+            SYS_ERROR() << "Close target_fd[" << target_fd << "], detail:" << socket::getSocketErrorInfo(target_fd);
         }
         return ret;
     }
 
-    util_socket_t accept(util_socket_t fd, struct sockaddr_in6* addr)
+    auto accept(util_socket_t target_fd, struct sockaddr_in6* addr) -> util_socket_t
     {
         auto addr_len = static_cast<socklen_t>(sizeof(*addr));
 #if defined(NO_ACCEPT4)
-        auto accept_fd = ::accept(fd, sockaddr_cast(addr), &addr_len);
+        auto accept_fd = ::accept(target_fd, sockaddr_cast(addr), &addr_len);
         detail::setNonBlockAndCloseOnExec(accept_fd);
 #else
-        auto accept_fd = ::accept4(fd, sockaddr_cast(addr), &addr_len, SOCK_NONBLOCK | SOCK_CLOEXEC);
+        auto accept_fd = ::accept4(target_fd, sockaddr_cast(addr), &addr_len, SOCK_NONBLOCK | SOCK_CLOEXEC);
 #endif
         if (accept_fd < 0) {
             auto saved_errno = errno;
@@ -150,46 +151,47 @@ namespace socket {
         return accept_fd;
     }
 
-    void shutdownWrite(util_socket_t fd)
+    void shutdownWrite(util_socket_t target_fd)
     {
-        if (::shutdown(fd, SHUT_WR) < 0) {
+        if (::shutdown(target_fd, SHUT_WR) < 0) {
             SYS_ERROR() << "::shutdown[SHUT_WR] error";
         }
     }
 
-    std::size_t write(util_socket_t fd, const void* buf, size_t size)
+    auto write(util_socket_t target_fd, const void* buf, size_t size) -> std::size_t
     {
-        return ::send(fd, buf, size, MSG_NOSIGNAL);
+        return ::send(target_fd, buf, size, MSG_NOSIGNAL);
     }
 
-    std::size_t read(util_socket_t sockfd, void* buf, size_t size)
+    auto read(util_socket_t target_fd, void* buf, size_t size) -> std::size_t
     {
-        return ::recv(sockfd, buf, size, MSG_NOSIGNAL);
+        return ::recv(target_fd, buf, size, MSG_NOSIGNAL);
     }
 
-    std::size_t getBytesReadableOnSocket(util_socket_t fd)
+    auto getBytesReadableOnSocket(util_socket_t target_fd) -> std::size_t
     {
 #if defined(FIONREAD) && defined(H_OS_WIN32)
         auto lng = net::Buffer::MAX_READ_DEFAULT;
-        if (::ioctlsocket(fd, FIONREAD, &lng) < 0)
+        if (::ioctlsocket(target_fd, FIONREAD, &lng) < 0)
             return -1;
         /* Can overflow, but mostly harmlessly. XXXX */
         return (int)lng;
 #elif defined(FIONREAD)
-        auto n = net::Buffer::MAX_READ_DEFAULT;
-        if (::ioctl(fd, FIONREAD, &n) < 0)
+        auto reable_cnt = net::Buffer::MAX_READ_DEFAULT;
+        if (::ioctl(target_fd, FIONREAD, &reable_cnt) < 0) {
             return -1;
-        return n;
+        }
+        return reable_cnt;
 #else
         return net::Buffer::MAX_READ_DEFAULT;
 #endif
     }
 
-    std::string getSocketErrorInfo(util_socket_t fd)
+    auto getSocketErrorInfo(util_socket_t target_fd) -> std::string
     {
-        char error_str[512];
-        auto error_len = (int32_t)sizeof(error_str);
-        if (::getsockopt(fd, SOL_SOCKET, SO_ERROR, error_str, (socklen_t*)&error_len) != -1) {
+        char error_str[HARE_SMALL_FIXED_SIZE * HARE_SMALL_FIXED_SIZE];
+        auto error_len = static_cast<int32_t>(sizeof(error_str));
+        if (::getsockopt(target_fd, SOL_SOCKET, SO_ERROR, error_str, reinterpret_cast<socklen_t*>(&error_len)) != -1) {
             return error_str;
         }
         return {};
@@ -201,7 +203,7 @@ namespace socket {
             buf[0] = '[';
             toIp(buf + 1, size - 1, addr);
             auto end = ::strlen(buf);
-            auto addr6 = sockaddr_in6_cast(addr);
+            const auto* addr6 = sockaddr_in6_cast(addr);
             auto port = networkToHost16(addr6->sin6_port);
             HARE_ASSERT(size > end, "");
             snprintf(buf + end, size - end, "]:%u", port);
@@ -209,7 +211,7 @@ namespace socket {
         }
         toIp(buf, size, addr);
         auto end = ::strlen(buf);
-        auto addr4 = sockaddr_in_cast(addr);
+        const auto* addr4 = sockaddr_in_cast(addr);
         auto port = networkToHost16(addr4->sin_port);
         HARE_ASSERT(size > end, "");
         snprintf(buf + end, size - end, ":%u", port);
@@ -219,29 +221,29 @@ namespace socket {
     {
         if (addr->sa_family == AF_INET) {
             HARE_ASSERT(size >= INET_ADDRSTRLEN, "");
-            auto addr4 = sockaddr_in_cast(addr);
+            const auto* addr4 = sockaddr_in_cast(addr);
             ::inet_ntop(AF_INET, &addr4->sin_addr, buf, static_cast<socklen_t>(size));
         } else if (addr->sa_family == AF_INET6) {
             HARE_ASSERT(size >= INET6_ADDRSTRLEN, "");
-            auto addr6 = sockaddr_in6_cast(addr);
+            const auto* addr6 = sockaddr_in6_cast(addr);
             ::inet_ntop(AF_INET6, &addr6->sin6_addr, buf, static_cast<socklen_t>(size));
         }
     }
 
-    void fromIpPort(const char* ip, uint16_t port, struct sockaddr_in* addr)
+    void fromIpPort(const char* target_ip, uint16_t port, struct sockaddr_in* addr)
     {
         addr->sin_family = AF_INET;
         addr->sin_port = hostToNetwork16(port);
-        if (::inet_pton(AF_INET, ip, &addr->sin_addr) <= 0) {
+        if (::inet_pton(AF_INET, target_ip, &addr->sin_addr) <= 0) {
             SYS_ERROR() << "::inet_pton error";
         }
     }
 
-    void fromIpPort(const char* ip, uint16_t port, struct sockaddr_in6* addr)
+    void fromIpPort(const char* target_ip, uint16_t port, struct sockaddr_in6* addr)
     {
         addr->sin6_family = AF_INET6;
         addr->sin6_port = hostToNetwork16(port);
-        if (::inet_pton(AF_INET6, ip, &addr->sin6_addr) <= 0) {
+        if (::inet_pton(AF_INET6, target_ip, &addr->sin6_addr) <= 0) {
             SYS_ERROR() << "::inet_pton error";
         }
     }

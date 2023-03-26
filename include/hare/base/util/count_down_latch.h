@@ -26,8 +26,9 @@ namespace util {
         {
             std::lock_guard<std::mutex> lock(mutex_);
             --count_;
-            if (!count_)
+            if (count_ == 0U) {
                 cv_.notify_all();
+            }
         }
 
         void await(int32_t milliseconds = 0)
@@ -42,7 +43,7 @@ namespace util {
             }
         }
 
-        uint32_t count()
+        auto count() -> uint32_t
         {
             std::lock_guard<std::mutex> lock(mutex_);
             return count_;

@@ -13,26 +13,28 @@
 namespace hare {
 namespace core {
 
-    Reactor* Reactor::createByType(const std::string& type, Cycle* cycle)
+    auto Reactor::createByType(const std::string& type, Cycle* cycle) -> Reactor*
     {
-        if (type == "EPOLL")
+        if (type == "EPOLL") {
 #ifdef HARE__HAVE_EPOLL
             return new EpollReactor(cycle);
 #else
             throw Exception("EPOLL reactor was not supported.");
 #endif
+        }
 
-        if (type == "POLL")
+        if (type == "POLL") {
 #ifdef HARE__HAVE_POLL
             return new PollReactor(cycle);
 #else
             throw Exception("POLL reactor was not supported.");
 #endif
-
+        }
+        
         throw Exception("A suitable reactor type was not found.");
     }
 
-    bool Reactor::checkEvent(Event* event) const
+    auto Reactor::checkEvent(Event* event) const -> bool
     {
         assertInCycleThread();
         auto iter = events_.find(event->fd());

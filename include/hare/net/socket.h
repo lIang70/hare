@@ -18,39 +18,39 @@ namespace net {
 
         ~Socket();
 
-        inline util_socket_t socket() const { return socket_; }
+        inline auto socket() const -> util_socket_t { return socket_; }
 
-        bool bindAddress(const HostAddress& local_addr) const;
-        bool listen() const;
+        auto bindAddress(const HostAddress& local_addr) const -> bool;
+        auto listen() const -> bool;
         void close();
 
         //! On success, returns a non-negative integer that is
         //! a descriptor for the accepted socket, which has been
         //! set to non-blocking and close-on-exec. *peeraddr is assigned.
         //! On error, -1 is returned, and *peeraddr is untouched.
-        util_socket_t accept(HostAddress& peer_addr) const;
+        auto accept(HostAddress& peer_addr) const -> util_socket_t;
 
         void shutdownWrite() const;
 
         //!
         //! Enable/disable TCP_NODELAY (disable/enable Nagle's algorithm).
         //!
-        void setTcpNoDelay(bool on) const;
+        void setTcpNoDelay(bool no_delay) const;
 
         //!
         //! Enable/disable SO_REUSEADDR
         //!
-        void setReuseAddr(bool on) const;
+        void setReuseAddr(bool reuse) const;
 
         //!
         //! Enable/disable SO_REUSEPORT
         //!
-        void setReusePort(bool on) const;
+        void setReusePort(bool reuse) const;
 
         //!
         //! Enable/disable SO_KEEPALIVE
         //!
-        void setKeepAlive(bool on) const;
+        void setKeepAlive(bool keep_alive) const;
     };
 
 } // namespace net

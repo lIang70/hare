@@ -18,7 +18,7 @@ namespace core {
         explicit PollReactor(Cycle* cycle);
         ~PollReactor() override;
 
-        Timestamp poll(int32_t timeout_microseconds, Cycle::EventList& active_events) override;
+        auto poll(int32_t timeout_microseconds, Cycle::EventList& active_events) -> Timestamp override;
         void updateEvent(Event* event) override;
         void removeEvent(Event* event) override;
 

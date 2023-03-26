@@ -8,13 +8,13 @@ namespace hare {
 class HARE_API NonCopyable {
 public:
     NonCopyable(const NonCopyable&) = delete;
-    NonCopyable operator=(const NonCopyable&) = delete;
+    auto operator=(const NonCopyable&) -> NonCopyable& = delete;
 
 protected:
     NonCopyable() = default;
     ~NonCopyable() = default;
 };
 
-}
+} // namespace hare
 
 #endif // !_HARE_BASE_NON_COPYABLE_H_

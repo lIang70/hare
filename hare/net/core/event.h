@@ -11,7 +11,7 @@ namespace hare {
 namespace core {
 
     class Cycle;
-    class H_ALIGNAS(8) Event {
+    class Event {
     public:
         enum Status : int32_t {
             NEW = -1,
@@ -36,16 +36,16 @@ namespace core {
     public:
         using Ptr = std::shared_ptr<Event>;
 
-        Event(Cycle* cycle, util_socket_t fd);
+        Event(Cycle* cycle, util_socket_t target_fd);
         virtual ~Event();
 
-        inline util_socket_t fd() const { return fd_; }
-        inline Cycle* ownerCycle() const { return owner_cycle_; }
-        inline bool isNoneEvent() const { return event_flags_ == net::EVENT_DEFAULT; };
-        inline int32_t index() const { return index_; }
+        inline auto fd() const -> util_socket_t { return fd_; }
+        inline auto ownerCycle() const -> Cycle* { return owner_cycle_; }
+        inline auto isNoneEvent() const -> bool { return event_flags_ == net::EVENT_DEFAULT; };
+        inline auto index() const -> int32_t { return index_; }
         inline void setIndex(int32_t index) { index_ = index; }
 
-        inline int32_t flags() const { return event_flags_; }
+        inline auto flags() const -> int32_t { return event_flags_; }
         inline void setFlags(int32_t flags)
         {
             event_flags_ |= flags;
@@ -56,9 +56,9 @@ namespace core {
             event_flags_ &= ~flags;
             active();
         }
-        inline bool checkFlag(int32_t flags) const
+        inline auto checkFlag(int32_t flags) const -> bool
         {
-            return (event_flags_ & flags);
+            return (event_flags_ & flags) != 0;
         }
         inline void clearAllFlags()
         {
@@ -66,8 +66,8 @@ namespace core {
             active();
         }
 
-        std::string flagsToString() const;
-        std::string rflagsToString() const;
+        auto flagsToString() const -> std::string;
+        auto rflagsToString() const -> std::string;
 
         inline void setRFlags(int32_t flags) { revent_flags_ = flags; }
 
@@ -76,7 +76,7 @@ namespace core {
         //! @brief Tie this channel to the owner object managed by shared_ptr,
         //!  prevent the owner object being destroyed in handleEvent.
         void tie(const std::shared_ptr<void>& object);
-        std::weak_ptr<void> tiedObject() { return tie_object_; }
+        auto tiedObject() -> std::weak_ptr<void> { return tie_object_; }
 
         void deactive();
 

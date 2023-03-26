@@ -23,10 +23,10 @@ namespace net {
         //! resolve hostname to IP address, not changing port or sin_family
         //! return true on success.
         //! thread safe
-        static bool resolve(const std::string& hostname, HostAddress* result);
+        static auto resolve(const std::string& hostname, HostAddress* result) -> bool;
 
-        static HostAddress localAddress(util_socket_t fd);
-        static HostAddress peerAddress(util_socket_t fd);
+        static auto localAddress(util_socket_t target_fd) -> HostAddress;
+        static auto peerAddress(util_socket_t target_fd) -> HostAddress;
 
         //! Constructs an endpoint with given port number.
         //! Mostly used in TcpServer listening.
@@ -34,7 +34,7 @@ namespace net {
 
         //! Constructs an endpoint with given ip and port.
         //! @c ip should be "1.2.3.4"
-        HostAddress(const std::string& ip, uint16_t port, bool ipv6 = false);
+        HostAddress(const std::string& target_ip, uint16_t port, bool ipv6 = false);
         HostAddress(const HostAddress& another) noexcept;
         HostAddress(HostAddress&& another) noexcept
         {
@@ -42,22 +42,22 @@ namespace net {
         }
         ~HostAddress();
 
-        HostAddress& operator=(const HostAddress& another) noexcept;
-        HostAddress& operator=(HostAddress&& another) noexcept
+        auto operator=(const HostAddress& another) noexcept -> HostAddress&;
+        auto operator=(HostAddress&& another) noexcept -> HostAddress&
         {
             std::swap(d_, another.d_);
             return (*this);
         }
 
-        sockaddr* getSockAddr() const;
+        auto getSockAddr() const -> sockaddr*;
         void setSockAddrInet6(const struct sockaddr_in6* addr_in6);
 
-        std::string toIp() const;
-        std::string toIpPort() const;
-        uint16_t port() const;
+        auto toIp() const -> std::string;
+        auto toIpPort() const -> std::string;
+        auto port() const -> uint16_t;
 
-        uint32_t ipv4NetEndian() const;
-        uint16_t portNetEndian() const;
+        auto ipv4NetEndian() const -> uint32_t;
+        auto portNetEndian() const -> uint16_t;
 
         // set IPv6 ScopeID
         void setScopeId(uint32_t scope_id);

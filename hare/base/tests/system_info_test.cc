@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include <hare/base/detail/system_info.h>
+#include <hare/base/util/system_info.h>
 
 #include <iostream>
 
@@ -25,7 +25,7 @@ TEST(system_info_test, testGetLocalIp)
     }
 }
 
-int main(int argc, char** argv)
+auto main(int argc, char** argv) -> int
 {
     ::testing::InitGoogleTest(&argc, argv);
 

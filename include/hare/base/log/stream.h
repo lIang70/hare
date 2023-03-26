@@ -1,9 +1,11 @@
 #ifndef _HARE_BASE_LOG_STREAM_H_
 #define _HARE_BASE_LOG_STREAM_H_
 
+#include <cstdint>
 #include <hare/base/util/non_copyable.h>
 #include <hare/base/util/util.h>
 
+#include <array>
 #include <cinttypes>
 #include <string>
 
@@ -42,13 +44,13 @@ namespace log {
                 }
             }
 
-            char* begin() { return data_; }
-            const char* data() const { return data_; }
-            int length() const { return static_cast<int>(cur_ - data_); }
+            auto begin() -> char* { return data_; }
+            auto data() const -> const char* { return data_; }
+            auto length() const -> int { return static_cast<int>(cur_ - data_); }
 
             // write to data_ directly
-            char* current() { return cur_; }
-            int avail() const { return static_cast<int>(end() - cur_); }
+            auto current() -> char* { return cur_; }
+            auto avail() const -> int { return static_cast<int>(end() - cur_); }
             void add(size_t len) { cur_ += len; }
 
             void reset() { cur_ = data_; }
@@ -56,24 +58,24 @@ namespace log {
 
             void setCookie(void (*cookie)()) { cookie_ = cookie; }
 
-            std::string toString() const { return std::string(data_, length()); }
+            auto toString() const -> std::string { return std::string(data_, length()); }
 
         private:
-            const char* end() const { return data_ + sizeof(data_); }
+            auto end() const -> const char* { return data_ + sizeof(data_); }
             static void cookieStart() { }
             static void cookieEnd() { }
         };
 
         class HARE_API Fmt {
-            char buf_[32] {};
+            char buf_[HARE_SMALL_FIXED_SIZE] {};
             int32_t length_ { 0 };
 
         public:
             template <typename T>
             Fmt(const char* fmt, T val);
 
-            inline const char* data() const { return buf_; }
-            inline int32_t length() const { return length_; }
+            inline auto data() const -> const char* { return buf_; }
+            inline auto length() const -> int32_t { return length_; }
         };
     } // namespace detail
 
@@ -87,63 +89,64 @@ namespace log {
         Buffer buffer_;
 
     public:
-        Stream& operator<<(bool v)
+        auto operator<<(bool boo) -> Stream&
         {
-            buffer_.append(v ? "1" : "0", 1);
+            buffer_.append(boo ? "1" : "0", 1);
             return *this;
         }
 
-        Stream& operator<<(int16_t);
-        Stream& operator<<(uint16_t);
-        Stream& operator<<(int32_t);
-        Stream& operator<<(uint32_t);
-        Stream& operator<<(int64_t);
-        Stream& operator<<(uint64_t);
+        auto operator<<(int16_t) -> Stream&;
+        auto operator<<(uint16_t) -> Stream&;
+        auto operator<<(int32_t) -> Stream&;
+        auto operator<<(uint32_t) -> Stream&;
+        auto operator<<(int64_t) -> Stream&;
+        auto operator<<(uint64_t) -> Stream&;
 
-        Stream& operator<<(const void*);
+        auto operator<<(const void*) -> Stream&;
 
-        Stream& operator<<(float v)
+        auto operator<<(float num) -> Stream&
         {
-            *this << static_cast<double>(v);
+            *this << static_cast<double>(num);
             return *this;
         }
-        Stream& operator<<(double);
+        auto operator<<(double) -> Stream&;
 
-        Stream& operator<<(char v)
+        auto operator<<(char one_ch) -> Stream&
         {
-            buffer_.append(&v, 1);
+            buffer_.append(&one_ch, 1);
             return *this;
         }
 
-        Stream& operator<<(const char* str)
+        auto operator<<(const char* str) -> Stream&
         {
-            if (str) {
+            const auto null_size = 6;
+            if (str != nullptr) {
                 buffer_.append(str, strlen(str));
             } else {
-                buffer_.append("(null)", 6);
+                buffer_.append("(null)", null_size);
             }
             return *this;
         }
 
-        Stream& operator<<(const unsigned char* str)
+        auto operator<<(const unsigned char* str) -> Stream&
         {
             return operator<<(reinterpret_cast<const char*>(str));
         }
 
-        Stream& operator<<(const std::string& v)
+        auto operator<<(const std::string& str) -> Stream&
         {
-            buffer_.append(v.c_str(), v.size());
+            buffer_.append(str.c_str(), str.size());
             return *this;
         }
 
-        Stream& operator<<(const Buffer& v)
+        auto operator<<(const Buffer& buffer) -> Stream&
         {
-            *this << v.toString();
+            *this << buffer.toString();
             return *this;
         }
 
         void append(const char* data, int len) { buffer_.append(data, len); }
-        const Buffer& buffer() const { return buffer_; }
+        auto buffer() const -> const Buffer& { return buffer_; }
         void resetBuffer() { buffer_.reset(); }
 
     private:
@@ -153,10 +156,10 @@ namespace log {
         void formatInteger(T);
     };
 
-    inline Stream& operator<<(Stream& s, const detail::Fmt& fmt)
+    inline auto operator<<(Stream& stream, const detail::Fmt& fmt) -> Stream&
     {
-        s.append(fmt.data(), fmt.length());
-        return s;
+        stream.append(fmt.data(), fmt.length());
+        return stream;
     }
 
 } // namespace log

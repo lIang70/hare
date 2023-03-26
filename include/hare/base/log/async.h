@@ -1,6 +1,7 @@
 #ifndef _HARE_BASE_LOG_ASYNC_H_
 #define _HARE_BASE_LOG_ASYNC_H_
 
+#include <cstdint>
 #include <hare/base/util/util.h>
 #include <hare/base/log/stream.h>
 #include <hare/base/util/thread.h>
@@ -18,6 +19,7 @@ namespace log {
     public:
         // Flush every second.
         static const int32_t META_FLUSH_INTERVAL = 1;
+        static const int64_t BLOCK_NUMBER = 16;
 
     private:
         using Block = detail::FixedBuffer<LARGE_BUFFER>;
@@ -33,11 +35,11 @@ namespace log {
 
         std::atomic_bool running_ { false };
         std::string name_ {};
-        int64_t roll_size_ { LARGE_BUFFER * 16 };
+        int64_t roll_size_ { LARGE_BUFFER * BLOCK_NUMBER };
         int32_t flush_interval_ { META_FLUSH_INTERVAL };
 
     public:
-        Async(const std::string& name, int64_t roll_size, int32_t flush_interval = 3 * META_FLUSH_INTERVAL);
+        Async(std::string name, int64_t roll_size, int32_t flush_interval = 3 * META_FLUSH_INTERVAL);
         ~Async();
 
         void append(const char* log_line, int32_t size);

@@ -1,4 +1,5 @@
 #include "hare/net/core/cycle.h"
+#include "hare/base/util/util.h"
 #include "hare/net/core/event.h"
 #include "hare/net/core/reactor.h"
 #include "hare/net/socket_op.h"
@@ -20,7 +21,7 @@ namespace core {
         thread_local Cycle* t_local_cycle { nullptr };
         std::atomic<net::TimerId> s_timer_id { 1 };
 
-        util_socket_t createWakeFd()
+        auto createWakeFd() -> util_socket_t
         {
 #ifdef HARE__HAVE_EVENTFD
             auto evtfd = ::eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
@@ -45,10 +46,10 @@ namespace core {
 
             void sendNotify()
             {
-                auto one = (uint64_t)1;
-                auto n = socket::write(fd(), &one, sizeof(one));
-                if (n != sizeof(one)) {
-                    SYS_ERROR() << "Write[" << n << " B] instead of " << sizeof(one);
+                auto one = static_cast<uint64_t>(1);
+                auto write_n = socket::write(fd(), &one, sizeof(one));
+                if (write_n != sizeof(one)) {
+                    SYS_ERROR() << "Write[" << write_n << " B] instead of " << sizeof(one);
                 }
             }
 
@@ -56,11 +57,13 @@ namespace core {
             {
                 HARE_ASSERT(ownerCycle() == t_local_cycle, "Cycle is wrong.");
 
+                H_UNUSED(receive_time);
+
                 if (events == net::EVENT_READ) {
-                    auto one = (uint64_t)0;
-                    auto n = socket::read(fd(), &one, sizeof(one));
-                    if (n != sizeof(one) && one != (uint64_t)1) {
-                        SYS_ERROR() << "Read notify[" << n << " B] instead of " << sizeof(one);
+                    auto one = static_cast<uint64_t>(0);
+                    auto read_n = socket::read(fd(), &one, sizeof(one));
+                    if (read_n != sizeof(one) && one != static_cast<uint64_t>(1)) {
+                        SYS_ERROR() << "Read notify[" << read_n << " B] instead of " << sizeof(one);
                     }
                 } else {
                     SYS_FATAL() << "An error occurred while accepting notify in fd[" << fd() << "].";
@@ -76,7 +79,7 @@ namespace core {
         , tid_(current_thread::tid())
     {
         LOG_TRACE() << "Cycle[" << this << "] is being initialized...";
-        if (detail::t_local_cycle) {
+        if (detail::t_local_cycle != nullptr) {
             SYS_FATAL() << "Another Cycle[" << detail::t_local_cycle
                         << "] exists in this thread[" << tid_ << "].";
         } else {
@@ -145,20 +148,20 @@ namespace core {
         }
     }
 
-    void Cycle::runInLoop(Thread::Task cb)
+    void Cycle::runInLoop(Thread::Task task)
     {
         if (isInLoopThread()) {
-            cb();
+            task();
         } else {
-            queueInLoop(std::move(cb));
+            queueInLoop(std::move(task));
         }
     }
 
-    void Cycle::queueInLoop(Thread::Task cb)
+    void Cycle::queueInLoop(Thread::Task task)
     {
         {
             std::lock_guard<std::mutex> lock(mutex_);
-            pending_funcs_.push_back(std::move(cb));
+            pending_funcs_.push_back(std::move(task));
         }
 
         if (!isInLoopThread() || calling_pending_funcs_) {
@@ -166,7 +169,7 @@ namespace core {
         }
     }
 
-    size_t Cycle::queueSize() const
+    auto Cycle::queueSize() const -> size_t
     {
         std::lock_guard<std::mutex> lock(mutex_);
         return pending_funcs_.size();
@@ -191,33 +194,34 @@ namespace core {
         reactor_->removeEvent(event);
     }
 
-    bool Cycle::checkEvent(Event* event)
+    auto Cycle::checkEvent(Event* event) -> bool
     {
         HARE_ASSERT(event->ownerCycle() == this, "The event is not part of the cycle.");
         return reactor_->checkEvent(event);
     }
 
-    net::TimerId Cycle::addTimer(net::Timer* timer)
+    auto Cycle::addTimer(net::Timer* timer) -> net::TimerId
     {
         assertInCycleThread();
-        auto id = detail::s_timer_id.fetch_add(1);
-        manage_timers_.insert(std::make_pair(id, timer));
-        priority_timers_.emplace(id, Timestamp::now().microSecondsSinceEpoch() + timer->timeout());
-        return id;
+        auto timer_id = detail::s_timer_id.fetch_add(1);
+        manage_timers_.insert(std::make_pair(timer_id, timer));
+        priority_timers_.emplace(timer_id, Timestamp::now().microSecondsSinceEpoch() + timer->timeout());
+        return timer_id;
     }
 
-    void Cycle::cancel(net::TimerId id)
+    void Cycle::cancel(net::TimerId timer_id)
     {
         assertInCycleThread();
-        manage_timers_.erase(id);
+        manage_timers_.erase(timer_id);
     }
 
     void Cycle::notify()
     {
-        if (auto notify = dynamic_cast<detail::NotifyEvent*>(notify_event_.get()))
+        if (auto* notify = dynamic_cast<detail::NotifyEvent*>(notify_event_.get())) {
             notify->sendNotify();
-        else
+        } else {
             SYS_FATAL() << "Cannot cast to NotifyEvent.";
+        }
     }
 
     void Cycle::abortNotInLoopThread()
@@ -248,8 +252,9 @@ namespace core {
     {
         while (!priority_timers_.empty()) {
             auto top = priority_timers_.top();
-            if (reactor_time_ < top.timestamp_)
+            if (reactor_time_ < top.timestamp_) {
                 break;
+            }
             auto iter = manage_timers_.find(top.timer_id_);
             if (iter != manage_timers_.end()) {
                 iter->second->task()();
@@ -263,14 +268,13 @@ namespace core {
         }
     }
 
-    int32_t Cycle::getWaitTime()
+    auto Cycle::getWaitTime() -> int32_t
     {
         if (priority_timers_.empty()) {
             return detail::POLL_TIME_MICROSECONDS;
-        } else {
-            auto t = (int32_t)(priority_timers_.top().timestamp_.microSecondsSinceEpoch() - Timestamp::now().microSecondsSinceEpoch());
-            return t <= 0 ? (int32_t)1 : std::min(t, detail::POLL_TIME_MICROSECONDS);
         }
+        auto time = static_cast<int32_t>(priority_timers_.top().timestamp_.microSecondsSinceEpoch() - Timestamp::now().microSecondsSinceEpoch());
+        return time <= 0 ? static_cast<int32_t>(1) : std::min(time, detail::POLL_TIME_MICROSECONDS);
     }
 
     void Cycle::printActiveEvents() const

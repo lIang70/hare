@@ -10,7 +10,7 @@
 namespace hare {
 namespace log {
 
-    Async::Async(const std::string& name, int64_t roll_size, int32_t flush_interval)
+    Async::Async(std::string name, int64_t roll_size, int32_t flush_interval)
         : name_(std::move(name))
         , roll_size_(roll_size)
         , flush_interval_(flush_interval)
@@ -18,7 +18,7 @@ namespace log {
     {
         current_block_->bzero();
         next_block_->bzero();
-        blocks_.reserve(16);
+        blocks_.reserve(BLOCK_NUMBER);
     }
 
     Async::~Async()
@@ -62,8 +62,10 @@ namespace log {
 
     void Async::run()
     {
-        if (!running_)
+        if (!running_) {
             throw Exception("LOG_ASYNC is not running.");
+        }
+        
         latch_.countDown();
 
         log::File output(name_, roll_size_, false);
@@ -73,7 +75,7 @@ namespace log {
         new_block_2->bzero();
 
         Blocks block_2_write;
-        block_2_write.reserve(16);
+        block_2_write.reserve(BLOCK_NUMBER);
         while (running_) {
             assert(new_block_1 && new_block_1->length() == 0);
             assert(new_block_2 && new_block_2->length() == 0);
@@ -95,8 +97,9 @@ namespace log {
 
             assert(!block_2_write.empty());
 
-            if (block_2_write.size() > 32) {
-                char buf[256];
+            if (block_2_write.size() > BLOCK_NUMBER * 2) {
+                const auto buffer_size = 256;
+                char buf[buffer_size];
                 snprintf(buf, sizeof(buf), "[Warning ] Dropped log messages at [%s], %zd larger buffers\n",
                     Timestamp::now().toFormattedString().c_str(),
                     block_2_write.size() - 2);

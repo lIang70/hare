@@ -1,10 +1,12 @@
 #include "hare/net/socket_op.h"
+#include <cstdint>
 #include <hare/base/logging.h>
 #include <hare/net/buffer.h>
 
 #include <limits>
 #include <list>
 #include <memory>
+#include <sys/types.h>
 
 #if defined(HARE__HAVE_SYS_UIO_H) || defined(H_OS_WIN32)
 #define USE_IOVEC_IMPL
@@ -69,17 +71,17 @@ namespace net {
             explicit Block(std::size_t size);
             ~Block();
 
-            inline void* writable() const { return bytes_ + off_ + misalign_; }
-            inline std::size_t writableSize() const { return buffer_len_ - off_ - misalign_; }
-            inline void* readable() const { return bytes_ + misalign_; }
-            inline std::size_t readableSize() const { return off_; }
-            inline bool isFull() const { return off_ + misalign_ == buffer_len_; }
-            inline bool isEmpty() const { return off_ == 0; }
+            inline auto writable() const -> void* { return bytes_ + off_ + misalign_; }
+            inline auto writableSize() const -> std::size_t { return buffer_len_ - off_ - misalign_; }
+            inline auto readable() const -> void* { return bytes_ + misalign_; }
+            inline auto readableSize() const -> std::size_t { return off_; }
+            inline auto isFull() const -> bool { return off_ + misalign_ == buffer_len_; }
+            inline auto isEmpty() const -> bool { return off_ == 0; }
 
             void clear();
             void write(const void* bytes, std::size_t size);
             void drain(std::size_t size);
-            bool realign(std::size_t size);
+            auto realign(std::size_t size) -> bool;
         };
 
         Block::Block(std::size_t size)
@@ -127,7 +129,7 @@ namespace net {
             off_ -= size;
         }
 
-        bool Block::realign(std::size_t size)
+        auto Block::realign(std::size_t size) -> bool
         {
             if (buffer_len_ - off_ > size && off_ < buffer_len_ / 2 && off_ <= MAX_TO_REALIGN_IN_EXPAND) {
                 memmove(bytes_, bytes_ + misalign_, off_);
@@ -159,29 +161,32 @@ namespace net {
 
         BlockList::iterator insertBlock(detail::Block* block)
         {
-            if (!block)
+            if (block == nullptr) {
                 return block_chain_.end();
+            }
 
             if (block_chain_.empty()) {
                 HARE_ASSERT(write_iter_ == block_chain_.end(), "");
                 block_chain_.emplace_back(block);
                 write_iter_ = block_chain_.begin();
                 return write_iter_;
-            } else {
-                for (auto iter = write_iter_; iter != block_chain_.end();) {
-                    if ((*iter)->isEmpty()) {
-                        block_chain_.erase(iter++);
-                    } else {
-                        ++iter;
-                    }
-                }
-                auto iter = write_iter_;
-                ++iter;
-                block_chain_.insert(iter, UBlock(block));
-                if (!block->isEmpty())
-                    ++write_iter_;
-                return --iter;
             }
+
+            for (auto iter = write_iter_; iter != block_chain_.end();) {
+                if ((*iter)->isEmpty()) {
+                    block_chain_.erase(iter++);
+                } else {
+                    ++iter;
+                }
+            }
+            auto iter = write_iter_;
+            ++iter;
+            block_chain_.insert(iter, UBlock(block));
+            if (!block->isEmpty()) {
+                ++write_iter_;
+            }
+            return --iter;
+            
         }
     };
 
@@ -202,7 +207,7 @@ namespace net {
         drain(total_len_);
     }
 
-    bool Buffer::add(const void* bytes, std::size_t size)
+    auto Buffer::add(const void* bytes, std::size_t size) -> bool
     {
         if (total_len_ + size > detail::Block::MAX_SIZE) {
             return false;
@@ -212,8 +217,9 @@ namespace net {
         std::size_t remain {};
         if (d_->write_iter_ == d_->block_chain_.end()) {
             curr = d_->insertBlock(new detail::Block(size));
-            if (curr == d_->block_chain_.end())
+            if (curr == d_->block_chain_.end()) {
                 return false;
+            }
         } else {
             curr = d_->write_iter_;
         }
@@ -221,13 +227,9 @@ namespace net {
         auto& curr_block = *curr;
         if (curr_block) {
             remain = curr_block->writableSize();
-            if (remain >= size) {
+            if (remain >= size || curr_block->realign(size)) {
                 /* there's enough space to hold all the data in the
                  * current last chain */
-                curr_block->write(bytes, size);
-                total_len_ += size;
-                goto out;
-            } else if (curr_block->realign(size)) {
                 curr_block->write(bytes, size);
                 total_len_ += size;
                 goto out;
@@ -237,12 +239,15 @@ namespace net {
         }
 
         curr = d_->insertBlock(new detail::Block(size - remain));
-        if (curr == d_->block_chain_.end())
+        if (curr == d_->block_chain_.end()) {
             return false;
+        }
 
-        if (remain > 0)
+        if (remain > 0) {
             curr_block->write(bytes, remain);
-        (*curr)->write((unsigned char*)bytes + remain, size - remain);
+        }
+
+        (*curr)->write(static_cast<const unsigned char*>(bytes) + remain, size - remain);
         total_len_ += size;
 
     out:
@@ -250,72 +255,75 @@ namespace net {
         return true;
     }
 
-    std::size_t Buffer::remove(void* buffer, std::size_t length)
+    auto Buffer::remove(void* buffer, std::size_t length) -> std::size_t
     {
-        std::size_t n = 0;
-        n = copyout(buffer, length);
-        if (n > 0) {
-            return drain(length) ? n : 0;
+        std::size_t copy_out = copyout(buffer, length);
+        if (copy_out > 0) {
+            return drain(length) ? copy_out : 0;
         }
-        return n;
+        return copy_out;
     }
 
-    int64_t Buffer::read(util_socket_t fd, int64_t howmuch)
+    auto Buffer::read(util_socket_t target_fd, int64_t howmuch) -> int64_t
     {
-        auto n = socket::getBytesReadableOnSocket(fd);
+        auto readable = socket::getBytesReadableOnSocket(target_fd);
         auto nvecs = 2;
-        if (n <= 0 || n > max_read_)
-            n = max_read_;
-        if (howmuch < 0 || howmuch > n)
-            howmuch = n;
+        if (readable <= 0 || readable > max_read_) {
+            readable = max_read_;
+        }
+        if (howmuch < 0 || howmuch > readable) {
+            howmuch = static_cast<int64_t>(readable);
+        }
 
 #ifdef USE_IOVEC_IMPL
         if (!expandFast(howmuch)) {
             return -1;
-        } else {
-            IOV_TYPE vecs[nvecs];
+        }
 
-            auto iter = d_->write_iter_;
-            for (auto i = 0; i < nvecs && iter != d_->block_chain_.end(); ++i, ++iter) {
-                if (!(*iter)->isFull()) {
-                    vecs[i].IOV_PTR_FIELD = (*iter)->writable();
-                    vecs[i].IOV_LEN_FIELD = (*iter)->writableSize();
-                }
+        IOV_TYPE vecs[nvecs];
+
+        auto iter = d_->write_iter_;
+        for (auto i = 0; i < nvecs && iter != d_->block_chain_.end(); ++i, ++iter) {
+            if (!(*iter)->isFull()) {
+                vecs[i].IOV_PTR_FIELD = (*iter)->writable();
+                vecs[i].IOV_LEN_FIELD = (*iter)->writableSize();
             }
+        }
 
 #ifdef H_OS_WIN32
-            {
-                DWORD bytes_read;
-                DWORD flags = 0;
-                if (::WSARecv(fd, vecs, nvecs, &bytes_read, &flags, NULL, NULL)) {
-                    /* The read failed. It might be a close,
-                     * or it might be an error. */
-                    if (::WSAGetLastError() == WSAECONNABORTED)
-                        n = 0;
-                    else
-                        n = -1;
-                } else
-                    n = bytes_read;
-            }
-#else
-            n = ::readv(fd, vecs, nvecs);
-#endif
+        {
+            DWORD bytes_read;
+            DWORD flags = 0;
+            if (::WSARecv(fd, vecs, nvecs, &bytes_read, &flags, NULL, NULL)) {
+                /* The read failed. It might be a close,
+                    * or it might be an error. */
+                if (::WSAGetLastError() == WSAECONNABORTED)
+                    n = 0;
+                else
+                    n = -1;
+            } else
+                n = bytes_read;
         }
+#else
+        readable = ::readv(target_fd, vecs, nvecs);
+#endif
+        
 #else
             // FIXME : Not use iovec.
 #endif
 
-        if (n <= 0) {
-            return (n);
+        if (readable <= 0) {
+            return static_cast<int64_t>(readable);
         }
 
 #ifdef USE_IOVEC_IMPL
-        auto remaining = n;
-        auto iter = d_->write_iter_;
+        auto remaining = readable;
+        iter = d_->write_iter_;
         for (auto i = 0; i < nvecs && iter != d_->block_chain_.end(); ++i, ++iter) {
             auto space = (*iter)->writableSize();
-            if (space > detail::Block::MAX_SIZE)
+            if (space > detail::Block::MAX_SIZE) {
                 space = detail::Block::MAX_SIZE;
+            }
             if (space < remaining) {
                 (*iter)->off_ += space;
                 remaining -= space;
@@ -328,39 +336,40 @@ namespace net {
 #else
         // FIXME : Not use iovec.
 #endif
-        total_len_ += n;
+        total_len_ += readable;
 
-        return n;
+        return static_cast<int64_t>(readable);
     }
 
-    int64_t Buffer::write(util_socket_t fd, int64_t howmuch)
+    auto Buffer::write(util_socket_t target_fd, int64_t howmuch) -> int64_t
     {
-        auto n = -1;
+        auto write_n = static_cast<ssize_t>(-1);
 
-        if (howmuch < 0 || howmuch > total_len_)
-            howmuch = total_len_;
+        if (howmuch < 0 || howmuch > total_len_) {
+            howmuch = static_cast<int64_t>(total_len_);
+        }
 
         if (howmuch > 0) {
 #ifdef USE_IOVEC_IMPL
             IOV_TYPE iov[NUM_WRITE_IOVEC];
-            int i = 0;
+            int write_i = 0;
             auto curr = d_->block_chain_.begin();
 
-            while (curr != d_->block_chain_.end() && i < NUM_WRITE_IOVEC && howmuch) {
-                iov[i].IOV_PTR_FIELD = (*curr)->readable();
+            while (curr != d_->block_chain_.end() && write_i < NUM_WRITE_IOVEC && (howmuch != 0)) {
+                iov[write_i].IOV_PTR_FIELD = (*curr)->readable();
                 if (howmuch >= (*curr)->readableSize()) {
                     /* XXXcould be problematic when windows supports mmap*/
-                    iov[i++].IOV_LEN_FIELD = (IOV_LEN_TYPE)(*curr)->readableSize();
-                    howmuch -= (*curr)->readableSize();
+                    iov[write_i++].IOV_LEN_FIELD = static_cast<IOV_LEN_TYPE>((*curr)->readableSize());
+                    howmuch -= static_cast<int64_t>((*curr)->readableSize());
                 } else {
                     /* XXXcould be problematic when windows supports mmap*/
-                    iov[i++].IOV_LEN_FIELD = (IOV_LEN_TYPE)howmuch;
+                    iov[write_i++].IOV_LEN_FIELD = static_cast<IOV_LEN_TYPE>(howmuch);
                     break;
                 }
                 ++curr;
             }
-            if (!i) {
-                n = 0;
+            if (write_i == 0) {
+                write_n = 0;
                 return (0);
             }
 
@@ -373,7 +382,7 @@ namespace net {
                     n = bytesSent;
             }
 #else
-            n = ::writev(fd, iov, i);
+            write_n = ::writev(target_fd, iov, write_i);
 #endif
 
 #elif defined(H_OS_WIN32)
@@ -389,25 +398,28 @@ namespace net {
 #endif
         }
 
-        if (n > 0)
-            drain(n);
+        if (write_n > 0) {
+            drain(write_n);
+        }
 
-        return (n);
+        return (write_n);
     }
 
-    std::size_t Buffer::copyout(void* buffer, std::size_t length)
+    auto Buffer::copyout(void* buffer, std::size_t length) -> std::size_t
     {
-        if (length == 0)
+        if (length == 0) {
             return length;
+        }
 
-        if (length > total_len_)
+        if (length > total_len_) {
             length = total_len_;
+        }
 
-        auto _buffer = (unsigned char*)buffer;
+        auto* _buffer = static_cast<unsigned char*>(buffer);
         auto block = d_->block_chain_.begin();
         auto nread = length;
 
-        while (length && length > (*block)->readableSize()) {
+        while ((length != 0U) && length > (*block)->readableSize()) {
             auto copylen = (*block)->readableSize();
             memcpy(_buffer, (*block)->readable(), copylen);
             _buffer += copylen;
@@ -416,7 +428,7 @@ namespace net {
             HARE_ASSERT((*block) || length == 0, "");
         }
 
-        if (length) {
+        if (length != 0U) {
             HARE_ASSERT((*block), "");
             HARE_ASSERT(length <= (*block)->readableSize(), "");
 
@@ -426,7 +438,7 @@ namespace net {
         return nread;
     }
 
-    bool Buffer::drain(std::size_t size)
+    auto Buffer::drain(std::size_t size) -> bool
     {
         if (size >= total_len_) {
             d_->block_chain_.clear();
@@ -438,8 +450,9 @@ namespace net {
             total_len_ -= size;
             for (; remaining >= (*block)->readableSize();) {
                 remaining -= (*block)->readableSize();
-                if (block == d_->write_iter_)
+                if (block == d_->write_iter_) {
                     ++d_->write_iter_;
+                }
                 ++block;
                 d_->block_chain_.pop_front();
             }
@@ -449,25 +462,19 @@ namespace net {
         return true;
     }
 
-    bool Buffer::expandFast(int64_t howmuch)
+    auto Buffer::expandFast(int64_t howmuch) -> bool
     {
         decltype(d_->write_iter_) curr {};
 
         if (d_->write_iter_ == d_->block_chain_.end()) {
             curr = d_->insertBlock(new detail::Block(howmuch));
-            if (curr == d_->block_chain_.end())
-                return false;
-            else
-                return true;
+            return curr != d_->block_chain_.end();
         }
 
         curr = d_->write_iter_;
         auto remain = (*curr)->writableSize();
         curr = d_->insertBlock(new detail::Block(howmuch - remain));
-        if (curr == d_->block_chain_.end())
-            return false;
-        else
-            return true;
+        return curr != d_->block_chain_.end();
     }
 
 } // namespace net

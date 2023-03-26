@@ -26,17 +26,17 @@ public:
     explicit ThreadPool(std::string name = std::string("THREAD_POOL"));
     ~ThreadPool();
 
-    inline const std::string& name() const { return name_; }
+    inline auto name() const -> const std::string& { return name_; }
 
     // Must be called before start().
     inline void setMaxQueueSize(size_t max_size) { max_queue_size_ = max_size; }
-    void setThreadInitCallback(const Thread::Task& cb);
+    void setThreadInitCallback(const Thread::Task& init_cb);
 
-    inline bool isRunning() const { return running_; } 
+    inline auto isRunning() const -> bool { return running_; } 
     void start(int32_t num_of_thread);
     void stop();
 
-    size_t queueSize() const;
+    auto queueSize() const -> size_t;
 
     // Could block if maxQueueSize > 0
     // Call after stop() will return immediately.
@@ -44,16 +44,16 @@ public:
     // So we don't need to overload a const& and an && versions
     // as we do in (Bounded)BlockingQueue.
     // https://stackoverflow.com/a/25408989
-    void run(Thread::Task f);
+    void run(Thread::Task task);
 
 private:
-    bool isFull() const;
+    auto isFull() const -> bool;
 
-    Thread::Task take();
+    auto take() -> Thread::Task;
     
     void loop();
 };
 
-}
+} // namespace hare
 
 #endif // _HARE_BASE_THREAD_POOL_H_

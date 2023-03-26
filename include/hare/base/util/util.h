@@ -28,7 +28,10 @@
 #define H_UNUSED(x) (void)(x)
 #define H_ALIGNAS(n) alignas(n)
 
-namespace hare {
+#define HARE_SMALL_FIXED_SIZE 32
+
+namespace hare
+{
 
 #ifdef H_OS_WIN32
 using util_socket_t = intptr_t;
@@ -36,9 +39,9 @@ using util_socket_t = intptr_t;
 using util_socket_t = int;
 #endif
 
-inline HARE_API void setZero(void* p, size_t n)
+inline HARE_API void setZero(void* des, size_t n)
 {
-    memset(p, 0, n);
+    memset(des, 0, n);
 }
 
 // Taken from google-protobuf stubs/common.h
@@ -96,9 +99,9 @@ inline HARE_API void setZero(void* p, size_t n)
 // but the proposal was submitted too late.  It will probably make
 // its way into the language in the future.
 template <typename To, typename From>
-inline HARE_API To implicit_cast(From const& f)
+inline HARE_API auto implicit_cast(From const& from) -> To
 {
-    return f;
+    return from;
 }
 
 } // namespace hare

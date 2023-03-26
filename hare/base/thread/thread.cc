@@ -37,13 +37,13 @@ static std::atomic<int32_t> num_of_thread_ { 0 };
 
 static void setDefaultName(std::string& name)
 {
-    auto id = num_of_thread_.fetch_add(1, std::memory_order_acquire);
+    auto tid = num_of_thread_.fetch_add(1, std::memory_order_acquire);
     if (name.empty()) {
-        name = "THREAD-" + std::to_string(id);
+        name = "THREAD-" + std::to_string(tid);
     }
 }
 
-int32_t Thread::threadCreated()
+auto Thread::threadCreated() -> int32_t
 {
     return num_of_thread_.load(std::memory_order_relaxed);
 }
@@ -57,8 +57,9 @@ Thread::Thread(Task task, std::string name)
 
 Thread::~Thread()
 {
-    if (thread_ && thread_->joinable())
+    if (thread_ && thread_->joinable()) {
         thread_->join();
+    }
 }
 
 void Thread::start()
@@ -86,10 +87,11 @@ void Thread::start()
     }
 }
 
-bool Thread::join()
+auto Thread::join() -> bool
 {
-    if (current_thread::tid() == tid())
+    if (current_thread::tid() == tid()) {
         return false;
+    }
 
     if (thread_ && thread_->joinable()) {
         thread_->join();
@@ -103,9 +105,10 @@ void Thread::run()
 {
     thread_id_ = current_thread::tid();
 
-    if (count_down_latch_)
+    if (count_down_latch_) {
         count_down_latch_->countDown();
-
+    }
+    
     t_data.thread_name_ = name_.empty() ? "HareThread" : name_.c_str();
 
     // For debug
@@ -138,4 +141,4 @@ void Thread::run()
     }
 }
 
-}
+} // namespace hare

@@ -1,6 +1,7 @@
 #ifndef _HARE_NET_TCP_SESSION_H_
 #define _HARE_NET_TCP_SESSION_H_
 
+#include <cstddef>
 #include <hare/base/util/non_copyable.h>
 #include <hare/base/util/util.h>
 #include <hare/base/time/timestamp.h>
@@ -26,7 +27,7 @@ namespace net {
         TcpSessionPrivate* p_ { nullptr };
 
     public:
-        using Ptr = std::shared_ptr<TcpSession>; 
+        using Ptr = std::shared_ptr<TcpSession>;
 
         enum State : int8_t {
             CONNECTING = 0x00,
@@ -34,38 +35,40 @@ namespace net {
             DISCONNECTING
         };
 
+        static const std::size_t DEFAULT_HIGH_WATER = static_cast<const std::size_t>(64 * 1024 * 1024);
+        
         virtual ~TcpSession();
 
-        const std::string& name() const;
-        const HostAddress& localAddress() const;
-        const HostAddress& peerAddress() const;
+        auto name() const -> const std::string&;
+        auto localAddress() const -> const HostAddress&;
+        auto peerAddress() const -> const HostAddress&;
 
-        void setHighWaterMark(std::size_t high_water = 64 * 1024 * 1024);
+        void setHighWaterMark(std::size_t high_water = DEFAULT_HIGH_WATER);
 
-        State state() const;
+        auto state() const -> State;
 
-        util_socket_t socket() const;
+        auto socket() const -> util_socket_t;
 
-        bool send(const uint8_t* bytes, std::size_t length);
+        auto send(const uint8_t* bytes, std::size_t length) -> bool;
 
         void shutdown(); // NOT thread safe, no simultaneous calling
         void forceClose();
-        void setTcpNoDelay(bool on);
+        void setTcpNoDelay(bool tcp_on);
 
         // reading or not
         void startRead();
         void stopRead();
 
     protected:
+        explicit TcpSession(TcpSessionPrivate* tsp);
+
         virtual void connection(int32_t flag) {}
         virtual void writeComplete() {}
         virtual void highWaterMark() {}
-        virtual void read(Buffer& b, const Timestamp& ts) {}
+        virtual void read(Buffer& buffer, const Timestamp& time) {}
 
     private:
-        explicit TcpSession(TcpSessionPrivate* p);
-
-        core::Cycle* getCycle();
+        auto getCycle() -> core::Cycle*;
 
         void shutdownInCycle();
         void forceCloseInCycle();

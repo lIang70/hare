@@ -1,5 +1,6 @@
 #include "hare/base/log/util.h"
 #include "hare/base/thread/local.h"
+#include "hare/base/util/util.h"
 #include <hare/base/time/datetime.h>
 #include <hare/base/logging.h>
 
@@ -10,23 +11,24 @@
 namespace hare {
 namespace log {
 
-    thread_local char t_errno_buf[512];
-    thread_local char t_time[64];
+    thread_local char t_errno_buf[HARE_SMALL_FIXED_SIZE * HARE_SMALL_FIXED_SIZE / 2];
+    thread_local char t_time[HARE_SMALL_FIXED_SIZE * 2];
     thread_local int64_t t_last_second;
 
-    const char* strErrorno(int errorno)
+    auto strErrorno(int errorno) -> const char*
     {
         return ::strerror_r(errorno, t_errno_buf, sizeof(t_errno_buf));
     }
 
-    static LogLevel initLogLevel()
+    static auto initLogLevel() -> LogLevel
     {
-        if (::getenv("HARE_LOG_TRACE"))
+        if (::getenv("HARE_LOG_TRACE") != nullptr) {
             return LogLevel::TRACE;
-        else if (::getenv("HARE_LOG_DEBUG"))
+        }
+        if (::getenv("HARE_LOG_DEBUG") != nullptr) {
             return LogLevel::DEBUG;
-        else
-            return LogLevel::INFO;
+        }
+        return LogLevel::INFO;
     }
 
     const char* LogLevelName[static_cast<int32_t>(LogLevel::NUM_LOG_LEVELS)] = {
@@ -38,16 +40,16 @@ namespace log {
         "[FATAL ] ",
     };
 
-    inline Stream& operator<<(Stream& s, const Logger::FilePath& v)
+    inline auto operator<<(Stream& stream, const Logger::FilePath& file_path) -> Stream&
     {
-        s.append(v.data_, v.size_);
-        return s;
+        stream.append(file_path.data(), file_path.size());
+        return stream;
     }
 
     void defaultOutput(const char* msg, int len)
     {
-        auto n = ::fwrite(msg, 1, len, stdout);
-        H_UNUSED(n);
+        auto fwrite_n = ::fwrite(msg, 1, len, stdout);
+        H_UNUSED(fwrite_n);
     }
 
     void defaultFlush()
@@ -73,10 +75,10 @@ struct Helper {
         assert(strlen(str) == len_);
     }
 
-    friend inline log::Stream& operator<<(log::Stream& s, Helper v)
+    friend inline auto operator<<(log::Stream& stream, Helper helper) -> log::Stream&
     {
-        s.append(v.str_, v.len_);
-        return s;
+        stream.append(helper.str_, static_cast<int>(helper.len_));
+        return stream;
     }
 };
 
@@ -106,27 +108,27 @@ void Logger::Data::formatTime()
 
     if (seconds != log::t_last_second) {
         log::t_last_second = seconds;
-        struct time::DateTime dt;
+        struct time::DateTime tdt;
         if (log::g_log_time_zone) {
-            dt = log::g_log_time_zone.toLocalTime(seconds);
+            tdt = log::g_log_time_zone.toLocalTime(seconds);
         } else {
-            dt = TimeZone::toUtcTime(seconds);
+            tdt = TimeZone::toUtcTime(seconds);
         }
 
         auto len = snprintf(log::t_time, sizeof(log::t_time), "%4d-%02d-%02d %02d:%02d:%02d",
-            dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second);
+            tdt.year(), tdt.month(), tdt.day(), tdt.hour(), tdt.minute(), tdt.second());
         assert(len == 19);
         H_UNUSED(len);
     }
 
     if (log::g_log_time_zone) {
-        log::detail::Fmt us(".%06d ", micro_seconds);
+        log::detail::Fmt fmt_us(".%06d ", micro_seconds);
         assert(us.length() == 8);
-        stream_ << Helper(log::t_time, 19) << Helper(us.data(), 8);
+        stream_ << Helper(log::t_time, 19) << Helper(fmt_us.data(), 8);
     } else {
-        log::detail::Fmt us(".%06dZ ", micro_seconds);
+        log::detail::Fmt fmt_us(".%06dZ ", micro_seconds);
         assert(us.length() == 9);
-        stream_ << Helper(log::t_time, 19) << Helper(us.data(), 9);
+        stream_ << Helper(log::t_time, 19) << Helper(fmt_us.data(), 9);
     }
 }
 
@@ -135,7 +137,9 @@ void Logger::Data::finish()
 #ifndef HARE_DEBUG
     if (level_ <=  log::LogLevel::DEBUG)
 #endif
+    {
         stream_ << " - " << base_name_ << ':' << line_;
+    }
     stream_ << '\n';
 }
 
@@ -149,6 +153,8 @@ Logger::Logger(FilePath file, int line, log::LogLevel level, const char* func)
 {
 #ifdef HARE_DEBUG
     d_.stream_ << func << ' ';
+#else
+    H_UNUSED(func);
 #endif
 }
 
@@ -177,7 +183,7 @@ Logger::~Logger()
     }
 }
 
-log::LogLevel Logger::logLevel()
+auto Logger::logLevel() -> log::LogLevel
 {
     return log::g_log_level;
 }
@@ -197,9 +203,9 @@ void Logger::setFlush(Flush flush)
     log::g_flush = std::move(flush);
 }
 
-void Logger::setTimeZone(const TimeZone& tz)
+void Logger::setTimeZone(const TimeZone& time_zone)
 {
-    log::g_log_time_zone = tz;
+    log::g_log_time_zone = time_zone;
 }
 
-}
+} // namespace hare
