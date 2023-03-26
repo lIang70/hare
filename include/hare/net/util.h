@@ -4,6 +4,7 @@
 #include <hare/base/util/util.h>
 
 #include <cinttypes>
+#include <list>
 
 namespace hare {
 namespace net {
@@ -24,6 +25,8 @@ namespace net {
         EVENT_CLOSED = 0x10,
         EVENT_ERROR = 0x20
     };
+
+    HARE_API auto getLocalIp(int32_t type, std::list<std::string>& ip_list) -> int32_t;
 
 } // namespace net
 } // namespace hare

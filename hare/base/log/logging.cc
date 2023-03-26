@@ -123,11 +123,11 @@ void Logger::Data::formatTime()
 
     if (log::g_log_time_zone) {
         log::detail::Fmt fmt_us(".%06d ", micro_seconds);
-        assert(us.length() == 8);
+        assert(fmt_us.length() == 8);
         stream_ << Helper(log::t_time, 19) << Helper(fmt_us.data(), 8);
     } else {
         log::detail::Fmt fmt_us(".%06dZ ", micro_seconds);
-        assert(us.length() == 9);
+        assert(fmt_us.length() == 9);
         stream_ << Helper(log::t_time, 19) << Helper(fmt_us.data(), 9);
     }
 }

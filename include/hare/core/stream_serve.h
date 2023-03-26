@@ -11,7 +11,7 @@ namespace core {
     public:
         using Ptr = std::shared_ptr<StreamServe>;
 
-        StreamServe(const std::string& type, int8_t family);
+        explicit StreamServe(const std::string& type);
         ~StreamServe() override;
 
         void init(int32_t argc, char** argv);

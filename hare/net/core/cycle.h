@@ -85,18 +85,18 @@ namespace core {
 
         inline void assertInCycleThread()
         {
-            if (!isInLoopThread()) {
+            if (!isInCycleThread()) {
                 abortNotInLoopThread();
             }
         }
 
-        inline auto isInLoopThread() const -> bool { return tid_ == current_thread::tid(); }
+        inline auto isInCycleThread() const -> bool { return tid_ == current_thread::tid(); }
 
         inline auto eventHandling() const -> bool { return event_handling_.load(); }
 
 #ifdef HARE_DEBUG
 
-        inline int64_t cycleIndex() const
+        inline auto cycleIndex() const -> int64_t
         {
             return cycle_index_;
         }

@@ -142,14 +142,14 @@ namespace net {
             p_->out_buffer_.add(bytes, length);
             if (empty) {
                 locker.unlock();
-                if (p_->cycle_->isInLoopThread()) {
+                if (p_->cycle_->isInCycleThread()) {
                     p_->cycle_->queueInLoop(std::bind(&TcpSession::writeInCycle, shared_from_this()));
                 } else {
                     p_->cycle_->runInLoop(std::bind(&TcpSession::writeInCycle, shared_from_this()));
                 }
             } else if (p_->out_buffer_.length() > p_->high_water_mark_) {
                 locker.unlock();
-                if (p_->cycle_->isInLoopThread()) {
+                if (p_->cycle_->isInCycleThread()) {
                     p_->cycle_->queueInLoop(std::bind(&TcpSession::highWaterMark, shared_from_this()));
                 } else {
                     p_->cycle_->runInLoop(std::bind(&TcpSession::highWaterMark, shared_from_this()));

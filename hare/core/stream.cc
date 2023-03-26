@@ -6,22 +6,22 @@
 namespace hare {
 namespace core {
 
-    int32_t Stream::setBuffer(char* data, std::size_t size)
+    auto Stream::setBuffer(char* data, std::size_t size) -> int32_t
     {
         return 0;
     }
 
-    int8_t Stream::readOneByte()
+    auto Stream::readOneByte() -> int8_t
     {
         HARE_ASSERT(require(1), "");
-        return (int8_t)*cur_++;
+        return static_cast<int8_t>(*cur_++);
     }
 
-    int16_t Stream::readTwoBytes()
+    auto Stream::readTwoBytes() -> int16_t
     {
         HARE_ASSERT(require(2), "");
         
-        return (int16_t)*cur_++;
+        return static_cast<int16_t>(*cur_++);
     }
 
 } // namespace core

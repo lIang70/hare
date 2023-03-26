@@ -13,7 +13,6 @@ namespace util {
     HARE_API auto systemDir() -> std::string;
     HARE_API auto pid() -> int32_t;
     HARE_API auto hostname() -> std::string;
-    HARE_API auto getLocalIp(int32_t type, std::list<std::string>& ip_list) -> int32_t;
 
 } // namespace util
 } // namespace hare

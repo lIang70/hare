@@ -41,6 +41,7 @@ namespace core {
 
         inline auto fd() const -> util_socket_t { return fd_; }
         inline auto ownerCycle() const -> Cycle* { return owner_cycle_; }
+        inline void setCycle(Cycle* cycle) { owner_cycle_ = cycle; }
         inline auto isNoneEvent() const -> bool { return event_flags_ == net::EVENT_DEFAULT; };
         inline auto index() const -> int32_t { return index_; }
         inline void setIndex(int32_t index) { index_ = index; }

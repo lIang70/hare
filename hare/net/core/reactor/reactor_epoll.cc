@@ -194,10 +194,10 @@ namespace core {
             auto* event = static_cast<Event*>(epoll_events_[i].data.ptr);
             auto* revent = events_[event->fd()];
 #ifdef HARE_DEBUG
-            auto fd = event->fd();
-            auto it = events_.find(fd);
-            HARE_ASSERT(it != events_.end(), "Cannot find event.");
-            HARE_ASSERT(it->second == e, "Event is incorrect.");
+            auto efd = event->fd();
+            auto iter = events_.find(efd);
+            HARE_ASSERT(iter != events_.end(), "Cannot find event.");
+            HARE_ASSERT(iter->second == revent, "Event is incorrect.");
 #endif
             event->setRFlags(detail::encodeEpoll(epoll_events_[i].events));
             active_events.push_back(revent);

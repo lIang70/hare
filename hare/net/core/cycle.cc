@@ -91,6 +91,7 @@ namespace core {
     Cycle::~Cycle()
     {
         assertInCycleThread();
+        pending_funcs_.clear();
         notify_event_->clearAllFlags();
         notify_event_.reset();
         detail::t_local_cycle = nullptr;
@@ -143,14 +144,14 @@ namespace core {
 
         //! @brief There is a chance that loop() just executes while(!quit_) and exits,
         //!  then Cycle destructs, then we are accessing an invalid object.
-        if (!isInLoopThread()) {
+        if (!isInCycleThread()) {
             notify();
         }
     }
 
     void Cycle::runInLoop(Thread::Task task)
     {
-        if (isInLoopThread()) {
+        if (isInCycleThread()) {
             task();
         } else {
             queueInLoop(std::move(task));
@@ -164,7 +165,7 @@ namespace core {
             pending_funcs_.push_back(std::move(task));
         }
 
-        if (!isInLoopThread() || calling_pending_funcs_) {
+        if (!isInCycleThread() || calling_pending_funcs_) {
             notify();
         }
     }

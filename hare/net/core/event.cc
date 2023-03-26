@@ -35,7 +35,7 @@ namespace core {
     {
         HARE_ASSERT(!event_handle_, "When the event is destroyed, the event is still handling.");
         HARE_ASSERT(!added_to_cycle_, "When the event is destroyed, the event is still in the cycle.");
-        if (owner_cycle_->isInLoopThread()) {
+        if (owner_cycle_ != nullptr && owner_cycle_->isInCycleThread()) {
             HARE_ASSERT(!owner_cycle_->checkEvent(this), "When the event is destroyed, the event is still held by the cycle.");
         }
     }
@@ -73,14 +73,18 @@ namespace core {
     void Event::deactive()
     {
         HARE_ASSERT(isNoneEvent(), "Event is not correct.");
-        owner_cycle_->removeEvent(this);
-        added_to_cycle_.exchange(false);
+        if (owner_cycle_ != nullptr) {
+            owner_cycle_->removeEvent(this);
+            added_to_cycle_.exchange(false);
+        }
     }
 
     void Event::active()
     {
-        added_to_cycle_.exchange(false);
-        owner_cycle_->updateEvent(this);
+        if (owner_cycle_ != nullptr) {
+            added_to_cycle_.exchange(false);
+            owner_cycle_->updateEvent(this);
+        }
     }
 
 } // namespace core

@@ -2,6 +2,7 @@
 #define _HARE_NET_TCP_SERVE_H_
 
 #include <hare/net/tcp_session.h>
+#include <hare/net/acceptor.h>
 #include <hare/net/timer.h>
 
 namespace hare {
@@ -18,17 +19,18 @@ namespace net {
 
         //! @brief Construct a new Tcp Serve object
         //! @param type The type of reactor. EPOLL/POLL
-        TcpServe(const std::string& type, int8_t family, const std::string& name = "HARE_SERVE");
+        explicit TcpServe(const std::string& type, const std::string& name = "HARE_SERVE");
         virtual ~TcpServe();
 
         // Set before exec()
-        void setReusePort(bool is_reuse);
         void setThreadNum(int32_t num);
-        void listen(const HostAddress& address);
 
         auto isRunning() const -> bool;
 
-        auto addTimer(net::Timer* timer) -> TimerId;
+        // not thread-safe
+        auto add(const Acceptor::Ptr& acceptor) -> bool;
+
+        auto add(net::Timer* timer) -> TimerId;
         void cancel(net::TimerId timer_id);
 
         void exec();

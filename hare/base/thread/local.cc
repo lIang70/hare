@@ -40,7 +40,6 @@ namespace current_thread {
             buf.push_back('x');
             buf.push_back('0');
             std::reverse(buf.begin(), buf.end());
-            buf.push_back('\0');
         }
     } // namespace detail
 

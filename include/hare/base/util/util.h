@@ -30,8 +30,7 @@
 
 #define HARE_SMALL_FIXED_SIZE 32
 
-namespace hare
-{
+namespace hare {
 
 #ifdef H_OS_WIN32
 using util_socket_t = intptr_t;

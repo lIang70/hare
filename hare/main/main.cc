@@ -6,16 +6,16 @@
 #include <netinet/in.h>
 #endif
 
-int main(int argc, char** argv)
+auto main(int argc, char** argv) -> int
 {
 #ifdef HARE__HAVE_EPOLL
-    hare::core::StreamServe s_serve("EPOLL", AF_INET);
+    hare::core::StreamServe::Ptr s_serve = std::make_shared<hare::core::StreamServe>("EPOLL", AF_INET);
 #elif defined(HARE__HAVE_POLL)
-    hare::core::StreamServe s_serve("POLL", AF_INET);
+    hare::core::StreamServe::Ptr s_serve = std::make_shared<hare::core::StreamServe>("POLL", AF_INET);
 #endif
-    s_serve.init(argc, argv);
+    s_serve->init(argc, argv);
 
-    s_serve.exec();
+    s_serve->exec();
 
     return (0);
 }
