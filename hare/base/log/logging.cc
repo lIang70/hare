@@ -1,6 +1,7 @@
 #include "hare/base/log/util.h"
 #include "hare/base/thread/local.h"
 #include "hare/base/util/util.h"
+#include <cstdint>
 #include <hare/base/time/datetime.h>
 #include <hare/base/logging.h>
 
@@ -31,7 +32,7 @@ namespace log {
         return LogLevel::INFO;
     }
 
-    const char* LogLevelName[static_cast<int32_t>(LogLevel::NUM_LOG_LEVELS)] = {
+    const char* logLevelName[static_cast<int32_t>(LogLevel::NUM_LOG_LEVELS)] = {
         "[TRACE ] ",
         "[DEBUG ] ",
         "[INFO  ] ",
@@ -39,6 +40,7 @@ namespace log {
         "[ERROR ] ",
         "[FATAL ] ",
     };
+    const int32_t logLevelNameLen { 9 };
 
     inline auto operator<<(Stream& stream, const Logger::FilePath& file_path) -> Stream&
     {
@@ -62,7 +64,7 @@ namespace log {
     Logger::Output g_output = defaultOutput;
     Logger::Flush g_flush = defaultFlush;
 
-}
+} // namespace log
 
 struct Helper {
     const char* str_;
@@ -92,7 +94,7 @@ Logger::Data::Data(log::LogLevel level, int old_errno, const FilePath& file, int
     formatTime();
     current_thread::tid();
 
-    stream_ << Helper(log::LogLevelName[static_cast<int32_t>(level)], 9);
+    stream_ << Helper(log::logLevelName[static_cast<int32_t>(level)], log::logLevelNameLen);
     stream_ << Helper(current_thread::tidString().c_str(), current_thread::tidString().length()) << "# ";
 
     if (old_errno != 0) {
@@ -151,11 +153,9 @@ Logger::Logger(FilePath file, int line)
 Logger::Logger(FilePath file, int line, log::LogLevel level, const char* func)
     : d_(level, 0, file, line)
 {
-#ifdef HARE_DEBUG
-    d_.stream_ << func << ' ';
-#else
-    H_UNUSED(func);
-#endif
+    if (log::g_log_level <= log::LogLevel::DEBUG) {
+        d_.stream_ << func << ' ';
+    }
 }
 
 Logger::Logger(FilePath file, int line, log::LogLevel level)

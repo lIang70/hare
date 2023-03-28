@@ -1,9 +1,11 @@
 #include "hare/net/core/event.h"
+#include "hare/net/host_address.h"
 #include "hare/net/socket_op.h"
 #include <cstdint>
 #include <hare/base/logging.h>
 #include <hare/net/acceptor.h>
 #include <hare/net/socket.h>
+#include <sys/socket.h>
 
 #ifdef HARE__HAVE_FCNTL_H
 #include <fcntl.h>
@@ -18,6 +20,7 @@ namespace net {
         Socket socket_ { -1 };
         Acceptor::NewSession new_session_ {};
         int8_t family_ {};
+        int16_t port_ { -1 };
 
 #ifdef H_OS_LINUX
         // Read the section named "The special problem of
@@ -30,6 +33,7 @@ namespace net {
             : Event(cycle, socket::createNonblockingOrDie(family))
             , socket_(family, fd())
             , family_(family)
+            , port_(port)
 #ifdef H_OS_LINUX
             , idle_fd_(::open("/dev/null", O_RDONLY | O_CLOEXEC))
         {
@@ -37,8 +41,8 @@ namespace net {
 #else
         {
 #endif
-            socket_.setReuseAddr(true);
             socket_.setReusePort(reuse_port);
+            socket_.setReuseAddr(true);
         }
 
         ~AcceptorPrivate() final
@@ -52,7 +56,13 @@ namespace net {
 
         inline auto listen() -> bool
         {
-            auto ret = socket_.listen();
+            const HostAddress host_address(port_, false, family_ == AF_INET6);
+            auto ret = socket_.bindAddress(host_address);
+            if (!ret) {
+                SYS_ERROR() << "Cannot bind port[" << port_ << "].";
+                return ret;
+            }
+            ret = socket_.listen();
             if (!ret) {
                 return ret;
             }
@@ -62,6 +72,7 @@ namespace net {
 
     protected:
         void eventCallBack(int32_t events, const Timestamp& receive_time) override;
+        
     };
 
     void AcceptorPrivate::eventCallBack(int32_t events, const Timestamp& receive_time)
@@ -113,6 +124,11 @@ namespace net {
     auto Acceptor::socket() -> util_socket_t
     {
         return p_->socket_.socket();
+    }
+
+    auto Acceptor::port() -> int16_t
+    {
+        return p_->port_;
     }
 
     auto Acceptor::listen() -> bool

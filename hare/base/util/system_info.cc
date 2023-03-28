@@ -46,7 +46,7 @@ namespace util {
                         break;
                     }
                 }
-                system_dir_[npos] = '\0';
+                system_dir_[npos + 1] = '\0';
 #endif
             }
 

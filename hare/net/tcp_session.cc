@@ -134,7 +134,7 @@ namespace net {
         return p_->socket_->socket();
     }
 
-    bool TcpSession::send(const uint8_t* bytes, std::size_t length)
+    auto TcpSession::send(const uint8_t* bytes, std::size_t length) -> bool
     {
         if (p_->state_ == SE_STATE::CONNECTED) {
             std::unique_lock<std::mutex> locker(p_->out_buffer_mutex_);

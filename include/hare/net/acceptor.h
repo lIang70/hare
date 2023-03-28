@@ -28,6 +28,8 @@ namespace net {
 
         auto socket() -> util_socket_t;
 
+        auto port() -> int16_t;
+
     private:
         auto listen() -> bool;
 

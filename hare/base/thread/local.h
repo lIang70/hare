@@ -1,6 +1,7 @@
 #ifndef _HARE_BASE_LOCAL_H_
 #define _HARE_BASE_LOCAL_H_
 
+#include <cstdio>
 #include <hare/base/util/thread.h>
 #include <hare/hare-config.h>
 

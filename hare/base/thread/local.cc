@@ -1,5 +1,4 @@
 #include "hare/base/thread/local.h"
-#include <cstdint>
 #include <hare/base/system_check.h>
 
 #include <algorithm>
@@ -26,15 +25,14 @@ namespace current_thread {
         static const char c_digits_hex[] = "0123456789ABCDEF";
         static_assert(sizeof(c_digits_hex) == n_digits_hex + 1, "wrong number of c_digits_hex");
 
-        void convertHex(std::string& buf, uintptr_t value)
+        void convertHex(std::string& buf, Thread::Id value)
         {
             buf.clear();
-            auto begin = buf.begin();
 
             do {
                 auto lsd = static_cast<int32_t>(value % n_digits_hex);
                 value /= n_digits_hex;
-                *begin++ = c_digits_hex[lsd];
+                buf.push_back(c_digits_hex[lsd]);
             } while (value != 0);
 
             buf.push_back('x');

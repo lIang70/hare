@@ -1,10 +1,8 @@
-#include "hare/base/util/util.h"
 #include "hare/net/core/cycle.h"
 #include "hare/net/tcp_serve_p.h"
 #include "hare/net/tcp_session_p.h"
-#include <cstdint>
-#include <functional>
 #include <hare/base/logging.h>
+#include <hare/base/util/util.h>
 
 namespace hare {
 namespace net {
@@ -32,7 +30,7 @@ namespace net {
             SYS_ERROR() << "Cannot get TcpServe...";
         } else {
             auto session = serve_->createSession(tsp);
-            session->connectEstablished();
+            work_cycle->runInLoop(std::bind(&TcpSession::connectEstablished, session));
             work_cycle->runInLoop(std::bind(&TcpServe::newConnect, serve_->shared_from_this(), session, time));
         }
     }
@@ -104,17 +102,7 @@ namespace net {
         p_->cycle_.reset(new core::Cycle(p_->reactor_type_));
         HARE_ASSERT(p_->cycle_ != nullptr, "Cannot create cycle.");
 
-        for (auto iter = p_->acceptors_.begin(); iter != p_->acceptors_.end();) {
-            iter->second->setCycle(p_->cycle_.get());
-            iter->second->setNewSessionCallBack(std::bind(&TcpServePrivate::newSession, p_, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
-            auto ret = iter->second->listen();
-            if (!ret) {
-                SYS_ERROR() << "socket[" << iter->second->socket() << "] fail to listen.";
-                p_->acceptors_.erase(iter++);
-                continue;
-            }
-            ++iter;
-        }
+        activeAcceptors();
 
         p_->thread_pool_ = std::make_shared<core::CycleThreadPool>(p_->cycle_.get(), p_->reactor_type_, p_->name_ + "_WORKER");
         p_->thread_pool_->setThreadNum(p_->thread_num_);
@@ -132,6 +120,23 @@ namespace net {
     void TcpServe::exit()
     {
         p_->cycle_->exit();
+    }
+
+    void TcpServe::activeAcceptors()
+    {
+        for (auto iter = p_->acceptors_.begin(); iter != p_->acceptors_.end();) {
+            iter->second->setCycle(p_->cycle_.get());
+            iter->second->setNewSessionCallBack(std::bind(&TcpServePrivate::newSession, p_, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
+            auto ret = iter->second->listen();
+            if (!ret) {
+                SYS_ERROR() << "socket[" << iter->second->socket() << "] fail to listen.";
+                p_->acceptors_.erase(iter++);
+                continue;
+            }
+
+            LOG_INFO() << "Stream start to listen port[" << iter->second->port() << "].";
+            ++iter;
+        }
     }
 
 } // namespace net

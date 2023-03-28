@@ -43,6 +43,9 @@ namespace net {
         }
 
         virtual void newConnect(TcpSession::Ptr session, Timestamp time) = 0;
+
+    private:
+        void activeAcceptors();
     };
 
 } // namespace net

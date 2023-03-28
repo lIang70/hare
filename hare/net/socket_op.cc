@@ -117,7 +117,8 @@ namespace socket {
         auto accept_fd = ::accept(target_fd, sockaddr_cast(addr), &addr_len);
         detail::setNonBlockAndCloseOnExec(accept_fd);
 #else
-        auto accept_fd = ::accept4(target_fd, sockaddr_cast(addr), &addr_len, SOCK_NONBLOCK | SOCK_CLOEXEC);
+        auto accept_fd = ::accept4(target_fd, sockaddr_cast(addr),
+            &addr_len, SOCK_NONBLOCK | SOCK_CLOEXEC);
 #endif
         if (accept_fd < 0) {
             auto saved_errno = errno;
@@ -158,14 +159,14 @@ namespace socket {
         }
     }
 
-    auto write(util_socket_t target_fd, const void* buf, size_t size) -> std::size_t
+    auto write(util_socket_t target_fd, const void* buf, size_t size) -> ssize_t
     {
-        return ::send(target_fd, buf, size, MSG_NOSIGNAL);
+        return ::write(target_fd, buf, size);
     }
 
-    auto read(util_socket_t target_fd, void* buf, size_t size) -> std::size_t
+    auto read(util_socket_t target_fd, void* buf, size_t size) -> ssize_t
     {
-        return ::recv(target_fd, buf, size, MSG_NOSIGNAL);
+        return ::read(target_fd, buf, size);
     }
 
     auto getBytesReadableOnSocket(util_socket_t target_fd) -> std::size_t
@@ -179,7 +180,7 @@ namespace socket {
 #elif defined(FIONREAD)
         auto reable_cnt = net::Buffer::MAX_READ_DEFAULT;
         if (::ioctl(target_fd, FIONREAD, &reable_cnt) < 0) {
-            return -1;
+            return (0);
         }
         return reable_cnt;
 #else

@@ -57,8 +57,8 @@ namespace socket {
     extern auto close(util_socket_t target_fd) -> int32_t;
     extern auto accept(util_socket_t target_fd, struct sockaddr_in6* addr) -> util_socket_t;
     extern void shutdownWrite(util_socket_t target_fd);
-    extern auto write(util_socket_t target_fd, const void* buf, size_t size) -> std::size_t;
-    extern auto read(util_socket_t target_fd, void* buf, size_t size) -> std::size_t;
+    extern auto write(util_socket_t target_fd, const void* buf, size_t size) -> ssize_t;
+    extern auto read(util_socket_t target_fd, void* buf, size_t size) -> ssize_t;
 
     extern auto getBytesReadableOnSocket(util_socket_t target_fd) -> std::size_t;
     extern auto getSocketErrorInfo(util_socket_t target_fd) -> std::string;

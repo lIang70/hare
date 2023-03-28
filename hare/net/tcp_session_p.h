@@ -59,7 +59,7 @@ namespace net {
         {
             socket_->setKeepAlive(true);
             event_.reset(new detail::TcpEvent(cycle_, socket_->socket(), this));
-            event_->setFlags(EVENT_READ);
+            cycle_->runInLoop(std::bind(&core::Event::setFlags, event_, EVENT_READ));
         }
 
         void handleRead(TcpSession* session, const Timestamp& receive_time);

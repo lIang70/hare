@@ -1,4 +1,5 @@
 #include "hare/net/socket_op.h"
+#include <asm-generic/socket.h>
 #include <hare/base/logging.h>
 #include <hare/net/socket.h>
 
@@ -70,7 +71,7 @@ namespace net {
     void Socket::setTcpNoDelay(bool no_delay) const
     {
         auto opt_val = no_delay ? 1 : 0;
-        auto ret = ::setsockopt(socket_, IPPROTO_TCP, TCP_NODELAY, &opt_val, static_cast<socklen_t>(sizeof(opt_val)));
+        auto ret = ::setsockopt(socket_, SOL_SOCKET, TCP_NODELAY, &opt_val, static_cast<socklen_t>(sizeof(opt_val)));
         if (ret < 0) {
             LOG_ERROR() << "Fail to set tcp no-delay.";
         }
@@ -79,9 +80,9 @@ namespace net {
     void Socket::setReuseAddr(bool reuse) const
     {
         auto optval = reuse ? 1 : 0;
-        auto ret = ::setsockopt(socket_, IPPROTO_TCP, TCP_NODELAY, &optval, static_cast<socklen_t>(sizeof(optval)));
+        auto ret = ::setsockopt(socket_, SOL_SOCKET, SO_REUSEADDR, &optval, static_cast<socklen_t>(sizeof(optval)));
         if (ret < 0) {
-            LOG_ERROR() << "Fail to set tcp no-delay.";
+            LOG_ERROR() << "Fail to set reuse address.";
         }
     }
 
@@ -89,9 +90,9 @@ namespace net {
     {
 #ifdef SO_REUSEPORT
         auto opt_val = reuse ? 1 : 0;
-        auto ret = ::setsockopt(socket_, IPPROTO_TCP, SO_REUSEADDR, &opt_val, static_cast<socklen_t>(sizeof(opt_val)));
+        auto ret = ::setsockopt(socket_, SOL_SOCKET, SO_REUSEPORT, &opt_val, static_cast<socklen_t>(sizeof(opt_val)));
         if (ret < 0) {
-            LOG_ERROR() << "Fail to set tcp no-delay.";
+            LOG_ERROR() << "Fail to set tcp reuse port.";
         }
 #else
         LOG_ERROR() << "Reuse-port is not supported.";
@@ -101,9 +102,9 @@ namespace net {
     void Socket::setKeepAlive(bool keep_alive) const
     {
         auto optval = keep_alive ? 1 : 0;
-        auto ret = ::setsockopt(socket_, IPPROTO_TCP, SO_KEEPALIVE, &optval, static_cast<socklen_t>(sizeof(optval)));
+        auto ret = ::setsockopt(socket_, SOL_SOCKET, SO_KEEPALIVE, &optval, static_cast<socklen_t>(sizeof(optval)));
         if (ret < 0) {
-            LOG_ERROR() << "Fail to set tcp no-delay.";
+            LOG_ERROR() << "Fail to set tcp keep alive.";
         }
     }
 

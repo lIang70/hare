@@ -9,6 +9,7 @@
 
 #include <atomic>
 #include <cinttypes>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -39,6 +40,8 @@ namespace log {
         int32_t flush_interval_ { META_FLUSH_INTERVAL };
 
     public:
+        using Ptr = std::shared_ptr<Async>;
+        
         Async(std::string name, int64_t roll_size, int32_t flush_interval = 3 * META_FLUSH_INTERVAL);
         ~Async();
 

@@ -8,6 +8,7 @@
 #include <hare/net/util.h>
 
 #include <algorithm>
+#include <csignal>
 
 #ifdef HARE__HAVE_EVENTFD
 #include <sys/eventfd.h>
@@ -16,6 +17,15 @@
 namespace hare {
 namespace core {
     namespace detail {
+
+        class IgnoreSigPipe {
+        public:
+            IgnoreSigPipe()
+            {
+                ::signal(SIGPIPE, SIG_IGN);
+            }
+        };
+        static IgnoreSigPipe init_obj {};
 
         const int32_t POLL_TIME_MICROSECONDS { 10000 };
         thread_local Cycle* t_local_cycle { nullptr };
