@@ -30,7 +30,8 @@ namespace net {
     } // namespace detail
 
     class TcpSessionPrivate {
-    public:
+        friend class TcpSession;
+
         core::Cycle* cycle_ { nullptr };
         const std::string name_ {};
         std::atomic<bool> reading_ { false };
@@ -47,6 +48,7 @@ namespace net {
         Buffer out_buffer_ {};
         std::size_t high_water_mark_ { TcpSession::DEFAULT_HIGH_WATER };
 
+    public:
         TcpSessionPrivate(core::Cycle* cycle,
             std::string name, int8_t family, util_socket_t target_fd,
             HostAddress local_addr,

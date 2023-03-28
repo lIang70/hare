@@ -31,7 +31,7 @@ namespace net {
         } else {
             auto session = serve_->createSession(tsp);
             work_cycle->runInLoop(std::bind(&TcpSession::connectEstablished, session));
-            work_cycle->runInLoop(std::bind(&TcpServe::newConnect, serve_->shared_from_this(), session, time));
+            work_cycle->runInLoop(std::bind(&TcpServe::newSession, serve_->shared_from_this(), session, time));
         }
     }
 

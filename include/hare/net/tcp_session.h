@@ -1,7 +1,6 @@
 #ifndef _HARE_NET_TCP_SESSION_H_
 #define _HARE_NET_TCP_SESSION_H_
 
-#include <cstddef>
 #include <hare/base/util/non_copyable.h>
 #include <hare/base/util/util.h>
 #include <hare/base/time/timestamp.h>

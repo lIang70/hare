@@ -42,7 +42,7 @@ namespace net {
             return TcpSession::Ptr(new TcpSession(tsp));
         }
 
-        virtual void newConnect(TcpSession::Ptr session, Timestamp time) = 0;
+        virtual void newSession(TcpSession::Ptr session, Timestamp time) = 0;
 
     private:
         void activeAcceptors();

@@ -122,7 +122,6 @@ namespace socket {
 #endif
         if (accept_fd < 0) {
             auto saved_errno = errno;
-            SYS_ERROR() << "::accept error";
             switch (saved_errno) {
             case EAGAIN:
             case ECONNABORTED:

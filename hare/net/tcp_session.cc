@@ -104,17 +104,17 @@ namespace net {
         delete p_;
     }
 
-    const std::string& TcpSession::name() const
+    auto TcpSession::name() const -> const std::string&
     {
         return p_->name_;
     }
 
-    const HostAddress& TcpSession::localAddress() const
+    auto TcpSession::localAddress() const -> const HostAddress&
     {
         return p_->local_addr_;
     }
 
-    const HostAddress& TcpSession::peerAddress() const
+    auto TcpSession::peerAddress() const -> const HostAddress&
     {
         return p_->peer_addr_;
     }
@@ -124,12 +124,12 @@ namespace net {
         p_->high_water_mark_ = high_water;
     }
 
-    SE_STATE TcpSession::state() const
+    auto TcpSession::state() const -> SE_STATE
     {
         return p_->state_;
     }
 
-    util_socket_t TcpSession::socket() const
+    auto TcpSession::socket() const -> util_socket_t
     {
         return p_->socket_->socket();
     }
@@ -199,7 +199,7 @@ namespace net {
                     << " fd: " << p_->socket_->socket();
     }
 
-    core::Cycle* TcpSession::getCycle()
+    auto TcpSession::getCycle() -> core::Cycle*
     {
         return p_->cycle_;
     }
@@ -218,7 +218,9 @@ namespace net {
         p_->cycle_->assertInCycleThread();
         if (state() != SE_STATE::CONNECTING) {
             // as if we received 0 byte in handleRead();
-            p_->handleClose(this);
+            HARE_ASSERT(p_->state_ != SE_STATE::CONNECTING, "");
+            p_->state_ = SE_STATE::CONNECTING;
+            p_->event_->clearAllFlags();
         }
     }
 
