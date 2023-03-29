@@ -283,10 +283,11 @@ namespace net {
         IOV_TYPE vecs[nvecs];
 
         auto iter = d_->write_iter_;
-        for (auto i = 0; i < nvecs && iter != d_->block_chain_.end(); ++i, ++iter) {
+        auto index = 0;
+        for (; index < nvecs && iter != d_->block_chain_.end(); ++index, ++iter) {
             if (!(*iter)->isFull()) {
-                vecs[i].IOV_PTR_FIELD = (*iter)->writable();
-                vecs[i].IOV_LEN_FIELD = (*iter)->writableSize();
+                vecs[index].IOV_PTR_FIELD = (*iter)->writable();
+                vecs[index].IOV_LEN_FIELD = (*iter)->writableSize();
             }
         }
 
@@ -305,7 +306,7 @@ namespace net {
                 n = bytes_read;
         }
 #else
-        readable = ::readv(target_fd, vecs, nvecs);
+        readable = ::readv(target_fd, vecs, index);
 #endif
         
 #else

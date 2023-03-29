@@ -6,7 +6,9 @@
 namespace hare {
 namespace core {
 
+    class StreamServePrivate;
     class HARE_API StreamServe : public net::TcpServe {
+        StreamServePrivate* p_ { nullptr };
 
     public:
         using Ptr = std::shared_ptr<StreamServe>;
@@ -14,11 +16,9 @@ namespace core {
         explicit StreamServe(const std::string& type);
         ~StreamServe() override;
 
-        void init(int32_t argc, char** argv);
-
     protected:
         auto createSession(net::TcpSessionPrivate* tsp) -> net::TcpSession::Ptr override;
-        void newConnect(net::TcpSession::Ptr session, Timestamp time) override;
+        void newSession(net::TcpSession::Ptr session, Timestamp time) override;
     };
 
 } // namespace core

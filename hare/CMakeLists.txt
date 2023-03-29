@@ -268,7 +268,7 @@ else()
 endif()
 
 # Add hare_main's src
-file(GLOB HARE_MAIN_SOURCES
+file(GLOB_RECURSE HARE_MAIN_SOURCES
     "main/*.cc"
 )
 

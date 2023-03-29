@@ -82,7 +82,7 @@ namespace core {
     void Event::active()
     {
         if (owner_cycle_ != nullptr) {
-            added_to_cycle_.exchange(false);
+            added_to_cycle_.exchange(true);
             owner_cycle_->updateEvent(this);
         }
     }

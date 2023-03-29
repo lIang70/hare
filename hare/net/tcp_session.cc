@@ -46,10 +46,7 @@ namespace net {
     {
         auto read_n = in_buffer_.read(event_->fd(), -1);
         if (read_n == 0) {
-            HARE_ASSERT(state_ != SE_STATE::CONNECTING, "");
-            state_ = SE_STATE::CONNECTING;
-            event_->clearAllFlags();
-            session->connection(EVENT_CLOSED);
+            handleClose(session);
         } else if (read_n > 0) {
             session->read(in_buffer_, receive_time);
         } else {
@@ -85,9 +82,7 @@ namespace net {
     void TcpSessionPrivate::handleClose(TcpSession* session)
     {
         HARE_ASSERT(state_ != SE_STATE::CONNECTING, "");
-        state_ = SE_STATE::CONNECTING;
-        event_->clearAllFlags();
-        session->connection(EVENT_CLOSED);
+        cycle_->queueInLoop(std::bind(&TcpSession::connectDestroyed, session));
     }
 
     void TcpSessionPrivate::handleError(TcpSession* session)
@@ -199,11 +194,6 @@ namespace net {
                     << " fd: " << p_->socket_->socket();
     }
 
-    auto TcpSession::getCycle() -> core::Cycle*
-    {
-        return p_->cycle_;
-    }
-
     void TcpSession::shutdownInCycle()
     {
         p_->cycle_->assertInCycleThread();
@@ -247,6 +237,11 @@ namespace net {
         p_->handleWrite(this);
     }
 
+    auto TcpSession::getCycle() -> core::Cycle*
+    {
+        return p_->cycle_;
+    }
+
     void TcpSession::connectEstablished()
     {
         p_->cycle_->assertInCycleThread();
@@ -263,9 +258,9 @@ namespace net {
         if (state() == SE_STATE::CONNECTED) {
             p_->state_ = SE_STATE::CONNECTING;
             p_->event_->clearAllFlags();
-            connection(EVENT_CLOSED);
         }
         p_->event_->deactive();
+        connection(EVENT_CLOSED);
     }
 
 } // namespace net

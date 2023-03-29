@@ -66,14 +66,14 @@ namespace net {
         virtual void highWaterMark() {}
         virtual void read(Buffer& buffer, const Timestamp& time) {}
 
-    private:
-        auto getCycle() -> core::Cycle*;
-
         void shutdownInCycle();
         void forceCloseInCycle();
         void startReadInCycle();
         void stopReadInCycle();
         void writeInCycle();
+
+    private:
+        auto getCycle() -> core::Cycle*;
 
         void connectEstablished();
         void connectDestroyed();
