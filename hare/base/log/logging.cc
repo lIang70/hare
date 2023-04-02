@@ -1,10 +1,10 @@
 #include "hare/base/log/util.h"
 #include "hare/base/thread/local.h"
 #include "hare/base/util/util.h"
-#include <cstdint>
 #include <hare/base/time/datetime.h>
 #include <hare/base/logging.h>
 
+#include <cstdio>
 #include <cassert>
 #include <cstring>
 #include <utility>
@@ -18,21 +18,22 @@ namespace log {
 
     auto strErrorno(int errorno) -> const char*
     {
-        return ::strerror_r(errorno, t_errno_buf, sizeof(t_errno_buf));
+        ::strerror_r(errorno, t_errno_buf, sizeof(t_errno_buf));
+        return t_errno_buf;
     }
 
-    static auto initLogLevel() -> LogLevel
+    static auto initLogLevel() -> Level
     {
         if (::getenv("HARE_LOG_TRACE") != nullptr) {
-            return LogLevel::TRACE;
+            return Level::LOG_TRACE;
         }
         if (::getenv("HARE_LOG_DEBUG") != nullptr) {
-            return LogLevel::DEBUG;
+            return Level::LOG_DEBUG;
         }
-        return LogLevel::INFO;
+        return Level::LOG_INFO;
     }
 
-    const char* logLevelName[static_cast<int32_t>(LogLevel::NUM_LOG_LEVELS)] = {
+    const char* LevelName[static_cast<int32_t>(Level::LOG_LEVELS)] = {
         "[TRACE ] ",
         "[DEBUG ] ",
         "[INFO  ] ",
@@ -40,7 +41,7 @@ namespace log {
         "[ERROR ] ",
         "[FATAL ] ",
     };
-    const int32_t logLevelNameLen { 9 };
+    const int32_t LevelNameLen { 9 };
 
     inline auto operator<<(Stream& stream, const Logger::FilePath& file_path) -> Stream&
     {
@@ -60,7 +61,7 @@ namespace log {
     }
 
     TimeZone g_log_time_zone;
-    LogLevel g_log_level = initLogLevel();
+    Level g_log_level = initLogLevel();
     Logger::Output g_output = defaultOutput;
     Logger::Flush g_flush = defaultFlush;
 
@@ -84,7 +85,7 @@ struct Helper {
     }
 };
 
-Logger::Data::Data(log::LogLevel level, int old_errno, const FilePath& file, int line)
+Logger::Data::Data(log::Level level, int old_errno, const FilePath& file, int line)
     : time_(Timestamp::now())
     , stream_()
     , level_(level)
@@ -94,7 +95,7 @@ Logger::Data::Data(log::LogLevel level, int old_errno, const FilePath& file, int
     formatTime();
     current_thread::tid();
 
-    stream_ << Helper(log::logLevelName[static_cast<int32_t>(level)], log::logLevelNameLen);
+    stream_ << Helper(log::LevelName[static_cast<int32_t>(level)], log::LevelNameLen);
     stream_ << Helper(current_thread::tidString().c_str(), current_thread::tidString().length()) << "# ";
 
     if (old_errno != 0) {
@@ -146,25 +147,25 @@ void Logger::Data::finish()
 }
 
 Logger::Logger(FilePath file, int line)
-    : d_(log::LogLevel::INFO, 0, file, line)
+    : d_(log::Level::LOG_INFO, 0, file, line)
 {
 }
 
-Logger::Logger(FilePath file, int line, log::LogLevel level, const char* func)
+Logger::Logger(FilePath file, int line, log::Level level, const char* func)
     : d_(level, 0, file, line)
 {
-    if (log::g_log_level <= log::LogLevel::DEBUG) {
+    if (log::g_log_level <= log::Level::LOG_DEBUG) {
         d_.stream_ << func << ' ';
     }
 }
 
-Logger::Logger(FilePath file, int line, log::LogLevel level)
+Logger::Logger(FilePath file, int line, log::Level level)
     : d_(level, 0, file, line)
 {
 }
 
 Logger::Logger(FilePath file, int line, bool abort)
-    : d_(abort ? log::LogLevel::FATAL : log::LogLevel::Error, errno, file, line)
+    : d_(abort ? log::Level::LOG_FATAL : log::Level::LOG_ERROR, errno, file, line)
 {
 }
 
@@ -177,18 +178,23 @@ Logger::~Logger()
         log::g_output(buf.data(), buf.length());
     }
 
-    if (d_.level_ == log::LogLevel::FATAL) {
+    if (log::g_flush) {
         log::g_flush();
+    }
+
+    if (d_.level_ == log::Level::LOG_FATAL) {
+        ::fwrite(stream().buffer().data(), 1, stream().buffer().length(), stderr);
+        ::fflush(stderr);
         std::abort();
     }
 }
 
-auto Logger::logLevel() -> log::LogLevel
+auto Logger::level() -> log::Level
 {
     return log::g_log_level;
 }
 
-void Logger::setLogLevel(log::LogLevel level)
+void Logger::setLevel(log::Level level)
 {
     log::g_log_level = level;
 }

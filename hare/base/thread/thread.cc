@@ -39,7 +39,7 @@ static void setDefaultName(std::string& name)
 {
     auto tid = num_of_thread_.fetch_add(1, std::memory_order_acquire);
     if (name.empty()) {
-        name = "THREAD-" + std::to_string(tid);
+        name = "HTHREAD-" + std::to_string(tid);
     }
 }
 
@@ -71,12 +71,6 @@ void Thread::start()
         count_down_latch_.reset(new util::CountDownLatch(1));
         thread_ = UniqueThread(new std::thread(&Thread::run, this));
         count_down_latch_->await();
-    } catch (const Exception& e) {
-        t_data.thread_name_ = "crashed";
-        fprintf(stderr, "exception caught in tread created\n");
-        fprintf(stderr, "reason: %s\n", e.what());
-        fprintf(stderr, "stack trace: %s\n", e.stackTrace());
-        std::abort();
     } catch (const std::exception& e) {
         t_data.thread_name_ = "crashed";
         fprintf(stderr, "Fail to create thread! Detail:\n %s", e.what());
@@ -90,6 +84,7 @@ void Thread::start()
 auto Thread::join() -> bool
 {
     if (current_thread::tid() == tid()) {
+        SYS_ERROR() << "Cannot join in the same thread.";
         return false;
     }
 

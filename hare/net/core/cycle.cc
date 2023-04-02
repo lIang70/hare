@@ -124,7 +124,7 @@ namespace core {
             ++cycle_index_;
 #endif
 
-            if (Logger::logLevel() <= log::LogLevel::TRACE) {
+            if (Logger::level() <= log::Level::LOG_TRACE) {
                 printActiveEvents();
             }
 

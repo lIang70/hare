@@ -59,6 +59,7 @@ auto ThreadPool::queueSize() const -> size_t
 void ThreadPool::run(Thread::Task task)
 {
     if (threads_.empty()) {
+        SYS_ERROR() << "Cannot run task in the thread pool[" << this << "] because the number of threads is zero.";
         task();
     } else {
         std::unique_lock<std::mutex> lock(mutex_);

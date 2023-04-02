@@ -145,7 +145,7 @@ namespace manage {
 
         serve_ptr->setThreadNum(static_cast<int32_t>(std::thread::hardware_concurrency()));
 
-        Logger::setLogLevel(log::LogLevel::DEBUG);
+        Logger::setLevel(log::Level::LOG_DEBUG);
 
         return true;
     }

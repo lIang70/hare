@@ -1,3 +1,14 @@
+//! 
+//! @file hare/base/util/thread_pool.h
+//! @author l1ang70 (gog_017@outlook.com)
+//! @brief Describe the macro, class and functions associated with
+//!   thrad pool.
+//! @version 0.1-beta
+//! @date 2023-02-09
+//! 
+//! @copyright Copyright (c) 2023
+//! 
+
 #ifndef _HARE_BASE_THREAD_POOL_H_
 #define _HARE_BASE_THREAD_POOL_H_
 
@@ -23,7 +34,7 @@ class HARE_API ThreadPool : public NonCopyable {
 public:
     using Ptr = std::shared_ptr<ThreadPool>;
 
-    explicit ThreadPool(std::string name = std::string("THREAD_POOL"));
+    explicit ThreadPool(std::string name = std::string("HTHREAD_POOL"));
     ~ThreadPool();
 
     inline auto name() const -> const std::string& { return name_; }

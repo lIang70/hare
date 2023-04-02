@@ -1,3 +1,14 @@
+//! 
+//! @file hare/base/util/util.h
+//! @author l1ang70 (gog_017@outlook.com)
+//! @brief Describe the macro and functions associated with
+//!   util.
+//! @version 0.1-beta
+//! @date 2023-02-09
+//! 
+//! @copyright Copyright (c) 2023
+//! 
+
 #ifndef _HARE_BASE_UTIL_H_
 #define _HARE_BASE_UTIL_H_
 

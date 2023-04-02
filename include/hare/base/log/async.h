@@ -1,7 +1,17 @@
+//! 
+//! @file hare/base/log/async.h
+//! @author l1ang70 (gog_017@outlook.com)
+//! @brief Describe the macro, class and functions associated with
+//!   log async.
+//! @version 0.1-beta
+//! @date 2023-02-09
+//! 
+//! @copyright Copyright (c) 2023
+//! 
+
 #ifndef _HARE_BASE_LOG_ASYNC_H_
 #define _HARE_BASE_LOG_ASYNC_H_
 
-#include <cstdint>
 #include <hare/base/util/util.h>
 #include <hare/base/log/stream.h>
 #include <hare/base/util/thread.h>

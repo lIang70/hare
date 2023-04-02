@@ -1,3 +1,14 @@
+//! 
+//! @file hare/base/util/count_down_latch.h
+//! @author l1ang70 (gog_017@outlook.com)
+//! @brief Describe the class associated with
+//!   countdownlatch.
+//! @version 0.1-beta
+//! @date 2023-02-09
+//! 
+//! @copyright Copyright (c) 2023
+//! 
+
 #ifndef _HARE_BASE_COUNT_DOWN_LATCH_H_
 #define _HARE_BASE_COUNT_DOWN_LATCH_H_
 
