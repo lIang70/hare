@@ -219,7 +219,7 @@ endif(HARE__BUILD_TESTS)
 
 if(EXISTS "${CMAKE_SOURCE_DIR}/lib/openssl/" AND IS_DIRECTORY "${CMAKE_SOURCE_DIR}/lib/openssl/")
     message(STATUS "OpenSSL is built")
-    set(OPENSSL_ROOT_DIR ${CMAKE_SOURCE_DIR}/lib/openssl/)
+    set(ENV{PKG_CONFIG_PATH} ${CMAKE_SOURCE_DIR}/lib/openssl/lib64/pkgconfig:$ENV{PKG_CONFIG_PATH})
     find_package(OpenSSL REQUIRED SSL Crypto)
 else()
     message(STATUS "OpenSSL need to be built")
