@@ -221,6 +221,7 @@ if(EXISTS "${CMAKE_SOURCE_DIR}/lib/openssl/" AND IS_DIRECTORY "${CMAKE_SOURCE_DI
     message(STATUS "OpenSSL is built")
     set(ENV{PKG_CONFIG_PATH} ${CMAKE_SOURCE_DIR}/lib/openssl/lib64/pkgconfig:$ENV{PKG_CONFIG_PATH})
     find_package(OpenSSL REQUIRED SSL Crypto)
+    include_directories(${OPENSSL_INCLUDE_DIR})
 else()
     message(STATUS "OpenSSL need to be built")
 endif()
