@@ -243,9 +243,9 @@ add_library(hare_net ${HARE__LIBRARY_TYPE} ${HARE_NET_SOURCES})
 target_include_directories(hare_net PUBLIC ${CMAKE_SOURCE_DIR}/include)
 
 if(JEMALLOC_FOUND)
-    target_link_libraries(hare_net hare_base PkgConfig::Jemalloc OpenSSL::SSL OpenSSL::Crypto)
+    target_link_libraries(hare_net hare_base PkgConfig::Jemalloc ${OPENSSL_LIBRARIES})
 else()
-    target_link_libraries(hare_net hare_base OpenSSL::SSL OpenSSL::Crypto)
+    target_link_libraries(hare_net hare_base ${OPENSSL_LIBRARIES})
 endif()
 
 if(HARE__BUILD_TESTS)
@@ -262,9 +262,9 @@ add_library(hare_core ${HARE__LIBRARY_TYPE} ${HARE_CORE_SOURCES})
 target_include_directories(hare_core PUBLIC ${CMAKE_SOURCE_DIR}/include)
 
 if(JEMALLOC_FOUND)
-    target_link_libraries(hare_core hare_net hare_base PkgConfig::Jemalloc OpenSSL::SSL OpenSSL::Crypto)
+    target_link_libraries(hare_core hare_net hare_base PkgConfig::Jemalloc ${OPENSSL_LIBRARIES})
 else()
-    target_link_libraries(hare_core hare_net hare_base OpenSSL::SSL OpenSSL::Crypto)
+    target_link_libraries(hare_core hare_net hare_base ${OPENSSL_LIBRARIES})
 endif()
 
 # Add hare_main's src
@@ -275,7 +275,7 @@ file(GLOB_RECURSE HARE_MAIN_SOURCES
 # Add the source code to the project's executable。
 add_executable(hare_main ${HARE_MAIN_SOURCES})
 if(JEMALLOC_FOUND)
-    target_link_libraries(hare_main hare_core hare_net hare_base PkgConfig::Jemalloc OpenSSL::SSL OpenSSL::Crypto)
+    target_link_libraries(hare_main hare_core hare_net hare_base PkgConfig::Jemalloc ${OPENSSL_LIBRARIES})
 else()
-    target_link_libraries(hare_main hare_core hare_net hare_base OpenSSL::SSL OpenSSL::Crypto)
+    target_link_libraries(hare_main hare_core hare_net hare_base ${OPENSSL_LIBRARIES})
 endif()
