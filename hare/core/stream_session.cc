@@ -1,6 +1,6 @@
-#include "hare/net/util.h"
 #include <hare/base/logging.h>
 #include <hare/core/stream_session.h>
+#include <hare/net/util.h>
 
 namespace hare {
 namespace core {
@@ -24,7 +24,7 @@ namespace core {
         case net::EVENT_CLOSED:
             LOG_INFO() << "Session[" << name() << "] is closed.";
             if (close_session_) {
-                /// FIXME queueInCycle            
+                /// FIXME queueInCycle
                 close_session_(socket());
             }
             break;
@@ -48,7 +48,6 @@ namespace core {
     void StreamSession::read(net::Buffer& buffer, const Timestamp& time)
     {
         LOG_DEBUG() << "Recv data[" << buffer.length() << " B] from session[" << name() << "] in " << time.toFormattedString(true);
-        buffer.clearAll();
     }
 
 } // namespace core
