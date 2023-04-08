@@ -1,5 +1,4 @@
 #include "hare/net/core/cycle.h"
-#include "hare/base/util/util.h"
 #include "hare/net/core/event.h"
 #include "hare/net/core/reactor.h"
 #include "hare/net/socket_op.h"
@@ -128,7 +127,7 @@ namespace core {
                 printActiveEvents();
             }
 
-            // TODO sort event by priority
+            // TODO(l1ang): sort event by priority
             event_handling_.exchange(true);
 
             for (auto& event : active_events_) {
@@ -140,7 +139,7 @@ namespace core {
             event_handling_.exchange(false);
 
             notifyTimer();
-            doPendingFuncs();
+            doPendingFunctions();
         }
 
         is_running_.exchange(false);
@@ -152,8 +151,10 @@ namespace core {
     {
         quit_ = true;
 
-        //! @brief There is a chance that loop() just executes while(!quit_) and exits,
-        //!  then Cycle destructs, then we are accessing an invalid object.
+        /**
+         * @brief There is a chance that loop() just executes while(!quit_) and exits,
+         *   then Cycle destructs, then we are accessing an invalid object.
+         */
         if (!isInCycleThread()) {
             notify();
         }
@@ -242,7 +243,7 @@ namespace core {
                     << "], current thread is: " << current_thread::tid();
     }
 
-    void Cycle::doPendingFuncs()
+    void Cycle::doPendingFunctions()
     {
         std::list<Thread::Task> funcs;
         calling_pending_funcs_.exchange(true);
@@ -268,12 +269,15 @@ namespace core {
             }
             auto iter = manage_timers_.find(top.timer_id_);
             if (iter != manage_timers_.end()) {
+                LOG_TRACE() << "Event[" << top.timer_id_ << "] trigged.";
                 iter->second->task()();
                 if (iter->second->isPersist()) {
                     priority_timers_.emplace(top.timer_id_, reactor_time_.microSecondsSinceEpoch() + iter->second->timeout());
                 } else {
                     manage_timers_.erase(iter);
                 }
+            } else {
+                LOG_TRACE() << "Event[" << top.timer_id_ << "] deleted.";
             }
             priority_timers_.pop();
         }

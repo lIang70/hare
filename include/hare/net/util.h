@@ -1,15 +1,15 @@
 #ifndef _HARE_NET_UTIL_H_
 #define _HARE_NET_UTIL_H_
 
-#include <hare/base/util/util.h>
+#include <hare/base/error.h>
+#include <hare/base/util.h>
 
-#include <cinttypes>
 #include <list>
 
 namespace hare {
 namespace net {
 
-    enum : int32_t {
+    using EVENT = enum Event : int32_t {
         //! @brief The default flag.
         EVENT_DEFAULT = 0x00,
         //! @brief Wait for a socket or FD to become readable.
@@ -26,7 +26,7 @@ namespace net {
         EVENT_ERROR = 0x20
     };
 
-    HARE_API auto getLocalIp(int32_t type, std::list<std::string>& ip_list) -> int32_t;
+    HARE_API auto getLocalIp(int32_t type, std::list<std::string>& ip_list) -> Error;
 
 } // namespace net
 } // namespace hare

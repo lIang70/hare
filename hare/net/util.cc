@@ -1,7 +1,5 @@
-#include "hare/base/util/util.h"
-#include <cstring>
+#include "hare/base/error.h"
 #include <hare/net/util.h>
-#include <hare/base/system_check.h>
 
 #include <cerrno>
 #include <string>
@@ -16,15 +14,14 @@
 namespace hare {
 namespace net {
 
-    auto getLocalIp(int32_t type, std::list<std::string>& ip_list) -> int32_t
+    auto getLocalIp(int32_t type, std::list<std::string>& ip_list) -> Error
     {
         // Get the list of ip addresses of machine
         ::ifaddrs* if_addrs { nullptr };
         auto ret = ::getifaddrs(&if_addrs);
 
         if (ret != 0) {
-            ret = errno;
-            return ret;
+            return Error(HARE_ERROR_GET_LOCAL_ADDRESS);
         }
 
         int32_t adress_buf_len {};
@@ -38,7 +35,7 @@ namespace net {
             adress_buf_len = INET_ADDRSTRLEN;
             break;
         default:
-            return (-1);
+            return Error(HARE_ERROR_WRONG_FAMILY);
         }
 
         while (if_addrs != nullptr) {
@@ -51,7 +48,7 @@ namespace net {
             }
             if_addrs = if_addrs->ifa_next;
         }
-        return ret;
+        return Error(HARE_ERROR_SUCCESS);
     }
 
 } // namespace net

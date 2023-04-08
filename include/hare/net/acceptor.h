@@ -1,16 +1,17 @@
 #ifndef _HARE_NET_ACCEPTOR_H_
 #define _HARE_NET_ACCEPTOR_H_
 
-#include "net/core/cycle.h"
-#include <hare/base/util/util.h>
 #include <hare/base/time/timestamp.h>
 #include <hare/net/host_address.h>
 
-#include <cstdint>
 #include <functional>
 #include <memory>
 
 namespace hare {
+namespace core {
+    class Cycle;
+} // namespace core
+
 namespace net {
 
     class AcceptorPrivate;

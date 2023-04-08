@@ -1,9 +1,7 @@
-#include "hare/base/util/util.h"
-#include "hare/net/tcp_session.h"
-#include <functional>
 #include <hare/base/logging.h>
 #include <hare/core/stream_serve.h>
 #include <hare/core/stream_session.h>
+#include <hare/net/tcp_session.h>
 
 #include <map>
 #include <mutex>

@@ -1,8 +1,8 @@
-#include "hare/net/core/cycle.h"
 #include "hare/net/tcp_serve_p.h"
+
+#include "hare/net/core/cycle.h"
 #include "hare/net/tcp_session_p.h"
 #include <hare/base/logging.h>
-#include <hare/base/util/util.h>
 
 namespace hare {
 namespace net {

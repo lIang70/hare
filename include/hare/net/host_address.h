@@ -2,9 +2,7 @@
 #define _HARE_NET_HOST_ADDRESS_H_
 
 #include <hare/base/util/non_copyable.h>
-#include <hare/base/util/util.h>
 
-#include <cinttypes>
 #include <string>
 
 struct sockaddr;

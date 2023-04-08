@@ -1,13 +1,10 @@
 #ifndef _HARE_NET_TCP_SESSION_H_
 #define _HARE_NET_TCP_SESSION_H_
 
-#include <hare/base/util/non_copyable.h>
-#include <hare/base/util/util.h>
 #include <hare/base/time/timestamp.h>
-#include <hare/net/host_address.h>
+#include <hare/base/util/non_copyable.h>
 #include <hare/net/buffer.h>
-
-#include <memory>
+#include <hare/net/host_address.h>
 
 namespace hare {
 namespace core {
@@ -17,8 +14,7 @@ namespace core {
 namespace net {
 
     class TcpSessionPrivate;
-    class HARE_API TcpSession : public NonCopyable
-                              , public std::enable_shared_from_this<TcpSession> {
+    class HARE_API TcpSession : public NonCopyable, public std::enable_shared_from_this<TcpSession> {
         friend class TcpServe;
         friend class TcpServePrivate;
         friend class TcpSessionPrivate;
@@ -35,7 +31,7 @@ namespace net {
         };
 
         static const std::size_t DEFAULT_HIGH_WATER = static_cast<const std::size_t>(64 * 1024 * 1024);
-        
+
         virtual ~TcpSession();
 
         auto name() const -> const std::string&;
@@ -61,10 +57,10 @@ namespace net {
     protected:
         explicit TcpSession(TcpSessionPrivate* tsp);
 
-        virtual void connection(int32_t flag) {}
-        virtual void writeComplete() {}
-        virtual void highWaterMark() {}
-        virtual void read(Buffer& buffer, const Timestamp& time) {}
+        virtual void connection(int32_t flag) { }
+        virtual void writeComplete() { }
+        virtual void highWaterMark() { }
+        virtual void read(Buffer& buffer, const Timestamp& time) { }
 
         void shutdownInCycle();
         void forceCloseInCycle();

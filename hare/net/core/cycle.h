@@ -2,17 +2,16 @@
 #define _HARE_NET_CORE_CYCLE_H_
 
 #include "hare/base/thread/local.h"
+#include <hare/base/time/timestamp.h>
 #include <hare/base/util/non_copyable.h>
 #include <hare/base/util/thread.h>
-#include <hare/base/time/timestamp.h>
 #include <hare/net/timer.h>
 
 #include <atomic>
+#include <list>
 #include <map>
-#include <memory>
 #include <mutex>
 #include <queue>
-#include <list>
 
 namespace hare {
 
@@ -77,21 +76,23 @@ namespace core {
 #endif
 
     public:
+        using Ptr = std::shared_ptr<Cycle>;
+
         explicit Cycle(const std::string& reactor_type);
         virtual ~Cycle();
 
-        //! @brief Time when reactor returns, usually means data arrival.
+        /**
+         * @brief Time when reactor returns, usually means data arrival.
+         * 
+         */
         inline auto reactorReturnTime() const -> Timestamp { return reactor_time_; }
-
         inline void assertInCycleThread()
         {
             if (!isInCycleThread()) {
                 abortNotInLoopThread();
             }
         }
-
         inline auto isInCycleThread() const -> bool { return tid_ == current_thread::tid(); }
-
         inline auto eventHandling() const -> bool { return event_handling_.load(); }
 
 #ifdef HARE_DEBUG
@@ -103,26 +104,32 @@ namespace core {
 
 #endif
 
-        //! @brief Loops forever.
-        //!
-        //!  Must be called in the same thread as creation of the object.
+        /**
+         * @brief Loops forever.
+         *   Must be called in the same thread as creation of the object.
+         */
         void loop();
 
-        //! @brief Quits cycle.
-        //!
-        //!  This is not 100% thread safe, if you call through a raw pointer,
-        //!  better to call through std::shared_ptr<Cycle> for 100% safety.
+        /**
+         * @brief Quits cycle.
+         *   This is not 100% thread safe, if you call through a raw pointer,
+         *  better to call through std::shared_ptr<Cycle> for 100% safety.
+         */
         void exit();
 
-        //! @brief Runs callback immediately in the loop thread.
-        //!  It wakes up the loop, and run the cb.
-        //!  If in the same loop thread, cb is run within the function.
-        //!  Safe to call from other threads.
+        /**
+         * @brief Runs callback immediately in the loop thread.
+         *   It wakes up the loop, and run the cb.
+         *   If in the same loop thread, cb is run within the function.
+         *   Safe to call from other threads. 
+         */
         void runInLoop(Thread::Task task);
 
-        //! @brief Queues callback in the loop thread.
-        //!  Runs after finish pooling.
-        //!  Safe to call from other threads.
+        /**
+         * @brief Queues callback in the loop thread.
+         *   Runs after finish pooling.
+         *   Safe to call from other threads. 
+         */
         void queueInLoop(Thread::Task task);
 
         auto queueSize() const -> std::size_t;
@@ -137,7 +144,7 @@ namespace core {
     private:
         void notify();
         void abortNotInLoopThread();
-        void doPendingFuncs();
+        void doPendingFunctions();
         void notifyTimer();
 
         auto getWaitTime() -> int32_t;

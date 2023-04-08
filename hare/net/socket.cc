@@ -1,5 +1,4 @@
 #include "hare/net/socket_op.h"
-#include <asm-generic/socket.h>
 #include <hare/base/logging.h>
 #include <hare/net/socket.h>
 

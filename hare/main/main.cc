@@ -1,5 +1,6 @@
 #include "main/manage/input.h"
 
+#include <hare/hare-config.h>
 #include <hare/core/stream_serve.h>
 
 #include <cstdio>

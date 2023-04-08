@@ -1,6 +1,4 @@
 #include "hare/net/socket_op.h"
-#include "hare/base/system_check.h"
-#include "hare/base/util/util.h"
 #include <hare/base/exception.h>
 #include <hare/base/logging.h>
 #include <hare/net/buffer.h>

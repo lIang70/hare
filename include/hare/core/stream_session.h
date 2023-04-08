@@ -1,7 +1,6 @@
 #ifndef _HARE_CORE_STREAM_SESSION_H_
 #define _HARE_CORE_STREAM_SESSION_H_
 
-#include <hare/base/util/util.h>
 #include <hare/net/tcp_session.h>
 
 #include <functional>

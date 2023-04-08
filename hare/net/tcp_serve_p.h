@@ -1,8 +1,7 @@
 #ifndef _HARE_NET_TCP_SERVE_P_H_
 #define _HARE_NET_TCP_SERVE_P_H_
 
-#include "hare/base/util/util.h"
-#include "hare/net/acceptor.h"
+#include <hare/net/acceptor.h>
 #include "hare/net/core/cycle_threadpool.h"
 #include "hare/net/core/event.h"
 #include "hare/net/socket_op.h"

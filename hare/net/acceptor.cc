@@ -1,15 +1,19 @@
-#include "hare/net/core/event.h"
-#include "hare/net/host_address.h"
-#include "hare/net/socket_op.h"
-#include <cstdint>
-#include <hare/base/logging.h>
 #include <hare/net/acceptor.h>
+
+#include "hare/net/core/cycle.h"
+#include "hare/net/core/event.h"
+#include "hare/net/socket_op.h"
+#include <hare/base/logging.h>
+#include <hare/net/host_address.h>
 #include <hare/net/socket.h>
-#include <sys/socket.h>
 
 #ifdef HARE__HAVE_FCNTL_H
 #include <fcntl.h>
-#endif
+#endif // HARE__HAVE_FCNTL_H
+
+#ifdef HARE__HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif // HARE__HAVE_NETINET_IN_H
 
 namespace hare {
 namespace net {
@@ -72,7 +76,6 @@ namespace net {
 
     protected:
         void eventCallBack(int32_t events, const Timestamp& receive_time) override;
-        
     };
 
     void AcceptorPrivate::eventCallBack(int32_t events, const Timestamp& receive_time)

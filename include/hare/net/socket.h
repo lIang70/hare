@@ -2,7 +2,6 @@
 #define _HARE_NET_SOCKET_H_
 
 #include <hare/base/util/non_copyable.h>
-#include <hare/base/util/util.h>
 #include <hare/net/host_address.h>
 
 namespace hare {

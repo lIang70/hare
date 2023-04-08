@@ -2,7 +2,6 @@
 #define _HARE_NET_CORE_BUFFER_H_
 
 #include <hare/base/util/non_copyable.h>
-#include <hare/base/util/util.h>
 
 #include <cstdint>
 

@@ -1,6 +1,5 @@
 #include <hare/net/host_address.h>
 #include "hare/net/socket_op.h"
-#include <hare/base/util/util.h>
 #include <hare/base/logging.h>
 
 #include <cstddef>
