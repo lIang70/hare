@@ -1,10 +1,8 @@
+#include "hare/base/error.h"
 #include "hare/base/thread/local.h"
-#include "hare/base/util/count_down_latch.h"
 #include <hare/base/exception.h>
 #include <hare/base/logging.h>
-#include <hare/base/system_check.h>
-
-#include <utility>
+#include <hare/base/util/system_check.h>
 
 #ifdef H_OS_WIN32
 #include <Windows.h>
@@ -62,38 +60,45 @@ Thread::~Thread()
     }
 }
 
-void Thread::start()
+auto Thread::start() -> Error
 {
-    HARE_ASSERT(!started_, "Thread is stared.");
-    started_ = true;
+    if (started_) {
+        return Error(HARE_ERROR_THREAD_ALREADY_RUNNING);
+    }
+
+    if (!task_) {
+        return Error(HARE_ERROR_THREAD_TASK_EMPTY);
+    }
 
     try {
         count_down_latch_.reset(new util::CountDownLatch(1));
         thread_ = UniqueThread(new std::thread(&Thread::run, this));
         count_down_latch_->await();
+        started_ = true;
+        return Error(HARE_ERROR_SUCCESS);
     } catch (const std::exception& e) {
         t_data.thread_name_ = "crashed";
         fprintf(stderr, "Fail to create thread! Detail:\n %s", e.what());
-        std::abort();
     } catch (...) {
-        fprintf(stderr, "unknown exception caught in thread %s\n", name_.c_str());
-        throw; // rethrow
+        fprintf(stderr, "unknown exception caught in create thread %s\n", name_.c_str());
     }
+
+    return Error(HARE_ERROR_FAILED_CREATE_THREAD);
 }
 
-auto Thread::join() -> bool
+auto Thread::join() -> Error
 {
     if (current_thread::tid() == tid()) {
         SYS_ERROR() << "Cannot join in the same thread.";
-        return false;
+        return Error(HARE_ERROR_JOIN_SAME_THREAD);
     }
 
     if (thread_ && thread_->joinable()) {
         thread_->join();
-        return true;
+        return Error(HARE_ERROR_SUCCESS);
     }
 
-    return false;
+    return Error(HARE_ERROR_THREAD_EXITED);
 }
 
 void Thread::run()
@@ -103,7 +108,7 @@ void Thread::run()
     if (count_down_latch_) {
         count_down_latch_->countDown();
     }
-    
+
     t_data.thread_name_ = name_.empty() ? "HareThread" : name_.c_str();
 
     // For debug

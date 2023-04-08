@@ -1,18 +1,18 @@
-//! 
-//! @file hare/base/util/count_down_latch.h
-//! @author l1ang70 (gog_017@outlook.com)
-//! @brief Describe the class associated with
-//!   countdownlatch.
-//! @version 0.1-beta
-//! @date 2023-02-09
-//! 
-//! @copyright Copyright (c) 2023
-//! 
+/**
+ * @file hare/base/util/count_down_latch.h
+ * @author l1ang70 (gog_017@outlook.com)
+ * @brief Describe the class associated with count_down_latch.h
+ * @version 0.1-beta
+ * @date 2023-02-09
+ * 
+ * @copyright Copyright (c) 2023
+ * 
+ */
 
 #ifndef _HARE_BASE_COUNT_DOWN_LATCH_H_
 #define _HARE_BASE_COUNT_DOWN_LATCH_H_
 
-#include <hare/base/util/util.h>
+#include <hare/base/util.h>
 
 #include <condition_variable>
 #include <mutex>
@@ -20,7 +20,7 @@
 namespace hare {
 namespace util {
 
-    class CountDownLatch {
+    class HARE_API CountDownLatch {
         mutable std::mutex mutex_ {};
         uint32_t count_ { 0 };
         std::condition_variable cv_ {};
@@ -28,37 +28,12 @@ namespace util {
     public:
         using Ptr = std::shared_ptr<CountDownLatch>;
 
-        explicit CountDownLatch(uint32_t count)
-            : count_(count)
-        {
-        }
+        explicit CountDownLatch(uint32_t count);
+        ~CountDownLatch();
 
-        void countDown()
-        {
-            std::lock_guard<std::mutex> lock(mutex_);
-            --count_;
-            if (count_ == 0U) {
-                cv_.notify_all();
-            }
-        }
-
-        void await(int32_t milliseconds = 0)
-        {
-            std::unique_lock<std::mutex> lock(mutex_);
-            while (count_ > 0) {
-                if (milliseconds > 0) {
-                    cv_.wait_for(lock, std::chrono::milliseconds(milliseconds));
-                } else {
-                    cv_.wait(lock);
-                }
-            }
-        }
-
-        auto count() -> uint32_t
-        {
-            std::lock_guard<std::mutex> lock(mutex_);
-            return count_;
-        }
+        void countDown();
+        void await(int32_t milliseconds = 0);
+        auto count() -> uint32_t;
     };
 
 } // namespace util

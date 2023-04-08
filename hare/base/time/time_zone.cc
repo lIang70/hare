@@ -1,4 +1,3 @@
-#include <cstdint>
 #include <hare/base/time/datetime.h>
 #include <hare/base/time/time_zone.h>
 #include <hare/base/logging.h>

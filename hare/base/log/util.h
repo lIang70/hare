@@ -1,7 +1,7 @@
 #ifndef _HARE_BASE_LOG_UTIL_H_
 #define _HARE_BASE_LOG_UTIL_H_
 
-#include <hare/base/util/util.h>
+#include <hare/base/util.h>
 
 #include <string>
 

@@ -1,7 +1,6 @@
-#include "hare/base/thread/local.h"
 #include <hare/base/exception.h>
 
-#include <utility>
+#include "hare/base/thread/local.h"
 
 namespace hare {
 

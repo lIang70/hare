@@ -1,13 +1,13 @@
-//! 
-//! @file hare/base/system_check.h
-//! @author l1ang70 (gog_017@outlook.com)
-//! @brief Describe the macro associated with 
-//!   system check.
-//! @version 0.1-beta
-//! @date 2023-02-09
-//! 
-//! @copyright Copyright (c) 2023
-//! 
+/**
+ * @file hare/base/util/system_check.h
+ * @author l1ang70 (gog_017@outlook.com)
+ * @brief Describe the macro associated with system_check.h
+ * @version 0.1-beta
+ * @date 2023-02-09
+ * 
+ * @copyright Copyright (c) 2023
+ * 
+ */
 
 #ifndef _HARE_BASE_SYSTEM_CHECK_H_
 #define _HARE_BASE_SYSTEM_CHECK_H_

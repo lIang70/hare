@@ -2,7 +2,6 @@
 #include <hare/base/time/datetime.h>
 
 #include <chrono>
-#include <cinttypes>
 
 namespace hare {
 

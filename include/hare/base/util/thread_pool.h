@@ -1,17 +1,19 @@
-//! 
-//! @file hare/base/util/thread_pool.h
-//! @author l1ang70 (gog_017@outlook.com)
-//! @brief Describe the macro, class and functions associated with
-//!   thrad pool.
-//! @version 0.1-beta
-//! @date 2023-02-09
-//! 
-//! @copyright Copyright (c) 2023
-//! 
+/**
+ * @file hare/base/util/thread_pool.h
+ * @author l1ang70 (gog_017@outlook.com)
+ * @brief Describe the macro, class and functions
+ *   associated with thrad_pool.h
+ * @version 0.1-beta
+ * @date 2023-02-09
+ * 
+ * @copyright Copyright (c) 2023
+ * 
+ */
 
 #ifndef _HARE_BASE_THREAD_POOL_H_
 #define _HARE_BASE_THREAD_POOL_H_
 
+#include <hare/base/error.h>
 #include <hare/base/util/non_copyable.h>
 #include <hare/base/util/thread.h>
 
@@ -40,12 +42,12 @@ public:
     inline auto name() const -> const std::string& { return name_; }
 
     // Must be called before start().
-    inline void setMaxQueueSize(size_t max_size) { max_queue_size_ = max_size; }
-    void setThreadInitCallback(const Thread::Task& init_cb);
+    auto setMaxQueueSize(size_t max_size) -> Error;
+    auto setThreadInitCallback(const Thread::Task& init_cb) -> Error;
 
     inline auto isRunning() const -> bool { return running_; } 
-    void start(int32_t num_of_thread);
-    void stop();
+    auto start(int32_t num_of_thread) -> Error;
+    auto stop() -> Error;
 
     auto queueSize() const -> size_t;
 
@@ -55,7 +57,7 @@ public:
     // So we don't need to overload a const& and an && versions
     // as we do in (Bounded)BlockingQueue.
     // https://stackoverflow.com/a/25408989
-    void run(Thread::Task task);
+    auto run(Thread::Task task) -> Error;
 
 private:
     auto isFull() const -> bool;

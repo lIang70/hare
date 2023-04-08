@@ -1,21 +1,19 @@
-//! 
-//! @file hare/base/time/time_zone.h
-//! @author l1ang70 (gog_017@outlook.com)
-//! @brief Describe the class associated with
-//!   time zone.
-//! @version 0.1-beta
-//! @date 2023-02-09
-//! 
-//! @copyright Copyright (c) 2023
-//! 
+/**
+ * @file hare/base/time/time_zone.h
+ * @author l1ang70 (gog_017@outlook.com)
+ * @brief Describe the class associated with time_zone.h
+ * @version 0.1-beta
+ * @date 2023-02-09
+ * 
+ * @copyright Copyright (c) 2023
+ * 
+ */
 
 #ifndef _HARE_BASE_TIME_ZONE_H_
 #define _HARE_BASE_TIME_ZONE_H_
 
+#include <hare/base/util.h>
 #include <hare/base/time/datetime.h>
-#include <hare/base/util/util.h>
-
-#include <cinttypes>
 
 namespace hare {
 

@@ -1,13 +1,14 @@
-//!
-//! @file hare/base/logging.h
-//! @author l1ang70 (gog_017@outlook.com)
-//! @brief Describe the macro, class and functions associated with
-//!   logger.
-//! @version 0.1-beta
-//! @date 2023-02-09
-//!
-//! @copyright Copyright (c) 2023
-//!
+/**
+ * @file hare/base/logging.h
+ * @author l1ang70 (gog_017@outlook.com)
+ * @brief Describe the macro, class and functions
+ *   associated with logging.h
+ * @version 0.1-beta
+ * @date 2023-02-09
+ *
+ * @copyright Copyright (c) 2023
+ *
+ */
 
 #ifndef _HARE_BASE_LOGGING_H_
 #define _HARE_BASE_LOGGING_H_
@@ -15,16 +16,16 @@
 #include <hare/base/log/stream.h>
 #include <hare/base/time/time_zone.h>
 #include <hare/base/time/timestamp.h>
-#include <hare/base/util/util.h>
 
 #include <functional>
 
 namespace hare {
 namespace log {
 
-    //!
-    //! @brief The enumeration of log level
-    //!
+    /**
+     * @brief The enumeration of log level.
+     *
+     */
     enum Level : int32_t {
         LOG_TRACE,
         LOG_DEBUG,
@@ -35,18 +36,20 @@ namespace log {
         LOG_LEVELS
     };
 
-    //!
-    //! @brief Get the infomation of error number.
-    //!
-    //! @param errorno The error number.
-    //! @return const char* The infomation of error.
+    /**
+     * @brief Get the infomation of error number.
+     *
+     * @param errorno The error number.
+     * @return const char* The infomation of error.
+     */
     HARE_API auto strErrorno(int errorno) -> const char*;
 
 } // namespace log
 
-//!
-//! @brief The interface class of log.
-//!
+/**
+ * @brief The interface class of log.
+ *
+ */
 class HARE_API Logger {
 public:
     using Output = std::function<void(const char*, int)>;
@@ -119,25 +122,29 @@ public:
 
     auto stream() -> log::Stream& { return d_.stream_; }
 
-    //!
-    //! @brief Set/Get the global level of log.
-    //!
+    /**
+     * @brief Set/Get the global level of log.
+     *
+     */
     static void setLevel(log::Level level);
     static auto level() -> log::Level;
 
-    //!
-    //! @brief Set the global output function of log.
-    //!
+    /**
+     * @brief Set the global output function of log.
+     *
+     */
     static void setOutput(Output output);
 
-    //!
-    //! @brief Set the global flush function of log.
-    //!
+    /**
+     * @brief Set the global flush function of log.
+     *
+     */
     static void setFlush(Flush flush);
 
-    //!
-    //! @brief Set the global time zone of log.
-    //!
+    /**
+     * @brief Set the global time zone of log.
+     *
+     */
     static void setTimeZone(const TimeZone& time_zone);
 };
 
@@ -161,12 +168,12 @@ public:
     hare::Logger(__FILE__, __LINE__, true).stream()
 
 #ifdef HARE_DEBUG
-#define HARE_ASSERT(val, what)                                    \
-    do {                                                          \
-        if (!(val)) {                                             \
-            hare::Logger(__FILE__, __LINE__, true).stream()       \
+#define HARE_ASSERT(val, what)                                     \
+    do {                                                           \
+        if (!(val)) {                                              \
+            hare::Logger(__FILE__, __LINE__, true).stream()        \
                 << "Condition[" << #val << "] failed. " << (what); \
-        }                                                         \
+        }                                                          \
     } while (0)
 #else
 #define HARE_ASSERT(val, what) H_UNUSED(val), H_UNUSED(what)

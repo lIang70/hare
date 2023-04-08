@@ -1,11 +1,11 @@
+#include <hare/base/log/async.h>
+
 #include "hare/base/log/file.h"
 #include "hare/base/log/util.h"
-#include <hare/base/log/async.h>
 #include <hare/base/time/timestamp.h>
 #include <hare/base/exception.h>
 
 #include <cassert>
-#include <utility>
 
 namespace hare {
 namespace log {

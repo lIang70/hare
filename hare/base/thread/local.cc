@@ -1,5 +1,5 @@
 #include "hare/base/thread/local.h"
-#include <hare/base/system_check.h>
+#include <hare/base/util/system_check.h>
 
 #include <algorithm>
 #include <cstdlib>

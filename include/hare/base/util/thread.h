@@ -1,19 +1,21 @@
-//! 
-//! @file hare/base/util/thread.h
-//! @author l1ang70 (gog_017@outlook.com)
-//! @brief Describe the macro, class and functions associated with
-//!   thread.
-//! @version 0.1-beta
-//! @date 2023-02-09
-//! 
-//! @copyright Copyright (c) 2023
-//! 
+/**
+ * @file hare/base/util/thread.h
+ * @author l1ang70 (gog_017@outlook.com)
+ * @brief Describe the macro, class and functions
+ *   associated with thread.h
+ * @version 0.1-beta
+ * @date 2023-02-09
+ *
+ * @copyright Copyright (c) 2023
+ *
+ */
 
 #ifndef _HARE_BASE_THREAD_H_
 #define _HARE_BASE_THREAD_H_
 
-#include <hare/base/util/non_copyable.h>
+#include <hare/base/error.h>
 #include <hare/base/util/count_down_latch.h>
+#include <hare/base/util/non_copyable.h>
 
 #include <atomic>
 #include <functional>
@@ -41,16 +43,18 @@ private:
 public:
     using Ptr = std::shared_ptr<Thread>;
 
-    //! 
-    //! @brief Get the number of threads created by class Thread.
-    //! 
+    /**
+     * @brief Get the number of threads created by class Thread.
+     *
+     */
     static auto threadCreated() -> int32_t;
 
-    //! 
-    //! @brief Construct a new Thread object.
-    //! 
-    //! @param task The task of the thread.
-    //! @param name The name of thread. (Default: "HTHREAD-${thread_cnt}").
+    /**
+     * @brief Construct a new Thread object.
+     *
+     * @param task The task of the thread.
+     * @param name The name of thread. (Default: "HTHREAD-${thread_cnt}").
+     */
     explicit Thread(Task task, std::string name = std::string());
     ~Thread();
 
@@ -58,8 +62,8 @@ public:
     inline auto tid() const -> Id { return thread_id_; }
     inline auto started() const -> bool { return started_; }
 
-    void start();
-    auto join() -> bool;
+    auto start() -> Error;
+    auto join() -> Error;
 
 private:
     void run();

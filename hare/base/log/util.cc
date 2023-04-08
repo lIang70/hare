@@ -1,8 +1,6 @@
 #include "hare/base/log/util.h"
 #include <hare/base/logging.h>
 
-#include <cinttypes>
-
 namespace hare {
 namespace log {
 

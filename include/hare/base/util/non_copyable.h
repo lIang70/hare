@@ -1,18 +1,18 @@
-//! 
-//! @file hare/base/util/non_copyable.h
-//! @author l1ang70 (gog_017@outlook.com)
-//! @brief Describe the class associated with
-//!   non-copyable.
-//! @version 0.1-beta
-//! @date 2023-02-09
-//! 
-//! @copyright Copyright (c) 2023
-//! 
+/**
+ * @file hare/base/util/non_copyable.h
+ * @author l1ang70 (gog_017@outlook.com)
+ * @brief Describe the class associated with non_copyable.h
+ * @version 0.1-beta
+ * @date 2023-02-09
+ * 
+ * @copyright Copyright (c) 2023
+ * 
+ */
 
 #ifndef _HARE_BASE_NON_COPYABLE_H_
 #define _HARE_BASE_NON_COPYABLE_H_
 
-#include <hare/base/util/util.h>
+#include <hare/base/util.h>
 
 namespace hare {
 

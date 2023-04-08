@@ -3,7 +3,6 @@
 
 #include <hare/base/util/non_copyable.h>
 
-#include <cstdint>
 #include <string>
 
 namespace hare {

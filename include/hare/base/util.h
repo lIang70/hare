@@ -1,20 +1,22 @@
-//! 
-//! @file hare/base/util/util.h
-//! @author l1ang70 (gog_017@outlook.com)
-//! @brief Describe the macro and functions associated with
-//!   util.
-//! @version 0.1-beta
-//! @date 2023-02-09
-//! 
-//! @copyright Copyright (c) 2023
-//! 
+/**
+ * @file hare/base/util/util.h
+ * @author l1ang70 (gog_017@outlook.com)
+ * @brief Describe the macro and functions
+ *   associated with util.h
+ * @version 0.1-beta
+ * @date 2023-02-09
+ * 
+ * @copyright Copyright (c) 2023
+ * 
+ */
 
 #ifndef _HARE_BASE_UTIL_H_
 #define _HARE_BASE_UTIL_H_
 
-#include <hare/base/system_check.h>
+#include <hare/base/util/system_check.h>
 
 #include <cstring>
+#include <cinttypes>
 #include <memory>
 
 #ifdef H_OS_WIN32

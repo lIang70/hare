@@ -1,13 +1,13 @@
-#include "hare/base/log/util.h"
-#include "hare/base/thread/local.h"
-#include "hare/base/util/util.h"
-#include <hare/base/time/datetime.h>
 #include <hare/base/logging.h>
 
-#include <cstdio>
+#include "hare/base/log/util.h"
+#include "hare/base/thread/local.h"
+#include "hare/base/util.h"
+#include <hare/base/time/datetime.h>
+
 #include <cassert>
+#include <cstdio>
 #include <cstring>
-#include <utility>
 
 namespace hare {
 namespace log {
@@ -138,7 +138,7 @@ void Logger::Data::formatTime()
 void Logger::Data::finish()
 {
 #ifndef HARE_DEBUG
-    if (level_ <=  log::LogLevel::DEBUG)
+    if (level_ <= log::LogLevel::DEBUG)
 #endif
     {
         stream_ << " - " << base_name_ << ':' << line_;
