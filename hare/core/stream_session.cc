@@ -1,5 +1,6 @@
 #include <hare/base/logging.h>
 #include <hare/core/stream_session.h>
+#include <hare/core/stream_client.h>
 #include <hare/net/util.h>
 
 namespace hare {
@@ -48,6 +49,11 @@ namespace core {
     void StreamSession::read(net::Buffer& buffer, const Timestamp& time)
     {
         LOG_DEBUG() << "Recv data[" << buffer.length() << " B] from session[" << name() << "] in " << time.toFormattedString(true);
+        if (!client_.expired()) {
+            if (auto client = client_.lock()) {
+                client->process(buffer, time);
+            }
+        }
     }
 
 } // namespace core

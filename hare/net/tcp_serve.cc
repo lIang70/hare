@@ -2,22 +2,25 @@
 
 #include "hare/net/core/cycle.h"
 #include "hare/net/tcp_session_p.h"
+#include "hare/net/timer.h"
+#include <hare/base/util/count_down_latch.h>
+#include <hare/net/acceptor.h>
 #include <hare/base/logging.h>
 
 namespace hare {
 namespace net {
 
-    void TcpServePrivate::newSession(util_socket_t target_fd, int8_t family, const HostAddress& address, const Timestamp& time)
+    void TcpServePrivate::newSession(util_socket_t target_fd, int8_t family, const HostAddress& address, const Timestamp& time, util_socket_t acceptor_socket)
     {
         HARE_ASSERT(started_ == true, "Serve already stop...");
         cycle_->assertInCycleThread();
 
         auto* work_cycle = thread_pool_->getNextCycle();
-        char buf[HARE_SMALL_FIXED_SIZE * 2];
+        char name_buffer[HARE_SMALL_FIXED_SIZE * 2];
         auto local_addr = HostAddress::localAddress(target_fd);
 
-        snprintf(buf, sizeof(buf), "-%s#%lu", local_addr.toIpPort().c_str(), session_id_++);
-        auto session_name = name_ + buf;
+        snprintf(name_buffer, sizeof(name_buffer), "-%s#%lu", local_addr.toIpPort().c_str(), session_id_++);
+        auto session_name = name_ + name_buffer;
         LOG_DEBUG() << "New session[" << session_name
                     << "] in serve[" << name_
                     << "] from " << address.toIpPort()
@@ -30,8 +33,19 @@ namespace net {
             SYS_ERROR() << "Cannot get TcpServe...";
         } else {
             auto session = serve_->createSession(tsp);
-            work_cycle->runInLoop(std::bind(&TcpSession::connectEstablished, session));
-            work_cycle->runInLoop(std::bind(&TcpServe::newSession, serve_->shared_from_this(), session, time));
+            if (session) {
+                auto iter = acceptors_.find(acceptor_socket);
+                Acceptor::Ptr acceptor { nullptr };
+                if (iter == acceptors_.end()) {
+                    SYS_ERROR() << "Cannot find acceptor[" << acceptor_socket << "].";
+                } else {
+                    acceptor = iter->second;
+                }
+                work_cycle->runInLoop(std::bind(&TcpSession::connectEstablished, session));
+                work_cycle->runInLoop(std::bind(&TcpServe::newSession, serve_->shared_from_this(), session, time, acceptor));
+            } else {
+                SYS_ERROR() << "Cannot create a session.";
+            }
         }
     }
 
@@ -64,18 +78,35 @@ namespace net {
     {
         if (!isRunning()) {
             p_->acceptors_.insert(std::make_pair(acceptor->socket(), acceptor));
+            LOG_DEBUG() << "Add acceptor[" << acceptor->socket() << "] to serve[" << this << "].";
         } else {
-            p_->acceptors_.insert(std::make_pair(acceptor->socket(), acceptor));
-            acceptor->setCycle(p_->cycle_.get());
-            acceptor->setNewSessionCallBack(std::bind(&TcpServePrivate::newSession, p_, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
-            auto ret = acceptor->listen();
-            if (!ret) {
-                p_->acceptors_.erase(acceptor->socket());
-                return false;
-            }
+            p_->cycle_->queueInLoop([=] {
+                acceptor->setCycle(p_->cycle_.get());
+                acceptor->setNewSessionCallBack(std::bind(&TcpServePrivate::newSession, p_, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5));
+                auto ret = acceptor->listen();
+                if (!ret) {
+                    SYS_ERROR() << "acceptor[" << acceptor->socket() << "] cannot listen.";
+                    return ;
+                }
+                p_->acceptors_.insert(std::make_pair(acceptor->socket(), acceptor));
+                LOG_DEBUG() << "Add acceptor[" << acceptor->socket() << "] to serve[" << this << "].";
+            });
         }
-        LOG_DEBUG() << "Add acceptor[" << acceptor->socket() << "] to serve[" << this << "].";
         return true;
+    }
+
+    void TcpServe::removeAcceptor(util_socket_t acceptor_socket)
+    {
+        p_->cycle_->queueInLoop([=] {
+            auto iter = p_->acceptors_.find(acceptor_socket);
+            if (iter == p_->acceptors_.end()) {
+                return ;
+            }
+            auto acceptor = std::move(iter->second);
+            p_->acceptors_.erase(acceptor_socket);
+            LOG_DEBUG() << "Remove acceptor[" << acceptor_socket << "] from serve[" << this << "].";
+            acceptor.reset();
+        });
     }
 
     auto TcpServe::add(net::Timer* timer) -> TimerId
@@ -84,8 +115,21 @@ namespace net {
             return 0;
         }
 
-        // FIXME sync in other thread
-        return p_->cycle_->addTimer(timer);
+        if (p_->cycle_->isInCycleThread()) {
+            return p_->cycle_->addTimer(timer);
+        }
+
+        util::CountDownLatch cdl { 1 };
+        TimerId timer_id { 0 };
+
+        p_->cycle_->queueInLoop([&] {
+            timer_id = p_->cycle_->addTimer(timer);
+            cdl.countDown();
+        });
+
+        cdl.await();
+
+        return timer_id;
     }
 
     void TcpServe::cancel(net::TimerId timer_id)
@@ -126,7 +170,7 @@ namespace net {
     {
         for (auto iter = p_->acceptors_.begin(); iter != p_->acceptors_.end();) {
             iter->second->setCycle(p_->cycle_.get());
-            iter->second->setNewSessionCallBack(std::bind(&TcpServePrivate::newSession, p_, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
+            iter->second->setNewSessionCallBack(std::bind(&TcpServePrivate::newSession, p_, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5));
             auto ret = iter->second->listen();
             if (!ret) {
                 SYS_ERROR() << "socket[" << iter->second->socket() << "] fail to listen.";

@@ -21,8 +21,8 @@ namespace net {
         AcceptorPrivate* p_ { nullptr };
 
     public:
-        using NewSession = std::function<void(util_socket_t, int8_t, const HostAddress& conn_address, const Timestamp&)>;
         using Ptr = std::shared_ptr<Acceptor>;
+        using NewSession = std::function<void(util_socket_t, int8_t, const HostAddress& conn_address, const Timestamp&, util_socket_t)>;
 
         Acceptor(int8_t family, int16_t port, bool reuse_port = true);
         ~Acceptor();

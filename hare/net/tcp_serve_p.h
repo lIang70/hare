@@ -32,7 +32,7 @@ namespace net {
 
         std::atomic<bool> started_ { false };
 
-        void newSession(util_socket_t target_fd, int8_t family, const HostAddress& address, const Timestamp& time);
+        void newSession(util_socket_t target_fd, int8_t family, const HostAddress& address, const Timestamp& time, util_socket_t acceptor_socket);
     };
 
 } // namespace net

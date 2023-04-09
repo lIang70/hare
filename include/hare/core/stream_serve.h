@@ -18,7 +18,7 @@ namespace core {
 
     protected:
         auto createSession(net::TcpSessionPrivate* tsp) -> net::TcpSession::Ptr override;
-        void newSession(net::TcpSession::Ptr session, Timestamp time) override;
+        void newSession(net::TcpSession::Ptr session, Timestamp time, const net::Acceptor::Ptr& acceptor) override;
     };
 
 } // namespace core

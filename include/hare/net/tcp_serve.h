@@ -1,6 +1,7 @@
 #ifndef _HARE_NET_TCP_SERVE_H_
 #define _HARE_NET_TCP_SERVE_H_
 
+#include "hare/base/util.h"
 #include <hare/net/tcp_session.h>
 #include <hare/net/acceptor.h>
 #include <hare/net/timer.h>
@@ -24,11 +25,10 @@ namespace net {
 
         // Set before exec()
         void setThreadNum(int32_t num);
-
         auto isRunning() const -> bool;
 
-        // not thread-safe
         auto add(const Acceptor::Ptr& acceptor) -> bool;
+        void removeAcceptor(util_socket_t acceptor_socket);
 
         auto add(net::Timer* timer) -> TimerId;
         void cancel(net::TimerId timer_id);
@@ -42,7 +42,7 @@ namespace net {
             return TcpSession::Ptr(new TcpSession(tsp));
         }
 
-        virtual void newSession(TcpSession::Ptr session, Timestamp time) = 0;
+        virtual void newSession(TcpSession::Ptr session, Timestamp time, const Acceptor::Ptr& acceptor) = 0;
 
     private:
         void activeAcceptors();

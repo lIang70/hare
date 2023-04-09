@@ -25,6 +25,7 @@ namespace net {
         Acceptor::NewSession new_session_ {};
         int8_t family_ {};
         int16_t port_ { -1 };
+        Acceptor* acceptor_ { nullptr };
 
 #ifdef H_OS_LINUX
         // Read the section named "The special problem of
@@ -33,11 +34,12 @@ namespace net {
         util_socket_t idle_fd_ { -1 };
 #endif
 
-        AcceptorPrivate(core::Cycle* cycle, int8_t family, int16_t port, bool reuse_port)
+        AcceptorPrivate(core::Cycle* cycle, int8_t family, Acceptor* acceptor, int16_t port, bool reuse_port)
             : Event(cycle, socket::createNonblockingOrDie(family))
             , socket_(family, fd())
             , family_(family)
             , port_(port)
+            , acceptor_(acceptor)
 #ifdef H_OS_LINUX
             , idle_fd_(::open("/dev/null", O_RDONLY | O_CLOEXEC))
         {
@@ -89,7 +91,7 @@ namespace net {
             while ((conn_fd = socket_.accept(peer_addr)) >= 0) {
                 LOG_TRACE() << "Accepts of " << peer_addr.toIpPort();
                 if (new_session_) {
-                    new_session_(conn_fd, family_, peer_addr, receive_time);
+                    new_session_(conn_fd, family_, peer_addr, receive_time, acceptor_->socket());
                 } else {
                     socket::close(conn_fd);
                 }
@@ -115,7 +117,7 @@ namespace net {
     }
 
     Acceptor::Acceptor(int8_t family, int16_t port, bool reuse_port)
-        : p_(new AcceptorPrivate(nullptr, family, port, reuse_port))
+        : p_(new AcceptorPrivate(nullptr, family, this, port, reuse_port))
     {
     }
 

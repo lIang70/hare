@@ -18,10 +18,13 @@
 #include <sys/socket.h>
 #endif
 
+#ifdef HARE__HAVE_SYS_STAT_H
+#include <sys/stat.h>
+#endif
+
 #ifdef H_OS_WIN32
 #else
 #include <unistd.h>
-#include <sys/stat.h>
 #endif
 
 #define DEFAULT_DIR_MODE (0755)
@@ -62,7 +65,6 @@ namespace manage {
 
                 if (print_stdout_) {
                     ::fprintf(stdout, "%s", log_line);
-                    ::fflush(stdout);
                 }
             }
         };
