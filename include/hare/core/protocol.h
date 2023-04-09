@@ -15,6 +15,9 @@ namespace core {
     public:
         using Ptr = std::shared_ptr<Protocol>;
 
+        Protocol() = default;
+        virtual ~Protocol() = default;
+
         virtual auto parse(net::Buffer& buffer, StreamSession::Ptr session) -> Error = 0;
     };
 

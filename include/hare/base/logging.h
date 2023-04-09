@@ -148,6 +148,15 @@ public:
     static void setTimeZone(const TimeZone& time_zone);
 };
 
+template <typename Ty>
+auto checkNotNull(Logger::FilePath file, int line, const char* names, Ty* ptr) -> Ty*
+{
+    if (ptr == nullptr) {
+        Logger(file, line, hare::log::LOG_FATAL).stream() << names;
+    }
+    return ptr;
+}
+
 } // namespace hare
 
 #define LOG_TRACE() \
@@ -178,5 +187,13 @@ public:
 #else
 #define HARE_ASSERT(val, what) H_UNUSED(val), H_UNUSED(what)
 #endif
+
+/**
+ * @brief Check that the input is non NULL.
+ *   This very useful in constructor initializer lists.
+ * 
+ */
+#define HARE_CHECK_NULL(val) \
+    ::hare::checkNotNull(__FILE__, __LINE__, "\'" #val "\' must be non NULL", (val))
 
 #endif // !_HARE_BASE_LOGGING_H_

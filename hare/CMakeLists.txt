@@ -258,8 +258,14 @@ file(GLOB HARE_CORE_SOURCES
     "core/*.cc"
 )
 
+file(GLOB HARE_CORE_RTMP_SOURCES
+    "core/rtmp/*.cc"
+)
+
 # Add the source code to the project's executable。
-add_library(hare_core ${HARE__LIBRARY_TYPE} ${HARE_CORE_SOURCES})
+add_library(hare_core   ${HARE__LIBRARY_TYPE}
+                        ${HARE_CORE_SOURCES}
+                        ${HARE_CORE_RTMP_SOURCES})
 target_include_directories(hare_core PUBLIC ${CMAKE_SOURCE_DIR}/include)
 
 if(JEMALLOC_FOUND)

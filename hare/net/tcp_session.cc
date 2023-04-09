@@ -248,7 +248,6 @@ namespace net {
         HARE_ASSERT(state() == SE_STATE::CONNECTING, "");
         p_->state_ = SE_STATE::CONNECTED;
         p_->event_->tie(shared_from_this());
-        p_->event_->setFlags(EVENT_READ);
         connection(EVENT_CONNECTED);
     }
 

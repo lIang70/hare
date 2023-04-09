@@ -143,5 +143,10 @@ namespace core {
         return Error(HARE_ERROR_SUCCESS);
     }
 
+    auto CpxHandShake::handShakeWithServer(net::Buffer& buffer, StreamSession::Ptr session) -> Error
+    {
+        return Error(HARE_ERROR_SUCCESS);
+    }
+
 } // namespace core
 } // namespace hare

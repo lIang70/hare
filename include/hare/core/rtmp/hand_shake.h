@@ -31,7 +31,7 @@ namespace core {
 
     class CpxHandShake final : public HandShake {
     public:
-        ~CpxHandShake() final;
+        ~CpxHandShake() final = default;
 
         auto handShakeWithClient(net::Buffer& buffer, StreamSession::Ptr session) -> Error final;
         auto handShakeWithServer(net::Buffer& buffer, StreamSession::Ptr session) -> Error final;
@@ -39,7 +39,7 @@ namespace core {
 
     class SimpleHandShake final : public HandShake {
     public:
-        ~SimpleHandShake() final;
+        ~SimpleHandShake() final = default;
 
         auto handShakeWithClient(net::Buffer& buffer, StreamSession::Ptr session) -> Error final;
         auto handShakeWithServer(net::Buffer& buffer, StreamSession::Ptr session) -> Error final;

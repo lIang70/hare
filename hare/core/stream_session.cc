@@ -1,6 +1,6 @@
 #include <hare/base/logging.h>
-#include <hare/core/stream_session.h>
 #include <hare/core/stream_client.h>
+#include <hare/core/stream_session.h>
 #include <hare/net/util.h>
 
 namespace hare {

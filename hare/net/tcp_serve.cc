@@ -2,10 +2,10 @@
 
 #include "hare/net/core/cycle.h"
 #include "hare/net/tcp_session_p.h"
-#include "hare/net/timer.h"
+#include <hare/base/logging.h>
 #include <hare/base/util/count_down_latch.h>
 #include <hare/net/acceptor.h>
-#include <hare/base/logging.h>
+#include <hare/net/timer.h>
 
 namespace hare {
 namespace net {
@@ -86,7 +86,7 @@ namespace net {
                 auto ret = acceptor->listen();
                 if (!ret) {
                     SYS_ERROR() << "acceptor[" << acceptor->socket() << "] cannot listen.";
-                    return ;
+                    return;
                 }
                 p_->acceptors_.insert(std::make_pair(acceptor->socket(), acceptor));
                 LOG_DEBUG() << "Add acceptor[" << acceptor->socket() << "] to serve[" << this << "].";
@@ -100,7 +100,7 @@ namespace net {
         p_->cycle_->queueInLoop([=] {
             auto iter = p_->acceptors_.find(acceptor_socket);
             if (iter == p_->acceptors_.end()) {
-                return ;
+                return;
             }
             auto acceptor = std::move(iter->second);
             p_->acceptors_.erase(acceptor_socket);

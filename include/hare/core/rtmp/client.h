@@ -10,6 +10,7 @@ namespace core {
 
     public:
         RTMPClient();
+        ~RTMPClient() override = default;
 
         void process(net::Buffer& buffer, const Timestamp& time) override;
     };

@@ -210,6 +210,7 @@ namespace core {
 
     public:
         ProtocolRTMP();
+        ~ProtocolRTMP() override = default;
 
         auto parse(net::Buffer& buffer, StreamSession::Ptr session) -> Error override;
 

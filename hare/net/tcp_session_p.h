@@ -1,11 +1,13 @@
 #ifndef _HARE_NET_TCP_SESSION_P_H_
 #define _HARE_NET_TCP_SESSION_P_H_
 
+#include <hare/net/tcp_session.h>
+
 #include "hare/net/core/cycle.h"
 #include "hare/net/core/event.h"
+#include <hare/base/logging.h>
 #include <hare/net/host_address.h>
 #include <hare/net/socket.h>
-#include <hare/net/tcp_session.h>
 
 #include <atomic>
 #include <mutex>
@@ -42,7 +44,6 @@ namespace net {
         const HostAddress local_addr_ {};
         const HostAddress peer_addr_ {};
 
-
         Buffer in_buffer_ {};
         std::mutex out_buffer_mutex_ {};
         Buffer out_buffer_ {};
@@ -53,7 +54,7 @@ namespace net {
             std::string name, int8_t family, util_socket_t target_fd,
             HostAddress local_addr,
             HostAddress peer_addr)
-            : cycle_(cycle)
+            : cycle_(HARE_CHECK_NULL(cycle))
             , name_(std::move(name))
             , socket_(new Socket(family, target_fd))
             , local_addr_(std::move(local_addr))

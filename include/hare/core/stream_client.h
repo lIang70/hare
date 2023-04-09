@@ -23,7 +23,7 @@ namespace core {
         using Ptr = std::shared_ptr<StreamClient>;
 
         explicit StreamClient(Type type);
-        virtual ~StreamClient();
+        virtual ~StreamClient() = default;
 
         inline auto clientType() -> Type { return client_type_; }
         inline auto protocol() -> Protocol::Ptr { return protocol_; }
