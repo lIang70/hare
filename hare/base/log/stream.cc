@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cassert>
 #include <limits>
+#include <sstream>
 
 namespace hare {
 namespace log {
@@ -148,13 +149,21 @@ namespace log {
         return *this;
     }
 
-    // FIXME: replace this with Grisu3 by Florian Loitsch.
+    /// FIXME: replace this with Grisu3 by Florian Loitsch.
     auto Stream::operator<<(double num) -> Stream&
     {
         if (buffer_.avail() >= MAX_NUMERSIC_SIZE) {
             auto len = snprintf(buffer_.current(), MAX_NUMERSIC_SIZE, "%.12g", num);
             buffer_.add(len);
         }
+        return *this;
+    }
+
+    auto Stream::operator<<(std::thread::id tid) -> Stream&
+    {
+        std::stringstream sstream {};
+        sstream << tid;
+        (*this) << sstream.str();
         return *this;
     }
 

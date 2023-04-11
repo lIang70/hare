@@ -36,9 +36,13 @@ namespace core {
 
     auto Reactor::checkEvent(Event* event) const -> bool
     {
-        assertInCycleThread();
         auto iter = events_.find(event->fd());
         return iter != events_.end() && iter->second == event;
+    }
+
+    Reactor::Reactor(Cycle* cycle)
+        : owner_cycle_(cycle)
+    {
     }
 
 } // namespace core

@@ -3,6 +3,8 @@
 
 #include "hare/net/core/reactor.h"
 
+#include <hare/hare-config.h>
+
 #ifdef HARE__HAVE_EPOLL
 #include <sys/epoll.h>
 

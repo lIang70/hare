@@ -2,27 +2,30 @@
 #define _HARE_NET_HOST_ADDRESS_H_
 
 #include <hare/base/util/non_copyable.h>
+#include <hare/net/util.h>
 
 #include <string>
-
-struct sockaddr;
-struct sockaddr_in6;
 
 namespace hare {
 namespace net {
 
-    class HARE_API HostAddress {
-        class Data;
-        Data* d_ { nullptr };
+    class HARE_API HostAddress : public NonCopyable {
+        union {
+            struct sockaddr_in* in_;
+            struct sockaddr_in6* in6_;
+        } addr_;
 
     public:
         using Ptr = std::shared_ptr<HostAddress>;
 
-        //! resolve hostname to IP address, not changing port or sin_family
-        //! return true on success.
-        //! thread safe
+        /**
+         * @brief resolve hostname to IP address, not changing port or sin_family.
+         *
+         *   thread-safe.
+         *
+         * @return true on success.
+         */
         static auto resolve(const std::string& hostname, HostAddress* result) -> bool;
-
         static auto localAddress(util_socket_t target_fd) -> HostAddress;
         static auto peerAddress(util_socket_t target_fd) -> HostAddress;
 
@@ -33,26 +36,17 @@ namespace net {
         //! Constructs an endpoint with given ip and port.
         //! @c ip should be "1.2.3.4"
         HostAddress(const std::string& target_ip, uint16_t port, bool ipv6 = false);
-        HostAddress(const HostAddress& another) noexcept;
-        HostAddress(HostAddress&& another) noexcept
-        {
-            std::swap(d_, another.d_);
-        }
         ~HostAddress();
 
-        auto operator=(const HostAddress& another) noexcept -> HostAddress&;
-        auto operator=(HostAddress&& another) noexcept -> HostAddress&
-        {
-            std::swap(d_, another.d_);
-            return (*this);
-        }
+        HostAddress(HostAddress&& another) noexcept;
+        auto operator=(HostAddress&& another) noexcept -> HostAddress&;
 
-        auto getSockAddr() const -> sockaddr*;
-        void setSockAddrInet6(const struct sockaddr_in6* addr_in6);
+        inline auto getSockAddr() const -> sockaddr* { return sockaddrCast(addr_.in6_); }
+        void setSockAddrInet6(const struct sockaddr_in6* addr_in6) const;
 
         auto toIp() const -> std::string;
         auto toIpPort() const -> std::string;
-        auto port() const -> uint16_t;
+        inline auto port() const -> uint16_t { return networkToHost16(portNetEndian()); }
 
         auto ipv4NetEndian() const -> uint32_t;
         auto portNetEndian() const -> uint16_t;

@@ -2,10 +2,11 @@
 #define _HARE_NET_ACCEPTOR_H_
 
 #include <hare/base/time/timestamp.h>
+#include <hare/net/core/event.h>
 #include <hare/net/host_address.h>
+#include <hare/net/socket.h>
 
 #include <functional>
-#include <memory>
 
 namespace hare {
 namespace core {
@@ -14,29 +15,42 @@ namespace core {
 
 namespace net {
 
-    class AcceptorPrivate;
-    class HARE_API Acceptor {
-        friend class TcpServe;
+    class HARE_API Acceptor : public core::Event {
+    public:
+        using NewSession = std::function<void(util_socket_t, int8_t, const HostAddress& conn_address, const Timestamp&, util_socket_t)>;
 
-        AcceptorPrivate* p_ { nullptr };
+    private:
+        Socket socket_;
+        NewSession new_session_ {};
+        int8_t family_ {};
+        int16_t port_ { -1 };
+
+#ifdef H_OS_LINUX
+        // Read the section named "The special problem of
+        // accept()ing when you can't" in libev's doc.
+        // By Marc Lehmann, author of libev.
+        util_socket_t idle_fd_ { -1 };
+#endif
 
     public:
         using Ptr = std::shared_ptr<Acceptor>;
-        using NewSession = std::function<void(util_socket_t, int8_t, const HostAddress& conn_address, const Timestamp&, util_socket_t)>;
 
-        Acceptor(int8_t family, int16_t port, bool reuse_port = true);
-        ~Acceptor();
+        Acceptor(int8_t family, Socket::TYPE type, int16_t port, bool reuse_port = true);
+        ~Acceptor() override;
 
-        auto socket() -> util_socket_t;
+        inline auto socket() const -> util_socket_t { return socket_.socket(); };
+        inline auto type() const -> Socket::TYPE { return socket_.type(); };
+        inline auto port() const -> int16_t { return port_; };
 
-        auto port() -> int16_t;
+    protected:
+        void eventCallBack(int32_t events, const Timestamp& receive_time) override;
 
     private:
-        auto listen() -> bool;
-
-        void setCycle(core::Cycle* cycle);
+        auto listen() -> Error;
 
         void setNewSessionCallBack(NewSession new_session);
+
+        friend class HybridServe;
     };
 
 } // namespace net

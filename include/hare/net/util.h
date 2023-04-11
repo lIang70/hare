@@ -2,29 +2,28 @@
 #define _HARE_NET_UTIL_H_
 
 #include <hare/base/error.h>
-#include <hare/base/util.h>
 
 #include <list>
+
+struct sockaddr;
+struct sockaddr_in;
+struct sockaddr_in6;
 
 namespace hare {
 namespace net {
 
-    using EVENT = enum Event : int32_t {
-        //! @brief The default flag.
-        EVENT_DEFAULT = 0x00,
-        //! @brief Wait for a socket or FD to become readable.
-        EVENT_READ = 0x01,
-        //! @brief Wait for a socket or FD to become writeable.
-        EVENT_WRITE = 0x02,
-        //! @brief Select edge-triggered behavior, if supported by the backend.
-        EVENT_ET = 0x04,
-        //! @brief Detects connection close events. You can use this to detect when a
-        //!  connection has been closed, without having to read all the pending data
-        //!  from a connection.
-        EVENT_CONNECTED = 0x08,
-        EVENT_CLOSED = 0x10,
-        EVENT_ERROR = 0x20
-    };
+    HARE_API auto hostToNetwork64(uint64_t host64) -> uint64_t;
+    HARE_API auto hostToNetwork32(uint32_t host32) -> uint32_t;
+    HARE_API auto hostToNetwork16(uint16_t host16) -> uint16_t;
+    HARE_API auto networkToHost64(uint64_t net64) -> uint64_t;
+    HARE_API auto networkToHost32(uint32_t net32) -> uint32_t;
+    HARE_API auto networkToHost16(uint16_t net16) -> uint16_t;
+
+    HARE_API inline auto sockaddrCast(const struct sockaddr_in6* addr) -> const struct sockaddr* { return static_cast<const struct sockaddr*>(implicit_cast<const void*>(addr)); }
+    HARE_API inline auto sockaddrCast(struct sockaddr_in6* addr) -> struct sockaddr* { return static_cast<struct sockaddr*>(implicit_cast<void*>(addr)); }
+    HARE_API inline auto sockaddrCast(const struct sockaddr_in* addr) -> const struct sockaddr* { return static_cast<const struct sockaddr*>(implicit_cast<const void*>(addr)); }
+    HARE_API inline auto sockaddrInCast(const struct sockaddr* addr) -> const struct sockaddr_in* { return static_cast<const struct sockaddr_in*>(implicit_cast<const void*>(addr)); }
+    HARE_API inline auto sockaddrIn6Cast(const struct sockaddr* addr) -> const struct sockaddr_in6* { return static_cast<const struct sockaddr_in6*>(implicit_cast<const void*>(addr)); }
 
     HARE_API auto getLocalIp(int32_t type, std::list<std::string>& ip_list) -> Error;
 

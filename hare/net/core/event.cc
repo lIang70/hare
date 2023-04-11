@@ -1,4 +1,5 @@
-#include "hare/net/core/event.h"
+#include <hare/net/core/event.h>
+
 #include "hare/net/core/cycle.h"
 #include <hare/base/logging.h>
 
@@ -12,14 +13,24 @@ namespace core {
         {
             std::ostringstream oss {};
             oss << fd << ": ";
-            if (event_flags_ == net::EVENT_DEFAULT) {
+            if (event_flags_ == EVENT_DEFAULT) {
                 oss << "DEFAULT";
             } else {
-                if ((event_flags_ & net::EVENT_READ) != 0) { oss << "READ "; }
-                if ((event_flags_ & net::EVENT_WRITE) != 0) { oss << "WRITE "; }
-                if ((event_flags_ & net::EVENT_ET) != 0) { oss << "ET "; }
-                if ((event_flags_ & net::EVENT_CLOSED) != 0) { oss << "CLOSED "; }
-                if ((event_flags_ & net::EVENT_ERROR) != 0) { oss << "ERROR "; }
+                if ((event_flags_ & EVENT_READ) != 0) {
+                    oss << "READ ";
+                }
+                if ((event_flags_ & EVENT_WRITE) != 0) {
+                    oss << "WRITE ";
+                }
+                if ((event_flags_ & EVENT_ET) != 0) {
+                    oss << "ET ";
+                }
+                if ((event_flags_ & EVENT_CLOSED) != 0) {
+                    oss << "CLOSED ";
+                }
+                if ((event_flags_ & EVENT_ERROR) != 0) {
+                    oss << "ERROR ";
+                }
             }
             return oss.str();
         }
@@ -35,7 +46,7 @@ namespace core {
     {
         HARE_ASSERT(!event_handle_, "When the event is destroyed, the event is still handling.");
         HARE_ASSERT(!added_to_cycle_, "When the event is destroyed, the event is still in the cycle.");
-        if (owner_cycle_ != nullptr && owner_cycle_->isInCycleThread()) {
+        if (owner_cycle_ != nullptr) {
             HARE_ASSERT(!owner_cycle_->checkEvent(this), "When the event is destroyed, the event is still held by the cycle.");
         }
     }

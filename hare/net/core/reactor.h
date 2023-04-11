@@ -40,16 +40,8 @@ namespace core {
         //!  Must be called in the cycle thread.
         virtual auto checkEvent(Event* event) const -> bool;
 
-        inline void assertInCycleThread() const
-        {
-            owner_cycle_->assertInCycleThread();
-        }
-
     protected:
-        explicit Reactor(Cycle* cycle)
-            : owner_cycle_(cycle)
-        {
-        }
+        explicit Reactor(Cycle* cycle);
     };
 
 } // namespace core

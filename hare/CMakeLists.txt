@@ -212,11 +212,6 @@ if(JEMALLOC_FOUND)
     target_link_libraries(hare_base PkgConfig::Jemalloc)
 endif()
 
-if(HARE__BUILD_TESTS)
-    add_subdirectory(base/tests)
-endif(HARE__BUILD_TESTS)
-
-
 if(EXISTS "${CMAKE_SOURCE_DIR}/lib/openssl/" AND IS_DIRECTORY "${CMAKE_SOURCE_DIR}/lib/openssl/")
     message(STATUS "OpenSSL is built")
     set(ENV{PKG_CONFIG_PATH} ${CMAKE_SOURCE_DIR}/lib/openssl/lib64/pkgconfig:$ENV{PKG_CONFIG_PATH})

@@ -51,7 +51,7 @@ using util_socket_t = intptr_t;
 using util_socket_t = int;
 #endif
 
-inline HARE_API void setZero(void* des, size_t n)
+HARE_API inline void setZero(void* des, size_t n)
 {
     memset(des, 0, n);
 }
@@ -111,7 +111,7 @@ inline HARE_API void setZero(void* des, size_t n)
 // but the proposal was submitted too late.  It will probably make
 // its way into the language in the future.
 template <typename To, typename From>
-inline HARE_API auto implicit_cast(From const& from) -> To
+HARE_API inline auto implicit_cast(From const& from) -> To
 {
     return from;
 }

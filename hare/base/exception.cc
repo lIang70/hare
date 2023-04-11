@@ -1,12 +1,12 @@
 #include <hare/base/exception.h>
 
-#include "hare/base/thread/local.h"
+#include <hare/base/util/system_info.h>
 
 namespace hare {
 
 Exception::Exception(std::string what)
     : what_(std::move(what))
-    , stack_(current_thread::stackTrace(false))
+    , stack_(util::stackTrace(false))
 {
 }
 

@@ -2,6 +2,7 @@
 #include <hare/net/util.h>
 
 #include <cerrno>
+#include <endian.h>
 #include <string>
 
 #ifdef H_OS_WIN32
@@ -13,6 +14,13 @@
 
 namespace hare {
 namespace net {
+
+    auto hostToNetwork64(uint64_t host64) -> uint64_t { return htobe64(host64); }
+    auto hostToNetwork32(uint32_t host32) -> uint32_t { return htobe32(host32); }
+    auto hostToNetwork16(uint16_t host16) -> uint16_t { return htobe16(host16); }
+    auto networkToHost64(uint64_t net64) -> uint64_t { return be64toh(net64); }
+    auto networkToHost32(uint32_t net32) -> uint32_t { return be32toh(net32); }
+    auto networkToHost16(uint16_t net16) -> uint16_t { return be16toh(net16); }
 
     auto getLocalIp(int32_t type, std::list<std::string>& ip_list) -> Error
     {

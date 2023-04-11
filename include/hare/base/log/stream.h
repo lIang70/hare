@@ -15,8 +15,8 @@
 
 #include <hare/base/util/non_copyable.h>
 
-#include <array>
 #include <string>
+#include <thread>
 
 namespace hare {
 namespace log {
@@ -153,6 +153,8 @@ namespace log {
             *this << buffer.toString();
             return *this;
         }
+
+        auto operator<<(std::thread::id tid) -> Stream&;
 
         void append(const char* data, int len) { buffer_.append(data, len); }
         auto buffer() const -> const Buffer& { return buffer_; }

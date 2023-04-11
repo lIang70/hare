@@ -8,10 +8,28 @@
 #include <memory>
 
 namespace hare {
+
+    using EVENT = enum Event : int32_t {
+        //! @brief The default flag.
+        EVENT_DEFAULT = 0x00,
+        //! @brief Wait for a socket or FD to become readable.
+        EVENT_READ = 0x01,
+        //! @brief Wait for a socket or FD to become writeable.
+        EVENT_WRITE = 0x02,
+        //! @brief Select edge-triggered behavior, if supported by the backend.
+        EVENT_ET = 0x04,
+        //! @brief Detects connection close events. You can use this to detect when a
+        //!  connection has been closed, without having to read all the pending data
+        //!  from a connection.
+        EVENT_CONNECTED = 0x08,
+        EVENT_CLOSED = 0x10,
+        EVENT_ERROR = 0x20
+    };
+
 namespace core {
 
     class Cycle;
-    class Event {
+    class HARE_API Event {
     public:
         enum Status : int32_t {
             NEW = -1,
@@ -23,8 +41,8 @@ namespace core {
     private:
         util_socket_t fd_ { -1 };
         int32_t index_ { Status::NEW };
-        int32_t event_flags_ { net::EVENT_DEFAULT };
-        int32_t revent_flags_ { net::EVENT_DEFAULT };
+        int32_t event_flags_ { EVENT_DEFAULT };
+        int32_t revent_flags_ { EVENT_DEFAULT };
         Cycle* owner_cycle_ { nullptr };
 
         std::atomic<bool> event_handle_ { false };
@@ -42,7 +60,7 @@ namespace core {
         inline auto fd() const -> util_socket_t { return fd_; }
         inline auto ownerCycle() const -> Cycle* { return owner_cycle_; }
         inline void setCycle(Cycle* cycle) { owner_cycle_ = cycle; }
-        inline auto isNoneEvent() const -> bool { return event_flags_ == net::EVENT_DEFAULT; };
+        inline auto isNoneEvent() const -> bool { return event_flags_ == EVENT_DEFAULT; };
         inline auto index() const -> int32_t { return index_; }
         inline void setIndex(int32_t index) { index_ = index; }
 
@@ -63,7 +81,7 @@ namespace core {
         }
         inline void clearAllFlags()
         {
-            event_flags_ = net::EVENT_DEFAULT;
+            event_flags_ = EVENT_DEFAULT;
             active();
         }
 

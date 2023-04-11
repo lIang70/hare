@@ -1,12 +1,7 @@
-#include "hare/net/socket_op.h"
-#include <cstdint>
-#include <hare/base/logging.h>
 #include <hare/net/buffer.h>
 
-#include <limits>
-#include <list>
-#include <memory>
-#include <sys/types.h>
+#include "hare/net/socket_op.h"
+#include <hare/base/logging.h>
 
 #if defined(HARE__HAVE_SYS_UIO_H) || defined(H_OS_WIN32)
 #define USE_IOVEC_IMPL
@@ -47,42 +42,6 @@ namespace hare {
 namespace net {
 
     namespace detail {
-        //!
-        //! @brief The block of buffer.
-        //! @code
-        //! +----------------+-------------+------------------+
-        //! | misalign bytes |  off bytes  |  residual bytes  |
-        //! |                |  (CONTENT)  |                  |
-        //! +----------------+-------------+------------------+
-        //! |                |             |                  |
-        //! @endcode
-        class Block {
-        public:
-            std::size_t buffer_len_ { 0 };
-            std::size_t misalign_ { 0 };
-            std::size_t off_ { 0 };
-            unsigned char* bytes_ { nullptr };
-
-            enum : std::size_t {
-                MIN_SIZE = 4096,
-                MAX_SIZE = std::numeric_limits<std::size_t>::max()
-            };
-
-            explicit Block(std::size_t size);
-            ~Block();
-
-            inline auto writable() const -> void* { return bytes_ + off_ + misalign_; }
-            inline auto writableSize() const -> std::size_t { return buffer_len_ - off_ - misalign_; }
-            inline auto readable() const -> void* { return bytes_ + misalign_; }
-            inline auto readableSize() const -> std::size_t { return off_; }
-            inline auto isFull() const -> bool { return off_ + misalign_ == buffer_len_; }
-            inline auto isEmpty() const -> bool { return off_ == 0; }
-
-            void clear();
-            void write(const void* bytes, std::size_t size);
-            void drain(std::size_t size);
-            auto realign(std::size_t size) -> bool;
-        };
 
         Block::Block(std::size_t size)
         {
@@ -140,66 +99,14 @@ namespace net {
         }
     } // namespace detail
 
-    using UBlock = std::unique_ptr<detail::Block>;
-    using BlockList = std::list<UBlock>;
-
-    /*
-        Buffer part.
-    */
-
-    class Buffer::Data {
-    public:
-        //! @code
-        //! +-------++-------++-------++-------++-------++-------+
-        //! | block || block || block || block || block || block |
-        //! +-------++-------++-------++-------++-------++-------+
-        //!                            |
-        //!                            write_iter
-        //! @endcode
-        BlockList block_chain_ {};
-        BlockList::iterator write_iter_ { block_chain_.begin() };
-
-        BlockList::iterator insertBlock(detail::Block* block)
-        {
-            if (block == nullptr) {
-                return block_chain_.end();
-            }
-
-            if (block_chain_.empty()) {
-                HARE_ASSERT(write_iter_ == block_chain_.end(), "");
-                block_chain_.emplace_back(block);
-                write_iter_ = block_chain_.begin();
-                return write_iter_;
-            }
-
-            for (auto iter = write_iter_; iter != block_chain_.end();) {
-                if ((*iter)->isEmpty()) {
-                    block_chain_.erase(iter++);
-                } else {
-                    ++iter;
-                }
-            }
-            auto iter = write_iter_;
-            ++iter;
-            block_chain_.insert(iter, UBlock(block));
-            if (!block->isEmpty()) {
-                ++write_iter_;
-            }
-            return --iter;
-            
-        }
-    };
-
     Buffer::Buffer(std::size_t max_read)
-        : d_(new Data)
-        , max_read_(max_read)
+        : max_read_(max_read)
     {
     }
 
     Buffer::~Buffer()
     {
         clearAll();
-        delete d_;
     }
 
     void Buffer::clearAll()
@@ -213,15 +120,15 @@ namespace net {
             return false;
         }
 
-        decltype(d_->write_iter_) curr {};
+        decltype(write_iter_) curr {};
         std::size_t remain {};
-        if (d_->write_iter_ == d_->block_chain_.end()) {
-            curr = d_->insertBlock(new detail::Block(size));
-            if (curr == d_->block_chain_.end()) {
+        if (write_iter_ == block_chain_.end()) {
+            curr = insertBlock(new detail::Block(size));
+            if (curr == block_chain_.end()) {
                 return false;
             }
         } else {
-            curr = d_->write_iter_;
+            curr = write_iter_;
         }
 
         auto& curr_block = *curr;
@@ -238,8 +145,8 @@ namespace net {
             return false;
         }
 
-        curr = d_->insertBlock(new detail::Block(size - remain));
-        if (curr == d_->block_chain_.end()) {
+        curr = insertBlock(new detail::Block(size - remain));
+        if (curr == block_chain_.end()) {
             return false;
         }
 
@@ -251,7 +158,7 @@ namespace net {
         total_len_ += size;
 
     out:
-        d_->write_iter_ = curr;
+        write_iter_ = curr;
         return true;
     }
 
@@ -282,9 +189,9 @@ namespace net {
 
         IOV_TYPE vecs[nvecs];
 
-        auto iter = d_->write_iter_;
+        auto iter = write_iter_;
         auto index = 0;
-        for (; index < nvecs && iter != d_->block_chain_.end(); ++index, ++iter) {
+        for (; index < nvecs && iter != block_chain_.end(); ++index, ++iter) {
             if (!(*iter)->isFull()) {
                 vecs[index].IOV_PTR_FIELD = (*iter)->writable();
                 vecs[index].IOV_LEN_FIELD = (*iter)->writableSize();
@@ -297,7 +204,7 @@ namespace net {
             DWORD flags = 0;
             if (::WSARecv(fd, vecs, nvecs, &bytes_read, &flags, NULL, NULL)) {
                 /* The read failed. It might be a close,
-                    * or it might be an error. */
+                 * or it might be an error. */
                 if (::WSAGetLastError() == WSAECONNABORTED)
                     n = 0;
                 else
@@ -308,9 +215,9 @@ namespace net {
 #else
         readable = ::readv(target_fd, vecs, index);
 #endif
-        
+
 #else
-            // FIXME : Not use iovec.
+        // FIXME : Not use iovec.
 #endif
 
         if (readable <= 0) {
@@ -319,8 +226,8 @@ namespace net {
 
 #ifdef USE_IOVEC_IMPL
         auto remaining = readable;
-        iter = d_->write_iter_;
-        for (auto i = 0; i < nvecs && iter != d_->block_chain_.end(); ++i, ++iter) {
+        iter = write_iter_;
+        for (auto i = 0; i < nvecs && iter != block_chain_.end(); ++i, ++iter) {
             auto space = (*iter)->writableSize();
             if (space > detail::Block::MAX_SIZE) {
                 space = detail::Block::MAX_SIZE;
@@ -330,7 +237,7 @@ namespace net {
                 remaining -= space;
             } else {
                 (*iter)->off_ += remaining;
-                d_->write_iter_ = iter;
+                write_iter_ = iter;
                 break;
             }
         }
@@ -354,9 +261,9 @@ namespace net {
 #ifdef USE_IOVEC_IMPL
             IOV_TYPE iov[NUM_WRITE_IOVEC];
             int write_i = 0;
-            auto curr = d_->block_chain_.begin();
+            auto curr = block_chain_.begin();
 
-            while (curr != d_->block_chain_.end() && write_i < NUM_WRITE_IOVEC && (howmuch != 0)) {
+            while (curr != block_chain_.end() && write_i < NUM_WRITE_IOVEC && (howmuch != 0)) {
                 iov[write_i].IOV_PTR_FIELD = (*curr)->readable();
                 if (howmuch >= (*curr)->readableSize()) {
                     /* XXXcould be problematic when windows supports mmap*/
@@ -417,7 +324,7 @@ namespace net {
         }
 
         auto* _buffer = static_cast<unsigned char*>(buffer);
-        auto block = d_->block_chain_.begin();
+        auto block = block_chain_.begin();
         auto nread = length;
 
         while ((length != 0U) && length > (*block)->readableSize()) {
@@ -442,20 +349,20 @@ namespace net {
     auto Buffer::drain(std::size_t size) -> bool
     {
         if (size >= total_len_) {
-            d_->block_chain_.clear();
-            d_->write_iter_ = d_->block_chain_.end();
+            block_chain_.clear();
+            write_iter_ = block_chain_.end();
             total_len_ = 0;
         } else {
-            auto block = d_->block_chain_.begin();
+            auto block = block_chain_.begin();
             auto remaining = size;
             total_len_ -= size;
             for (; remaining >= (*block)->readableSize();) {
                 remaining -= (*block)->readableSize();
-                if (block == d_->write_iter_) {
-                    ++d_->write_iter_;
+                if (block == write_iter_) {
+                    ++write_iter_;
                 }
                 ++block;
-                d_->block_chain_.pop_front();
+                block_chain_.pop_front();
             }
 
             (*block)->drain(remaining);
@@ -465,17 +372,46 @@ namespace net {
 
     auto Buffer::expandFast(int64_t howmuch) -> bool
     {
-        decltype(d_->write_iter_) curr {};
+        decltype(write_iter_) curr {};
 
-        if (d_->write_iter_ == d_->block_chain_.end()) {
-            curr = d_->insertBlock(new detail::Block(howmuch));
-            return curr != d_->block_chain_.end();
+        if (write_iter_ == block_chain_.end()) {
+            curr = insertBlock(new detail::Block(howmuch));
+            return curr != block_chain_.end();
         }
 
-        curr = d_->write_iter_;
+        curr = write_iter_;
         auto remain = (*curr)->writableSize();
-        curr = d_->insertBlock(new detail::Block(howmuch - remain));
-        return curr != d_->block_chain_.end();
+        curr = insertBlock(new detail::Block(howmuch - remain));
+        return curr != block_chain_.end();
+    }
+
+    auto Buffer::insertBlock(detail::Block* block) -> BlockList::iterator
+    {
+        if (block == nullptr) {
+            return block_chain_.end();
+        }
+
+        if (block_chain_.empty()) {
+            HARE_ASSERT(write_iter_ == block_chain_.end(), "");
+            block_chain_.emplace_back(block);
+            write_iter_ = block_chain_.begin();
+            return write_iter_;
+        }
+
+        for (auto iter = write_iter_; iter != block_chain_.end();) {
+            if ((*iter)->isEmpty()) {
+                block_chain_.erase(iter++);
+            } else {
+                ++iter;
+            }
+        }
+        auto iter = write_iter_;
+        ++iter;
+        block_chain_.insert(iter, UBlock(block));
+        if (!block->isEmpty()) {
+            ++write_iter_;
+        }
+        return --iter;
     }
 
 } // namespace net

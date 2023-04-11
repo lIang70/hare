@@ -14,11 +14,10 @@
 
 #include <hare/base/log/stream.h>
 #include <hare/base/util/count_down_latch.h>
-#include <hare/base/util/thread.h>
 
 #include <atomic>
-#include <memory>
 #include <string>
+#include <thread>
 #include <vector>
 
 namespace hare {
@@ -34,7 +33,7 @@ namespace log {
         using Block = detail::FixedBuffer<LARGE_BUFFER>;
         using Blocks = std::vector<Block::Ptr>;
 
-        Thread thread_;
+        std::shared_ptr<std::thread> thread_;
         util::CountDownLatch latch_ { 1 };
         std::mutex mutex_ {};
         std::condition_variable cv_ {};
@@ -42,7 +41,7 @@ namespace log {
         Block::Ptr next_block_ { new Block };
         Blocks blocks_ {};
 
-        std::atomic_bool running_ { false };
+        std::atomic<bool> running_ { false };
         std::string name_ {};
         int64_t roll_size_ { LARGE_BUFFER * BLOCK_NUMBER };
         int32_t flush_interval_ { META_FLUSH_INTERVAL };
@@ -50,7 +49,7 @@ namespace log {
     public:
         using Ptr = std::shared_ptr<Async>;
 
-        Async(std::string name, int64_t roll_size, int32_t flush_interval = 3 * META_FLUSH_INTERVAL);
+        Async(int64_t roll_size, std::string name, int32_t flush_interval = 3 * META_FLUSH_INTERVAL);
         ~Async();
 
         void append(const char* log_line, int32_t size);

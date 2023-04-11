@@ -1,4 +1,6 @@
 #include "hare/net/socket_op.h"
+#include "hare/base/error.h"
+
 #include <hare/base/exception.h>
 #include <hare/base/logging.h>
 #include <hare/net/buffer.h>
@@ -53,35 +55,10 @@ namespace socket {
 #endif
     } // namespace detail
 
-    auto sockaddr_cast(const struct sockaddr_in6* addr) -> const struct sockaddr*
-    {
-        return static_cast<const struct sockaddr*>(implicit_cast<const void*>(addr));
-    }
-
-    auto sockaddr_cast(struct sockaddr_in6* addr) -> struct sockaddr*
-    {
-        return static_cast<struct sockaddr*>(implicit_cast<void*>(addr));
-    }
-
-    auto sockaddr_cast(const struct sockaddr_in* addr) -> const struct sockaddr*
-    {
-        return static_cast<const struct sockaddr*>(implicit_cast<const void*>(addr));
-    }
-
-    auto sockaddr_in_cast(const struct sockaddr* addr) -> const struct sockaddr_in*
-    {
-        return static_cast<const struct sockaddr_in*>(implicit_cast<const void*>(addr));
-    }
-
-    auto sockaddr_in6_cast(const struct sockaddr* addr) -> const struct sockaddr_in6*
-    {
-        return static_cast<const struct sockaddr_in6*>(implicit_cast<const void*>(addr));
-    }
-
     auto createNonblockingOrDie(int8_t family) -> util_socket_t
     {
 #ifdef H_OS_LINUX
-        auto target_fd = ::socket(family, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, IPPROTO_TCP);
+        auto target_fd = ::socket(family, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0);
         if (target_fd < 0) {
             throw Exception("Cannot create non-blocking socket");
         }
@@ -89,23 +66,43 @@ namespace socket {
         return target_fd;
     }
 
-    auto bind(int target_fd, const struct sockaddr* addr) -> bool
+    auto createDgramOrDie(int8_t family) -> util_socket_t
     {
-        return ::bind(target_fd, addr, static_cast<socklen_t>(sizeof(struct sockaddr_in6))) >= 0;
+#ifdef H_OS_LINUX
+        auto target_fd = ::socket(family, SOCK_DGRAM, 0);
+        if (target_fd < 0) {
+            throw Exception("Cannot create non-blocking socket");
+        }
+#endif
+        return target_fd;
     }
 
-    auto listen(int target_fd) -> bool
+    auto bind(int target_fd, const struct sockaddr* addr) -> Error
     {
-        return ::listen(target_fd, SOMAXCONN) >= 0;
+        return ::bind(target_fd, addr, static_cast<socklen_t>(sizeof(struct sockaddr_in6))) < 0 ? 
+            Error(HARE_ERROR_SOCKET_BIND) : Error(HARE_ERROR_SUCCESS);
     }
 
-    auto close(util_socket_t target_fd) -> int32_t
+    auto listen(int target_fd) -> Error
+    {
+        return ::listen(target_fd, SOMAXCONN) < 0 ?
+            Error(HARE_ERROR_SOCKET_LISTEN) : Error(HARE_ERROR_SUCCESS);
+    }
+
+    auto connect(util_socket_t target_fd, const struct sockaddr* addr) -> Error
+    {
+        return ::connect(target_fd, addr, sizeof(struct sockaddr)) < 0 ?
+            Error(HARE_ERROR_SOCKET_CONNECT) : Error(HARE_ERROR_SUCCESS);
+    }
+
+
+    auto close(util_socket_t target_fd) -> Error
     {
         auto ret = ::close(target_fd);
         if (ret < 0) {
-            SYS_ERROR() << "Close target_fd[" << target_fd << "], detail:" << socket::getSocketErrorInfo(target_fd);
+            SYS_ERROR() << "Close target_fd[" << target_fd << "], detail:" << getSocketErrorInfo(target_fd);
         }
-        return ret;
+        return ret < 0 ? Error(HARE_ERROR_SOCKET_CLOSED) : Error(HARE_ERROR_SUCCESS);
     }
 
     auto accept(util_socket_t target_fd, struct sockaddr_in6* addr) -> util_socket_t
@@ -115,7 +112,7 @@ namespace socket {
         auto accept_fd = ::accept(target_fd, sockaddr_cast(addr), &addr_len);
         detail::setNonBlockAndCloseOnExec(accept_fd);
 #else
-        auto accept_fd = ::accept4(target_fd, sockaddr_cast(addr),
+        auto accept_fd = ::accept4(target_fd, net::sockaddrCast(addr),
             &addr_len, SOCK_NONBLOCK | SOCK_CLOEXEC);
 #endif
         if (accept_fd < 0) {
@@ -149,11 +146,10 @@ namespace socket {
         return accept_fd;
     }
 
-    void shutdownWrite(util_socket_t target_fd)
+    auto shutdownWrite(util_socket_t target_fd) -> Error
     {
-        if (::shutdown(target_fd, SHUT_WR) < 0) {
-            SYS_ERROR() << "::shutdown[SHUT_WR] error";
-        }
+        return ::shutdown(target_fd, SHUT_WR) < 0 ?
+            Error(HARE_ERROR_SOCKET_SHUTDOWN_WRITE) : Error(HARE_ERROR_SUCCESS);
     }
 
     auto write(util_socket_t target_fd, const void* buf, size_t size) -> ssize_t
@@ -164,6 +160,11 @@ namespace socket {
     auto read(util_socket_t target_fd, void* buf, size_t size) -> ssize_t
     {
         return ::read(target_fd, buf, size);
+    }
+
+    auto recvfrom(util_socket_t target_fd, void* buf, size_t size, struct sockaddr* addr, size_t addr_len) -> ssize_t
+    {
+        return ::recvfrom(target_fd, buf, size, 0, addr, reinterpret_cast<socklen_t*>(&addr_len));
     }
 
     auto getBytesReadableOnSocket(util_socket_t target_fd) -> std::size_t
@@ -201,16 +202,16 @@ namespace socket {
             buf[0] = '[';
             toIp(buf + 1, size - 1, addr);
             auto end = ::strlen(buf);
-            const auto* addr6 = sockaddr_in6_cast(addr);
-            auto port = networkToHost16(addr6->sin6_port);
+            const auto* addr6 = net::sockaddrIn6Cast(addr);
+            auto port = net::networkToHost16(addr6->sin6_port);
             HARE_ASSERT(size > end, "");
             snprintf(buf + end, size - end, "]:%u", port);
             return;
         }
         toIp(buf, size, addr);
         auto end = ::strlen(buf);
-        const auto* addr4 = sockaddr_in_cast(addr);
-        auto port = networkToHost16(addr4->sin_port);
+        const auto* addr4 = net::sockaddrInCast(addr);
+        auto port = net::networkToHost16(addr4->sin_port);
         HARE_ASSERT(size > end, "");
         snprintf(buf + end, size - end, ":%u", port);
     }
@@ -219,31 +220,29 @@ namespace socket {
     {
         if (addr->sa_family == AF_INET) {
             HARE_ASSERT(size >= INET_ADDRSTRLEN, "");
-            const auto* addr4 = sockaddr_in_cast(addr);
+            const auto* addr4 = net::sockaddrInCast(addr);
             ::inet_ntop(AF_INET, &addr4->sin_addr, buf, static_cast<socklen_t>(size));
         } else if (addr->sa_family == AF_INET6) {
             HARE_ASSERT(size >= INET6_ADDRSTRLEN, "");
-            const auto* addr6 = sockaddr_in6_cast(addr);
+            const auto* addr6 = net::sockaddrIn6Cast(addr);
             ::inet_ntop(AF_INET6, &addr6->sin6_addr, buf, static_cast<socklen_t>(size));
         }
     }
 
-    void fromIpPort(const char* target_ip, uint16_t port, struct sockaddr_in* addr)
+    auto fromIpPort(const char* target_ip, uint16_t port, struct sockaddr_in* addr) -> Error
     {
         addr->sin_family = AF_INET;
-        addr->sin_port = hostToNetwork16(port);
-        if (::inet_pton(AF_INET, target_ip, &addr->sin_addr) <= 0) {
-            SYS_ERROR() << "::inet_pton error";
-        }
+        addr->sin_port = net::hostToNetwork16(port);
+        return ::inet_pton(AF_INET, target_ip, &addr->sin_addr) <= 0 ?
+            Error(HARE_ERROR_SOCKET_FROM_IP) : Error(HARE_ERROR_SUCCESS);
     }
 
-    void fromIpPort(const char* target_ip, uint16_t port, struct sockaddr_in6* addr)
+    auto fromIpPort(const char* target_ip, uint16_t port, struct sockaddr_in6* addr) -> Error
     {
         addr->sin6_family = AF_INET6;
-        addr->sin6_port = hostToNetwork16(port);
-        if (::inet_pton(AF_INET6, target_ip, &addr->sin6_addr) <= 0) {
-            SYS_ERROR() << "::inet_pton error";
-        }
+        addr->sin6_port = net::hostToNetwork16(port);
+        return ::inet_pton(AF_INET6, target_ip, &addr->sin6_addr) <= 0 ?
+            Error(HARE_ERROR_SOCKET_FROM_IP) : Error(HARE_ERROR_SUCCESS);
     }
 
 } // namespace socket

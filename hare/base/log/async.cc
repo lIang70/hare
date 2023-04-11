@@ -2,19 +2,20 @@
 
 #include "hare/base/log/file.h"
 #include "hare/base/log/util.h"
-#include <hare/base/time/timestamp.h>
 #include <hare/base/exception.h>
+#include <hare/base/time/timestamp.h>
+#include <hare/base/util/system_info.h>
 
 #include <cassert>
+#include <functional>
 
 namespace hare {
 namespace log {
 
-    Async::Async(std::string name, int64_t roll_size, int32_t flush_interval)
+    Async::Async(int64_t roll_size, std::string name, int32_t flush_interval)
         : name_(std::move(name))
         , roll_size_(roll_size)
         , flush_interval_(flush_interval)
-        , thread_(std::bind(&Async::run, this), "LOG_ASYNC")
     {
         current_block_->bzero();
         next_block_->bzero();
@@ -49,7 +50,7 @@ namespace log {
     void Async::start()
     {
         running_.exchange(true);
-        thread_.start();
+        thread_ = std::make_shared<std::thread>(std::bind(&Async::run, this));
         latch_.await();
     }
 
@@ -57,7 +58,9 @@ namespace log {
     {
         running_.exchange(false);
         cv_.notify_all();
-        thread_.join();
+        if (thread_ && thread_->joinable()) {
+            thread_->join();
+        }
     }
 
     void Async::run()
@@ -65,7 +68,9 @@ namespace log {
         if (!running_) {
             throw Exception("LOG_ASYNC is not running.");
         }
-        
+
+        util::setThreadName("LOG_ASYNC");
+
         latch_.countDown();
 
         log::File output(name_, roll_size_, false);

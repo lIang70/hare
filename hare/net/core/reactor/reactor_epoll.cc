@@ -1,4 +1,5 @@
 #include "hare/net/core/reactor/reactor_epoll.h"
+
 #include "hare/net/core/event.h"
 #include <hare/base/logging.h>
 
@@ -34,13 +35,13 @@ namespace core {
         auto decodeEpoll(int32_t event_flags) -> decltype(epoll_event::events)
         {
             decltype(epoll_event::events) events = 0;
-            if ((event_flags & net::EVENT_READ) != 0) {
+            if ((event_flags & EVENT_READ) != 0) {
                 events |= (EPOLLIN | EPOLLPRI);
             }
-            if ((event_flags & net::EVENT_WRITE) != 0) {
+            if ((event_flags & EVENT_WRITE) != 0) {
                 events |= (EPOLLOUT);
             }
-            if ((event_flags & net::EVENT_ET) != 0) {
+            if ((event_flags & EVENT_ET) != 0) {
                 events |= (EPOLLET);
             }
             return events;
@@ -48,18 +49,18 @@ namespace core {
 
         auto encodeEpoll(decltype(epoll_event::events) events) -> int32_t
         {
-            int32_t flags = net::EVENT_DEFAULT;
+            int32_t flags = EVENT_DEFAULT;
             if (((events & EPOLLHUP) != 0U) && ((events & EPOLLIN) == 0U)) {
-                flags |= net::EVENT_CLOSED;
+                flags |= EVENT_CLOSED;
             }
             if ((events & EPOLLERR) != 0U) {
-                flags |= net::EVENT_ERROR;
+                flags |= EVENT_ERROR;
             }
             if ((events & (EPOLLIN | EPOLLPRI | EPOLLRDHUP)) != 0U) {
-                flags |= net::EVENT_READ;
+                flags |= EVENT_READ;
             }
             if ((events & EPOLLOUT) != 0U) {
-                flags |= net::EVENT_WRITE;
+                flags |= EVENT_WRITE;
             }
             return flags;
         }
@@ -135,7 +136,6 @@ namespace core {
 
     void EpollReactor::updateEvent(Event* event)
     {
-        Reactor::assertInCycleThread();
         auto index = event->index();
         LOG_TRACE() << "fd = " << event->fd()
                     << " flags = " << event->flags() << " index = " << index;
@@ -170,7 +170,6 @@ namespace core {
 
     void EpollReactor::removeEvent(Event* event)
     {
-        Reactor::assertInCycleThread();
         auto target_fd = event->fd();
         LOG_TRACE() << "fd = " << target_fd;
         HARE_ASSERT(events_.find(target_fd) != events_.end(), "Cannot find event.");
@@ -206,7 +205,7 @@ namespace core {
 
     void EpollReactor::update(int32_t operation, Event* event) const
     {
-        struct epoll_event ep_event {};
+        struct epoll_event ep_event { };
         setZero(&ep_event, sizeof(ep_event));
         ep_event.events = detail::decodeEpoll(event->flags());
         ep_event.data.ptr = event;

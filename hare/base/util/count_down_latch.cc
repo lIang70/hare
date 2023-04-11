@@ -28,9 +28,9 @@ namespace util {
         while (count_ > 0) {
             if (milliseconds > 0) {
                 cv_.wait_for(lock, std::chrono::milliseconds(milliseconds));
-            } else {
-                cv_.wait(lock);
+                break;
             }
+            cv_.wait(lock);
         }
     }
 
