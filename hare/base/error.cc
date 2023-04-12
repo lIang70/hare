@@ -28,7 +28,9 @@ namespace detail {
         "Failed to set reuse address to socket.",                   // HARE_ERROR_SOCKET_REUSE_ADDR
         "Failed to set reuse port to socket.",                      // HARE_ERROR_SOCKET_REUSE_PORT
         "Failed to set keep alive to socket.",                      // HARE_ERROR_SOCKET_KEEP_ALIVE
+        "Failed to shutdown, because socket is writing.",           // HARE_ERROR_SOCKET_WRITING
         "Failed to active acceptor.",                               // HARE_ERROR_ACCEPTOR_ACTIVED
+        "Session already disconnected.",                            // HARE_ERROR_SESSION_ALREADY_DISCONNECT
 
         // OpenSSL
         "Failed when openssl create the dh.",                       // HARE_ERROR_OPENSSL_CREATE_DH

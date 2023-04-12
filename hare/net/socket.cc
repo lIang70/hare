@@ -104,9 +104,9 @@ namespace net {
         return accept_fd;
     }
 
-    void Socket::shutdownWrite() const
+    auto Socket::shutdownWrite() const -> Error
     {
-        socket::shutdownWrite(socket_);
+        return socket::shutdownWrite(socket_);
     }
 
     auto Socket::setTcpNoDelay(bool no_delay) const -> Error

@@ -46,7 +46,7 @@ namespace net {
          */
         auto accept(HostAddress& peer_addr, HostAddress* local_addr = nullptr) const -> util_socket_t;
 
-        void shutdownWrite() const;
+        auto shutdownWrite() const -> Error;
 
         /**
          * @brief Enable/disable TCP_NODELAY (disable/enable Nagle's algorithm).

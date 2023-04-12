@@ -59,7 +59,7 @@ namespace net {
                 if ((conn_fd = socket_.accept(peer_addr)) >= 0) {
                     LOG_TRACE() << "Accepts of " << peer_addr.toIpPort();
                     if (new_session_) {
-                        new_session_(conn_fd, family_, peer_addr, receive_time, socket());
+                        new_session_(conn_fd, peer_addr, receive_time, socket());
                     } else {
                         socket::close(conn_fd);
                     }
@@ -70,7 +70,7 @@ namespace net {
                 if ((conn_fd = socket_.accept(peer_addr, &local_addr)) >= 0) {
                     LOG_TRACE() << "Accepts of " << peer_addr.toIpPort();
                     if (new_session_) {
-                        new_session_(conn_fd, family_, peer_addr, receive_time, socket());
+                        new_session_(conn_fd, peer_addr, receive_time, socket());
                     } else {
                         socket::close(conn_fd);
                     }

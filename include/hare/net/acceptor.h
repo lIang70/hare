@@ -17,7 +17,7 @@ namespace net {
 
     class HARE_API Acceptor : public core::Event {
     public:
-        using NewSession = std::function<void(util_socket_t, int8_t, const HostAddress& conn_address, const Timestamp&, util_socket_t)>;
+        using NewSession = std::function<void(util_socket_t, HostAddress& peer_address, const Timestamp&, util_socket_t)>;
 
     private:
         Socket socket_;
