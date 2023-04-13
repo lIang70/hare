@@ -1,5 +1,6 @@
 #include <hare/base/logging.h>
 
+#include "hare/base/thread/local.h"
 #include <hare/base/time/datetime.h>
 #include <hare/base/util/system_info.h>
 
@@ -92,9 +93,10 @@ logger::data::data(log::LEVEL _level, int _old_errno, const file_path& _file, in
     , base_name_(_file)
 {
     format_time();
+    current_thread::tid();
 
     stream_ << log::helper(log::level_name[static_cast<int32_t>(_level)], log::level_name_len);
-    stream_ << "#(" << util::pid() << ") ";
+    stream_ << "#(" << log::helper(current_thread::tid_str().c_str(), current_thread::tid_str().length()) << ") ";
 
     if (_old_errno != 0) {
         stream_ << log::errnostl(_old_errno) << " (errno=" << _old_errno << ") ";
