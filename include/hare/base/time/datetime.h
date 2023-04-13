@@ -24,7 +24,7 @@ namespace time {
 
     // Local time in unspecified timezone.
     // A minute is always 60 seconds, no leap seconds.
-    class HARE_API DateTime {
+    class HARE_API date_time {
         int32_t year_ { HARE_START_YEAR }; // [1900, 2500]
         int32_t month_ { 1 }; // [1, 12]
         int32_t day_ { 1 }; // [1, 31]
@@ -33,11 +33,11 @@ namespace time {
         int32_t second_ { 0 }; // [0, 59]
 
     public:
-        DateTime() = default;
-        explicit DateTime(const struct tm&);
+        date_time() = default;
+        explicit date_time(const struct tm&);
 
         // "yyyy-MM-dd HH:MM:SS"
-        auto toFmtString() const -> std::string;
+        auto to_fmt() const -> std::string;
 
         inline auto year() -> int32_t& { return year_; }
         inline auto year() const -> int32_t { return year_; }
@@ -53,11 +53,11 @@ namespace time {
         inline auto second() const -> int32_t { return second_; }
     };
 
-    class HARE_API Date {
+    class HARE_API date {
         int32_t julian_day_number_ { 0 };
 
     public:
-        struct YearMonthDay {
+        struct ymd {
             int32_t year; // [1900..2500]
             int32_t month; // [1..12]
             int32_t day; // [1..31]
@@ -66,67 +66,67 @@ namespace time {
         static const int32_t DAYS_PER_WEEK;
         static const int32_t JULIAN_DAY_OF_19700101;
 
-        Date() = default;
+        date() = default;
 
         //!
         //! Constucts a yyyy-mm-dd Date.
         //!
         //! 1 <= month <= 12
-        Date(int32_t year, int32_t month, int32_t day);
+        date(int32_t _year, int32_t _month, int32_t _day);
 
-        explicit Date(int32_t julian_day_number)
-            : julian_day_number_(julian_day_number)
+        explicit date(int32_t _julian_day_number)
+            : julian_day_number_(_julian_day_number)
         {
         }
 
-        explicit Date(const struct tm&);
+        explicit date(const struct tm&);
 
         // default copy/assignment/dtor are Okay
 
-        void swap(Date& that)
+        void swap(date& _that)
         {
-            std::swap(julian_day_number_, that.julian_day_number_);
+            std::swap(julian_day_number_, _that.julian_day_number_);
         }
 
         auto valid() const -> bool { return julian_day_number_ > 0; }
 
         //! Converts to yyyy-mm-dd format.
-        auto toFmtString() const -> std::string;
+        auto to_fmt() const -> std::string;
 
-        auto yearMonthDay() const -> struct YearMonthDay;
+        auto detail() const -> struct ymd;
 
         auto year() const -> int32_t
         {
-            return yearMonthDay().year;
+            return detail().year;
         }
 
         auto month() const -> int32_t
         {
-            return yearMonthDay().month;
+            return detail().month;
         }
 
         auto day() const -> int32_t
         {
-            return yearMonthDay().day;
+            return detail().day;
         }
 
         // [0, 1, ..., 6] => [Sunday, Monday, ..., Saturday ]
-        auto weekDay() const -> int32_t
+        auto week_day() const -> int32_t
         {
             return (julian_day_number_ + 1) % DAYS_PER_WEEK;
         }
 
-        auto julianDayNumber() const -> int32_t { return julian_day_number_; }
+        auto julian_day_number() const -> int32_t { return julian_day_number_; }
     };
 
-    HARE_API inline auto operator<(Date date_x, Date date_y) -> bool
+    HARE_API inline auto operator<(date _date_x, date _date_y) -> bool
     {
-        return date_x.julianDayNumber() < date_y.julianDayNumber();
+        return _date_x.julian_day_number() < _date_y.julian_day_number();
     }
 
-    HARE_API inline auto operator==(Date date_x, Date date_y) -> bool
+    HARE_API inline auto operator==(date _date_x, date _date_y) -> bool
     {
-        return date_x.julianDayNumber() == date_y.julianDayNumber();
+        return _date_x.julian_day_number() == _date_y.julian_day_number();
     }
 
 } // namespace time

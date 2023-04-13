@@ -41,7 +41,9 @@
 #define H_UNUSED(x) (void)(x)
 #define H_ALIGNAS(n) alignas(n)
 
-#define HARE_SMALL_FIXED_SIZE 32
+#define HARE_SMALL_FIXED_SIZE (32)
+#define HARE_SMALL_BUFFER (4 * 1024)
+#define HARE_LARGE_BUFFER (1024 * HARE_SMALL_BUFFER)
 
 namespace hare {
 
@@ -51,9 +53,15 @@ using util_socket_t = intptr_t;
 using util_socket_t = int;
 #endif
 
-HARE_API inline void setZero(void* des, size_t n)
+template<class Ty>
+using ptr = std::shared_ptr<Ty>;
+
+template<class Ty>
+using wptr = std::weak_ptr<Ty>;
+
+HARE_API inline void set_zero(void* _des, size_t _len)
 {
-    memset(des, 0, n);
+    ::memset(_des, 0, _len);
 }
 
 // Taken from google-protobuf stubs/common.h
@@ -111,9 +119,9 @@ HARE_API inline void setZero(void* des, size_t n)
 // but the proposal was submitted too late.  It will probably make
 // its way into the language in the future.
 template <typename To, typename From>
-HARE_API inline auto implicit_cast(From const& from) -> To
+HARE_API inline auto implicit_cast(From const& _from) -> To
 {
-    return from;
+    return _from;
 }
 
 } // namespace hare

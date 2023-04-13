@@ -1,40 +1,36 @@
 #include "hare/base/log/file.h"
-#include <hare/base/util/system_info.h>
 #include <hare/base/logging.h>
+#include <hare/base/util/system_info.h>
 
 namespace hare {
 namespace log {
 
-    File::File(const std::string& base_name,
-        std::size_t roll_size, bool thread_safe,
-        int32_t flush_interval, int32_t check_every_n)
-        : base_name_(base_name)
-        , roll_size_(roll_size)
-        , flush_interval_(flush_interval)
-        , check_every_n_(check_every_n)
-        , count_(0)
-        , mutex_(thread_safe ? new std::mutex : nullptr)
-        , start_of_period_(0)
-        , last_roll_(0)
-        , last_flush_(0)
+    file::file(std::string _base_name,
+        std::size_t _roll_size, bool _thread_safe,
+        int32_t _flush_interval, int32_t _check_every_n)
+        : base_name_(std::move(_base_name))
+        , roll_size_(_roll_size)
+        , flush_interval_(_flush_interval)
+        , check_every_n_(_check_every_n)
+        , mutex_(_thread_safe ? new std::mutex : nullptr)
     {
-        HARE_ASSERT(base_name.find('/') != std::string::npos, "Cannot find \'/\'.");
-        rollFile();
+        HARE_ASSERT(base_name_.find('/') != std::string::npos, "Cannot find \'/\'.");
+        roll_file();
     }
 
-    File::~File() = default;
+    file::~file() = default;
 
-    void File::append(const char* logline, int len)
+    void file::append(const char* _log_line, size_t _len)
     {
         if (mutex_) {
             std::unique_lock<std::mutex> lock(*mutex_);
-            append_unlocked(logline, len);
+            append_unlocked(_log_line, _len);
         } else {
-            append_unlocked(logline, len);
+            append_unlocked(_log_line, _len);
         }
     }
 
-    void File::flush()
+    void file::flush()
     {
         if (mutex_) {
             std::unique_lock<std::mutex> lock(*mutex_);
@@ -44,12 +40,12 @@ namespace log {
         }
     }
 
-    void File::append_unlocked(const char* logline, int len)
+    void file::append_unlocked(const char* _log_line, size_t _len)
     {
-        file_->append(logline, len);
+        file_->append(_log_line, _len);
 
-        if (file_->writtenBytes() > roll_size_) {
-            rollFile();
+        if (file_->written_bytes() > roll_size_) {
+            roll_file();
         } else {
             ++count_;
             if (count_ >= check_every_n_) {
@@ -57,7 +53,7 @@ namespace log {
                 auto now = ::time(nullptr);
                 auto thisPeriod_ = now / SECONDS_PER_ROLL * SECONDS_PER_ROLL;
                 if (thisPeriod_ != start_of_period_) {
-                    rollFile();
+                    roll_file();
                 } else if (now - last_flush_ > flush_interval_) {
                     last_flush_ = now;
                     file_->flush();
@@ -66,41 +62,38 @@ namespace log {
         }
     }
 
-    auto File::rollFile() -> bool
+    auto file::roll_file() -> bool
     {
         time_t now = 0;
-        auto file_name = getLogFileName(base_name_, &now);
+        auto file_name = get_file_name(base_name_, &now);
         auto start = now / SECONDS_PER_ROLL * SECONDS_PER_ROLL;
 
         if (now > last_roll_) {
             last_roll_ = now;
             last_flush_ = now;
             start_of_period_ = start;
-            file_.reset(new util::AppendFile(file_name));
+            file_.reset(new util::append_file(file_name));
             return true;
         }
         return false;
     }
 
-    auto File::getLogFileName(const std::string& basename, time_t* now) -> std::string
+    auto file::get_file_name(const std::string& _basename, time_t* _now) -> std::string
     {
-        
+
         std::string file_name;
-        file_name.reserve(basename.size() + static_cast<uint64_t>(HARE_SMALL_FIXED_SIZE * 2));
-        file_name = basename;
+        file_name.reserve(_basename.size() + static_cast<uint64_t>(HARE_SMALL_FIXED_SIZE * 2));
+        file_name = _basename;
 
-        char time_buf[HARE_SMALL_FIXED_SIZE];
-        struct tm stm {};
-        *now = ::time(nullptr);
-        gmtime_r(now, &stm); // FIXME: localtime_r ?
-        strftime(time_buf, sizeof(time_buf), ".%Y%m%d-%H%M%S.", &stm);
-        file_name += time_buf;
-
+        std::array<char, HARE_SMALL_FIXED_SIZE> cache;
+        struct tm stm { };
+        *_now = ::time(nullptr);
+        ::localtime_r(_now, &stm);
+        ::strftime(cache.data(), HARE_SMALL_FIXED_SIZE, ".%Y%m%d-%H%M%S.", &stm);
+        file_name += cache.data();
         file_name += util::hostname();
-
-        char pid_buf[HARE_SMALL_FIXED_SIZE];
-        snprintf(pid_buf, sizeof(pid_buf), ".%d", util::pid());
-        file_name += pid_buf;
+        ::snprintf(cache.data(), HARE_SMALL_FIXED_SIZE, ".%d", util::pid());
+        file_name += cache.data();
         file_name += ".log";
 
         return file_name;

@@ -20,18 +20,18 @@
 namespace hare {
 namespace util {
 
-    class HARE_API CountDownLatch {
+    class HARE_API count_down_latch {
         mutable std::mutex mutex_ {};
         uint32_t count_ { 0 };
         std::condition_variable cv_ {};
 
     public:
-        using Ptr = std::shared_ptr<CountDownLatch>;
+        using ptr = ptr<count_down_latch>;
 
-        explicit CountDownLatch(uint32_t count);
-        ~CountDownLatch();
+        explicit count_down_latch(uint32_t count);
+        ~count_down_latch();
 
-        void countDown();
+        void count_down();
         void await(int32_t milliseconds = 0);
         auto count() -> uint32_t;
     };

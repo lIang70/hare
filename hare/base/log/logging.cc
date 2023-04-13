@@ -1,7 +1,5 @@
 #include <hare/base/logging.h>
 
-#include "hare/base/log/util.h"
-#include "hare/base/util.h"
 #include <hare/base/time/datetime.h>
 #include <hare/base/util/system_info.h>
 
@@ -12,28 +10,11 @@
 namespace hare {
 namespace log {
 
-    thread_local char t_errno_buf[HARE_SMALL_FIXED_SIZE * HARE_SMALL_FIXED_SIZE / 2];
-    thread_local char t_time[HARE_SMALL_FIXED_SIZE * 2];
+    thread_local std::array<char, static_cast<size_t>(HARE_SMALL_FIXED_SIZE* HARE_SMALL_FIXED_SIZE) / 2> t_errno_buf;
+    thread_local std::array<char, static_cast<size_t>(HARE_SMALL_FIXED_SIZE) * 2> t_time;
     thread_local int64_t t_last_second;
 
-    auto strErrorno(int errorno) -> const char*
-    {
-        ::strerror_r(errorno, t_errno_buf, sizeof(t_errno_buf));
-        return t_errno_buf;
-    }
-
-    static auto initLogLevel() -> Level
-    {
-        if (::getenv("HARE_LOG_TRACE") != nullptr) {
-            return Level::LOG_TRACE;
-        }
-        if (::getenv("HARE_LOG_DEBUG") != nullptr) {
-            return Level::LOG_DEBUG;
-        }
-        return Level::LOG_INFO;
-    }
-
-    const char* LevelName[static_cast<int32_t>(Level::LOG_LEVELS)] = {
+    static const std::array<const char*, static_cast<int32_t>(LEVEL_NBRS)> level_name = {
         "[TRACE ] ",
         "[DEBUG ] ",
         "[INFO  ] ",
@@ -41,100 +22,120 @@ namespace log {
         "[ERROR ] ",
         "[FATAL ] ",
     };
-    const int32_t LevelNameLen { 9 };
+    const int32_t level_name_len { 9 };
 
-    inline auto operator<<(Stream& stream, const Logger::FilePath& file_path) -> Stream&
+    class helper {
+        const char* str_;
+        const size_t len_;
+
+    public:
+        helper(const char* _str, size_t _len)
+            : str_(_str)
+            , len_(_len)
+        {
+            assert(strlen(_str) == len_);
+        }
+
+        friend inline auto operator<<(stream& _stream, helper _helper) -> stream&
+        {
+            _stream.append(_helper.str_, static_cast<int>(_helper.len_));
+            return _stream;
+        }
+    };
+
+    auto errnostl(int _errorno) -> const char*
     {
-        stream.append(file_path.data(), file_path.size());
-        return stream;
+        ::strerror_r(_errorno, t_errno_buf.data(), t_errno_buf.size());
+        return t_errno_buf.data();
     }
 
-    void defaultOutput(const char* msg, int len)
+    static auto init_level() -> LEVEL
     {
-        auto fwrite_n = ::fwrite(msg, 1, len, stdout);
+        if (::getenv("HARE_LOG_TRACE") != nullptr) {
+            return LEVEL_TRACE;
+        }
+        if (::getenv("HARE_LOG_DEBUG") != nullptr) {
+            return LEVEL_DEBUG;
+        }
+        return LEVEL_INFO;
+    }
+
+    static inline auto operator<<(stream& _stream, const logger::file_path& _file_path) -> stream&
+    {
+        _stream.append(_file_path.data(), _file_path.size());
+        return _stream;
+    }
+
+    static inline void default_output(const char* _msg, int _len)
+    {
+        auto fwrite_n = ::fwrite(_msg, 1, _len, stdout);
         H_UNUSED(fwrite_n);
     }
 
-    void defaultFlush()
+    static void default_flush()
     {
         ::fflush(stdout);
     }
 
-    TimeZone g_log_time_zone;
-    Level g_log_level = initLogLevel();
-    Logger::Output g_output = defaultOutput;
-    Logger::Flush g_flush = defaultFlush;
+    timezone g_log_time_zone {};
+    LEVEL g_log_level = init_level();
+    logger::output g_output = default_output;
+    logger::flush g_flush = default_flush;
 
 } // namespace log
 
-struct Helper {
-    const char* str_;
-    const std::size_t len_;
-
-    Helper(const char* str, std::size_t len)
-        : str_(str)
-        , len_(len)
-    {
-        assert(strlen(str) == len_);
-    }
-
-    friend inline auto operator<<(log::Stream& stream, Helper helper) -> log::Stream&
-    {
-        stream.append(helper.str_, static_cast<int>(helper.len_));
-        return stream;
-    }
-};
-
-Logger::Data::Data(log::Level level, int old_errno, const FilePath& file, int line)
-    : time_(Timestamp::now())
+logger::data::data(log::LEVEL _level, int _old_errno, const file_path& _file, int _line)
+    : time_(timestamp::now())
     , stream_()
-    , level_(level)
-    , line_(line)
-    , base_name_(file)
+    , level_(_level)
+    , line_(_line)
+    , base_name_(_file)
 {
-    formatTime();
+    format_time();
 
-    stream_ << Helper(log::LevelName[static_cast<int32_t>(level)], log::LevelNameLen);
+    stream_ << log::helper(log::level_name[static_cast<int32_t>(_level)], log::level_name_len);
     stream_ << "#(" << util::pid() << ") ";
 
-    if (old_errno != 0) {
-        stream_ << log::strErrorno(old_errno) << " (errno=" << old_errno << ") ";
+    if (_old_errno != 0) {
+        stream_ << log::errnostl(_old_errno) << " (errno=" << _old_errno << ") ";
     }
 }
 
-void Logger::Data::formatTime()
+void logger::data::format_time()
 {
-    auto micro_seconds_since_epoch = time_.microSecondsSinceEpoch();
-    auto seconds = time_.secondsSinceEpoch();
-    auto micro_seconds = micro_seconds_since_epoch - seconds * Timestamp::MICROSECONDS_PER_SECOND;
+    static const auto s_time_len = 19;
+    static const auto s_fmt_len = 8;
+    auto micro_seconds_since_epoch = time_.microseconds_since_epoch();
+    auto seconds = time_.seconds_since_epoch();
+    auto micro_seconds = micro_seconds_since_epoch - seconds * static_cast<int64_t>(MICROSECONDS_PER_SECOND);
 
     if (seconds != log::t_last_second) {
         log::t_last_second = seconds;
-        struct time::DateTime tdt;
+        struct time::date_time tdt;
         if (log::g_log_time_zone) {
-            tdt = log::g_log_time_zone.toLocalTime(seconds);
+            tdt = log::g_log_time_zone.to_local(seconds);
         } else {
-            tdt = TimeZone::toUtcTime(seconds);
+            tdt = timezone::to_utc_time(seconds);
         }
 
-        auto len = snprintf(log::t_time, sizeof(log::t_time), "%4d-%02d-%02d %02d:%02d:%02d",
+        auto len = ::snprintf(log::t_time.data(), log::t_time.size(), "%4d-%02d-%02d %02d:%02d:%02d",
             tdt.year(), tdt.month(), tdt.day(), tdt.hour(), tdt.minute(), tdt.second());
         assert(len == 19);
         H_UNUSED(len);
     }
 
     if (log::g_log_time_zone) {
-        log::detail::Fmt fmt_us(".%06d ", micro_seconds);
+        log::detail::fmt fmt_us(".%06d ", micro_seconds);
         assert(fmt_us.length() == 8);
-        stream_ << Helper(log::t_time, 19) << Helper(fmt_us.data(), 8);
+        stream_ << log::helper(log::t_time.data(), s_time_len) << log::helper(fmt_us.data(), s_fmt_len);
     } else {
-        log::detail::Fmt fmt_us(".%06dZ ", micro_seconds);
+        log::detail::fmt fmt_us(".%06dZ ", micro_seconds);
         assert(fmt_us.length() == 9);
-        stream_ << Helper(log::t_time, 19) << Helper(fmt_us.data(), 9);
+        stream_ << log::helper(log::t_time.data(), s_time_len) << log::helper(fmt_us.data(), s_fmt_len + 1);
     }
 }
 
-void Logger::Data::finish()
+void logger::data::finish()
 {
 #ifndef HARE_DEBUG
     if (level_ <= log::LogLevel::DEBUG)
@@ -145,35 +146,35 @@ void Logger::Data::finish()
     stream_ << '\n';
 }
 
-Logger::Logger(FilePath file, int line)
-    : d_(log::Level::LOG_INFO, 0, file, line)
+logger::logger(file_path _file, int _line)
+    : data_(log::LEVEL_INFO, 0, _file, _line)
 {
 }
 
-Logger::Logger(FilePath file, int line, log::Level level, const char* func)
-    : d_(level, 0, file, line)
+logger::logger(file_path _file, int _line, log::LEVEL _level, const char* _func)
+    : data_(_level, 0, _file, _line)
 {
-    if (log::g_log_level <= log::Level::LOG_DEBUG) {
-        d_.stream_ << func << ' ';
+    if (log::g_log_level <= log::LEVEL_DEBUG) {
+        data_.stream_ << _func << ' ';
     }
 }
 
-Logger::Logger(FilePath file, int line, log::Level level)
-    : d_(level, 0, file, line)
+logger::logger(file_path _file, int _line, log::LEVEL _level)
+    : data_(_level, 0, _file, _line)
 {
 }
 
-Logger::Logger(FilePath file, int line, bool abort)
-    : d_(abort ? log::Level::LOG_FATAL : log::Level::LOG_ERROR, errno, file, line)
+logger::logger(file_path _file, int _line, bool _abort)
+    : data_(_abort ? log::LEVEL_FATAL : log::LEVEL_ERROR, errno, _file, _line)
 {
 }
 
-Logger::~Logger()
+logger::~logger()
 {
-    d_.finish();
+    data_.finish();
 
-    if (d_.level_ >= log::g_log_level) {
-        const log::Stream::Buffer& buf(stream().buffer());
+    if (data_.level_ >= log::g_log_level) {
+        const log::stream::fixed_buffer& buf(stream().buffer());
         log::g_output(buf.data(), buf.length());
     }
 
@@ -181,36 +182,36 @@ Logger::~Logger()
         log::g_flush();
     }
 
-    if (d_.level_ == log::Level::LOG_FATAL) {
+    if (data_.level_ == log::LEVEL_FATAL) {
         ::fwrite(stream().buffer().data(), 1, stream().buffer().length(), stderr);
         ::fflush(stderr);
         std::abort();
     }
 }
 
-auto Logger::level() -> log::Level
+auto logger::level() -> log::LEVEL
 {
     return log::g_log_level;
 }
 
-void Logger::setLevel(log::Level level)
+void logger::set_level(log::LEVEL _level)
 {
-    log::g_log_level = level;
+    log::g_log_level = _level;
 }
 
-void Logger::setOutput(Output output)
+void logger::set_output(output _output)
 {
-    log::g_output = std::move(output);
+    log::g_output = std::move(_output);
 }
 
-void Logger::setFlush(Flush flush)
+void logger::set_flush(flush _flush)
 {
-    log::g_flush = std::move(flush);
+    log::g_flush = std::move(_flush);
 }
 
-void Logger::setTimeZone(const TimeZone& time_zone)
+void logger::set_timezone(const timezone& _time_zone)
 {
-    log::g_log_time_zone = time_zone;
+    log::g_log_time_zone = _time_zone;
 }
 
 } // namespace hare

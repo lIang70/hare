@@ -19,17 +19,17 @@
 
 namespace hare {
 
-class HARE_API Exception : std::exception {
+class HARE_API exception : std::exception {
     std::string what_ {};
     std::string stack_ {};
 
 public:
-    explicit Exception(std::string what);
-    ~Exception() override;
+    explicit exception(std::string what);
+    ~exception() override;
 
-    auto what() const noexcept -> const char* override;
+    inline auto what() const noexcept -> const char* override { return what_.c_str(); }
 
-    auto stackTrace() const noexcept -> const char*;
+    inline auto stack_trace() const noexcept -> const char* { return stack_.c_str(); }
 };
 
 } // namespace hare

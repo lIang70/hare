@@ -1,7 +1,6 @@
 #include <hare/base/log/async.h>
 
 #include "hare/base/log/file.h"
-#include "hare/base/log/util.h"
 #include <hare/base/exception.h>
 #include <hare/base/time/timestamp.h>
 #include <hare/base/util/system_info.h>
@@ -12,74 +11,74 @@
 namespace hare {
 namespace log {
 
-    Async::Async(int64_t roll_size, std::string name, int32_t flush_interval)
-        : name_(std::move(name))
-        , roll_size_(roll_size)
-        , flush_interval_(flush_interval)
+    async::async(int64_t _roll_size, std::string _name, int32_t _flush_interval)
+        : name_(std::move(_name))
+        , roll_size_(_roll_size)
+        , flush_interval_(_flush_interval)
     {
         current_block_->bzero();
         next_block_->bzero();
         blocks_.reserve(BLOCK_NUMBER);
     }
 
-    Async::~Async()
+    async::~async()
     {
         if (running_) {
             stop();
         }
     }
 
-    void Async::append(const char* log_line, int32_t size)
+    void async::append(const char* _log_line, int32_t _size)
     {
         std::unique_lock<std::mutex> lock(mutex_);
-        if (current_block_->avail() > size) {
-            current_block_->append(log_line, size);
+        if (current_block_->avail() > _size) {
+            current_block_->append(_log_line, _size);
         } else {
             blocks_.push_back(std::move(current_block_));
 
             if (next_block_) {
                 current_block_ = std::move(next_block_);
             } else {
-                current_block_.reset(new Block); // Rarely happens
+                current_block_.reset(new fixed_block); // Rarely happens
             }
-            current_block_->append(log_line, size);
+            current_block_->append(_log_line, _size);
             cv_.notify_all();
         }
     }
 
-    void Async::start()
+    void async::start()
     {
-        running_.exchange(true);
-        thread_ = std::make_shared<std::thread>(std::bind(&Async::run, this));
+        running_ = true;
+        thread_ = std::make_shared<std::thread>(std::bind(&async::run, this));
         latch_.await();
     }
 
-    void Async::stop()
+    void async::stop()
     {
-        running_.exchange(false);
+        running_ = false;
         cv_.notify_all();
         if (thread_ && thread_->joinable()) {
             thread_->join();
         }
     }
 
-    void Async::run()
+    void async::run()
     {
         if (!running_) {
-            throw Exception("LOG_ASYNC is not running.");
+            throw exception("LOG_ASYNC is not running.");
         }
 
-        util::setThreadName("LOG_ASYNC");
+        util::set_tname("LOG_ASYNC");
 
-        latch_.countDown();
+        latch_.count_down();
 
-        log::File output(name_, roll_size_, false);
-        Block::Ptr new_block_1(new Block);
-        Block::Ptr new_block_2(new Block);
+        log::file output(name_, roll_size_, false);
+        fixed_block::ptr new_block_1(new fixed_block);
+        fixed_block::ptr new_block_2(new fixed_block);
         new_block_1->bzero();
         new_block_2->bzero();
 
-        Blocks block_2_write;
+        blocks block_2_write;
         block_2_write.reserve(BLOCK_NUMBER);
         while (running_) {
             assert(new_block_1 && new_block_1->length() == 0);
@@ -103,13 +102,12 @@ namespace log {
             assert(!block_2_write.empty());
 
             if (block_2_write.size() > BLOCK_NUMBER * 2) {
-                const auto buffer_size = 256;
-                char buf[buffer_size];
-                snprintf(buf, sizeof(buf), "[Warning ] Dropped log messages at [%s], %zd larger buffers\n",
-                    Timestamp::now().toFormattedString().c_str(),
+                std::array<char, static_cast<int64_t>(HARE_SMALL_FIXED_SIZE) * 4> buf;
+                ::snprintf(buf.data(), buf.size(), "[Warning ] Dropped log messages at [%s], %zd larger buffers\n",
+                    timestamp::now().to_fmt().c_str(),
                     block_2_write.size() - 2);
-                fputs(buf, stderr);
-                output.append(buf, static_cast<int>(strlen(buf)));
+                fputs(buf.data(), stderr);
+                output.append(buf.data(), buf.size());
                 block_2_write.erase(block_2_write.begin() + 2, block_2_write.end());
             }
 

@@ -31,6 +31,7 @@ namespace detail {
         "Failed to shutdown, because socket is writing.",           // HARE_ERROR_SOCKET_WRITING
         "Failed to active acceptor.",                               // HARE_ERROR_ACCEPTOR_ACTIVED
         "Session already disconnected.",                            // HARE_ERROR_SESSION_ALREADY_DISCONNECT
+        "Failed to get pair socket.",                               // HARE_ERROR_GET_SOCKET_PAIR
 
         // OpenSSL
         "Failed when openssl create the dh.",                       // HARE_ERROR_OPENSSL_CREATE_DH
@@ -55,13 +56,13 @@ namespace detail {
 
 } // namespace detail
 
-Error::Error(int32_t error_code)
+error::error(int32_t error_code)
     : error_code_(error_code)
     , system_code_(errno)
 {
 }
 
-auto Error::description() const -> const char*
+auto error::description() const -> const char*
 {
     return detail::error_description[error_code_];
 }

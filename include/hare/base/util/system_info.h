@@ -20,11 +20,11 @@
 namespace hare {
 namespace util {
 
-    HARE_API auto systemDir() -> std::string;
+    HARE_API auto system_dir() -> std::string;
     HARE_API auto pid() -> int32_t;
     HARE_API auto hostname() -> std::string;
-    HARE_API auto stackTrace(bool demangle) -> std::string;
-    HARE_API auto setThreadName(const char* tname) -> Error;
+    HARE_API auto stack_trace(bool demangle) -> std::string;
+    HARE_API auto set_tname(const char* tname) -> error;
 
 } // namespace util
 } // namespace hare

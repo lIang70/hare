@@ -3,11 +3,13 @@
 #include <hare/base/exception.h>
 #include <hare/base/util/system_check.h>
 
+#include <array>
+
 #ifdef H_OS_LINUX
 #include <cxxabi.h>
 #include <execinfo.h>
-#include <unistd.h>
 #include <sys/prctl.h>
+#include <unistd.h>
 #endif
 
 #define NAME_LENGTH 256
@@ -18,8 +20,8 @@ namespace util {
     namespace detail {
 
         class SystemInfo {
-            char host_name_[NAME_LENGTH] {};
-            char system_dir_[NAME_LENGTH] {};
+            std::array<char, NAME_LENGTH> host_name_ {};
+            std::array<char, NAME_LENGTH> system_dir_ {};
 
         public:
             SystemInfo()
@@ -27,14 +29,14 @@ namespace util {
 #ifdef H_OS_LINUX
 
                 // Get the host name
-                if (::gethostname(host_name_, sizeof(host_name_)) == 0) {
-                    host_name_[sizeof(host_name_) - 1] = '\0';
+                if (::gethostname(host_name_.data(), host_name_.size()) == 0) {
+                    host_name_[host_name_.size() - 1] = '\0';
                 }
 
                 // Get application dir from "/proc/self/exe"
-                auto size = ::readlink("/proc/self/exe", system_dir_, NAME_LENGTH);
+                auto size = ::readlink("/proc/self/exe", system_dir_.data(), NAME_LENGTH);
                 if (size == -1) {
-                    throw Exception("Cannot read exe[/proc/self/exe] file.");
+                    throw exception("Cannot read exe[/proc/self/exe] file.");
                 }
 
                 auto npos = size - 1;
@@ -47,17 +49,17 @@ namespace util {
 #endif
             }
 
-            inline auto system_dir() const -> std::string { return system_dir_; }
-            inline auto host_name() const -> std::string { return host_name_; }
+            friend auto util::system_dir() -> std::string;
+            friend auto util::hostname() -> std::string;
         };
 
         static struct SystemInfo s_system_info;
 
     } // namespace detail
 
-    auto systemDir() -> std::string
+    auto system_dir() -> std::string
     {
-        return detail::s_system_info.system_dir();
+        return detail::s_system_info.system_dir_.data();
     }
 
     auto pid() -> int32_t
@@ -67,19 +69,19 @@ namespace util {
 
     auto hostname() -> std::string
     {
-        return detail::s_system_info.host_name();
+        return detail::s_system_info.host_name_.data();
     }
 
-    auto stackTrace(bool demangle) -> std::string
+    auto stack_trace(bool demangle) -> std::string
     {
         static const int MAX_STACK_FRAMES = 20;
 #ifdef H_OS_LINUX
 #define DEMANGLE_SIZE 256
 
         std::string stack;
-        void* frame[MAX_STACK_FRAMES];
-        auto nptrs = ::backtrace(frame, MAX_STACK_FRAMES);
-        auto* strings = ::backtrace_symbols(frame, nptrs);
+        std::array<void*, MAX_STACK_FRAMES> frames {};
+        auto nptrs = ::backtrace(frames.data(), MAX_STACK_FRAMES);
+        auto* strings = ::backtrace_symbols(frames.data(), nptrs);
         if (strings == nullptr) {
             return stack;
         }
@@ -125,15 +127,15 @@ namespace util {
 #endif
     }
 
-    auto setThreadName(const char* tname) -> Error
+    auto set_tname(const char* tname) -> error
     {
 #ifdef H_OS_LINUX
         auto ret = ::prctl(PR_SET_NAME, tname);
         if (ret == -1) {
-            return Error(HARE_ERROR_SET_THREAD_NAME);
+            return error(HARE_ERROR_SET_THREAD_NAME);
         }
 #endif
-        return Error(HARE_ERROR_SUCCESS);
+        return error(HARE_ERROR_SUCCESS);
     }
 
 } // namespace util

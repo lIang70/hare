@@ -16,7 +16,7 @@
 
 namespace hare {
 
-using HARE_ERROR = enum Hare_Error {
+using HARE_ERROR = enum {
     HARE_ERROR_ILLEGAL,
     HARE_ERROR_SUCCESS,
 
@@ -39,6 +39,7 @@ using HARE_ERROR = enum Hare_Error {
     HARE_ERROR_SOCKET_WRITING,
     HARE_ERROR_ACCEPTOR_ACTIVED,
     HARE_ERROR_SESSION_ALREADY_DISCONNECT,
+    HARE_ERROR_GET_SOCKET_PAIR,
 
     // OpenSSL
     HARE_ERROR_OPENSSL_CREATE_DH,
@@ -63,13 +64,13 @@ using HARE_ERROR = enum Hare_Error {
     HARE_ERRORS
 }; 
 
-class HARE_API Error {
+class HARE_API error {
     int32_t error_code_ { HARE_ERROR_SUCCESS };
     int32_t system_code_ { 0 };
 
 public:
-    explicit Error(int32_t error_code);
-    ~Error() = default;
+    explicit error(int32_t error_code);
+    ~error() = default;
 
     /**
      * @brief Get the error code of hare.
@@ -81,7 +82,7 @@ public:
      * @brief Get the system code 'errno'.
      * 
      */
-    inline auto systemCode() const -> int32_t { return system_code_; }
+    inline auto system_code() const -> int32_t { return system_code_; }
 
     /**
      * @brief Get the description of the error code.

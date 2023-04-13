@@ -16,14 +16,14 @@
 
 namespace hare {
 
-class HARE_API NonCopyable {
+class HARE_API non_copyable {
 public:
-    NonCopyable(const NonCopyable&) = delete;
-    auto operator=(const NonCopyable&) -> NonCopyable& = delete;
+    non_copyable(const non_copyable&) = delete;
+    auto operator=(const non_copyable&) -> non_copyable& = delete;
 
 protected:
-    NonCopyable() = default;
-    ~NonCopyable() = default;
+    non_copyable() = default;
+    ~non_copyable() = default;
 };
 
 } // namespace hare

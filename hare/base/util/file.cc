@@ -1,4 +1,4 @@
-#include "hare/base/util/file.h"
+#include <hare/base/util/file.h>
 
 #include <hare/base/exception.h>
 #include <hare/base/logging.h>
@@ -6,54 +6,55 @@
 #include <cstdio>
 
 #ifdef H_OS_WIN32
-#include <Windows.h>
-#include <io.h>
-#elif defined(H_OS_LINUX)
+#else
 #include <dirent.h>
 #endif
 
 namespace hare {
 namespace util {
 
-    AppendFile::AppendFile(const std::string& file_name)
+    append_file::append_file(const std::string& file_name)
+#ifdef H_OS_WIN32
+#else
         : fp_(::fopen(file_name.c_str(), "ae")) // 'e' for O_CLOEXEC
+#endif
     {
         if (fp_ == nullptr) {
-            throw Exception("Cannot open file[" + file_name + "].");
+            throw exception("Cannot open file[" + file_name + "].");
         }
-        ::setbuffer(fp_, buffer_, sizeof(buffer_)); // posix_fadvise POSIX_FADV_DONTNEED ?
+        ::setbuffer(fp_, buffer_.begin(), BUFFER_SIZE); // posix_fadvise POSIX_FADV_DONTNEED ?
     }
 
-    AppendFile::~AppendFile()
+    append_file::~append_file()
     {
         ::fclose(fp_);
     }
 
-    void AppendFile::append(const char* logline, std::size_t len)
+    void append_file::append(const char* _log_line, size_t _len)
     {
-        auto written = 0;
+        auto written = static_cast<size_t>(0);
 
-        while (written != len) {
-            auto remain = len - written;
-            auto write_n = write(logline + written, remain);
+        while (written != _len) {
+            auto remain = _len - written;
+            auto write_n = write(_log_line + written, remain);
             if (write_n != remain) {
                 if (auto err = ::ferror(fp_)) {
-                    ::fprintf(stderr, "AppendFile::append() failed %s\n", log::strErrorno(err));
+                    ::fprintf(stderr, "append_file::append() failed %s\n", log::errnostr(err));
                     break;
                 }
             }
-            written += static_cast<int>(write_n);
+            written += write_n;
         }
 
         written_bytes_ += written;
     }
 
-    void AppendFile::flush()
+    void append_file::flush()
     {
         ::fflush(fp_);
     }
 
-    auto AppendFile::write(const char* log_line, std::size_t len) -> size_t
+    auto append_file::write(const char* log_line, size_t len) -> size_t
     {
         return ::fwrite_unlocked(log_line, 1, len, fp_);
     }

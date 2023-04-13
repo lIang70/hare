@@ -12,66 +12,68 @@
 #ifndef _HARE_BASE_TIMESTAMP_H_
 #define _HARE_BASE_TIMESTAMP_H_
 
+#include <cstdint>
 #include <hare/base/util.h>
 
 #include <string>
 
+#define MICROSECONDS_PER_SECOND (1000 * 1000)
+
 namespace hare {
 
-class HARE_API Timestamp {
+class HARE_API timestamp {
     int64_t microseconds_since_epoch_ { -1 };
 
 public:
-    using Ptr = std::shared_ptr<Timestamp>;
+    using ptr = ptr<timestamp>;
 
-    static const int64_t MICROSECONDS_PER_SECOND { static_cast<int64_t>(1000) * 1000 };
-
-    //!
-    //! Get time of now.
-    //!
-    static auto now() -> Timestamp;
-    static auto invalid() -> Timestamp
+    /**
+     * @brief Get time of now.
+     * 
+     */
+    static auto now() -> timestamp;
+    static auto invalid() -> timestamp
     {
         return {};
     }
 
-    static auto fromUnixTime(time_t time) -> Timestamp
+    static auto from_unix_time(time_t _time) -> timestamp
     {
-        return fromUnixTime(time, 0);
+        return from_unix_time(_time, 0);
     }
 
-    static auto fromUnixTime(time_t time, int microseconds) -> Timestamp
+    static auto from_unix_time(time_t _time, int64_t _microseconds) -> timestamp
     {
-        return Timestamp(static_cast<int64_t>(time) * MICROSECONDS_PER_SECOND + microseconds);
+        return timestamp(_time * static_cast<int64_t>(MICROSECONDS_PER_SECOND) + _microseconds);
     }
 
-    static auto difference(Timestamp& high, Timestamp& low) -> double
+    static auto difference(timestamp& _high, timestamp& _low) -> double
     {
-        int64_t diff = high.microSecondsSinceEpoch() - low.microSecondsSinceEpoch();
+        int64_t diff = _high.microseconds_since_epoch() - _low.microseconds_since_epoch();
         return static_cast<double>(diff) / MICROSECONDS_PER_SECOND;
     }
 
-    Timestamp() = default;
-    ~Timestamp() = default;
+    timestamp() = default;
+    ~timestamp() = default;
 
-    explicit Timestamp(int64_t micro_seconds_since_epoch)
-        : microseconds_since_epoch_(micro_seconds_since_epoch)
+    explicit timestamp(int64_t _micro_seconds_since_epoch)
+        : microseconds_since_epoch_(_micro_seconds_since_epoch)
     {
     }
 
-    inline void swap(Timestamp& another) { std::swap(microseconds_since_epoch_, another.microseconds_since_epoch_); }
+    inline void swap(timestamp& _another) { std::swap(microseconds_since_epoch_, _another.microseconds_since_epoch_); }
     inline auto valid() const -> bool { return microseconds_since_epoch_ > 0; }
-    inline auto microSecondsSinceEpoch() const -> int64_t { return microseconds_since_epoch_; }
-    inline auto secondsSinceEpoch() const -> time_t
+    inline auto microseconds_since_epoch() const -> int64_t { return microseconds_since_epoch_; }
+    inline auto seconds_since_epoch() const -> time_t
     {
-        return static_cast<time_t>(microseconds_since_epoch_ / MICROSECONDS_PER_SECOND);
+        return static_cast<time_t>(microseconds_since_epoch_ / static_cast<int64_t>(MICROSECONDS_PER_SECOND));
     }
 
-    inline auto operator==(const Timestamp& another) const -> bool { return microseconds_since_epoch_ == another.microseconds_since_epoch_; }
-    inline auto operator<(const Timestamp& another) const -> bool { return microseconds_since_epoch_ < another.microseconds_since_epoch_; }
+    inline auto operator==(const timestamp& _another) const -> bool { return microseconds_since_epoch_ == _another.microseconds_since_epoch_; }
+    inline auto operator<(const timestamp& _another) const -> bool { return microseconds_since_epoch_ < _another.microseconds_since_epoch_; }
 
-    auto toString() const -> std::string;
-    auto toFormattedString(bool show_microseconds = true) const -> std::string;
+    auto to_string() const -> std::string;
+    auto to_fmt(bool show_microseconds = true) const -> std::string;
 };
 
 } // namespace hare

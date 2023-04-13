@@ -13,9 +13,10 @@
 #ifndef _HARE_BASE_LOGGING_H_
 #define _HARE_BASE_LOGGING_H_
 
+#include <cstddef>
 #include <hare/base/log/stream.h>
-#include <hare/base/time/time_zone.h>
 #include <hare/base/time/timestamp.h>
+#include <hare/base/time/timezone.h>
 
 #include <functional>
 
@@ -26,14 +27,14 @@ namespace log {
      * @brief The enumeration of log level.
      *
      */
-    enum Level : int32_t {
-        LOG_TRACE,
-        LOG_DEBUG,
-        LOG_INFO,
-        LOG_WARNING,
-        LOG_ERROR,
-        LOG_FATAL,
-        LOG_LEVELS
+    using LEVEL = enum : int8_t {
+        LEVEL_TRACE,
+        LEVEL_DEBUG,
+        LEVEL_INFO,
+        LEVEL_WARNING,
+        LEVEL_ERROR,
+        LEVEL_FATAL,
+        LEVEL_NBRS
     };
 
     /**
@@ -42,7 +43,7 @@ namespace log {
      * @param errorno The error number.
      * @return const char* The infomation of error.
      */
-    HARE_API auto strErrorno(int errorno) -> const char*;
+    HARE_API auto errnostr(int errorno) -> const char*;
 
 } // namespace log
 
@@ -50,40 +51,32 @@ namespace log {
  * @brief The interface class of log.
  *
  */
-class HARE_API Logger {
+class HARE_API logger {
 public:
-    using Output = std::function<void(const char*, int)>;
-    using Flush = std::function<void()>;
+    using output = std::function<void(const char*, size_t)>;
+    using flush = std::function<void()>;
 
-    class HARE_API FilePath {
+    class HARE_API file_path {
         const char* data_ { nullptr };
-        int32_t size_ { 0 };
+        size_t size_ { 0 };
 
     public:
-        template <int Length>
-        FilePath(const char (&arr)[Length])
-            : data_(arr)
+        template <size_t Length>
+        file_path(const char (&_file_name)[Length])
+            : data_(_file_name)
             , size_(Length - 1)
         {
-#ifdef M_OS_WIN32
-            const char* slash = ::strrchr(data_, '\\'); // builtin function
-#else
             const char* slash = ::strrchr(data_, '/'); // builtin function
-#endif
             if (slash) {
                 data_ = slash + 1;
-                size_ -= static_cast<int32_t>(data_ - arr);
+                size_ -= static_cast<int32_t>(data_ - _file_name);
             }
         }
 
-        explicit FilePath(const char* file_name)
-            : data_(file_name)
+        explicit file_path(const char* _file_name)
+            : data_(_file_name)
         {
-#ifdef M_OS_WIN32
-            const char* slash = ::strrchr(file_name, '\\');
-#else
-            const char* slash = ::strrchr(file_name, '/');
-#endif
+            const char* slash = ::strrchr(_file_name, '/');
             if (slash != nullptr) {
                 data_ = slash + 1;
             }
@@ -91,96 +84,95 @@ public:
         }
 
         inline auto data() const -> const char* { return data_; }
-        inline auto size() const -> int32_t { return size_; }
+        inline auto size() const -> size_t { return size_; }
     };
 
 private:
-    class HARE_API Data {
-        friend class Logger;
-
-    private:
-        Timestamp time_ {};
-        log::Stream stream_ {};
-        log::Level level_ {};
+    class HARE_API data {
+        timestamp time_ {};
+        log::stream stream_ {};
+        log::LEVEL level_ {};
         int line_ {};
-        FilePath base_name_;
+        file_path base_name_;
 
     public:
-        Data(log::Level level, int old_errno, const FilePath& file, int line);
+        data(log::LEVEL _level, int _old_errno, const file_path& _file, int _line);
 
-        void formatTime();
+        void format_time();
         void finish();
+
+        friend class logger;
     };
-    struct Data d_;
+    struct data data_;
 
 public:
-    Logger(FilePath file, int line);
-    Logger(FilePath file, int line, log::Level level);
-    Logger(FilePath file, int line, log::Level level, const char* func);
-    Logger(FilePath file, int line, bool to_abort);
-    ~Logger();
+    logger(file_path _file, int32_t _line);
+    logger(file_path _file, int32_t _line, log::LEVEL _level);
+    logger(file_path _file, int32_t _line, log::LEVEL _level, const char* _func);
+    logger(file_path _file, int32_t _line, bool _to_abort);
+    ~logger();
 
-    auto stream() -> log::Stream& { return d_.stream_; }
+    auto stream() -> log::stream& { return data_.stream_; }
 
     /**
      * @brief Set/Get the global level of log.
      *
      */
-    static void setLevel(log::Level level);
-    static auto level() -> log::Level;
+    static void set_level(log::LEVEL _level);
+    static auto level() -> log::LEVEL;
 
     /**
      * @brief Set the global output function of log.
      *
      */
-    static void setOutput(Output output);
+    static void set_output(output _output);
 
     /**
      * @brief Set the global flush function of log.
      *
      */
-    static void setFlush(Flush flush);
+    static void set_flush(flush _flush);
 
     /**
      * @brief Set the global time zone of log.
      *
      */
-    static void setTimeZone(const TimeZone& time_zone);
+    static void set_timezone(const timezone& _time_zone);
 };
 
 template <typename Ty>
-auto checkNotNull(Logger::FilePath file, int line, const char* names, Ty* ptr) -> Ty*
+auto check_not_null(logger::file_path _file, int _line, const char* _names, Ty* _ptr) -> Ty*
 {
-    if (ptr == nullptr) {
-        Logger(file, line, hare::log::LOG_FATAL).stream() << names;
+    if (_ptr == nullptr) {
+        logger(_file, _line, hare::log::LEVEL_FATAL).stream() << _names;
     }
-    return ptr;
+    return _ptr;
 }
 
 } // namespace hare
 
 #define LOG_TRACE() \
-    hare::Logger(__FILE__, __LINE__, hare::log::LOG_TRACE, __func__).stream()
+    hare::logger(__FILE__, __LINE__, hare::log::LEVEL_TRACE, __func__).stream()
 #define LOG_DEBUG() \
-    hare::Logger(__FILE__, __LINE__, hare::log::LOG_DEBUG, __func__).stream()
+    hare::logger(__FILE__, __LINE__, hare::log::LEVEL_DEBUG, __func__).stream()
 #define LOG_INFO() \
-    hare::Logger(__FILE__, __LINE__, hare::log::LOG_INFO, __func__).stream()
+    hare::logger(__FILE__, __LINE__, hare::log::LEVEL_INFO, __func__).stream()
 #define LOG_WARNING() \
-    hare::Logger(__FILE__, __LINE__, hare::log::LOG_WARNING, __func__).stream()
+    hare::logger(__FILE__, __LINE__, hare::log::LEVEL_WARNING, __func__).stream()
 #define LOG_ERROR() \
-    hare::Logger(__FILE__, __LINE__, hare::log::LOG_ERROR, __func__).stream()
+    hare::logger(__FILE__, __LINE__, hare::log::LEVEL_ERROR, __func__).stream()
 #define LOG_FATAL() \
-    hare::Logger(__FILE__, __LINE__, hare::log::LOG_FATAL, __func__).stream()
+    hare::logger(__FILE__, __LINE__, hare::log::LEVEL_FATAL, __func__).stream()
 #define SYS_ERROR() \
-    hare::Logger(__FILE__, __LINE__, false).stream()
+    hare::logger(__FILE__, __LINE__, false).stream()
 #define SYS_FATAL() \
-    hare::Logger(__FILE__, __LINE__, true).stream()
+    hare::logger(__FILE__, __LINE__, true).stream()
 
 #ifdef HARE_DEBUG
 #define HARE_ASSERT(val, what)                                     \
     do {                                                           \
         if (!(val)) {                                              \
-            hare::Logger(__FILE__, __LINE__, true).stream()        \
+            hare::logger(__FILE__, __LINE__, true).stream()        \
                 << "Condition[" << #val << "] failed. " << (what); \
         }                                                          \
     } while (0)
@@ -191,9 +183,9 @@ auto checkNotNull(Logger::FilePath file, int line, const char* names, Ty* ptr) -
 /**
  * @brief Check that the input is non NULL.
  *   This very useful in constructor initializer lists.
- * 
+ *
  */
 #define HARE_CHECK_NULL(val) \
-    ::hare::checkNotNull(__FILE__, __LINE__, "\'" #val "\' must be non NULL", (val))
+    ::hare::check_not_null(__FILE__, __LINE__, "\'" #val "\' must be non NULL", (val))
 
 #endif // !_HARE_BASE_LOGGING_H_

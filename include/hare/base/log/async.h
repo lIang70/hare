@@ -12,10 +12,9 @@
 #ifndef _HARE_BASE_LOG_ASYNC_H_
 #define _HARE_BASE_LOG_ASYNC_H_
 
-#include <hare/base/log/stream.h>
+#include <hare/base/util/buffer.h>
 #include <hare/base/util/count_down_latch.h>
 
-#include <atomic>
 #include <string>
 #include <thread>
 #include <vector>
@@ -23,34 +22,34 @@
 namespace hare {
 namespace log {
 
-    class HARE_API Async {
+    class HARE_API async {
     public:
         // Flush every second.
         static const int32_t META_FLUSH_INTERVAL = 1;
         static const int64_t BLOCK_NUMBER = 16;
 
     private:
-        using Block = detail::FixedBuffer<LARGE_BUFFER>;
-        using Blocks = std::vector<Block::Ptr>;
+        using fixed_block = util::fixed_buffer<HARE_LARGE_BUFFER>;
+        using blocks = std::vector<fixed_block::ptr>;
 
-        std::shared_ptr<std::thread> thread_;
-        util::CountDownLatch latch_ { 1 };
+        ptr<std::thread> thread_;
+        util::count_down_latch latch_ { 1 };
         std::mutex mutex_ {};
         std::condition_variable cv_ {};
-        Block::Ptr current_block_ { new Block };
-        Block::Ptr next_block_ { new Block };
-        Blocks blocks_ {};
+        fixed_block::ptr current_block_ { new fixed_block };
+        fixed_block::ptr next_block_ { new fixed_block };
+        blocks blocks_ {};
 
-        std::atomic<bool> running_ { false };
+        bool running_ { false };
         std::string name_ {};
-        int64_t roll_size_ { LARGE_BUFFER * BLOCK_NUMBER };
+        int64_t roll_size_ { static_cast<int64_t>(HARE_LARGE_BUFFER) * BLOCK_NUMBER };
         int32_t flush_interval_ { META_FLUSH_INTERVAL };
 
     public:
-        using Ptr = std::shared_ptr<Async>;
+        using ptr = ptr<async>;
 
-        Async(int64_t roll_size, std::string name, int32_t flush_interval = 3 * META_FLUSH_INTERVAL);
-        ~Async();
+        async(int64_t roll_size, std::string name, int32_t flush_interval = 3 * META_FLUSH_INTERVAL);
+        ~async();
 
         void append(const char* log_line, int32_t size);
         void start();

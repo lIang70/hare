@@ -4,22 +4,12 @@
 
 namespace hare {
 
-Exception::Exception(std::string what)
+exception::exception(std::string what)
     : what_(std::move(what))
-    , stack_(util::stackTrace(false))
+    , stack_(util::stack_trace(false))
 {
 }
 
-Exception::~Exception() = default;
-
-auto Exception::what() const noexcept -> const char*
-{
-    return what_.c_str();
-}
-
-auto Exception::stackTrace() const noexcept -> const char*
-{
-    return stack_.c_str();
-}
+exception::~exception() = default;
 
 } // namespace hare
