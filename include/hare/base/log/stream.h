@@ -8,7 +8,7 @@
  *
  * @copyright Copyright (c) 2023
  *
- */
+ **/
 
 #ifndef _HARE_BASE_LOG_STREAM_H_
 #define _HARE_BASE_LOG_STREAM_H_

@@ -19,12 +19,12 @@ namespace io {
         explicit reactor_poll(cycle* _cycle);
         ~reactor_poll() override;
 
-        auto poll(int32_t _timeout_microseconds, cycle::event_list& _active_events) -> timestamp override;
-        void event_update(ptr<event> _event) override;
+        auto poll(int32_t _timeout_microseconds) -> timestamp override;
+        void event_add(ptr<event> _event) override;
         void event_remove(ptr<event> _event) override;
 
     private:
-        void fill_active_events(int32_t num_of_events, cycle::event_list& active_events);
+        void fill_active_events(int32_t num_of_events, detail::event_list& active_events);
     };
 
 } // namespace io

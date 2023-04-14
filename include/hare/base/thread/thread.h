@@ -7,7 +7,7 @@
  * 
  * @copyright Copyright (c) 2023
  * 
- */
+ **/
 
 #ifndef _HARE_BASE_THREAD_H_
 #define _HARE_BASE_THREAD_H_
@@ -40,7 +40,7 @@ public:
     /**
      * @brief Get the number of threads created by class Thread.
      * 
-     */
+     **/
     static auto thread_created() -> size_t;
 
     /**
@@ -48,7 +48,7 @@ public:
      * 
      * @param _task Task of the thread.
      * @param _name name of thread. (Default: "HTHREAD-${thread_cnt}").
-     */
+     **/
     explicit thread(task _task, std::string _name = std::string());
     ~thread();
 

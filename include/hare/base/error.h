@@ -7,7 +7,7 @@
  * 
  * @copyright Copyright (c) 2023
  * 
- */
+ **/
 
 #ifndef _HARE_BASE_ERROR_H_
 #define _HARE_BASE_ERROR_H_
@@ -75,19 +75,19 @@ public:
     /**
      * @brief Get the error code of hare.
      * 
-     */
+     **/
     inline auto code() const -> int32_t { return error_code_; }
     
     /**
      * @brief Get the system code 'errno'.
      * 
-     */
+     **/
     inline auto system_code() const -> int32_t { return system_code_; }
 
     /**
      * @brief Get the description of the error code.
      * 
-     */
+     **/
     auto description() const -> const char*;
 
     inline explicit operator bool() const { return error_code_ == HARE_ERROR_SUCCESS; }

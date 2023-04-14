@@ -1,118 +1,94 @@
 #ifndef _HARE_NET_CORE_EVENT_H_
 #define _HARE_NET_CORE_EVENT_H_
 
+#include <cstdint>
 #include <hare/base/time/timestamp.h>
 #include <hare/base/util/non_copyable.h>
 
-#include <atomic>
-#include <memory>
+#include <functional>
 
 namespace hare {
+namespace io {
 
-    using EVENT = enum {
-        /**
-         * @brief The default flag.
-         */
+    using EVENT = enum Event : uint8_t {
         EVENT_DEFAULT = 0x00,
         /**
-         * @brief Wait for a socket or FD to become readable.
-         */
-        EVENT_READ = 0x01,
+        * @brief Indicates that a timeout has occurred.
+        **/
+        EVENT_TIMEOUT = 0x01,
         /**
-         * @brief Wait for a socket or FD to become writeable.
-         */
-        EVENT_WRITE = 0x02,
+        * @brief Wait for a socket or FD to become readable.
+        **/
+        EVENT_READ = 0x02,
         /**
-         * @brief Select edge-triggered behavior, if supported by the backend.
-         */
-        EVENT_ET = 0x04,
+        * @brief Wait for a socket or FD to become writeable.
+        **/
+        EVENT_WRITE = 0x04,
         /**
-         * @brief Detects connection close events. You can use this to detect when a
-         *   connection has been closed, without having to read all the pending data
-         *   from a connection.
-         */
-        EVENT_CONNECTED = 0x08,
-        EVENT_CLOSED = 0x10,
-        EVENT_ERROR = 0x20
+        * @brief Persistent event: won't get removed automatically when activated.
+        *
+        * When a persistent event with a timeout becomes activated, its timeout
+        *   is reset to 0.
+        **/
+        EVENT_PERSIST	= 0x08,
+        /**
+        * @brief Select edge-triggered behavior, if supported by the backend.
+        **/
+        EVENT_ET = 0x10,
+        /**
+        * @brief Detects connection close events. You can use this to detect when a
+        *   connection has been closed, without having to read all the pending data
+        *   from a connection.
+        *
+        * Not all backends support EV_CLOSED.
+        **/
+        EVENT_CLOSED = 0x20,
     };
-
-namespace io {
 
     class cycle;
     class HARE_API event : public non_copyable
                          , public std::enable_shared_from_this<event> {
     public:
-        enum Status : int32_t {
-            NEW = -1,
-            ADD = 1,
-            DELETE = 2,
-            STATUS_CNT
-        };
+        using ptr = ptr<event>;
+        using callback = std::function<void(const event::ptr&, uint8_t events, const timestamp& receive_time)>;
+        using id = int64_t;
 
     private:
         util_socket_t fd_ { -1 };
-        int32_t index_ { Status::NEW };
-        int32_t event_flags_ { EVENT_DEFAULT };
-        int32_t revent_flags_ { EVENT_DEFAULT };
-        wptr<cycle> owner_cycle_ { };
+        uint8_t event_flag_ { EVENT_DEFAULT };
+        callback callback_ {};
+        int64_t timeval_ { 0 };
 
-        std::atomic<bool> event_handle_ { false };
-        std::atomic<bool> added_to_cycle_ { false };
-        std::atomic<bool> tied_ { false };
+        wptr<cycle> cycle_ {};
+        id id_ { -1 };
+        int64_t timeout_ { 0 };
+
+        bool tied_ { false };
         wptr<void> tie_object_ {};
 
     public:
-        using ptr = ptr<event>;
-
-        event(cycle* cycle, util_socket_t target_fd);
+        event(util_socket_t _fd, callback _cb, uint8_t _flag, int64_t _timeval);
         virtual ~event();
 
         inline auto fd() const -> util_socket_t { return fd_; }
-        inline auto owner_cycle() const -> hare::ptr<cycle> { return owner_cycle_.lock(); }
-        inline void set_cycle(const hare::ptr<cycle>& _cycle) { owner_cycle_ = _cycle; }
-        inline auto none_event() const -> bool { return event_flags_ == EVENT_DEFAULT; };
+        inline auto owner_cycle() const -> hare::ptr<cycle> { return cycle_.lock(); }
+        inline auto timeval() const -> uint64_t { return timeval_; }
 
-        inline auto flags() const -> int32_t { return event_flags_; }
-        inline void set_flags(int32_t flags)
-        {
-            event_flags_ |= flags;
-            active();
-        }
-        inline void clear_flags(int32_t flags)
-        {
-            event_flags_ &= ~flags;
-            active();
-        }
-        inline auto check_flag(int32_t flags) const -> bool
-        {
-            return (event_flags_ & flags) != 0;
-        }
-        inline void clear_all()
-        {
-            event_flags_ = EVENT_DEFAULT;
-            active();
-        }
+        void del();
 
-        auto flags_string() const -> std::string;
-        auto rflags_string() const -> std::string;
-
-        inline void set_rflags(int32_t flags) { revent_flags_ = flags; }
-
-        void handle_event(timestamp& receive_time);
+        auto event_string() const -> std::string;
 
         /**
-         * @brief Tie this channel to the owner object managed by shared_ptr,
-         *   prevent the owner object being destroyed in handleEvent.
+         * @brief Tie this event to the owner object managed by shared_ptr,
+         *   prevent the owner object being destroyed in handle_event.
          */
-        void tie(const hare::ptr<void>& object);
+        void tie(const hare::ptr<void>& _obj);
         auto tied_object() -> wptr<void> { return tie_object_; }
 
-        void deactive();
+    private:
+        void handle_event(uint8_t _flag, timestamp& _receive_time);
 
-    protected:
-        void active();
-
-        virtual void event_callback(int32_t events, const timestamp& receive_time) = 0;
+        friend class cycle;
     };
 
 } // namespace io

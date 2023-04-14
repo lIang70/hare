@@ -12,11 +12,8 @@ namespace io {
 
     class reactor;
     class event;
-    class HARE_API cycle : public non_copyable, std::enable_shared_from_this<cycle> {
-    public:
-        using event_list = std::vector<ptr<event>>;
-
-    private:
+    class HARE_API cycle : public non_copyable
+                         , std::enable_shared_from_this<cycle> {
         timestamp reactor_time_ {};
         thread::id tid_ { 0 };
         bool is_running_ { false };
@@ -26,8 +23,6 @@ namespace io {
 
         ptr<event> notify_event_ { nullptr };
         ptr<reactor> reactor_ { nullptr };
-
-        event_list active_events_ {};
         ptr<event> current_active_event_ { nullptr };
 
         mutable std::mutex functions_mutex_ {};
@@ -51,7 +46,7 @@ namespace io {
         /**
          * @brief Time when reactor returns, usually means data arrival.
          *
-         */
+         **/
         inline auto reactor_return_time() const -> timestamp { return reactor_time_; }
         inline auto event_handling() const -> bool { return event_handling_; }
 
@@ -76,14 +71,14 @@ namespace io {
         /**
          * @brief loops forever.
          *   Must be called in the same thread as creation of the object.
-         */
+         **/
         void loop();
 
         /**
          * @brief Quits cycle.
          *   This is not 100% thread safe, if you call through a raw pointer,
          *   better to call through std::shared_ptr<Cycle> for 100% safety.
-         */
+         **/
         void exit();
 
         /**
@@ -91,28 +86,33 @@ namespace io {
          *   It wakes up the cycle, and run the cb.
          *   If in the same cycle thread, cb is run within the function.
          *   Safe to call from other threads.
-         */
+         **/
         void run_in_cycle(thread::task _task);
 
         /**
          * @brief Queues callback in the cycle thread.
          *   Runs after finish pooling.
          *   Safe to call from other threads.
-         */
+         **/
         void queue_in_cycle(thread::task _task);
 
         auto queue_size() const -> std::size_t;
 
-        void event_update(ptr<event> _event);
+        void event_add(ptr<event> _event);
         void event_remove(ptr<event> _event);
-        auto event_check(ptr<event> _event) -> bool;
+
+        /**
+         * @brief Detects whether the event is in the reactor.
+         *   Must be called in the cycle thread.
+         **/
+        auto event_check(const ptr<event>& _event) -> bool;
 
     private:
         void notify();
         void abort_not_cycle_thread();
-        void do_pending_functions();
 
-        void print_active_events() const;
+        void notify_timer();
+        void do_pending_functions();
     };
 
 } // namespace io

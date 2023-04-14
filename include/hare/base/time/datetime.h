@@ -7,7 +7,7 @@
  * 
  * @copyright Copyright (c) 2023
  * 
- */
+ **/
 
 #ifndef _HARE_BASE_TIME_DATETIME_H_
 #define _HARE_BASE_TIME_DATETIME_H_
@@ -22,8 +22,10 @@
 namespace hare {
 namespace time {
 
-    // Local time in unspecified timezone.
-    // A minute is always 60 seconds, no leap seconds.
+    /**
+     * Local time in unspecified timezone.
+     * A minute is always 60 seconds, no leap seconds.
+     **/
     class HARE_API date_time {
         int32_t year_ { HARE_START_YEAR }; // [1900, 2500]
         int32_t month_ { 1 }; // [1, 12]

@@ -35,15 +35,6 @@ namespace io {
         }
     }
 
-    auto reactor::event_check(ptr<event> _event) const -> bool
-    {
-        if (_event) {
-            return false;
-        }
-        auto iter = events_.find(_event->fd());
-        return iter != events_.end() && iter->second == _event;
-    }
-
     reactor::reactor(cycle* _cycle)
         : owner_cycle_(_cycle)
     {

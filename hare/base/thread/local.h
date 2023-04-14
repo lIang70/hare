@@ -15,7 +15,6 @@ namespace current_thread {
         thread::id tid { 0UL };
         std::string tid_str {};
         const char* tname { nullptr };
-        io::cycle* cycle { nullptr };
     };
 
     extern thread_local struct local t_data;

@@ -8,7 +8,7 @@
  *
  * @copyright Copyright (c) 2023
  *
- */
+ **/
 
 #ifndef _HARE_BASE_LOGGING_H_
 #define _HARE_BASE_LOGGING_H_
@@ -26,7 +26,7 @@ namespace log {
     /**
      * @brief The enumeration of log level.
      *
-     */
+     **/
     using LEVEL = enum : int8_t {
         LEVEL_TRACE,
         LEVEL_DEBUG,
@@ -42,15 +42,14 @@ namespace log {
      *
      * @param errorno The error number.
      * @return const char* The infomation of error.
-     */
+     **/
     HARE_API auto errnostr(int errorno) -> const char*;
 
 } // namespace log
 
 /**
  * @brief The interface class of log.
- *
- */
+ **/
 class HARE_API logger {
 public:
     using output = std::function<void(const char*, size_t)>;
@@ -117,26 +116,26 @@ public:
     /**
      * @brief Set/Get the global level of log.
      *
-     */
+     **/
     static void set_level(log::LEVEL _level);
     static auto level() -> log::LEVEL;
 
     /**
      * @brief Set the global output function of log.
      *
-     */
+     **/
     static void set_output(output _output);
 
     /**
      * @brief Set the global flush function of log.
      *
-     */
+     **/
     static void set_flush(flush _flush);
 
     /**
      * @brief Set the global time zone of log.
      *
-     */
+     **/
     static void set_timezone(const timezone& _time_zone);
 };
 
@@ -183,8 +182,7 @@ auto check_not_null(logger::file_path _file, int _line, const char* _names, Ty* 
 /**
  * @brief Check that the input is non NULL.
  *   This very useful in constructor initializer lists.
- *
- */
+ **/
 #define HARE_CHECK_NULL(val) \
     ::hare::check_not_null(__FILE__, __LINE__, "\'" #val "\' must be non NULL", (val))
 

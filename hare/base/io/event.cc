@@ -1,102 +1,94 @@
-#include <hare/net/core/event.h>
+#include <hare/base/io/event.h>
 
-#include "hare/net/core/cycle.h"
+#include <hare/base/io/cycle.h>
 #include <hare/base/logging.h>
 
 #include <sstream>
 
+#define CHECK_EVENT(event, val) (event & val)
+#define SET_EVENT(event, val) (event |= val)
+#define CLEAR_EVENT(event, val) (event &= ~val)
+
 namespace hare {
-namespace core {
+namespace io {
 
     namespace detail {
-        auto flagsToString(util_socket_t fd, int32_t event_flags_) -> std::string
+
+        auto to_string(util_socket_t fd, uint8_t flag) -> std::string
         {
-            std::ostringstream oss {};
+            std::stringstream oss {};
             oss << fd << ": ";
-            if (event_flags_ == EVENT_DEFAULT) {
+            if (flag == EVENT_DEFAULT) {
                 oss << "DEFAULT";
-            } else {
-                if ((event_flags_ & EVENT_READ) != 0) {
-                    oss << "READ ";
-                }
-                if ((event_flags_ & EVENT_WRITE) != 0) {
-                    oss << "WRITE ";
-                }
-                if ((event_flags_ & EVENT_ET) != 0) {
-                    oss << "ET ";
-                }
-                if ((event_flags_ & EVENT_CLOSED) != 0) {
-                    oss << "CLOSED ";
-                }
-                if ((event_flags_ & EVENT_ERROR) != 0) {
-                    oss << "ERROR ";
-                }
+                return oss.str();
+            }
+            if ((flag & EVENT_TIMEOUT) != 0) {
+                oss << "TIMEOUT ";
+            }
+            if ((flag & EVENT_READ) != 0) {
+                oss << "READ ";
+            }
+            if ((flag & EVENT_WRITE) != 0) {
+                oss << "WRITE ";
+            }
+            if ((flag & EVENT_PERSIST) != 0) {
+                oss << "PERSIST ";
+            }
+            if ((flag & EVENT_ET) != 0) {
+                oss << "ET ";
+            }
+            if ((flag & EVENT_CLOSED) != 0) {
+                oss << "CLOSED ";
             }
             return oss.str();
         }
     } // namespace detail
 
-    Event::Event(Cycle* cycle, util_socket_t target_fd)
-        : owner_cycle_(cycle)
-        , fd_(target_fd)
+    event::event(util_socket_t _fd, callback _cb, uint8_t _flag, int64_t _timeval)
+        : fd_(_fd)
+        , event_flag_(_flag)
+        , callback_(std::move(_cb))
+        , timeval_(_timeval)
     {
-    }
-
-    Event::~Event()
-    {
-        HARE_ASSERT(!event_handle_, "When the event is destroyed, the event is still handling.");
-        HARE_ASSERT(!added_to_cycle_, "When the event is destroyed, the event is still in the cycle.");
-        if (owner_cycle_ != nullptr) {
-            HARE_ASSERT(!owner_cycle_->checkEvent(this), "When the event is destroyed, the event is still held by the cycle.");
+        if (CHECK_EVENT(event_flag_, EVENT_PERSIST) != 0) {
+            CLEAR_EVENT(event_flag_, EVENT_TIMEOUT);
+            timeval_ = 0;
+            SYS_ERROR() << "Cannot be set EVENT_PERSIST and EVENT_TIMEOUT at the same time.";
         }
     }
 
-    auto Event::flagsToString() const -> std::string
+    event::~event()
     {
-        return detail::flagsToString(fd_, event_flags_);
+        HARE_ASSERT(!cycle_.expired(), "When the event is destroyed, the event is still held by cycle.");
     }
 
-    auto Event::rflagsToString() const -> std::string
+    void event::del()
     {
-        return detail::flagsToString(fd_, revent_flags_);
+        return owner_cycle()->event_remove(shared_from_this());
     }
 
-    void Event::handleEvent(timestamp& receive_time)
+    auto event::event_string() const -> std::string
     {
-        std::shared_ptr<void> object;
+        return detail::to_string(fd_, event_flag_);
+    }
+
+    void event::tie(const hare::ptr<void>& _obj)
+    {
+        tie_object_ = _obj;
+        tied_ = true;
+    }
+
+    void event::handle_event(uint8_t _flag, timestamp& _receive_time)
+    {
+        hare::ptr<void> object;
         if (tied_) {
             object = tie_object_.lock();
             if (!object) {
                 return;
             }
         }
-        event_handle_.exchange(true);
-        eventCallBack(revent_flags_, receive_time);
-        event_handle_.exchange(false);
+        callback_(shared_from_this(), _flag, _receive_time);
     }
 
-    void Event::tie(const std::shared_ptr<void>& object)
-    {
-        tie_object_ = object;
-        tied_.exchange(true);
-    }
-
-    void Event::deactive()
-    {
-        HARE_ASSERT(isNoneEvent(), "Event is not correct.");
-        if (owner_cycle_ != nullptr) {
-            owner_cycle_->removeEvent(this);
-            added_to_cycle_.exchange(false);
-        }
-    }
-
-    void Event::active()
-    {
-        if (owner_cycle_ != nullptr) {
-            added_to_cycle_.exchange(true);
-            owner_cycle_->updateEvent(this);
-        }
-    }
-
-} // namespace core
+} // namespace io
 } // namespace hare

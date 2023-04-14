@@ -7,7 +7,7 @@
  * 
  * @copyright Copyright (c) 2023
  * 
- */
+ **/
 
 #ifndef _HARE_BASE_SYSTEM_CHECK_H_
 #define _HARE_BASE_SYSTEM_CHECK_H_
@@ -19,7 +19,7 @@
  *   WINRT    - WinRT (Windows Runtime)
  *   LINUX    - Linux
  *   UNIX     - Any UNIX BSD/SYSV system
- */
+ **/
 
 // Windows
 #if !defined(SAG_COM) && (!defined(WINAPI_FAMILY) || WINAPI_FAMILY == WINAPI_FAMILY_DESKTOP_APP) && (defined(WIN64) || defined(_WIN64) || defined(__WIN64__))

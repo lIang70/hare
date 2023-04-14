@@ -7,7 +7,7 @@
  * 
  * @copyright Copyright (c) 2023
  * 
- */
+ **/
 
 #ifndef _HARE_BASE_COUNT_DOWN_LATCH_H_
 #define _HARE_BASE_COUNT_DOWN_LATCH_H_

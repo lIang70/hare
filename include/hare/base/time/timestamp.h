@@ -7,7 +7,7 @@
  * 
  * @copyright Copyright (c) 2023
  * 
- */ 
+ **/ 
 
 #ifndef _HARE_BASE_TIMESTAMP_H_
 #define _HARE_BASE_TIMESTAMP_H_

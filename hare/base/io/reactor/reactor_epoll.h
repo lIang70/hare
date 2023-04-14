@@ -20,12 +20,12 @@ namespace io {
         explicit reactor_epoll(cycle* cycle);
         ~reactor_epoll() override;
 
-        auto poll(int32_t _timeout_microseconds, cycle::event_list& _active_events) -> timestamp override;
-        void event_update(ptr<event> _event) override;
+        auto poll(int32_t _timeout_microseconds) -> timestamp override;
+        void event_add(ptr<event> _event) override;
         void event_remove(ptr<event> _event) override;
 
     private:
-        void fillActiveEvents(int32_t _num_of_events, cycle::event_list& _active_events);
+        void fillActiveEvents(int32_t _num_of_events, detail::event_list& _active_events);
         void update(int32_t _operation, ptr<event> _event) const;
     };
 
