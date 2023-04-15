@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <csignal>
+#include <memory>
 #include <mutex>
 
 #ifdef HARE__HAVE_EVENTFD
@@ -50,7 +51,7 @@ namespace io {
 
             void send_notify()
             {
-                auto one = static_cast<uint64_t>(1);
+                uint64_t one = 1;
                 auto write_n = ::send(fd(), &one, sizeof(one), 0);
                 if (write_n != sizeof(one)) {
                     SYS_ERROR() << "Write[" << write_n << " B] instead of " << sizeof(one);
@@ -63,7 +64,7 @@ namespace io {
                 HARE_ASSERT(_event == this->shared_from_this(), "error occurs in event_notify.");
 
                 if (_events == EVENT_READ) {
-                    auto one = static_cast<uint64_t>(0);
+                    uint64_t one = 0;
                     auto read_n = ::recv(fd(), &one, sizeof(one), 0);
                     if (read_n != sizeof(one) && one != static_cast<uint64_t>(1)) {
                         SYS_ERROR() << "Read notify[" << read_n << " B] instead of " << sizeof(one);
@@ -290,7 +291,7 @@ namespace io {
 
     void cycle::notify()
     {
-        if (auto* notify = static_cast<detail::event_notify*>(notify_event_.get())) {
+        if (auto notify = std::static_pointer_cast<detail::event_notify>(notify_event_)) {
             notify->send_notify();
         } else {
             SYS_FATAL() << "Cannot get to event_notify.";
