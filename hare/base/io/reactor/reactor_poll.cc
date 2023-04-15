@@ -110,8 +110,8 @@ namespace io {
         
         if (_event->event_id() == -1) {
             // a new one, add to pollfd_list
-            HARE_ASSERT(tstorage.inverse_map.find(target_fd) == tstorage.inverse_map.end(), "Error in event.");
-            HARE_ASSERT(inverse_iter == inverse_map_.end(), "The fd already inserted into poll.");
+            HARE_ASSERT(tstorage.inverse_map.find(target_fd) == tstorage.inverse_map.end(), "error in event.");
+            HARE_ASSERT(inverse_iter == inverse_map_.end(), "the fd already inserted into poll.");
             struct pollfd poll_fd {};
             set_zero(&poll_fd, sizeof(poll_fd));
             poll_fd.fd = target_fd;
@@ -125,13 +125,13 @@ namespace io {
 
         // update existing one
         auto event_id = _event->event_id();
-        HARE_ASSERT(tstorage.events.find(event_id) != tstorage.events.end(), "Cannot find event.");
-        HARE_ASSERT(tstorage.events[event_id] == _event, "Event is incorrect.");
-        HARE_ASSERT(inverse_iter != inverse_map_.end(), "The fd doesn't exist in poll.");
+        HARE_ASSERT(tstorage.events.find(event_id) != tstorage.events.end(), "cannot find event.");
+        HARE_ASSERT(tstorage.events[event_id] == _event, "event is incorrect.");
+        HARE_ASSERT(inverse_iter != inverse_map_.end(), "the fd doesn't exist in poll.");
         auto& index = inverse_iter->second;
-        HARE_ASSERT(0 <= index && index < static_cast<int32_t>(poll_fds_.size()), "Over size.");
+        HARE_ASSERT(0 <= index && index < static_cast<int32_t>(poll_fds_.size()), "oversize.");
         struct pollfd& pfd = poll_fds_[index];
-        HARE_ASSERT(pfd.fd == target_fd || pfd.fd == -target_fd - 1, "Error in event.");
+        HARE_ASSERT(pfd.fd == target_fd || pfd.fd == -target_fd - 1, "error in event.");
         pfd.fd = target_fd;
         pfd.events = detail::decode_poll(_event->events());
         pfd.revents = 0;
@@ -143,19 +143,19 @@ namespace io {
         const auto target_fd = _event->fd();
 
         auto inverse_iter = inverse_map_.find(target_fd);
-        HARE_ASSERT(inverse_iter != inverse_map_.end(), "The fd doesn't exist in poll.");
+        HARE_ASSERT(inverse_iter != inverse_map_.end(), "the fd doesn't exist in poll.");
         auto& index = inverse_iter->second;
         LOG_TRACE() << "poll-remove: fd=" << target_fd;
-        HARE_ASSERT(0 <= index && index < static_cast<int32_t>(poll_fds_.size()), "Over size.");
+        HARE_ASSERT(0 <= index && index < static_cast<int32_t>(poll_fds_.size()), "oversize.");
         const auto& pfd = poll_fds_[index];
-        HARE_ASSERT(pfd.events == detail::decode_poll(_event->events()), "Error events.");
+        HARE_ASSERT(pfd.events == detail::decode_poll(_event->events()), "error events.");
         if (implicit_cast<size_t>(index) == poll_fds_.size() - 1) {
             poll_fds_.pop_back();
         } else {
             // modify the id of event.
             auto& swap_pfd = poll_fds_.back();
             auto swap_fd = swap_pfd.fd;
-            HARE_ASSERT(inverse_map_.find(swap_fd) != inverse_map_.end(), "The fd doesn't exist in poll.");
+            HARE_ASSERT(inverse_map_.find(swap_fd) != inverse_map_.end(), "the fd doesn't exist in poll.");
             inverse_map_[swap_fd] = index;
             std::iter_swap(poll_fds_.begin() + index, poll_fds_.end() - 1);
             poll_fds_.pop_back();
@@ -172,8 +172,8 @@ namespace io {
             if (pfd.revents > 0) {
                 --_num_of_events;
                 auto event_iter = tstorage.events.find(event_id);
-                HARE_ASSERT(event_iter != tstorage.events.end(), "The event does not exist in the reactor.");
-                HARE_ASSERT(event_iter->second->fd() == pfd.fd, "The event's fd does not match.");
+                HARE_ASSERT(event_iter != tstorage.events.end(), "the event does not exist in the reactor.");
+                HARE_ASSERT(event_iter->second->fd() == pfd.fd, "the event's fd does not match.");
                 tstorage.active_events.emplace_back(event_iter->second, detail::encode_poll(pfd.revents));
             }
         }

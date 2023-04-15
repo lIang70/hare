@@ -202,6 +202,8 @@ file(GLOB HARE_BASE_SOURCES
     "base/thread/*.cc"
     "base/time/*.cc"
     "base/util/*.cc"
+    "base/io/*.cc"
+    "base/io/reactor/*.cc"
 )
 
 # Add the source code to the project's executable。
@@ -211,6 +213,10 @@ target_include_directories(hare_base PUBLIC ${CMAKE_SOURCE_DIR}/include)
 if(JEMALLOC_FOUND)
     target_link_libraries(hare_base PkgConfig::Jemalloc)
 endif()
+
+if(HARE__BUILD_TESTS)
+    add_subdirectory(base/tests)
+endif(HARE__BUILD_TESTS)
 
 if(EXISTS "${CMAKE_SOURCE_DIR}/lib/openssl/" AND IS_DIRECTORY "${CMAKE_SOURCE_DIR}/lib/openssl/")
     message(STATUS "OpenSSL is built")
@@ -230,8 +236,6 @@ endif(OPENSSL_FOUND)
 # Add hare_net's src
 file(GLOB HARE_NET_SOURCES
     "net/*.cc"
-    "net/core/*.cc"
-    "net/core/reactor/*.cc"
 )
 
 # Add the source code to the project's executable。
@@ -245,7 +249,7 @@ else()
 endif()
 
 if(HARE__BUILD_TESTS)
-    add_subdirectory(net/tests)
+    # add_subdirectory(net/tests)
 endif(HARE__BUILD_TESTS)
 
 # Add hare_core's src

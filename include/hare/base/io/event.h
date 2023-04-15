@@ -1,7 +1,17 @@
-#ifndef _HARE_NET_CORE_EVENT_H_
-#define _HARE_NET_CORE_EVENT_H_
+/**
+ * @file hare/base/io/event.h
+ * @author l1ang70 (gog_017@outlook.com)
+ * @brief Describe the class associated with event.h
+ * @version 0.1-beta
+ * @date 2023-04-14
+ *
+ * @copyright Copyright (c) 2023
+ *
+ **/
 
-#include <cstdint>
+#ifndef _HARE_BASE_IO_EVENT_H_
+#define _HARE_BASE_IO_EVENT_H_
+
 #include <hare/base/time/timestamp.h>
 #include <hare/base/util/non_copyable.h>
 
@@ -100,4 +110,4 @@ namespace io {
 } // namespace io
 } // namespace hare
 
-#endif // !_HARE_NET_CORE_EVENT_H_
+#endif // !_HARE_BASE_IO_EVENT_H_

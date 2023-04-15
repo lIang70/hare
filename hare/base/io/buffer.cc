@@ -111,7 +111,7 @@ namespace io {
 
         void drain(size_t _size)
         {
-            HARE_ASSERT(_size <= readable_size(), "");
+            HARE_ASSERT(_size <= readable_size(), "oversize.");
             misalign_ += _size;
         }
 
@@ -159,7 +159,7 @@ namespace io {
         auto curr_block = get_block();
 
         if (!curr_block) {
-            SYS_ERROR() << "Cannot cast block.";
+            SYS_ERROR() << "cannot cast block.";
             return false;
         }
 
@@ -241,7 +241,7 @@ namespace io {
                 iter = block_chain_.begin();
             }
         }
-        HARE_ASSERT(read_iter_ != write_iter_, "Buffer over size.");
+        HARE_ASSERT(read_iter_ != write_iter_, "buffer over size.");
 #endif
         total_len_ += readable;
         return static_cast<int64_t>(readable);
@@ -294,7 +294,7 @@ namespace io {
             auto curr_block = *read_iter_;
             while (length != 0U && length > curr_block->readable_size()) {
                 if (clean) {
-                    HARE_ASSERT(read_iter_ != write_iter_, "Buffer over size.");
+                    HARE_ASSERT(read_iter_ != write_iter_, "buffer over size.");
                     block_chain_.erase(read_iter_++);
                 } else {
                     curr_block->clear();
@@ -307,7 +307,7 @@ namespace io {
             }
 
             if (length != 0U) {
-                HARE_ASSERT(length <= curr_block->readable_size(), "Buffer over size.");
+                HARE_ASSERT(length <= curr_block->readable_size(), "buffer over size.");
                 curr_block->drain(length);
             }
 
@@ -345,7 +345,7 @@ namespace io {
             _length -= copylen;
 
             if (clean) {
-                HARE_ASSERT(read_iter_ != write_iter_, "Buffer over size.");
+                HARE_ASSERT(read_iter_ != write_iter_, "buffer over size.");
                 block_chain_.erase(read_iter_++);
             } else {
                 ++read_iter_;
@@ -357,7 +357,7 @@ namespace io {
         }
 
         if (_length != 0U) {
-            HARE_ASSERT(_length <= curr_block->readable_size(), "Buffer over size.");
+            HARE_ASSERT(_length <= curr_block->readable_size(), "buffer over size.");
             memcpy(buffer, curr_block->readable(), _length);
             curr_block->drain(_length);
         }

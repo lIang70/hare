@@ -12,7 +12,7 @@ namespace time {
         // http://blog.csdn.net/Solstice
         auto get_julian_day_number(int32_t year, int32_t month, int32_t day) -> int32_t
         {
-            static_assert(sizeof(int) >= sizeof(int32_t), "Request 32 bit integer at least.");
+            static_assert(sizeof(int) >= sizeof(int32_t), "request 32 bit integer at least.");
             auto a = (14 - month) / 12;
             auto y = year + 4800 - a;
             auto m = month + 12 * a - 3;

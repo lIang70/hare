@@ -18,7 +18,7 @@ thread_pool::~thread_pool()
 
 void thread_pool::start(int32_t _num_of_thread)
 {
-    HARE_ASSERT(threads_.empty(), "Thread pool is not empty.");
+    HARE_ASSERT(threads_.empty(), "thread pool is not empty.");
     running_ = true;
     threads_.clear();
     for (auto i = 0; i < _num_of_thread; ++i) {
@@ -54,7 +54,7 @@ auto thread_pool::queue_size() const -> size_t
 void thread_pool::run(thread::task task)
 {
     if (threads_.empty()) {
-        SYS_ERROR() << "Cannot run task in the thread pool[" << this << "] because the number of threads is zero.";
+        SYS_ERROR() << "cannot run task in the thread pool[" << this << "] because the number of threads is zero.";
         task();
     } else {
         std::unique_lock<std::mutex> lock(mutex_);
@@ -64,7 +64,7 @@ void thread_pool::run(thread::task task)
         if (!running_) {
             return;
         }
-        HARE_ASSERT(max_queue_size_ == 0 || queue_.size() < max_queue_size_, "Thread pool is full or the max size of queue is zero.");
+        HARE_ASSERT(max_queue_size_ == 0 || queue_.size() < max_queue_size_, "thread pool is full or the max size of queue is zero.");
 
         queue_.push_back(std::move(task));
         cv_for_not_empty_.notify_one();

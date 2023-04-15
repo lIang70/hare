@@ -67,7 +67,7 @@ namespace io {
             event_list active_events {};
         };
 
-        static thread_local thread_storage tstorage {};
+        extern thread_local thread_storage tstorage;
 
         inline auto get_wait_time() -> int32_t
         {

@@ -14,6 +14,10 @@
 namespace hare {
 namespace io {
 
+    namespace detail {
+        thread_local thread_storage tstorage {};
+    } // namespace detail
+
     auto reactor::create_by_type(cycle::REACTOR_TYPE _type, cycle* _cycle) -> reactor*
     {
 

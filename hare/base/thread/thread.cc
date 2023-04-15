@@ -41,7 +41,7 @@ thread::~thread()
 
 void thread::start()
 {
-    HARE_ASSERT(!started_, "Thread is stared.");
+    HARE_ASSERT(!started_, "thread is stared.");
     started_ = true;
 
     try {
@@ -50,7 +50,7 @@ void thread::start()
         count_down_latch_->await();
     } catch (const std::exception& e) {
         current_thread::t_data.tname = "crashed";
-        fprintf(stderr, "Fail to create thread! Detail:\n %s", e.what());
+        fprintf(stderr, "fail to create thread! Detail:\n %s", e.what());
         std::abort();
     } catch (...) {
         fprintf(stderr, "unknown exception caught in thread %s\n", name_.c_str());
@@ -61,7 +61,7 @@ void thread::start()
 auto thread::join() -> bool
 {
     if (current_thread::tid() == tid()) {
-        SYS_ERROR() << "Cannot join in the same thread.";
+        SYS_ERROR() << "cannot join in the same thread.";
         return false;
     }
 

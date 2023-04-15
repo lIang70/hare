@@ -14,7 +14,7 @@ namespace log {
         , check_every_n_(_check_every_n)
         , mutex_(_thread_safe ? new std::mutex : nullptr)
     {
-        HARE_ASSERT(base_name_.find('/') != std::string::npos, "Cannot find \'/\'.");
+        HARE_ASSERT(base_name_.find('/') != std::string::npos, "cannot find \'/\'.");
         roll_file();
     }
 

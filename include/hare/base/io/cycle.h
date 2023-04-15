@@ -1,5 +1,16 @@
-#ifndef _HARE_NET_CORE_CYCLE_H_
-#define _HARE_NET_CORE_CYCLE_H_
+/**
+ * @file hare/base/io/cycle.h
+ * @author l1ang70 (gog_017@outlook.com)
+ * @brief Describe the class associated with cycle.h
+ * @version 0.1-beta
+ * @date 2023-04-14
+ *
+ * @copyright Copyright (c) 2023
+ *
+ **/
+
+#ifndef _HARE_BASE_IO_CYCLE_H_
+#define _HARE_BASE_IO_CYCLE_H_
 
 #include <hare/base/thread/thread.h>
 #include <hare/base/time/timestamp.h>
@@ -13,7 +24,7 @@ namespace io {
     class reactor;
     class event;
     class HARE_API cycle : public non_copyable
-                         , std::enable_shared_from_this<cycle> {
+                         , public std::enable_shared_from_this<cycle> {
         timestamp reactor_time_ {};
         thread::id tid_ { 0 };
         bool is_running_ { false };
@@ -49,6 +60,7 @@ namespace io {
          **/
         inline auto reactor_return_time() const -> timestamp { return reactor_time_; }
         inline auto event_handling() const -> bool { return event_handling_; }
+        inline auto is_running() const -> bool { return is_running_; }
 
 #ifdef HARE_DEBUG
 
@@ -118,4 +130,4 @@ namespace io {
 } // namespace io
 } // namespace hare
 
-#endif // !_HARE_NET_CORE_CYCLE_H_
+#endif // !_HARE_BASE_IO_CYCLE_H_

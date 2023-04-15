@@ -27,7 +27,7 @@ namespace io {
             case EPOLL_CTL_MOD:
                 return "MOD";
             default:
-                HARE_ASSERT(false, "ERROR op for EPOLL");
+                HARE_ASSERT(false, "error op for EPOLL");
                 return "Unknown Operation";
             }
         }
@@ -101,7 +101,7 @@ namespace io {
         , epoll_events_(detail::INIT_EVENTS_CNT)
     {
         if (epoll_fd_ < 0) {
-            SYS_FATAL() << "Cannot create a epoll fd.";
+            SYS_FATAL() << "cannot create a epoll fd.";
         }
     }
 
@@ -112,7 +112,7 @@ namespace io {
 
     auto reactor_epoll::poll(int32_t _timeout_microseconds) -> timestamp
     {
-        LOG_TRACE() << "Active events total count: " << detail::tstorage.active_events.size();
+        LOG_TRACE() << "active events total count: " << detail::tstorage.active_events.size();
 
         auto event_num = ::epoll_wait(epoll_fd_,
             &*epoll_events_.begin(), static_cast<int32_t>(epoll_events_.size()),
@@ -132,7 +132,7 @@ namespace io {
             // error happens, log uncommon ones
             if (saved_errno != EINTR) {
                 errno = saved_errno;
-                SYS_ERROR() << "There was an error in the reactor.";
+                SYS_ERROR() << "there was an error in the reactor.";
             }
         }
         return now;
@@ -145,16 +145,16 @@ namespace io {
         if (event_id == -1) {
             // a new one, add with EPOLL_CTL_ADD
             auto target_fd = _event->fd();
-            HARE_ASSERT(detail::tstorage.inverse_map.find(target_fd) == detail::tstorage.inverse_map.end(), "Event already inserted in epoll.");
+            HARE_ASSERT(detail::tstorage.inverse_map.find(target_fd) == detail::tstorage.inverse_map.end(), "event already inserted in epoll.");
             update(EPOLL_CTL_ADD, _event);
             return ;
         }
 
         // update existing one with EPOLL_CTL_MOD/DEL
         auto target_fd = _event->fd();
-        HARE_ASSERT(detail::tstorage.inverse_map.find(target_fd) != detail::tstorage.inverse_map.end(), "Cannot find event.");
-        HARE_ASSERT(detail::tstorage.events.find(event_id) != detail::tstorage.events.end(), "Cannot find event.");
-        HARE_ASSERT(detail::tstorage.events[event_id] == _event, "Event is incorrect.");
+        HARE_ASSERT(detail::tstorage.inverse_map.find(target_fd) != detail::tstorage.inverse_map.end(), "cannot find event.");
+        HARE_ASSERT(detail::tstorage.events.find(event_id) != detail::tstorage.events.end(), "cannot find event.");
+        HARE_ASSERT(detail::tstorage.events[event_id] == _event, "event is incorrect.");
         update(EPOLL_CTL_MOD, _event);
     }
 
@@ -163,23 +163,23 @@ namespace io {
         const auto target_fd = _event->fd();
         const auto event_id = _event->event_id();
         LOG_TRACE() << "epoll-remove: fd=" << target_fd << ", flags=" << _event->events();
-        HARE_ASSERT(detail::tstorage.inverse_map.find(target_fd) != detail::tstorage.inverse_map.end(), "Cannot find event.");
-        HARE_ASSERT(event_id == -1, "Incorrect status.");
+        HARE_ASSERT(detail::tstorage.inverse_map.find(target_fd) != detail::tstorage.inverse_map.end(), "cannot find event.");
+        HARE_ASSERT(event_id == -1, "incorrect status.");
 
         update(EPOLL_CTL_DEL, _event);
     }
 
     void reactor_epoll::fill_active_events(int32_t _num_of_events)
     {
-        HARE_ASSERT(implicit_cast<size_t>(_num_of_events) <= epoll_events_.size(), "Oversize.");
+        HARE_ASSERT(implicit_cast<size_t>(_num_of_events) <= epoll_events_.size(), "oversize.");
         for (auto i = 0; i < _num_of_events; ++i) {
             auto* event = static_cast<io::event*>(epoll_events_[i].data.ptr);
-            HARE_ASSERT(detail::tstorage.inverse_map.find(event->fd()) != detail::tstorage.inverse_map.end(), "Cannot find fd.");
+            HARE_ASSERT(detail::tstorage.inverse_map.find(event->fd()) != detail::tstorage.inverse_map.end(), "cannot find fd.");
             auto event_id = detail::tstorage.inverse_map[event->fd()];
-            HARE_ASSERT(detail::tstorage.events.find(event_id) != detail::tstorage.events.end(), "Cannot find event.");
+            HARE_ASSERT(detail::tstorage.events.find(event_id) != detail::tstorage.events.end(), "cannot find event.");
             auto revent = detail::tstorage.events[event_id];
 #ifdef HARE_DEBUG
-            HARE_ASSERT(event == revent.get(), "Event is incorrect.");
+            HARE_ASSERT(event == revent.get(), "event is incorrect.");
 #endif
             detail::tstorage.active_events.emplace_back(revent, detail::encode_epoll(epoll_events_[i].events));
         }

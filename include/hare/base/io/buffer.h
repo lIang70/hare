@@ -1,3 +1,14 @@
+/**
+ * @file hare/base/io/buffer.h
+ * @author l1ang70 (gog_017@outlook.com)
+ * @brief Describe the class associated with buffer.h
+ * @version 0.1-beta
+ * @date 2023-04-16
+ *
+ * @copyright Copyright (c) 2023
+ *
+ **/
+
 #ifndef _HARE_BASE_IO_BUFFER_H_
 #define _HARE_BASE_IO_BUFFER_H_
 

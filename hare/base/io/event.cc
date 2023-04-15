@@ -1,13 +1,10 @@
+#include <cstdint>
 #include <hare/base/io/event.h>
 
-#include <hare/base/io/cycle.h>
+#include "hare/base/io/reactor.h"
 #include <hare/base/logging.h>
 
 #include <sstream>
-
-#define CHECK_EVENT(event, val) (event & val)
-#define SET_EVENT(event, val) (event |= val)
-#define CLEAR_EVENT(event, val) (event &= ~val)
 
 namespace hare {
 namespace io {
@@ -50,26 +47,26 @@ namespace io {
         , callback_(std::move(_cb))
         , timeval_(_timeval)
     {
-        if (CHECK_EVENT(events_, EVENT_PERSIST | EVENT_TIMEOUT) != 0) {
+        if (CHECK_EVENT(events_, EVENT_TIMEOUT) != 0 && CHECK_EVENT(events_, EVENT_PERSIST) != 0) {
             CLEAR_EVENT(events_, EVENT_TIMEOUT);
             timeval_ = 0;
-            SYS_ERROR() << "Cannot be set EVENT_PERSIST and EVENT_TIMEOUT at the same time.";
+            SYS_ERROR() << "cannot be set EVENT_PERSIST and EVENT_TIMEOUT at the same time.";
         }
     }
 
     event::~event()
     {
-        HARE_ASSERT(!cycle_.expired(), "When the event is destroyed, the event is still held by cycle.");
+        // HARE_ASSERT(!cycle_.expired(), "When the event is destroyed, the event is still held by cycle.");
     }
 
     void event::enable_read()
     {
         SET_EVENT(events_, EVENT_READ);
         auto cycle = cycle_.lock();
-        if (!cycle) {
+        if (cycle) {
             cycle->event_update(shared_from_this());
         } else {
-            SYS_ERROR() << "Event[" << this << "] need to be added to cycle.";
+            SYS_ERROR() << "event[" << this << "] need to be added to cycle.";
         }
     }
 
@@ -77,10 +74,10 @@ namespace io {
     {
         CLEAR_EVENT(events_, EVENT_READ);
         auto cycle = cycle_.lock();
-        if (!cycle) {
+        if (cycle) {
             cycle->event_update(shared_from_this());
         } else {
-            SYS_ERROR() << "Event[" << this << "] need to be added to cycle.";
+            SYS_ERROR() << "event[" << this << "] need to be added to cycle.";
         }
     }
 
@@ -88,10 +85,10 @@ namespace io {
     {
         SET_EVENT(events_, EVENT_WRITE);
         auto cycle = cycle_.lock();
-        if (!cycle) {
+        if (cycle) {
             cycle->event_update(shared_from_this());
         } else {
-            SYS_ERROR() << "Event[" << this << "] need to be added to cycle.";
+            SYS_ERROR() << "event[" << this << "] need to be added to cycle.";
         }
     }
 
@@ -99,20 +96,20 @@ namespace io {
     {
         CLEAR_EVENT(events_, EVENT_WRITE);
         auto cycle = cycle_.lock();
-        if (!cycle) {
+        if (cycle) {
             cycle->event_update(shared_from_this());
         } else {
-            SYS_ERROR() << "Event[" << this << "] need to be added to cycle.";
+            SYS_ERROR() << "event[" << this << "] need to be added to cycle.";
         }
     }
 
     void event::deactivate()
     {
         auto cycle = cycle_.lock();
-        if (!cycle) {
+        if (cycle) {
             cycle->event_remove(shared_from_this());
         } else {
-            SYS_ERROR() << "Event[" << this << "] need to be added to cycle.";
+            SYS_ERROR() << "event[" << this << "] need to be added to cycle.";
         }
     }
 

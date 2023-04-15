@@ -143,7 +143,7 @@ auto timezone::data::find_local_time(int64_t _utc_time) const -> const timezone:
     } else {
         transition sentry(_utc_time, 0, 0);
         auto trans_iter = std::upper_bound(transitions.begin(), transitions.end(), sentry, compare_utc_time());
-        HARE_ASSERT(trans_iter != transitions.begin(), "Fail to upper_bound.");
+        HARE_ASSERT(trans_iter != transitions.begin(), "fail to upper_bound.");
         if (trans_iter != transitions.end()) {
             --trans_iter;
             local = &local_times[trans_iter->local_time_idx];
@@ -167,7 +167,7 @@ auto timezone::data::find_local_time(const struct time::date_time& _tdt, bool _p
 
     transition sentry(0, local_time, 0);
     auto trans_iter = std::upper_bound(transitions.begin(), transitions.end(), sentry, compare_local_time());
-    HARE_ASSERT(trans_iter != transitions.begin(), "Fail to upper_bound.");
+    HARE_ASSERT(trans_iter != transitions.begin(), "fail to upper_bound.");
 
     if (trans_iter == transitions.end()) {
         // FIXME: use TZ-env

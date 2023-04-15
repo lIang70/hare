@@ -28,7 +28,7 @@ namespace io {
 #ifdef HARE__HAVE_EVENTFD
             auto evtfd = ::eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
             if (evtfd < 0) {
-                SYS_FATAL() << "Failed to get event fd in ::eventfd.";
+                SYS_FATAL() << "failed to get event fd in ::eventfd.";
             }
             return evtfd;
 #endif
@@ -39,7 +39,7 @@ namespace io {
             explicit event_notify()
                 : event(create_notify_fd(), 
                     std::bind(&event_notify::event_callback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3), 
-                    EVENT_READ | EVENT_WRITE | EVENT_PERSIST, 
+                    EVENT_READ | EVENT_PERSIST, 
                     0)
             {
             }
@@ -54,7 +54,7 @@ namespace io {
                 uint64_t one = 1;
                 auto write_n = ::send(fd(), &one, sizeof(one), 0);
                 if (write_n != sizeof(one)) {
-                    SYS_ERROR() << "Write[" << write_n << " B] instead of " << sizeof(one);
+                    SYS_ERROR() << "write[" << write_n << " B] instead of " << sizeof(one);
                 }
             }
 
@@ -63,14 +63,14 @@ namespace io {
                 H_UNUSED(_receive_time);
                 HARE_ASSERT(_event == this->shared_from_this(), "error occurs in event_notify.");
 
-                if (_events == EVENT_READ) {
+                if (CHECK_EVENT(_events, EVENT_READ) != 0) {
                     uint64_t one = 0;
                     auto read_n = ::recv(fd(), &one, sizeof(one), 0);
                     if (read_n != sizeof(one) && one != static_cast<uint64_t>(1)) {
-                        SYS_ERROR() << "Read notify[" << read_n << " B] instead of " << sizeof(one);
+                        SYS_ERROR() << "read notify[" << read_n << " B] instead of " << sizeof(one);
                     }
                 } else {
-                    SYS_FATAL() << "An error occurred while accepting notify in fd[" << fd() << "].";
+                    SYS_FATAL() << "an error occurred while accepting notify in fd[" << fd() << "].";
                 }
             }
         };
@@ -78,7 +78,7 @@ namespace io {
         struct ignore_sigpipe {
             ignore_sigpipe()
             {
-                LOG_TRACE() << "Ignore signal[SIGPIPE]";
+                LOG_TRACE() << "ignore signal[SIGPIPE]";
                 ::signal(SIGPIPE, SIG_IGN);
             }
         };
@@ -93,9 +93,9 @@ namespace io {
         // Ignore signal[pipe]
         static detail::ignore_sigpipe s_ignore_sigpipe {};
 
-        LOG_TRACE() << "Cycle[" << this << "] is being initialized in [" << tid_ << "]...";
+        LOG_TRACE() << "cycle[" << this << "] is being initialized in [" << tid_ << "]...";
         if (detail::tstorage.cycle != nullptr) {
-            SYS_FATAL() << "Another Cycle[" << detail::tstorage.cycle
+            SYS_FATAL() << "another cycle[" << detail::tstorage.cycle
                         << "] exists in this thread[" << current_thread::tid() << "].";
         } else {
             detail::tstorage.cycle = this;
@@ -120,12 +120,12 @@ namespace io {
 
     void cycle::loop()
     {
-        HARE_ASSERT(!is_running_, "Cycle has been running.");
+        HARE_ASSERT(!is_running_, "cycle has been running.");
         is_running_ = true;
         quit_ = false;
         event_update(notify_event_);
 
-        LOG_TRACE() << "Cycle[" << this << "] start running...";
+        LOG_TRACE() << "cycle[" << this << "] start running...";
 
         while (!quit_) {
             detail::tstorage.active_events.clear();
@@ -161,7 +161,7 @@ namespace io {
         notify_event_->deactivate();
         is_running_ = false;
 
-        LOG_TRACE() << "Cycle[" << this << "] stop running.";
+        LOG_TRACE() << "cycle[" << this << "] stop running.";
     }
 
     void cycle::exit()
@@ -179,7 +179,7 @@ namespace io {
 
     void cycle::run_in_cycle(thread::task _task)
     {
-        if (in_cycle_thread()) {
+        if (in_cycle_thread() || !is_running()) {
             _task();
         } else {
             queue_in_cycle(std::move(_task));
@@ -207,13 +207,13 @@ namespace io {
     void cycle::event_update(ptr<event> _event)
     {
         if (_event->owner_cycle() != shared_from_this() && _event->id_ != -1) {
-            SYS_ERROR() << "Cannot add event from other cycle[" << _event->owner_cycle().get() << "]";
+            SYS_ERROR() << "cannot add event from other cycle[" << _event->owner_cycle().get() << "]";
             return;
         }
 
         run_in_cycle(std::bind([=](const wptr<event>& wevent) {
             auto sevent = wevent.lock();
-            if (sevent) {
+            if (!sevent) {
                 return;
             }
 
@@ -225,7 +225,7 @@ namespace io {
                 sevent->cycle_ = this->shared_from_this();
                 sevent->id_ = detail::tstorage.event_id++;
 
-                HARE_ASSERT(detail::tstorage.events.find(sevent->id_) == detail::tstorage.events.end(), "An error occurred while creating the event id.");
+                HARE_ASSERT(detail::tstorage.events.find(sevent->id_) == detail::tstorage.events.end(), "an error occurred while creating the event id.");
                 detail::tstorage.events.insert(std::make_pair(sevent->id_, sevent));
 
                 if (sevent->fd() >= 0) {
@@ -247,14 +247,14 @@ namespace io {
         }
 
         if (_event->owner_cycle() != this->shared_from_this() || _event->id_ == -1) {
-            SYS_ERROR() << "The event is not part of the cycle[" << _event->owner_cycle().get() << "]";
+            SYS_ERROR() << "the event is not part of the cycle[" << _event->owner_cycle().get() << "]";
             return;
         }
 
         run_in_cycle(std::bind([=](const wptr<event>& wevent) {
             auto sevent = wevent.lock();
-            if (sevent) {
-                SYS_ERROR() << "Event is empty before it was released.";
+            if (!sevent) {
+                SYS_ERROR() << "event is empty before it was released.";
                 return;
             }
             auto event_id = sevent->id_;
@@ -262,9 +262,9 @@ namespace io {
 
             auto iter = detail::tstorage.events.find(event_id);
             if (iter == detail::tstorage.events.end()) {
-                SYS_ERROR() << "Cannot find event in cycle[" << this << "]";
+                SYS_ERROR() << "cannot find event in cycle[" << this << "]";
             } else {
-                HARE_ASSERT(iter->second == sevent, "Error event.");
+                HARE_ASSERT(iter->second == sevent, "error event.");
 
                 sevent->cycle_.reset();
                 sevent->id_ = -1;
@@ -294,13 +294,13 @@ namespace io {
         if (auto notify = std::static_pointer_cast<detail::event_notify>(notify_event_)) {
             notify->send_notify();
         } else {
-            SYS_FATAL() << "Cannot get to event_notify.";
+            SYS_FATAL() << "cannot get to event_notify.";
         }
     }
 
     void cycle::abort_not_cycle_thread()
     {
-        SYS_FATAL() << "Cycle[" << this
+        SYS_FATAL() << "cycle[" << this
                     << "] was created in thread[" << tid_
                     << "], current thread is: " << current_thread::tid();
     }
@@ -338,7 +338,7 @@ namespace io {
             if (iter != events.end()) {
                 auto& event = iter->second;
                 if (event) {
-                    LOG_TRACE() << "Event[" << iter->second.get() << "] trigged.";
+                    LOG_TRACE() << "event[" << iter->second.get() << "] trigged.";
                     event->handle_event(revent, now);
                     if ((event->events_ & EVENT_PERSIST) != 0) {
                         priority_event.emplace(top.id_, timestamp(reactor_time_.microseconds_since_epoch() + event->timeval()));
@@ -349,7 +349,7 @@ namespace io {
                     events.erase(iter);
                 }
             } else {
-                LOG_TRACE() << "Event[" << top.id_ << "] deleted.";
+                LOG_TRACE() << "event[" << top.id_ << "] deleted.";
             }
             priority_event.pop();
         }

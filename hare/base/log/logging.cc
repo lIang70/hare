@@ -44,7 +44,7 @@ namespace log {
         }
     };
 
-    auto errnostl(int _errorno) -> const char*
+    auto errnostr(int _errorno) -> const char*
     {
         ::strerror_r(_errorno, t_errno_buf.data(), t_errno_buf.size());
         return t_errno_buf.data();
@@ -99,7 +99,7 @@ logger::data::data(log::LEVEL _level, int _old_errno, const file_path& _file, in
     stream_ << "#(" << log::helper(current_thread::tid_str().c_str(), current_thread::tid_str().length()) << ") ";
 
     if (_old_errno != 0) {
-        stream_ << log::errnostl(_old_errno) << " (errno=" << _old_errno << ") ";
+        stream_ << log::errnostr(_old_errno) << " (errno=" << _old_errno << ") ";
     }
 }
 
@@ -157,7 +157,7 @@ logger::logger(file_path _file, int _line, log::LEVEL _level, const char* _func)
     : data_(_level, 0, _file, _line)
 {
     if (log::g_log_level <= log::LEVEL_DEBUG) {
-        data_.stream_ << _func << ' ';
+        data_.stream_ << "<" << _func << "> ";
     }
 }
 
