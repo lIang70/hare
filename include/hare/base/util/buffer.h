@@ -1,3 +1,14 @@
+/**
+ * @file hare/base/util/buffer.h
+ * @author l1ang70 (gog_017@outlook.com)
+ * @brief Describe the class associated with buffer.h
+ * @version 0.1-beta
+ * @date 2023-04-12
+ * 
+ * @copyright Copyright (c) 2023
+ * 
+ **/
+
 #ifndef _HARE_UTIL_BUFFER_H_
 #define _HARE_UTIL_BUFFER_H_
 
@@ -38,11 +49,12 @@ namespace util {
         }
 
         auto begin() -> char* { return data_.data(); }
-        auto data() const -> const char* { return data_.data(); }
+        auto begin() const -> const char* { return data_.data(); }
         auto length() const -> size_t { return static_cast<size_t>(cur_ - data_.data()); }
 
         // write to data_ directly
         auto current() -> char* { return cur_; }
+        auto current() const -> char* { return cur_; }
         auto avail() const -> size_t { return static_cast<size_t>(end() - cur_); }
         void add(size_t _length) { cur_ += _length; }
 
@@ -51,7 +63,7 @@ namespace util {
 
         void set_cookie(void (*_cookie)()) { cookie_ = _cookie; }
 
-        auto to_string() const -> std::string { return { data_.data(), length() }; }
+        auto to_string() const -> std::string { return { data_.begin(), length() }; }
 
     private:
         auto end() const -> const char* { return data_.data() + Size; }

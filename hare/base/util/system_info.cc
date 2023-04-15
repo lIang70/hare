@@ -4,6 +4,9 @@
 #include <hare/base/util/system_check.h>
 
 #include <array>
+#include <chrono>
+#include <cstring>
+#include <thread>
 
 #ifdef H_OS_LINUX
 #include <cxxabi.h>
@@ -13,21 +16,24 @@
 #endif
 
 #define NAME_LENGTH 256
+#define FILE_LENGTH 1024
+
+/// FIXME: the 200ms is a magic number, works well.
+#define SLEEP_TIME_SLICE_MICROS 200000
 
 namespace hare {
 namespace util {
 
     namespace detail {
 
-        class SystemInfo {
+        class system_info {
             std::array<char, NAME_LENGTH> host_name_ {};
             std::array<char, NAME_LENGTH> system_dir_ {};
 
         public:
-            SystemInfo()
+            system_info()
             {
 #ifdef H_OS_LINUX
-
                 // Get the host name
                 if (::gethostname(host_name_.data(), host_name_.size()) == 0) {
                     host_name_[host_name_.size() - 1] = '\0';
@@ -53,7 +59,86 @@ namespace util {
             friend auto util::hostname() -> std::string;
         };
 
-        static struct SystemInfo s_system_info;
+        static auto get_cpu_total_occupy() -> uint64_t
+        {
+#ifdef H_OS_LINUX
+            // different mode cpu occupy time
+            uint64_t user_time {};
+            uint64_t nice_time {};
+            uint64_t system_time {};
+            uint64_t idle_time {};
+            std::array<char, static_cast<size_t>(HARE_SMALL_FIXED_SIZE) * 2> name {};
+            std::array<char, FILE_LENGTH> buffer {};
+
+            auto* stat_fd = ::fopen("/proc/stat", "r");
+            if (stat_fd == nullptr) {
+                return 0;
+            }
+
+            ::fgets(buffer.data(), FILE_LENGTH, stat_fd);
+            ::sscanf(buffer.data(), "%s %ld %ld %ld %ld", name.data(), &user_time, &nice_time, &system_time, &idle_time);
+            ::fclose(stat_fd);
+
+            return (user_time + nice_time + system_time + idle_time);
+#endif
+            return 0;
+        }
+
+        static auto get_cpu_proc_occupy(int32_t _pid) -> uint64_t
+        {
+#ifdef H_OS_LINUX
+#define PROCESS_ITEM 14
+            // get specific pid cpu use time
+            uint32_t tmp_pid {};
+            uint64_t user_time {};
+            uint64_t system_time {};
+            uint64_t cutime {}; // all user time
+            uint64_t cstime {}; // all dead time
+            std::array<char, static_cast<size_t>(HARE_SMALL_FIXED_SIZE) * 2> name {};
+            std::array<char, FILE_LENGTH> buffer {};
+
+            ::sprintf(name.data(), "/proc/%d/stat", _pid);
+            auto* stat_fd = ::fopen(name.data(), "r");
+            if (stat_fd == nullptr) {
+                return 0;
+            }
+
+            ::fgets(buffer.data(), FILE_LENGTH, stat_fd);
+            ::sscanf(buffer.data(), "%u", &tmp_pid);
+            auto* item = buffer.data();
+            {
+                auto len = ::strlen(item);
+                auto count { 0 };
+
+                for (auto i = 0; i < len; i++) {
+                    if (' ' == *item) {
+                        count++;
+                        if (count == PROCESS_ITEM - 1) {
+                            item++;
+                            break;
+                        }
+                    }
+                    item++;
+                }
+            }
+
+            ::sscanf(item, "%ld %ld %ld %ld", &user_time, &system_time, &cutime, &cstime);
+            ::fclose(stat_fd);
+
+            return (user_time + system_time + cutime + cstime);
+#undef PROCESS_ITEM
+#endif
+            return 0;
+        }
+
+        static auto get_nprocs() -> int64_t
+        {
+#ifdef H_OS_LINUX
+            return ::sysconf(_SC_NPROCESSORS_ONLN);
+#endif
+        }
+
+        static struct system_info s_system_info;
 
     } // namespace detail
 
@@ -70,6 +155,30 @@ namespace util {
     auto hostname() -> std::string
     {
         return detail::s_system_info.host_name_.data();
+    }
+
+    auto cpu_usage(int32_t _pid) -> double
+    {
+#ifdef H_OS_LINUX
+        auto total_cputime1 = detail::get_cpu_total_occupy();
+        auto pro_cputime1 = detail::get_cpu_proc_occupy(_pid);
+
+        // sleep 200ms to fetch two time point cpu usage snapshots sample for later calculation.
+        std::this_thread::sleep_for(std::chrono::microseconds(SLEEP_TIME_SLICE_MICROS));
+
+        auto total_cputime2 = detail::get_cpu_total_occupy();
+        auto pro_cputime2 = detail::get_cpu_proc_occupy(_pid);
+
+        auto pcpu { 0.0 };
+        if (0 != total_cputime2 - total_cputime1) {
+            pcpu = static_cast<double>(pro_cputime2 - pro_cputime1) / static_cast<double>(total_cputime2 - total_cputime1); // double number
+        }
+
+        auto cpu_num = detail::get_nprocs();
+        pcpu *= static_cast<double>(cpu_num); // should multiply cpu num in multiple cpu machine
+
+        return pcpu;
+#endif
     }
 
     auto stack_trace(bool demangle) -> std::string
@@ -124,6 +233,7 @@ namespace util {
         free(demangled);
         free(strings);
         return stack;
+#undef DEMANGLE_SIZE
 #endif
     }
 

@@ -23,6 +23,7 @@ namespace util {
     HARE_API auto system_dir() -> std::string;
     HARE_API auto pid() -> int32_t;
     HARE_API auto hostname() -> std::string;
+    HARE_API auto cpu_usage(int32_t _pid) -> double;
     HARE_API auto stack_trace(bool demangle) -> std::string;
     HARE_API auto set_tname(const char* tname) -> error;
 

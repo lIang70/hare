@@ -113,7 +113,7 @@ namespace log {
 
             for (const auto& buffer : block_2_write) {
                 // FIXME: use unbuffered stdio FILE ? or use ::writev ?
-                output.append(buffer->data(), buffer->length());
+                output.append(buffer->begin(), buffer->length());
             }
 
             if (block_2_write.size() > 2) {
