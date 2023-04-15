@@ -46,12 +46,12 @@ namespace io {
 
     event::event(util_socket_t _fd, callback _cb, uint8_t _flag, int64_t _timeval)
         : fd_(_fd)
-        , event_flag_(_flag)
+        , events_(_flag)
         , callback_(std::move(_cb))
         , timeval_(_timeval)
     {
-        if (CHECK_EVENT(event_flag_, EVENT_PERSIST) != 0) {
-            CLEAR_EVENT(event_flag_, EVENT_TIMEOUT);
+        if (CHECK_EVENT(events_, EVENT_PERSIST | EVENT_TIMEOUT) != 0) {
+            CLEAR_EVENT(events_, EVENT_TIMEOUT);
             timeval_ = 0;
             SYS_ERROR() << "Cannot be set EVENT_PERSIST and EVENT_TIMEOUT at the same time.";
         }
@@ -62,14 +62,63 @@ namespace io {
         HARE_ASSERT(!cycle_.expired(), "When the event is destroyed, the event is still held by cycle.");
     }
 
-    void event::del()
+    void event::enable_read()
     {
-        return owner_cycle()->event_remove(shared_from_this());
+        SET_EVENT(events_, EVENT_READ);
+        auto cycle = cycle_.lock();
+        if (!cycle) {
+            cycle->event_update(shared_from_this());
+        } else {
+            SYS_ERROR() << "Event[" << this << "] need to be added to cycle.";
+        }
+    }
+
+    void event::disenable_read()
+    {
+        CLEAR_EVENT(events_, EVENT_READ);
+        auto cycle = cycle_.lock();
+        if (!cycle) {
+            cycle->event_update(shared_from_this());
+        } else {
+            SYS_ERROR() << "Event[" << this << "] need to be added to cycle.";
+        }
+    }
+
+    void event::enable_write()
+    {
+        SET_EVENT(events_, EVENT_WRITE);
+        auto cycle = cycle_.lock();
+        if (!cycle) {
+            cycle->event_update(shared_from_this());
+        } else {
+            SYS_ERROR() << "Event[" << this << "] need to be added to cycle.";
+        }
+    }
+
+    void event::disable_write()
+    {
+        CLEAR_EVENT(events_, EVENT_WRITE);
+        auto cycle = cycle_.lock();
+        if (!cycle) {
+            cycle->event_update(shared_from_this());
+        } else {
+            SYS_ERROR() << "Event[" << this << "] need to be added to cycle.";
+        }
+    }
+
+    void event::deactivate()
+    {
+        auto cycle = cycle_.lock();
+        if (!cycle) {
+            cycle->event_remove(shared_from_this());
+        } else {
+            SYS_ERROR() << "Event[" << this << "] need to be added to cycle.";
+        }
     }
 
     auto event::event_string() const -> std::string
     {
-        return detail::to_string(fd_, event_flag_);
+        return detail::to_string(fd_, events_);
     }
 
     void event::tie(const hare::ptr<void>& _obj)
@@ -87,7 +136,9 @@ namespace io {
                 return;
             }
         }
-        callback_(shared_from_this(), _flag, _receive_time);
+        if (callback_) {
+            callback_(shared_from_this(), _flag, _receive_time);
+        }
     }
 
 } // namespace io

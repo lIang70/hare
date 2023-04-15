@@ -36,7 +36,10 @@ namespace io {
         class event_notify : public event {
         public:
             explicit event_notify()
-                : event(create_notify_fd(), std::bind(&event_notify::event_callback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3), EVENT_READ | EVENT_WRITE | EVENT_PERSIST, 0)
+                : event(create_notify_fd(), 
+                    std::bind(&event_notify::event_callback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3), 
+                    EVENT_READ | EVENT_WRITE | EVENT_PERSIST, 
+                    0)
             {
             }
 
@@ -119,7 +122,7 @@ namespace io {
         HARE_ASSERT(!is_running_, "Cycle has been running.");
         is_running_ = true;
         quit_ = false;
-        event_add(notify_event_);
+        event_update(notify_event_);
 
         LOG_TRACE() << "Cycle[" << this << "] start running...";
 
@@ -140,9 +143,9 @@ namespace io {
             event_handling_ = true;
 
             for (auto& event_elem : detail::tstorage.active_events) {
-                current_active_event_ = event_elem.event;
-                current_active_event_->handle_event(event_elem.revents, reactor_time_);
-                if (CHECK_EVENT(current_active_event_->event_flag_, EVENT_PERSIST) == 0) {
+                current_active_event_ = event_elem.event_;
+                current_active_event_->handle_event(event_elem.revents_, reactor_time_);
+                if (CHECK_EVENT(current_active_event_->events_, EVENT_PERSIST) == 0) {
                     event_remove(current_active_event_);
                 }
             }
@@ -154,7 +157,7 @@ namespace io {
             do_pending_functions();
         }
 
-        notify_event_->del();
+        notify_event_->deactivate();
         is_running_ = false;
 
         LOG_TRACE() << "Cycle[" << this << "] stop running.";
@@ -200,41 +203,46 @@ namespace io {
         return pending_functions_.size();
     }
 
-    void cycle::event_add(ptr<event> _event)
+    void cycle::event_update(ptr<event> _event)
     {
-        if (!_event->owner_cycle() && _event->id_ != -1) {
+        if (_event->owner_cycle() != shared_from_this() && _event->id_ != -1) {
             SYS_ERROR() << "Cannot add event from other cycle[" << _event->owner_cycle().get() << "]";
             return;
         }
 
-        run_in_cycle(std::bind([=] (const wptr<event>& wevent) {
+        run_in_cycle(std::bind([=](const wptr<event>& wevent) {
             auto sevent = wevent.lock();
             if (sevent) {
-                return ;
-            }
-
-            sevent->cycle_ = this->shared_from_this();
-            sevent->id_ = detail::tstorage.event_id++;
-
-            HARE_ASSERT(detail::tstorage.events.find(sevent->id_) == detail::tstorage.events.end(), "");
-
-            detail::tstorage.events.insert(std::make_pair(sevent->id_, sevent));
-            
-            if (CHECK_EVENT(sevent->event_flag_, EVENT_TIMEOUT)) {
-                detail::tstorage.ptimer.emplace(sevent->id_, timestamp::now().microseconds_since_epoch() + sevent->timeval());
+                return;
             }
 
             if (sevent->fd() >= 0) {
-                reactor_->event_add(sevent);
+                reactor_->event_update(sevent);
             }
 
-        }, _event));
+            if (sevent->id_ == -1) {
+                sevent->cycle_ = this->shared_from_this();
+                sevent->id_ = detail::tstorage.event_id++;
+
+                HARE_ASSERT(detail::tstorage.events.find(sevent->id_) == detail::tstorage.events.end(), "An error occurred while creating the event id.");
+                detail::tstorage.events.insert(std::make_pair(sevent->id_, sevent));
+
+                if (sevent->fd() >= 0) {
+                    detail::tstorage.inverse_map.insert(std::make_pair(sevent->fd(), sevent->id_));
+                }
+            }
+
+            if (CHECK_EVENT(sevent->events_, EVENT_TIMEOUT) != 0) {
+                detail::tstorage.ptimer.emplace(sevent->id_, timestamp(timestamp::now().microseconds_since_epoch() + sevent->timeval()));
+            }
+        },
+            _event));
     }
 
     void cycle::event_remove(ptr<event> _event)
     {
         if (!_event) {
-            return ;
+            return;
         }
 
         if (_event->owner_cycle() != this->shared_from_this() || _event->id_ == -1) {
@@ -242,11 +250,11 @@ namespace io {
             return;
         }
 
-        run_in_cycle(std::bind([=] (const wptr<event>& wevent) {
+        run_in_cycle(std::bind([=](const wptr<event>& wevent) {
             auto sevent = wevent.lock();
             if (sevent) {
                 SYS_ERROR() << "Event is empty before it was released.";
-                return ;
+                return;
             }
             auto event_id = sevent->id_;
             auto socket = sevent->fd();
@@ -255,19 +263,20 @@ namespace io {
             if (iter == detail::tstorage.events.end()) {
                 SYS_ERROR() << "Cannot find event in cycle[" << this << "]";
             } else {
-                HARE_ASSERT(iter->second == sevent, "");
-
-                detail::tstorage.events.erase(iter);
-
-                if (socket >= 0) {
-                    reactor_->event_remove(sevent);
-                }
+                HARE_ASSERT(iter->second == sevent, "Error event.");
 
                 sevent->cycle_.reset();
                 sevent->id_ = -1;
-            }
 
-        }, _event));
+                if (socket >= 0) {
+                    reactor_->event_remove(sevent);
+                    detail::tstorage.inverse_map.erase(socket);
+                }
+                
+                detail::tstorage.events.erase(iter);
+            }
+        },
+            _event));
     }
 
     auto cycle::event_check(const ptr<event>& _event) -> bool
@@ -281,7 +290,7 @@ namespace io {
 
     void cycle::notify()
     {
-        if (auto* notify = implicit_cast<detail::event_notify*>(notify_event_.get())) {
+        if (auto* notify = static_cast<detail::event_notify*>(notify_event_.get())) {
             notify->send_notify();
         } else {
             SYS_FATAL() << "Cannot get to event_notify.";
@@ -321,17 +330,17 @@ namespace io {
 
         while (!priority_event.empty()) {
             auto top = priority_event.top();
-            if (reactor_time_ < top.stamp) {
+            if (reactor_time_ < top.stamp_) {
                 break;
             }
-            auto iter = events.find(top.id);
+            auto iter = events.find(top.id_);
             if (iter != events.end()) {
                 auto& event = iter->second;
                 if (event) {
                     LOG_TRACE() << "Event[" << iter->second.get() << "] trigged.";
                     event->handle_event(revent, now);
-                    if ((event->event_flag_ & EVENT_PERSIST) != 0) {
-                        priority_event.emplace(top.id, reactor_time_.microseconds_since_epoch() + event->timeval());
+                    if ((event->events_ & EVENT_PERSIST) != 0) {
+                        priority_event.emplace(top.id_, timestamp(reactor_time_.microseconds_since_epoch() + event->timeval()));
                     } else {
                         event_remove(event);
                     }
@@ -339,7 +348,7 @@ namespace io {
                     events.erase(iter);
                 }
             } else {
-                LOG_TRACE() << "Event[" << top.id << "] deleted.";
+                LOG_TRACE() << "Event[" << top.id_ << "] deleted.";
             }
             priority_event.pop();
         }

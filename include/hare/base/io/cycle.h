@@ -98,7 +98,7 @@ namespace io {
 
         auto queue_size() const -> std::size_t;
 
-        void event_add(ptr<event> _event);
+        void event_update(ptr<event> _event);
         void event_remove(ptr<event> _event);
 
         /**

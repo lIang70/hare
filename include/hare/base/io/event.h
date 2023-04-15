@@ -51,11 +51,11 @@ namespace io {
     public:
         using ptr = ptr<event>;
         using callback = std::function<void(const event::ptr&, uint8_t events, const timestamp& receive_time)>;
-        using id = int64_t;
+        using id = int32_t;
 
     private:
         util_socket_t fd_ { -1 };
-        uint8_t event_flag_ { EVENT_DEFAULT };
+        uint8_t events_ { EVENT_DEFAULT };
         callback callback_ {};
         int64_t timeval_ { 0 };
 
@@ -71,10 +71,16 @@ namespace io {
         virtual ~event();
 
         inline auto fd() const -> util_socket_t { return fd_; }
+        inline auto events() const -> uint8_t { return events_; }
+        inline auto timeval() const -> int64_t { return timeval_; }
         inline auto owner_cycle() const -> hare::ptr<cycle> { return cycle_.lock(); }
-        inline auto timeval() const -> uint64_t { return timeval_; }
+        inline auto event_id() const -> id { return id_; }
 
-        void del();
+        void enable_read();
+        void disenable_read();
+        void enable_write();
+        void disable_write();
+        void deactivate();
 
         auto event_string() const -> std::string;
 
