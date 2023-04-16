@@ -6,7 +6,6 @@
 #include <hare/base/util/system_info.h>
 
 #include <cassert>
-#include <functional>
 
 namespace hare {
 namespace log {

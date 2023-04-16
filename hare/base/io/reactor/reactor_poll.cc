@@ -1,8 +1,7 @@
 #include "hare/base/io/reactor/reactor_poll.h"
-#include "base/io/reactor.h"
-#include "hare/base/logging.h"
-#include <cstdint>
-#include <hare/base/io/event.h>
+
+#include "hare/base/thread/local.h"
+#include <hare/base/logging.h>
 
 #include <algorithm>
 #include <sstream>
@@ -106,7 +105,7 @@ namespace io {
         LOG_TRACE() << "poll-update: fd=" << _event->fd() << ", events=" << _event->events();
         auto target_fd = _event->fd();
         auto inverse_iter = inverse_map_.find(target_fd);
-        auto& tstorage = detail::tstorage;
+        auto& tstorage = current_thread::tstorage;
         
         if (_event->event_id() == -1) {
             // a new one, add to pollfd_list
@@ -139,7 +138,7 @@ namespace io {
 
     void reactor_poll::event_remove(ptr<event> _event)
     {
-        auto& tstorage = detail::tstorage;
+        auto& tstorage = current_thread::tstorage;
         const auto target_fd = _event->fd();
 
         auto inverse_iter = inverse_map_.find(target_fd);
@@ -165,7 +164,7 @@ namespace io {
 
     void reactor_poll::fill_active_events(int32_t _num_of_events)
     {
-        auto& tstorage = detail::tstorage;
+        auto& tstorage = current_thread::tstorage;
         const auto size = poll_fds_.size();
         for (auto event_id = 0; event_id < size && _num_of_events > 0; ++event_id) {
             const auto& pfd = poll_fds_[event_id];

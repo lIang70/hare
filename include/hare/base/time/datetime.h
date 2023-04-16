@@ -24,7 +24,7 @@ namespace time {
 
     /**
      * Local time in unspecified timezone.
-     * A minute is always 60 seconds, no leap seconds.
+     *   A minute is always 60 seconds, no leap seconds.
      **/
     class HARE_API date_time {
         int32_t year_ { HARE_START_YEAR }; // [1900, 2500]
@@ -70,10 +70,11 @@ namespace time {
 
         date() = default;
 
-        //!
-        //! Constucts a yyyy-mm-dd Date.
-        //!
-        //! 1 <= month <= 12
+        /**
+         * @brief Constucts a yyyy-mm-dd Date.
+         *
+         *   1 <= month <= 12
+         **/
         date(int32_t _year, int32_t _month, int32_t _day);
 
         explicit date(int32_t _julian_day_number)
@@ -92,7 +93,9 @@ namespace time {
 
         auto valid() const -> bool { return julian_day_number_ > 0; }
 
-        //! Converts to yyyy-mm-dd format.
+        /**
+         * @brief Converts to yyyy-mm-dd format.
+         **/
         auto to_fmt() const -> std::string;
 
         auto detail() const -> struct ymd;
@@ -112,7 +115,9 @@ namespace time {
             return detail().day;
         }
 
-        // [0, 1, ..., 6] => [Sunday, Monday, ..., Saturday ]
+        /**
+         * @brief [0, 1, ..., 6] => [Sunday, Monday, ..., Saturday ]
+         **/
         auto week_day() const -> int32_t
         {
             return (julian_day_number_ + 1) % DAYS_PER_WEEK;

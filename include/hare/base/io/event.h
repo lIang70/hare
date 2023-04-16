@@ -15,8 +15,6 @@
 #include <hare/base/time/timestamp.h>
 #include <hare/base/util/non_copyable.h>
 
-#include <functional>
-
 namespace hare {
 namespace io {
 

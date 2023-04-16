@@ -16,7 +16,6 @@
 #include <hare/base/util/count_down_latch.h>
 
 #include <atomic>
-#include <functional>
 #include <string>
 #include <thread>
 
@@ -24,13 +23,12 @@ namespace hare {
 
 class HARE_API thread : public non_copyable {
 public:
-    using task = std::function<void()>;
     using id = size_t;
     using ptr = ptr<thread>;
 
 private:
     hare::ptr<std::thread> thread_ { nullptr };
-    thread::task task_ {};
+    task task_ {};
     std::string name_ {};
     thread::id thread_id_ {};
     bool started_ { false };

@@ -1,5 +1,5 @@
-#include "hare/base/io/event.h"
 #include "hare/base/io/reactor.h"
+
 #include "hare/base/thread/local.h"
 #include "hare/base/time/timestamp.h"
 #include <hare/base/logging.h>
@@ -37,9 +37,9 @@ namespace io {
         class event_notify : public event {
         public:
             explicit event_notify()
-                : event(create_notify_fd(), 
-                    std::bind(&event_notify::event_callback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3), 
-                    EVENT_READ | EVENT_PERSIST, 
+                : event(create_notify_fd(),
+                    std::bind(&event_notify::event_callback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
+                    EVENT_READ | EVENT_PERSIST,
                     0)
             {
             }
@@ -85,6 +85,24 @@ namespace io {
 
     } // namespace detail
 
+    auto get_wait_time() -> int32_t
+    {
+        const auto& tstorage = current_thread::tstorage;
+        if (tstorage.ptimer.empty()) {
+            return POLL_TIME_MICROSECONDS;
+        }
+        auto time = static_cast<int32_t>(tstorage.ptimer.top().stamp_.microseconds_since_epoch() - timestamp::now().microseconds_since_epoch());
+        return time <= 0 ? static_cast<int32_t>(1) : std::min(time, POLL_TIME_MICROSECONDS);
+    }
+
+    void print_active_events()
+    {
+        const auto& tstorage = current_thread::tstorage;
+        for (const auto& event_elem : tstorage.active_events) {
+            LOG_TRACE() << "event[" << event_elem.event_->fd() << "] debug info: " << event_elem.event_->event_string() << ".";
+        }
+    }
+
     cycle::cycle(REACTOR_TYPE _type)
         : tid_(current_thread::tid())
         , notify_event_(new detail::event_notify())
@@ -94,23 +112,23 @@ namespace io {
         static detail::ignore_sigpipe s_ignore_sigpipe {};
 
         LOG_TRACE() << "cycle[" << this << "] is being initialized in [" << tid_ << "]...";
-        if (detail::tstorage.cycle != nullptr) {
-            SYS_FATAL() << "another cycle[" << detail::tstorage.cycle
+        if (current_thread::tstorage.cycle != nullptr) {
+            SYS_FATAL() << "another cycle[" << current_thread::tstorage.cycle
                         << "] exists in this thread[" << current_thread::tid() << "].";
         } else {
-            detail::tstorage.cycle = this;
+            current_thread::tstorage.cycle = this;
         }
     }
 
     cycle::~cycle()
     {
         // clear thread local data.
-        detail::tstorage.active_events.clear();
-        detail::tstorage.events.clear();
-        detail::priority_timer().swap(detail::tstorage.ptimer);
+        current_thread::tstorage.active_events.clear();
+        current_thread::tstorage.events.clear();
+        priority_timer().swap(current_thread::tstorage.ptimer);
         pending_functions_.clear();
         notify_event_.reset();
-        detail::tstorage.cycle = nullptr;
+        current_thread::tstorage.cycle = nullptr;
     }
 
     auto cycle::in_cycle_thread() const -> bool
@@ -128,22 +146,22 @@ namespace io {
         LOG_TRACE() << "cycle[" << this << "] start running...";
 
         while (!quit_) {
-            detail::tstorage.active_events.clear();
+            current_thread::tstorage.active_events.clear();
 
-            reactor_time_ = reactor_->poll(detail::get_wait_time());
+            reactor_time_ = reactor_->poll(get_wait_time());
 
 #ifdef HARE_DEBUG
             ++cycle_index_;
 #endif
 
             if (logger::level() <= log::LEVEL_TRACE) {
-                detail::print_active_events();
+                print_active_events();
             }
 
             /// TODO(l1ang): sort event by priority
             event_handling_ = true;
 
-            for (auto& event_elem : detail::tstorage.active_events) {
+            for (auto& event_elem : current_thread::tstorage.active_events) {
                 current_active_event_ = event_elem.event_;
                 current_active_event_->handle_event(event_elem.revents_, reactor_time_);
                 if (CHECK_EVENT(current_active_event_->events_, EVENT_PERSIST) == 0) {
@@ -177,7 +195,7 @@ namespace io {
         }
     }
 
-    void cycle::run_in_cycle(thread::task _task)
+    void cycle::run_in_cycle(task _task)
     {
         if (in_cycle_thread() || !is_running()) {
             _task();
@@ -186,7 +204,7 @@ namespace io {
         }
     }
 
-    void cycle::queue_in_cycle(thread::task _task)
+    void cycle::queue_in_cycle(task _task)
     {
         {
             std::lock_guard<std::mutex> guard(functions_mutex_);
@@ -223,18 +241,18 @@ namespace io {
 
             if (sevent->id_ == -1) {
                 sevent->cycle_ = this->shared_from_this();
-                sevent->id_ = detail::tstorage.event_id++;
+                sevent->id_ = current_thread::tstorage.event_id++;
 
-                HARE_ASSERT(detail::tstorage.events.find(sevent->id_) == detail::tstorage.events.end(), "an error occurred while creating the event id.");
-                detail::tstorage.events.insert(std::make_pair(sevent->id_, sevent));
+                HARE_ASSERT(current_thread::tstorage.events.find(sevent->id_) == current_thread::tstorage.events.end(), "an error occurred while creating the event id.");
+                current_thread::tstorage.events.insert(std::make_pair(sevent->id_, sevent));
 
                 if (sevent->fd() >= 0) {
-                    detail::tstorage.inverse_map.insert(std::make_pair(sevent->fd(), sevent->id_));
+                    current_thread::tstorage.inverse_map.insert(std::make_pair(sevent->fd(), sevent->id_));
                 }
             }
 
             if (CHECK_EVENT(sevent->events_, EVENT_TIMEOUT) != 0) {
-                detail::tstorage.ptimer.emplace(sevent->id_, timestamp(timestamp::now().microseconds_since_epoch() + sevent->timeval()));
+                current_thread::tstorage.ptimer.emplace(sevent->id_, timestamp(timestamp::now().microseconds_since_epoch() + sevent->timeval()));
             }
         },
             _event));
@@ -260,8 +278,8 @@ namespace io {
             auto event_id = sevent->id_;
             auto socket = sevent->fd();
 
-            auto iter = detail::tstorage.events.find(event_id);
-            if (iter == detail::tstorage.events.end()) {
+            auto iter = current_thread::tstorage.events.find(event_id);
+            if (iter == current_thread::tstorage.events.end()) {
                 SYS_ERROR() << "cannot find event in cycle[" << this << "]";
             } else {
                 HARE_ASSERT(iter->second == sevent, "error event.");
@@ -271,10 +289,10 @@ namespace io {
 
                 if (socket >= 0) {
                     reactor_->event_remove(sevent);
-                    detail::tstorage.inverse_map.erase(socket);
+                    current_thread::tstorage.inverse_map.erase(socket);
                 }
-                
-                detail::tstorage.events.erase(iter);
+
+                current_thread::tstorage.events.erase(iter);
             }
         },
             _event));
@@ -286,7 +304,7 @@ namespace io {
             return false;
         }
         assert_in_cycle_thread();
-        return detail::tstorage.events.find(_event->id_) != detail::tstorage.events.end();
+        return current_thread::tstorage.events.find(_event->id_) != current_thread::tstorage.events.end();
     }
 
     void cycle::notify()
@@ -307,7 +325,7 @@ namespace io {
 
     void cycle::do_pending_functions()
     {
-        std::list<thread::task> functions {};
+        std::list<task> functions {};
         calling_pending_functions_ = true;
 
         {
@@ -324,8 +342,8 @@ namespace io {
 
     void cycle::notify_timer()
     {
-        auto& priority_event = detail::tstorage.ptimer;
-        auto& events = detail::tstorage.events;
+        auto& priority_event = current_thread::tstorage.ptimer;
+        auto& events = current_thread::tstorage.events;
         const auto revent = EVENT_TIMEOUT;
         auto now = timestamp::now();
 

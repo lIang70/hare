@@ -8,6 +8,8 @@
 #include <cstdio>
 #include <cstring>
 
+#define EAST_OF_EIGHT (8 * 3600)
+
 namespace hare {
 namespace log {
 
@@ -78,7 +80,7 @@ namespace log {
         ::fflush(stdout);
     }
 
-    timezone g_log_time_zone {};
+    timezone g_log_time_zone { EAST_OF_EIGHT, ""};
     LEVEL g_log_level = init_level();
     logger::output g_output = default_output;
     logger::flush g_flush = default_flush;

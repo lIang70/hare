@@ -1,3 +1,5 @@
+#include <cstddef>
+#include <cstdint>
 #include <hare/base/util/system_info.h>
 
 #include <hare/base/exception.h>
@@ -29,6 +31,8 @@ namespace util {
         class system_info {
             std::array<char, NAME_LENGTH> host_name_ {};
             std::array<char, NAME_LENGTH> system_dir_ {};
+            int32_t pid_ { 0 };
+            size_t page_size_ { 0 };
 
         public:
             system_info()
@@ -52,11 +56,17 @@ namespace util {
                     }
                 }
                 system_dir_[npos + 1] = '\0';
+
+                pid_ = ::getpid();
+
+                page_size_ = ::sysconf(_SC_PAGESIZE);
 #endif
             }
 
             friend auto util::system_dir() -> std::string;
             friend auto util::hostname() -> std::string;
+            friend auto util::pid() -> int32_t;
+            friend auto util::page_size() -> size_t;
         };
 
         static auto get_cpu_total_occupy() -> uint64_t
@@ -147,14 +157,19 @@ namespace util {
         return detail::s_system_info.system_dir_.data();
     }
 
-    auto pid() -> int32_t
-    {
-        return ::getpid();
-    }
-
     auto hostname() -> std::string
     {
         return detail::s_system_info.host_name_.data();
+    }
+
+    auto pid() -> int32_t
+    {
+        return detail::s_system_info.pid_;
+    }
+
+    auto page_size() -> size_t
+    {
+        return detail::s_system_info.page_size_;
     }
 
     auto cpu_usage(int32_t _pid) -> double

@@ -37,7 +37,7 @@ namespace io {
         ptr<event> current_active_event_ { nullptr };
 
         mutable std::mutex functions_mutex_ {};
-        std::list<thread::task> pending_functions_ {};
+        std::list<task> pending_functions_ {};
 
 #ifdef HARE_DEBUG
         uint64_t cycle_index_ { 0 };
@@ -56,7 +56,6 @@ namespace io {
 
         /**
          * @brief Time when reactor returns, usually means data arrival.
-         *
          **/
         inline auto reactor_return_time() const -> timestamp { return reactor_time_; }
         inline auto event_handling() const -> bool { return event_handling_; }
@@ -99,14 +98,14 @@ namespace io {
          *   If in the same cycle thread, cb is run within the function.
          *   Safe to call from other threads.
          **/
-        void run_in_cycle(thread::task _task);
+        void run_in_cycle(task _task);
 
         /**
          * @brief Queues callback in the cycle thread.
          *   Runs after finish pooling.
          *   Safe to call from other threads.
          **/
-        void queue_in_cycle(thread::task _task);
+        void queue_in_cycle(task _task);
 
         auto queue_size() const -> std::size_t;
 

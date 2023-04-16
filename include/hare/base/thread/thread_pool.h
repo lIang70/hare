@@ -25,9 +25,9 @@ class HARE_API thread_pool : public non_copyable {
     std::condition_variable cv_for_not_empty_ {};
     std::condition_variable cv_for_not_full_ {};
     std::string name_ {};
-    thread::task pool_init_callback_ {};
+    task pool_init_callback_ {};
     std::vector<thread::ptr> threads_ {};
-    std::deque<thread::task> queue_ {};
+    std::deque<task> queue_ {};
     size_t max_queue_size_ { 0 };
     bool running_ { false };
 
@@ -42,7 +42,7 @@ public:
 
     // Must be called before start().
     inline void set_max_queue(size_t _max_size) { max_queue_size_ = _max_size; }
-    inline void set_thread_init_callback(const thread::task& _init_cb) { pool_init_callback_ = _init_cb; }
+    inline void set_thread_init_callback(const task& _init_cb) { pool_init_callback_ = _init_cb; }
 
     void start(int32_t _num_of_thread);
     void stop();
@@ -57,11 +57,11 @@ public:
      *  as we do in (Bounded)BlockingQueue.
      *  https://stackoverflow.com/a/25408989
      **/
-    void run(thread::task task);
+    void run(task task);
 
 private:
     auto full() const -> bool;
-    auto take() -> thread::task;
+    auto take() -> task;
 
     void loop();
 };

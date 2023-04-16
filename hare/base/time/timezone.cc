@@ -17,7 +17,7 @@ namespace detail {
 
     static inline void fill_hms(uint32_t _seconds, struct time::date_time* _sdt)
     {
-        auto minutes = static_cast<int32_t>(_seconds) / MINUTES_PER_HOUR;
+        auto minutes = static_cast<int32_t>(_seconds) / SECONDS_PER_MINUTE;
         _sdt->hour() = minutes / MINUTES_PER_HOUR;
         _sdt->minute() = minutes - _sdt->hour() * MINUTES_PER_HOUR;
         _sdt->second() = static_cast<int32_t>(_seconds) - minutes * SECONDS_PER_MINUTE;

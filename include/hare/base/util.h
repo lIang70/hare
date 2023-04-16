@@ -17,6 +17,7 @@
 
 #include <cstring>
 #include <cinttypes>
+#include <functional>
 #include <memory>
 
 #ifdef H_OS_WIN32
@@ -58,6 +59,8 @@ using ptr = std::shared_ptr<Ty>;
 
 template<class Ty>
 using wptr = std::weak_ptr<Ty>;
+
+using task = std::function<void()>;
 
 HARE_API inline void set_zero(void* _des, size_t _len)
 {

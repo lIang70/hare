@@ -51,7 +51,7 @@ auto thread_pool::queue_size() const -> size_t
     return queue_.size();
 }
 
-void thread_pool::run(thread::task task)
+void thread_pool::run(task task)
 {
     if (threads_.empty()) {
         SYS_ERROR() << "cannot run task in the thread pool[" << this << "] because the number of threads is zero.";
@@ -71,14 +71,14 @@ void thread_pool::run(thread::task task)
     }
 }
 
-auto thread_pool::take() -> thread::task
+auto thread_pool::take() -> task
 {
     std::unique_lock<std::mutex> lock(mutex_);
     // always use a while-loop, due to spurious wakeup
     while (queue_.empty() && running_) {
         cv_for_not_empty_.wait(lock);
     }
-    thread::task task {};
+    task task {};
     if (!queue_.empty()) {
         task = std::move(queue_.front());
         queue_.pop_front();

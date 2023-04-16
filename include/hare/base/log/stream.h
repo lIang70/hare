@@ -13,8 +13,6 @@
 #ifndef _HARE_BASE_LOG_STREAM_H_
 #define _HARE_BASE_LOG_STREAM_H_
 
-#include "hare/base/util.h"
-#include <cstdint>
 #include <hare/base/util/buffer.h>
 
 #include <string>

@@ -40,7 +40,7 @@ namespace io {
         console_event_->deactivate();
     }
 
-    void console::register_handle(std::string _handle_mask, thread::task _handle)
+    void console::register_handle(std::string _handle_mask, task _handle)
     {
         HARE_ASSERT(!attached_, "you need add handle to console before attached.");
         handlers_.emplace(_handle_mask, _handle);

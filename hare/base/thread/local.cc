@@ -29,16 +29,16 @@ namespace current_thread {
         }
     } // namespace detail
 
-    thread_local struct local t_data;
+    thread_local struct data_storage tstorage;
 
     void cache_thread_id()
     {
-        if (t_data.tid == 0) {
+        if (tstorage.tid == 0) {
             std::ostringstream oss;
             oss << std::this_thread::get_id();
-            t_data.tid_str = oss.str();
-            t_data.tid = std::stoull(t_data.tid_str);
-            detail::convertHex(t_data.tid_str, t_data.tid);
+            tstorage.tid_str = oss.str();
+            tstorage.tid = std::stoull(tstorage.tid_str);
+            detail::convertHex(tstorage.tid_str, tstorage.tid);
         }
     }
 

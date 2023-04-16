@@ -2,9 +2,9 @@
 #define _HARE_NET_REACTOR_POLL_H_
 
 #include "hare/base/io/reactor.h"
-#include "hare/base/util.h"
-#include <cstdint>
 #include <hare/hare-config.h>
+
+#include <map>
 
 #ifdef HARE__HAVE_POLL
 #include <sys/poll.h>

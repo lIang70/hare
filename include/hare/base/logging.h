@@ -13,12 +13,9 @@
 #ifndef _HARE_BASE_LOGGING_H_
 #define _HARE_BASE_LOGGING_H_
 
-#include <cstddef>
 #include <hare/base/log/stream.h>
 #include <hare/base/time/timestamp.h>
 #include <hare/base/time/timezone.h>
-
-#include <functional>
 
 namespace hare {
 namespace log {

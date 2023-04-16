@@ -12,7 +12,6 @@
 #ifndef _HARE_BASE_TIMESTAMP_H_
 #define _HARE_BASE_TIMESTAMP_H_
 
-#include <cstdint>
 #include <hare/base/util.h>
 
 #include <string>
