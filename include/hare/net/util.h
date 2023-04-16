@@ -3,6 +3,7 @@
 
 #include <hare/base/error.h>
 
+#include <array>
 #include <list>
 
 struct sockaddr;
@@ -12,20 +13,21 @@ struct sockaddr_in6;
 namespace hare {
 namespace net {
 
-    HARE_API auto hostToNetwork64(uint64_t host64) -> uint64_t;
-    HARE_API auto hostToNetwork32(uint32_t host32) -> uint32_t;
-    HARE_API auto hostToNetwork16(uint16_t host16) -> uint16_t;
-    HARE_API auto networkToHost64(uint64_t net64) -> uint64_t;
-    HARE_API auto networkToHost32(uint32_t net32) -> uint32_t;
-    HARE_API auto networkToHost16(uint16_t net16) -> uint16_t;
+    HARE_API auto host_to_network64(uint64_t _host64) -> uint64_t;
+    HARE_API auto host_to_network32(uint32_t _host32) -> uint32_t;
+    HARE_API auto host_to_network16(uint16_t _host16) -> uint16_t;
+    HARE_API auto network_to_host64(uint64_t _net64) -> uint64_t;
+    HARE_API auto network_to_host32(uint32_t _net32) -> uint32_t;
+    HARE_API auto network_to_host16(uint16_t _net16) -> uint16_t;
 
-    HARE_API inline auto sockaddrCast(const struct sockaddr_in6* addr) -> const struct sockaddr* { return static_cast<const struct sockaddr*>(implicit_cast<const void*>(addr)); }
-    HARE_API inline auto sockaddrCast(struct sockaddr_in6* addr) -> struct sockaddr* { return static_cast<struct sockaddr*>(implicit_cast<void*>(addr)); }
-    HARE_API inline auto sockaddrCast(const struct sockaddr_in* addr) -> const struct sockaddr* { return static_cast<const struct sockaddr*>(implicit_cast<const void*>(addr)); }
-    HARE_API inline auto sockaddrInCast(const struct sockaddr* addr) -> const struct sockaddr_in* { return static_cast<const struct sockaddr_in*>(implicit_cast<const void*>(addr)); }
-    HARE_API inline auto sockaddrIn6Cast(const struct sockaddr* addr) -> const struct sockaddr_in6* { return static_cast<const struct sockaddr_in6*>(implicit_cast<const void*>(addr)); }
+    HARE_API inline auto sockaddr_cast(const struct sockaddr_in6* _addr) -> const struct sockaddr* { return static_cast<const struct sockaddr*>(implicit_cast<const void*>(_addr)); }
+    HARE_API inline auto sockaddr_cast(struct sockaddr_in6* _addr) -> struct sockaddr* { return static_cast<struct sockaddr*>(implicit_cast<void*>(_addr)); }
+    HARE_API inline auto sockaddr_cast(const struct sockaddr_in* _addr) -> const struct sockaddr* { return static_cast<const struct sockaddr*>(implicit_cast<const void*>(_addr)); }
+    HARE_API inline auto sockaddr_in_cast(const struct sockaddr* _addr) -> const struct sockaddr_in* { return static_cast<const struct sockaddr_in*>(implicit_cast<const void*>(_addr)); }
+    HARE_API inline auto sockaddr_in6_cast(const struct sockaddr* _addr) -> const struct sockaddr_in6* { return static_cast<const struct sockaddr_in6*>(implicit_cast<const void*>(_addr)); }
 
-    HARE_API auto getLocalIp(int32_t type, std::list<std::string>& ip_list) -> Error;
+    HARE_API auto get_local_address(int32_t _type, std::list<std::string>& _addr_list) -> error;
+    HARE_API auto get_socket_pair(int8_t _family, int32_t _type, int32_t _protocol, std::array<util_socket_t, 2>& _sockets) -> error;
 
 } // namespace net
 } // namespace hare

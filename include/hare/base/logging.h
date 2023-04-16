@@ -169,7 +169,7 @@ auto check_not_null(logger::file_path _file, int _line, const char* _names, Ty* 
     do {                                                           \
         if (!(val)) {                                              \
             hare::logger(__FILE__, __LINE__, true).stream()        \
-                << "Condition[" << #val << "] failed. " << (what); \
+                << "condition[" << #val << "] failed. " << (what); \
         }                                                          \
     } while (0)
 #else

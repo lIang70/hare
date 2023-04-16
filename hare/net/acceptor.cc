@@ -1,9 +1,8 @@
 #include <hare/net/acceptor.h>
 
-#include "hare/net/core/cycle.h"
-#include "hare/net/host_address.h"
-#include "hare/net/socket.h"
+#include "hare/base/io/reactor.h"
 #include "hare/net/socket_op.h"
+#include <hare/net/socket.h>
 #include <hare/base/logging.h>
 
 #ifdef HARE__HAVE_FCNTL_H
@@ -17,115 +16,119 @@
 namespace hare {
 namespace net {
 
-    Acceptor::Acceptor(int8_t family, Socket::TYPE type, int16_t port, bool reuse_port)
-        : Event(nullptr, type == Socket::TYPE_TCP ? 
-                         socket::createNonblockingOrDie(family) : (type == Socket::TYPE_UDP ? 
-                                                                   socket::createDgramOrDie(family) : -1))
+    acceptor::acceptor(int8_t family, TYPE type, int16_t port, bool reuse_port)
+        : io::event(type == TYPE_TCP ? 
+                         socket_op::create_nonblocking_or_die(family) : (type == TYPE_UDP ? 
+                                                                   socket_op::create_dgram_or_die(family) : -1),
+                std::bind(&acceptor::event_callback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
+                io::EVENT_PERSIST | io::EVENT_READ,
+                0)
         , socket_(family, type, fd())
         , family_(family)
         , port_(port)
 #ifdef H_OS_LINUX
         , idle_fd_(::open("/dev/null", O_RDONLY | O_CLOEXEC))
     {
-        HARE_ASSERT(idle_fd_ > 0, "");
+        HARE_ASSERT(idle_fd_ > 0, "cannot open idel fd");
 #else
     {
 #endif
-        socket_.setReusePort(reuse_port);
-        socket_.setReuseAddr(true);
+        socket_.set_reuse_port(reuse_port);
+        socket_.set_reuse_addr(true);
     }
 
-    Acceptor::~Acceptor()
+    acceptor::~acceptor()
     {
-        clearAllFlags();
-        deactive();
+        deactivate();
 #ifdef H_OS_LINUX
-        socket::close(idle_fd_);
+        socket_op::close(idle_fd_);
 #endif
     }
 
-    void Acceptor::eventCallBack(int32_t events, const Timestamp& receive_time)
+    void acceptor::event_callback(const io::event::ptr& _event, uint8_t _events, const timestamp& _receive_time)
     {
-        if ((events & EVENT_READ) != 0) {
-            HostAddress peer_addr {};
-            auto local_addr = HostAddress::localAddress(socket());
-            
-            // FIXME loop until no more ?
-            auto accepted { false };
-            util_socket_t conn_fd {};
-            
-            switch (type()) {
-                case Socket::TYPE_TCP: 
-                if ((conn_fd = socket_.accept(peer_addr)) >= 0) {
-                    LOG_TRACE() << "Accepts of " << peer_addr.toIpPort();
-                    if (new_session_) {
-                        new_session_(conn_fd, peer_addr, receive_time, socket());
-                    } else {
-                        socket::close(conn_fd);
-                    }
-                    accepted = true;
+        HARE_ASSERT(this->shared_from_this() == _event, "error event callback");
+        if (CHECK_EVENT(_events, io::EVENT_READ) == 0){
+            SYS_ERROR() << "unexpected operation of acceptor.";
+            return;
+        }
+        
+        host_address peer_addr {};
+        auto local_addr = host_address::local_address(socket());
+        
+        // FIXME loop until no more ?
+        auto accepted { false };
+        util_socket_t conn_fd {};
+        
+        switch (type()) {
+            case TYPE_TCP: 
+            if ((conn_fd = socket_.accept(peer_addr)) >= 0) {
+                LOG_TRACE() << "accepts of " << peer_addr.to_ip_port();
+                if (new_session_) {
+                    new_session_(conn_fd, peer_addr, _receive_time, socket());
+                } else {
+                    socket_op::close(conn_fd);
                 }
-                    break;
-                case Socket::TYPE_UDP:
-                if ((conn_fd = socket_.accept(peer_addr, &local_addr)) >= 0) {
-                    LOG_TRACE() << "Accepts of " << peer_addr.toIpPort();
-                    if (new_session_) {
-                        new_session_(conn_fd, peer_addr, receive_time, socket());
-                    } else {
-                        socket::close(conn_fd);
-                    }
-                    accepted = true;
-                }
-                    break;
-                case Socket::TYPE_INVALID:
-                default:
-                    break;
+                accepted = true;
             }
-            
-            if (!accepted) {
-                SYS_ERROR() << "Cannot accept new connect";
+                break;
+            case TYPE_UDP:
+            if ((conn_fd = socket_.accept(peer_addr, &local_addr)) >= 0) {
+                LOG_TRACE() << "accepts of " << peer_addr.to_ip_port();
+                if (new_session_) {
+                    new_session_(conn_fd, peer_addr, _receive_time, socket());
+                } else {
+                    socket_op::close(conn_fd);
+                }
+                accepted = true;
+            }
+                break;
+            case TYPE_INVALID:
+            default:
+                break;
+        }
+        
+        if (!accepted) {
+            SYS_ERROR() << "cannot accept new connect";
 #ifdef H_OS_LINUX
-                // Read the section named "The special problem of
-                // accept()ing when you can't" in libev's doc.
-                // By Marc Lehmann, author of libev.
-                if (errno == EMFILE) {
-                    socket::close(idle_fd_);
-                    idle_fd_ = socket::accept(socket_.socket(), nullptr);
-                    socket::close(idle_fd_);
-                    idle_fd_ = ::open("/dev/null", O_RDONLY | O_CLOEXEC);
-                }
-#endif
+            // Read the section named "The special problem of
+            // accept()ing when you can't" in libev's doc.
+            // By Marc Lehmann, author of libev.
+            if (errno == EMFILE) {
+                socket_op::close(idle_fd_);
+                idle_fd_ = socket_op::accept(socket_.fd(), nullptr);
+                socket_op::close(idle_fd_);
+                idle_fd_ = ::open("/dev/null", O_RDONLY | O_CLOEXEC);
             }
-        } else {
-            SYS_ERROR() << "Unexpected operation of acceptor.";
+#endif
         }
     }
 
-    auto Acceptor::listen() -> Error
+    auto acceptor::listen() -> error
     {
-        if (ownerCycle() == nullptr) {
-            SYS_ERROR() << "This acceptor[" << this << "] has not been added to any cycle.";
-            return Error(HARE_ERROR_ACCEPTOR_ACTIVED);
+        if (owner_cycle() == nullptr) {
+            SYS_ERROR() << "this acceptor[" << this << "] has not been added to any cycle.";
+            return error(HARE_ERROR_ACCEPTOR_ACTIVED);
         }
-        const HostAddress host_address(port_, false, family_ == AF_INET6);
-        auto ret = socket_.bindAddress(host_address);
+        const host_address host_address(port_, false, family_ == AF_INET6);
+        auto ret = socket_.bind_address(host_address);
         if (!ret) {
-            SYS_ERROR() << "Cannot bind port[" << port_ << "].";
+            SYS_ERROR() << "cannot bind port[" << port_ << "].";
             return ret;
         }
-        if (type() == Socket::TYPE_TCP) {
+        if (type() == TYPE_TCP) {
             ret = socket_.listen();
             if (!ret) {
                 return ret;
             }
         }
-        setFlags(EVENT_READ);
+        enable_read();
         return ret;
     }
 
-    void Acceptor::setNewSessionCallBack(NewSession new_session)
+    void acceptor::set_new_session(new_session _cb)
     {
-        new_session_ = std::move(new_session);
+        new_session_ = std::move(_cb);
     }
 
 } // namespace net

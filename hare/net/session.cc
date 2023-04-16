@@ -1,25 +1,24 @@
-#include "hare/base/error.h"
-#include "hare/net/core/event.h"
-#include "hare/net/socket.h"
-#include "net/socket_op.h"
 #include <hare/net/session.h>
 
+#include "hare/base/io/reactor.h"
+#include "hare/net/socket_op.h"
 #include <hare/base/logging.h>
 
 namespace hare {
 namespace net {
 
     namespace detail {
-        auto stateToString(Session::STATE state) -> const char*
+
+        auto state_to_string(STATE state) -> const char*
         {
             switch (state) {
-            case Session::STATE_CONNECTING:
+            case STATE_CONNECTING:
                 return "STATE_CONNECTING";
-            case Session::STATE_CONNECTED:
+            case STATE_CONNECTED:
                 return "STATE_CONNECTED";
-            case Session::STATE_DISCONNECTING:
+            case STATE_DISCONNECTING:
                 return "STATE_DISCONNECTING";
-            case Session::STATE_DISCONNECTED:
+            case STATE_DISCONNECTED:
                 return "STATE_DISCONNECTED";
             default:
                 return "UNKNOWN STATE";
@@ -27,95 +26,126 @@ namespace net {
         }
     } // namespace detail
 
-    Session::~Session()
+    session::~session()
     {
-        HARE_ASSERT(state_ == STATE_DISCONNECTED, "");
-        LOG_TRACE() << "Session[" << name_ << "] at " << this
-                    << " fd: " << socket() << " free.";
+        HARE_ASSERT(state_ == STATE_DISCONNECTED, "session should be disconnected before free.");
+        LOG_TRACE() << "session[" << name_ << "] at " << this
+                    << " fd: " << fd() << " free.";
     }
 
-    auto Session::shutdown() -> Error
+    auto session::shutdown() -> error
     {
         if (state_ == STATE_CONNECTED) {
-            setState(STATE_DISCONNECTING);
-            if (!event_->checkFlag(EVENT_WRITE)) {
-                return socket_->shutdownWrite();
+            set_state(STATE_DISCONNECTING);
+            if (CHECK_EVENT(event_->events(), io::EVENT_WRITE) == 0) {
+                return socket_.shutdown_write();
             }
-            return Error(HARE_ERROR_SOCKET_WRITING);
+            return error(HARE_ERROR_SOCKET_WRITING);
         }
-        return Error(HARE_ERROR_SESSION_ALREADY_DISCONNECT);
+        return error(HARE_ERROR_SESSION_ALREADY_DISCONNECT);
     }
 
-    auto Session::forceClose() -> Error
+    auto session::force_close() -> error
     {
         if (state_ == STATE_CONNECTED || state_ == STATE_DISCONNECTING) {
-            setState(STATE_DISCONNECTING);
-            handleClose();
+            set_state(STATE_DISCONNECTING);
+            handle_close();
         }
-        return Error(HARE_ERROR_SESSION_ALREADY_DISCONNECT);
+        return error(HARE_ERROR_SESSION_ALREADY_DISCONNECT);
     }
 
-    void Session::startRead()
+    void session::start_read()
     {
-        if (!reading_ || !event_->checkFlag(EVENT_READ)) {
-            event_->setFlags(EVENT_READ);
+        if (!reading_ || CHECK_EVENT(event_->events(), io::EVENT_READ) == 0) {
+            event_->enable_read();
             reading_ = true;
         }
     }
 
-    void Session::stopRead()
+    void session::stop_read()
     {
-        if (reading_ || event_->checkFlag(EVENT_READ)) {
-            event_->clearFlags(EVENT_READ);
+        if (reading_ || CHECK_EVENT(event_->events(), io::EVENT_READ) != 0) {
+            event_->disable_read();
             reading_ = false;
         }
     }
 
-    Session::Session(core::Cycle* cycle, Socket::TYPE type,
-        HostAddress local_addr,
-        std::string name, int8_t family, util_socket_t target_fd,
-        HostAddress peer_addr)
-        : cycle_(HARE_CHECK_NULL(cycle))
-        , socket_(new Socket(family, type, target_fd))
-        , local_addr_(std::move(local_addr))
-        , peer_addr_(std::move(peer_addr))
-        , name_(std::move(name))
+    session::session(io::cycle* _cycle, TYPE _type,
+        host_address _local_addr,
+        std::string _name, int8_t _family, util_socket_t _fd,
+        host_address _peer_addr)
+        : cycle_(HARE_CHECK_NULL(_cycle))
+        , event_(new io::event(_fd,
+              std::bind(&session::handle_callback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
+              SESSION_READ | SESSION_WRITE | io::EVENT_PERSIST,
+              0))
+        , socket_(_family, _type, _fd)
+        , local_addr_(std::move(_local_addr))
+        , peer_addr_(std::move(_peer_addr))
+        , name_(std::move(_name))
     {
     }
 
-    void Session::handleClose()
+    void session::handle_callback(const io::event::ptr& _event, uint8_t _events, const timestamp& _receive_time)
     {
-        LOG_TRACE() << "(handleClose) fd = " << socket() << " state = " << detail::stateToString(state_);
+        owner_cycle()->assert_in_cycle_thread();
+        HARE_ASSERT(_event == event_, "error event.");
+        LOG_TRACE() << "session[" << event_->fd() << "] revents: " << _events;
+        if (CHECK_EVENT(_events, SESSION_READ)) {
+            handle_read(_receive_time);
+        }
+        if (CHECK_EVENT(_events, SESSION_WRITE)) {
+            handle_write();
+        }
+        if (CHECK_EVENT(_events, SESSION_CLOSED)) {
+            handle_close();
+        }
+    }
+
+    void session::handle_close()
+    {
+        LOG_TRACE() << "fd = " << fd() << " state = " << detail::state_to_string(state_);
         HARE_ASSERT(state_ == STATE_CONNECTED || state_ == STATE_DISCONNECTING, "");
         // we don't close fd, leave it to dtor, so we can find leaks easily.
-        setState(STATE_DISCONNECTED);
-        event_->clearAllFlags();
-
-        connection(EVENT_CLOSED);
+        set_state(STATE_DISCONNECTED);
+        event_->disable_read();
+        event_->disable_write();
+        if (connect_) {
+            connect_(shared_from_this(), SESSION_CLOSED);
+        } else {
+            SYS_ERROR() << "cannot set connect_callback to session[" << name() << "], session is closed.";
+        }
     }
 
-    void Session::handleError()
+    void session::handle_error()
     {
-        SYS_ERROR() << "Occurred error to the session[" << name_ << "], detail: " << socket::getSocketErrorInfo(socket());
-        connection(EVENT_ERROR);
+        if (connect_) {
+            connect_(shared_from_this(), SESSION_ERROR);
+        } else {
+            SYS_ERROR() << "occurred error to the session[" << name_ << "], detail: " << socket_op::get_socket_error_info(fd());
+        }
     }
 
-    void Session::connectEstablished()
+    void session::connect_established()
     {
         HARE_ASSERT(state_ == STATE_CONNECTING, "");
-        setState(STATE_CONNECTED);
-        event_->setFlags(EVENT_READ);
-        connection(EVENT_CONNECTED);
+        set_state(STATE_CONNECTED);
+        if (connect_) {
+            connect_(shared_from_this(), SESSION_CONNECTED);
+        } else {
+            SYS_ERROR() << "cannot set connect_callback to session[" << name() << "], session connected.";
+        }
+        event_->tie(shared_from_this());
+        cycle_->event_update(event_);
+        event_->enable_read();
     }
 
-    void Session::connectDestroyed()
+    void session::connect_destroyed()
     {
         if (state_ == STATE_CONNECTED) {
-            setState(STATE_DISCONNECTED);
-            event_->clearAllFlags();
-            connection(EVENT_CLOSED);
+            handle_close();
         }
-        event_->deactive();
+        event_->deactivate();
     }
 
 } // namespace net

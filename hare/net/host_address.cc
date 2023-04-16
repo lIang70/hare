@@ -3,7 +3,6 @@
 #include "hare/net/socket_op.h"
 #include <hare/base/logging.h>
 
-#include <cstddef>
 #include <cstring>
 
 #ifdef HARE__HAVE_NETINET_IN_H
@@ -19,7 +18,7 @@ namespace net {
 
     namespace detail {
 
-        static thread_local char t_resolve_cache[2 * HARE_SMALL_FIXED_SIZE * HARE_SMALL_FIXED_SIZE * HARE_SMALL_FIXED_SIZE];
+        static thread_local std::array<char, static_cast<size_t>(2) * HARE_SMALL_FIXED_SIZE * HARE_SMALL_FIXED_SIZE * HARE_SMALL_FIXED_SIZE> t_resolve_cache {};
 
     } // namespace detail
 
@@ -28,19 +27,19 @@ namespace net {
     static_assert(offsetof(sockaddr_in, sin_port) == 2, "sin_port offset 2");
     static_assert(offsetof(sockaddr_in6, sin6_port) == 2, "sin6_port offset 2");
 
-    auto HostAddress::resolve(const std::string& hostname, HostAddress* result) -> bool
+    auto host_address::resolve(const std::string& _hostname, host_address* _result) -> bool
     {
-        HARE_ASSERT(result != nullptr, "");
+        HARE_ASSERT(_result != nullptr, "cannot set null host_address");
         struct hostent host_ent { };
         struct hostent* host_p { nullptr };
         auto herrno { 0 };
         
-        setZero(&host_ent, sizeof(host_ent));
+        set_zero(&host_ent, sizeof(host_ent));
 
-        auto ret = ::gethostbyname_r(hostname.c_str(), &host_ent, detail::t_resolve_cache, sizeof(detail::t_resolve_cache), &host_p, &herrno);
+        auto ret = ::gethostbyname_r(_hostname.c_str(), &host_ent, detail::t_resolve_cache.data(), detail::t_resolve_cache.size(), &host_p, &herrno);
         if (ret == 0 && host_p != nullptr) {
             HARE_ASSERT(host_p->h_addrtype == AF_INET && host_p->h_length == sizeof(uint32_t), "");
-            result->addr_.in_->sin_addr = *reinterpret_cast<struct in_addr*>(host_p->h_addr);
+            _result->addr_.in_->sin_addr = *reinterpret_cast<struct in_addr*>(host_p->h_addr);
             return true;
         }
 
@@ -50,118 +49,118 @@ namespace net {
         return false;
     }
 
-    auto HostAddress::localAddress(util_socket_t target_fd) -> HostAddress
+    auto host_address::local_address(util_socket_t _fd) -> host_address
     {
-        HostAddress local_addr {};
+        host_address local_addr {};
         local_addr.addr_.in6_ = static_cast<struct sockaddr_in6*>(malloc(sizeof(struct sockaddr_in6)));
 
         auto addr_len = static_cast<socklen_t>(sizeof(struct sockaddr_in6));
-        if (::getsockname(target_fd, sockaddrCast(local_addr.addr_.in6_), &addr_len) < 0) {
-            SYS_ERROR() << "Cannot get local addr.";
+        if (::getsockname(_fd, sockaddr_cast(local_addr.addr_.in6_), &addr_len) < 0) {
+            SYS_ERROR() << "cannot get local addr.";
         }
         return local_addr;
     }
 
-    auto HostAddress::peerAddress(util_socket_t target_fd) -> HostAddress
+    auto host_address::peer_address(util_socket_t _fd) -> host_address
     {
-        HostAddress peer_addr {};
+        host_address peer_addr {};
         peer_addr.addr_.in6_ = static_cast<struct sockaddr_in6*>(malloc(sizeof(struct sockaddr_in6)));
 
         auto addr_len = static_cast<socklen_t>(sizeof(struct sockaddr_in6));
-        if (::getpeername(target_fd, sockaddrCast(peer_addr.addr_.in6_), &addr_len) < 0) {
-            SYS_ERROR() << "Cannot get peer addr.";
+        if (::getpeername(_fd, sockaddr_cast(peer_addr.addr_.in6_), &addr_len) < 0) {
+            SYS_ERROR() << "cannot get peer addr.";
         }
         return peer_addr;
     }
 
-    HostAddress::HostAddress(uint16_t port, bool loopback_only, bool ipv6)
+    host_address::host_address(uint16_t _port, bool _loopback_only, bool _ipv6)
     {
-        static_assert(offsetof(HostAddress, addr_.in6_) == 0, "addr_in6_ offset 0");
-        static_assert(offsetof(HostAddress, addr_.in_) == 0, "addr_in_ offset 0");
+        static_assert(offsetof(host_address, addr_.in6_) == 0, "addr_in6_ offset 0");
+        static_assert(offsetof(host_address, addr_.in_) == 0, "addr_in_ offset 0");
 
         addr_.in6_ = static_cast<struct sockaddr_in6*>(malloc(sizeof(struct sockaddr_in6)));
 
-        if (ipv6) {
-            setZero((addr_.in6_), sizeof(struct sockaddr_in6));
+        if (_ipv6) {
+            set_zero((addr_.in6_), sizeof(struct sockaddr_in6));
             addr_.in6_->sin6_family = AF_INET6;
-            in6_addr addr = loopback_only ? in6addr_loopback : in6addr_any;
+            in6_addr addr = _loopback_only ? in6addr_loopback : in6addr_any;
             addr_.in6_->sin6_addr = addr;
-            addr_.in6_->sin6_port = hostToNetwork16(port);
+            addr_.in6_->sin6_port = host_to_network16(_port);
         } else {
-            setZero((addr_.in_), sizeof(struct sockaddr_in));
+            set_zero((addr_.in_), sizeof(struct sockaddr_in));
             addr_.in_->sin_family = AF_INET;
-            in_addr_t addr = loopback_only ? INADDR_ANY : INADDR_LOOPBACK;
-            addr_.in_->sin_addr.s_addr = hostToNetwork32(addr);
-            addr_.in_->sin_port = hostToNetwork16(port);
+            in_addr_t addr = _loopback_only ? INADDR_ANY : INADDR_LOOPBACK;
+            addr_.in_->sin_addr.s_addr = host_to_network32(addr);
+            addr_.in_->sin_port = host_to_network16(_port);
         }
     }
 
-    HostAddress::HostAddress(const std::string& target_ip, uint16_t port, bool ipv6)
+    host_address::host_address(const std::string& _ip, uint16_t _port, bool _ipv6)
     {
         addr_.in6_ = static_cast<struct sockaddr_in6*>(malloc(sizeof(struct sockaddr_in6)));
 
-        if (ipv6 || (strchr(target_ip.c_str(), ':') != nullptr)) {
-            setZero(addr_.in6_, sizeof(struct sockaddr_in6));
-            socket::fromIpPort(target_ip.c_str(), port, addr_.in6_);
+        if (_ipv6 || (strchr(_ip.c_str(), ':') != nullptr)) {
+            set_zero(addr_.in6_, sizeof(struct sockaddr_in6));
+            socket_op::from_ip_port(_ip.c_str(), _port, addr_.in6_);
         } else {
-            setZero(addr_.in_, sizeof(struct sockaddr_in));
-            socket::fromIpPort(target_ip.c_str(), port, addr_.in_);
+            set_zero(addr_.in_, sizeof(struct sockaddr_in));
+            socket_op::from_ip_port(_ip.c_str(), _port, addr_.in_);
         }
     }
 
-    HostAddress::~HostAddress()
+    host_address::~host_address()
     {
         free(addr_.in6_);
     }
 
-    HostAddress::HostAddress(HostAddress&& another) noexcept
+    host_address::host_address(host_address&& _another) noexcept
     {
-        std::swap( addr_.in6_, another.addr_.in6_);
+        std::swap( addr_.in6_, _another.addr_.in6_);
     }
 
-    auto HostAddress::operator=(HostAddress&& another) noexcept -> HostAddress&
+    auto host_address::operator=(host_address&& _another) noexcept -> host_address&
     {
-        std::swap( addr_.in6_, another.addr_.in6_);
+        std::swap( addr_.in6_, _another.addr_.in6_);
         return (*this);
     }
 
-    void HostAddress::setSockAddrInet6(const struct sockaddr_in6* addr_in6) const
+    void host_address::set_sockaddr_in6(const struct sockaddr_in6* _addr_in6) const
     {
-        HARE_ASSERT(addr_in6 != nullptr, "");
+        HARE_ASSERT(_addr_in6 != nullptr, "");
         HARE_ASSERT(addr_.in6_ != nullptr, "");
-        memcpy(addr_.in6_, addr_in6, sizeof(struct sockaddr_in6));
+        memcpy(addr_.in6_, _addr_in6, sizeof(struct sockaddr_in6));
     }
 
-    auto HostAddress::toIp() const -> std::string
+    auto host_address::to_ip() const -> std::string
     {
-        char cache[HARE_SMALL_FIXED_SIZE * 2] {};
-        socket::toIp(cache, sizeof(cache), sockaddrCast(addr_.in6_));
-        return cache;
+        std::array<char, static_cast<size_t>(HARE_SMALL_FIXED_SIZE) * 2> cache {};
+        socket_op::to_ip(cache.data(), static_cast<size_t>(HARE_SMALL_FIXED_SIZE) * 2, sockaddr_cast(addr_.in6_));
+        return cache.data();
     }
 
-    auto HostAddress::toIpPort() const -> std::string
+    auto host_address::to_ip_port() const -> std::string
     {
-        char cache[HARE_SMALL_FIXED_SIZE * 2] {};
-        socket::toIpPort(cache, sizeof(cache), sockaddrCast(addr_.in6_));
-        return cache;
+        std::array<char, static_cast<size_t>(HARE_SMALL_FIXED_SIZE) * 2> cache {};
+        socket_op::to_ip_port(cache.data(), static_cast<size_t>(HARE_SMALL_FIXED_SIZE) * 2, sockaddr_cast(addr_.in6_));
+        return cache.data();
     }
 
-    auto HostAddress::ipv4NetEndian() const -> uint32_t
+    auto host_address::ipv4_net_endian() const -> uint32_t
     {
         HARE_ASSERT(addr_.in_->sin_family == AF_INET, "");
         return addr_.in_->sin_addr.s_addr;
     }
 
-    auto HostAddress::portNetEndian() const -> uint16_t
+    auto host_address::port_net_endian() const -> uint16_t
     {
         return addr_.in_->sin_port;
     }
 
     // set IPv6 ScopeID
-    void HostAddress::setScopeId(uint32_t scope_id)
+    void host_address::set_scope_id(uint32_t _id) const
     {
         if (addr_.in_->sin_family == AF_INET6) {
-            addr_.in6_->sin6_scope_id = scope_id;
+            addr_.in6_->sin6_scope_id = _id;
         }
     }
 

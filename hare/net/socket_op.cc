@@ -1,15 +1,8 @@
 #include "hare/net/socket_op.h"
-#include "hare/base/error.h"
 
 #include <hare/base/exception.h>
+#include <hare/base/io/buffer.h>
 #include <hare/base/logging.h>
-#include <hare/net/buffer.h>
-
-#ifdef H_OS_WIN32
-#include <io.h>
-#include <windows.h>
-#include <winsock2.h>
-#endif
 
 #ifdef HARE__HAVE_UNISTD_H
 #include <unistd.h>
@@ -32,22 +25,22 @@
 #endif
 
 namespace hare {
-namespace socket {
+namespace socket_op {
 
     namespace detail {
 #if defined(NO_ACCEPT4)
-        void setNonBlockAndCloseOnExec(int target_fd)
+        void set_nonblock_closeonexec(int _fd)
         {
             // non-block
-            auto flags = ::fcntl(target_fd, F_GETFL, 0);
+            auto flags = ::fcntl(_fd, F_GETFL, 0);
             flags |= O_NONBLOCK;
-            auto ret = ::fcntl(target_fd, F_SETFL, flags);
+            auto ret = ::fcntl(_fd, F_SETFL, flags);
             // FIXME check
 
             // close-on-exec
-            flags = ::fcntl(target_fd, F_GETFD, 0);
+            flags = ::fcntl(_fd, F_GETFD, 0);
             flags |= FD_CLOEXEC;
-            ret = ::fcntl(target_fd, F_SETFD, flags);
+            ret = ::fcntl(_fd, F_SETFD, flags);
             // FIXME check
 
             H_UNUSED(ret);
@@ -55,64 +48,60 @@ namespace socket {
 #endif
     } // namespace detail
 
-    auto createNonblockingOrDie(int8_t family) -> util_socket_t
+    auto create_nonblocking_or_die(int8_t _family) -> util_socket_t
     {
 #ifdef H_OS_LINUX
-        auto target_fd = ::socket(family, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0);
-        if (target_fd < 0) {
-            throw Exception("Cannot create non-blocking socket");
+        auto _fd = ::socket(_family, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0);
+        if (_fd < 0) {
+            throw exception("Cannot create non-blocking socket");
         }
 #endif
-        return target_fd;
+        return _fd;
     }
 
-    auto createDgramOrDie(int8_t family) -> util_socket_t
+    auto create_dgram_or_die(int8_t _family) -> util_socket_t
     {
 #ifdef H_OS_LINUX
-        auto target_fd = ::socket(family, SOCK_DGRAM, 0);
-        if (target_fd < 0) {
-            throw Exception("Cannot create non-blocking socket");
+        auto _fd = ::socket(_family, SOCK_DGRAM, 0);
+        if (_fd < 0) {
+            throw exception("Cannot create dgram socket");
         }
 #endif
-        return target_fd;
+        return _fd;
     }
 
-    auto bind(int target_fd, const struct sockaddr* addr) -> Error
+    auto bind(int _fd, const struct sockaddr* _addr) -> error
     {
-        return ::bind(target_fd, addr, static_cast<socklen_t>(sizeof(struct sockaddr_in6))) < 0 ? 
-            Error(HARE_ERROR_SOCKET_BIND) : Error(HARE_ERROR_SUCCESS);
+        return ::bind(_fd, _addr, static_cast<socklen_t>(sizeof(struct sockaddr_in6))) < 0 ? error(HARE_ERROR_SOCKET_BIND) : error(HARE_ERROR_SUCCESS);
     }
 
-    auto listen(int target_fd) -> Error
+    auto listen(int _fd) -> error
     {
-        return ::listen(target_fd, SOMAXCONN) < 0 ?
-            Error(HARE_ERROR_SOCKET_LISTEN) : Error(HARE_ERROR_SUCCESS);
+        return ::listen(_fd, SOMAXCONN) < 0 ? error(HARE_ERROR_SOCKET_LISTEN) : error(HARE_ERROR_SUCCESS);
     }
 
-    auto connect(util_socket_t target_fd, const struct sockaddr* addr) -> Error
+    auto connect(util_socket_t _fd, const struct sockaddr* _addr) -> error
     {
-        return ::connect(target_fd, addr, sizeof(struct sockaddr)) < 0 ?
-            Error(HARE_ERROR_SOCKET_CONNECT) : Error(HARE_ERROR_SUCCESS);
+        return ::connect(_fd, _addr, sizeof(struct sockaddr)) < 0 ? error(HARE_ERROR_SOCKET_CONNECT) : error(HARE_ERROR_SUCCESS);
     }
 
-
-    auto close(util_socket_t target_fd) -> Error
+    auto close(util_socket_t _fd) -> error
     {
-        auto ret = ::close(target_fd);
+        auto ret = ::close(_fd);
         if (ret < 0) {
-            SYS_ERROR() << "Close target_fd[" << target_fd << "], detail:" << getSocketErrorInfo(target_fd);
+            SYS_ERROR() << "close fd[" << _fd << "], detail:" << get_socket_error_info(_fd);
         }
-        return ret < 0 ? Error(HARE_ERROR_SOCKET_CLOSED) : Error(HARE_ERROR_SUCCESS);
+        return ret < 0 ? error(HARE_ERROR_SOCKET_CLOSED) : error(HARE_ERROR_SUCCESS);
     }
 
-    auto accept(util_socket_t target_fd, struct sockaddr_in6* addr) -> util_socket_t
+    auto accept(util_socket_t _fd, struct sockaddr_in6* _addr) -> util_socket_t
     {
-        auto addr_len = static_cast<socklen_t>(sizeof(*addr));
+        auto addr_len = static_cast<socklen_t>(sizeof(*_addr));
 #if defined(NO_ACCEPT4)
-        auto accept_fd = ::accept(target_fd, sockaddr_cast(addr), &addr_len);
-        detail::setNonBlockAndCloseOnExec(accept_fd);
+        auto accept_fd = ::accept(_fd, sockaddr_cast(_addr), &addr_len);
+        detail::set_nonblock_closeonexec(accept_fd);
 #else
-        auto accept_fd = ::accept4(target_fd, net::sockaddrCast(addr),
+        auto accept_fd = ::accept4(_fd, net::sockaddr_cast(_addr),
             &addr_len, SOCK_NONBLOCK | SOCK_CLOEXEC);
 #endif
         if (accept_fd < 0) {
@@ -146,104 +135,101 @@ namespace socket {
         return accept_fd;
     }
 
-    auto shutdownWrite(util_socket_t target_fd) -> Error
+    auto shutdown_write(util_socket_t _fd) -> error
     {
-        return ::shutdown(target_fd, SHUT_WR) < 0 ?
-            Error(HARE_ERROR_SOCKET_SHUTDOWN_WRITE) : Error(HARE_ERROR_SUCCESS);
+        return ::shutdown(_fd, SHUT_WR) < 0 ? error(HARE_ERROR_SOCKET_SHUTDOWN_WRITE) : error(HARE_ERROR_SUCCESS);
     }
 
-    auto write(util_socket_t target_fd, const void* buf, size_t size) -> ssize_t
+    auto write(util_socket_t _fd, const void* _buf, size_t size) -> int64_t
     {
-        return ::write(target_fd, buf, size);
+        return ::write(_fd, _buf, size);
     }
 
-    auto read(util_socket_t target_fd, void* buf, size_t size) -> ssize_t
+    auto read(util_socket_t _fd, void* _buf, size_t size) -> int64_t
     {
-        return ::read(target_fd, buf, size);
+        return ::read(_fd, _buf, size);
     }
 
-    auto recvfrom(util_socket_t target_fd, void* buf, size_t size, struct sockaddr* addr, size_t addr_len) -> ssize_t
+    auto recvfrom(util_socket_t _fd, void* _buf, size_t size, struct sockaddr* _addr, size_t addr_len) -> int64_t
     {
-        return ::recvfrom(target_fd, buf, size, 0, addr, reinterpret_cast<socklen_t*>(&addr_len));
+        return ::recvfrom(_fd, _buf, size, 0, _addr, reinterpret_cast<socklen_t*>(&addr_len));
     }
 
-    auto getBytesReadableOnSocket(util_socket_t target_fd) -> std::size_t
+    auto get_bytes_readable_on_socket(util_socket_t _fd) -> std::size_t
     {
 #if defined(FIONREAD) && defined(H_OS_WIN32)
-        auto lng = net::Buffer::MAX_READ_DEFAULT;
+        auto lng = HARE_MAX_READ_DEFAULT;
         if (::ioctlsocket(target_fd, FIONREAD, &lng) < 0)
             return -1;
         /* Can overflow, but mostly harmlessly. XXXX */
         return (int)lng;
 #elif defined(FIONREAD)
-        auto reable_cnt = net::Buffer::MAX_READ_DEFAULT;
-        if (::ioctl(target_fd, FIONREAD, &reable_cnt) < 0) {
+        auto reable_cnt = HARE_MAX_READ_DEFAULT;
+        if (::ioctl(_fd, FIONREAD, &reable_cnt) < 0) {
             return (0);
         }
         return reable_cnt;
 #else
-        return net::Buffer::MAX_READ_DEFAULT;
+        return HARE_MAX_READ_DEFAULT;
 #endif
     }
 
-    auto getSocketErrorInfo(util_socket_t target_fd) -> std::string
+    auto get_socket_error_info(util_socket_t _fd) -> std::string
     {
-        char error_str[HARE_SMALL_FIXED_SIZE * HARE_SMALL_FIXED_SIZE];
-        auto error_len = static_cast<int32_t>(sizeof(error_str));
-        if (::getsockopt(target_fd, SOL_SOCKET, SO_ERROR, error_str, reinterpret_cast<socklen_t*>(&error_len)) != -1) {
-            return error_str;
+        std::array<char, static_cast<size_t>(HARE_SMALL_BUFFER)> error_str {};
+        auto error_len = error_str.size();
+        if (::getsockopt(_fd, SOL_SOCKET, SO_ERROR, error_str.data(), reinterpret_cast<socklen_t*>(&error_len)) != -1) {
+            return error_str.data();
         }
         return {};
     }
 
-    void toIpPort(char* buf, size_t size, const struct sockaddr* addr)
+    void to_ip_port(char* _buf, size_t size, const struct sockaddr* _addr)
     {
-        if (addr->sa_family == AF_INET6) {
-            buf[0] = '[';
-            toIp(buf + 1, size - 1, addr);
-            auto end = ::strlen(buf);
-            const auto* addr6 = net::sockaddrIn6Cast(addr);
-            auto port = net::networkToHost16(addr6->sin6_port);
+        if (_addr->sa_family == AF_INET6) {
+            _buf[0] = '[';
+            to_ip(_buf + 1, size - 1, _addr);
+            auto end = ::strlen(_buf);
+            const auto* addr6 = net::sockaddr_in6_cast(_addr);
+            auto port = net::network_to_host16(addr6->sin6_port);
             HARE_ASSERT(size > end, "");
-            snprintf(buf + end, size - end, "]:%u", port);
+            snprintf(_buf + end, size - end, "]:%u", port);
             return;
         }
-        toIp(buf, size, addr);
-        auto end = ::strlen(buf);
-        const auto* addr4 = net::sockaddrInCast(addr);
-        auto port = net::networkToHost16(addr4->sin_port);
+        to_ip(_buf, size, _addr);
+        auto end = ::strlen(_buf);
+        const auto* addr4 = net::sockaddr_in_cast(_addr);
+        auto port = net::network_to_host16(addr4->sin_port);
         HARE_ASSERT(size > end, "");
-        snprintf(buf + end, size - end, ":%u", port);
+        snprintf(_buf + end, size - end, ":%u", port);
     }
 
-    void toIp(char* buf, size_t size, const struct sockaddr* addr)
+    void to_ip(char* _buf, size_t size, const struct sockaddr* _addr)
     {
-        if (addr->sa_family == AF_INET) {
+        if (_addr->sa_family == AF_INET) {
             HARE_ASSERT(size >= INET_ADDRSTRLEN, "");
-            const auto* addr4 = net::sockaddrInCast(addr);
-            ::inet_ntop(AF_INET, &addr4->sin_addr, buf, static_cast<socklen_t>(size));
-        } else if (addr->sa_family == AF_INET6) {
+            const auto* addr4 = net::sockaddr_in_cast(_addr);
+            ::inet_ntop(AF_INET, &addr4->sin_addr, _buf, static_cast<socklen_t>(size));
+        } else if (_addr->sa_family == AF_INET6) {
             HARE_ASSERT(size >= INET6_ADDRSTRLEN, "");
-            const auto* addr6 = net::sockaddrIn6Cast(addr);
-            ::inet_ntop(AF_INET6, &addr6->sin6_addr, buf, static_cast<socklen_t>(size));
+            const auto* addr6 = net::sockaddr_in6_cast(_addr);
+            ::inet_ntop(AF_INET6, &addr6->sin6_addr, _buf, static_cast<socklen_t>(size));
         }
     }
 
-    auto fromIpPort(const char* target_ip, uint16_t port, struct sockaddr_in* addr) -> Error
+    auto from_ip_port(const char* target_ip, uint16_t port, struct sockaddr_in* _addr) -> error
     {
-        addr->sin_family = AF_INET;
-        addr->sin_port = net::hostToNetwork16(port);
-        return ::inet_pton(AF_INET, target_ip, &addr->sin_addr) <= 0 ?
-            Error(HARE_ERROR_SOCKET_FROM_IP) : Error(HARE_ERROR_SUCCESS);
+        _addr->sin_family = AF_INET;
+        _addr->sin_port = net::host_to_network16(port);
+        return ::inet_pton(AF_INET, target_ip, &_addr->sin_addr) <= 0 ? error(HARE_ERROR_SOCKET_FROM_IP) : error(HARE_ERROR_SUCCESS);
     }
 
-    auto fromIpPort(const char* target_ip, uint16_t port, struct sockaddr_in6* addr) -> Error
+    auto from_ip_port(const char* target_ip, uint16_t port, struct sockaddr_in6* _addr) -> error
     {
-        addr->sin6_family = AF_INET6;
-        addr->sin6_port = net::hostToNetwork16(port);
-        return ::inet_pton(AF_INET6, target_ip, &addr->sin6_addr) <= 0 ?
-            Error(HARE_ERROR_SOCKET_FROM_IP) : Error(HARE_ERROR_SUCCESS);
+        _addr->sin6_family = AF_INET6;
+        _addr->sin6_port = net::host_to_network16(port);
+        return ::inet_pton(AF_INET6, target_ip, &_addr->sin6_addr) <= 0 ? error(HARE_ERROR_SOCKET_FROM_IP) : error(HARE_ERROR_SUCCESS);
     }
 
-} // namespace socket
+} // namespace socket_op
 } // namespace hare

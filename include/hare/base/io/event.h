@@ -58,7 +58,7 @@ namespace io {
                          , public std::enable_shared_from_this<event> {
     public:
         using ptr = ptr<event>;
-        using callback = std::function<void(const event::ptr&, uint8_t events, const timestamp& receive_time)>;
+        using callback = std::function<void(const event::ptr&, uint8_t, const timestamp&)>;
         using id = int32_t;
 
     private:
@@ -85,7 +85,7 @@ namespace io {
         inline auto event_id() const -> id { return id_; }
 
         void enable_read();
-        void disenable_read();
+        void disable_read();
         void enable_write();
         void disable_write();
         void deactivate();

@@ -21,7 +21,7 @@ namespace io {
         
         static void global_handle(const std::string& command_line)
         {
-            LOG_ERROR() << "Unregistered instruction[" << command_line << "]";
+            SYS_ERROR() << "unregistered command[" << command_line << "], you can register \"default handle\" to console for handling all command.";
         }
 
         static console::default_handle s_handle = global_handle;
@@ -91,12 +91,11 @@ namespace io {
             SYS_ERROR() << "cannot read from STDIN.";
             return;
         }
-        LOG_TRACE() << "recv console input[" << console_line.data() << "] in " << _receive_time.to_string();
-
         std::string line(console_line.data(), len);
         while (line.back() == '\n') {
             line.pop_back();
         }
+        LOG_TRACE() << "recv console input[" << line << "] in " << _receive_time.to_string();
 
         auto iter = handlers_.find(line);
         if (iter != handlers_.end()) {

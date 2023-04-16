@@ -3,35 +3,40 @@
 
 #include <hare/net/session.h>
 
+#include <mutex>
+
 namespace hare {
 namespace net {
 
-    class HARE_API TcpSession : public Session
-                              , public std::enable_shared_from_this<TcpSession> {
+    class HARE_API tcp_session : public session {
+        std::mutex write_mutex_ {};
+
+        write_callback write_ {};
+        high_water_callback high_water_ {};
+        read_callback read_ {};
+
     public:
-        using Ptr = std::shared_ptr<TcpSession>;
+        using ptr = hare::ptr<tcp_session>;
 
-        ~TcpSession() override;
+        ~tcp_session() override;
 
-        auto send(const uint8_t* bytes, std::size_t length) -> bool override;
+        auto send(void* _bytes, size_t _length) -> bool override;
+        inline void set_read_callback(read_callback _read) override { read_ = std::move(_read); }
+        inline void set_write_callback(write_callback _write) override { write_ = std::move(_write); }
+        inline void set_high_water_callback(high_water_callback _high_water) override { high_water_ = std::move(_high_water); }
 
-        auto setTcpNoDelay(bool tcp_on) -> Error;
+        auto set_tcp_no_delay(bool _on) -> error;
 
     protected:
-        TcpSession(core::Cycle* cycle,
-            HostAddress local_addr,
-            std::string name, int8_t family, util_socket_t target_fd,
-            HostAddress peer_addr);
+        tcp_session(io::cycle* _cycle,
+            host_address _local_addr,
+            std::string _name, int8_t _family, util_socket_t _fd,
+            host_address _peer_addr);
 
-        void handleRead(const Timestamp& receive_time) override;
-        void handleWrite() override;
+        void handle_read(const timestamp& _time) override;
+        void handle_write() override;
 
-        void connection(int32_t flag) override { }
-        void writeComplete() override { }
-        void highWaterMark() override { }
-        void read(Buffer& buffer, const Timestamp& time) override { }
-
-        friend class HybridServe;
+        friend class hybrid_serve;
     };
 
 } // namespace net

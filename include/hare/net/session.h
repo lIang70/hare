@@ -1,88 +1,106 @@
 #ifndef _HARE_NET_SESSION_H_
 #define _HARE_NET_SESSION_H_
 
+#include <hare/base/io/buffer.h>
+#include <hare/base/io/event.h>
 #include <hare/base/time/timestamp.h>
-#include <hare/net/buffer.h>
-#include <hare/net/core/event.h>
-#include <hare/net/host_address.h>
 #include <hare/net/socket.h>
 
 namespace hare {
 namespace net {
 
-    class HARE_API Session : public NonCopyable {
+    using SESSION = enum : uint8_t {
+        SESSION_DEFAULT = io::EVENT_DEFAULT,
+        SESSION_READ = io::EVENT_READ,
+        SESSION_WRITE = io::EVENT_WRITE,
+        SESSION_CLOSED = io::EVENT_CLOSED,
+        SESSION_ERROR = 0x40,
+        SESSION_CONNECTED = 0x80,
+    };
+
+    using STATE = enum : int8_t {
+        STATE_CONNECTING = 0x00,
+        STATE_CONNECTED,
+        STATE_DISCONNECTING,
+        STATE_DISCONNECTED
+    };
+
+    static const size_t DEFAULT_HIGH_WATER = static_cast<size_t>(64 * 1024 * 1024);
+
+    class HARE_API session : public non_copyable
+                           , public std::enable_shared_from_this<session> {
     public:
-        using Ptr = std::shared_ptr<Session>;
-
-        using STATE = enum State : int8_t {
-            STATE_CONNECTING = 0x00,
-            STATE_CONNECTED,
-            STATE_DISCONNECTING,
-            STATE_DISCONNECTED
-        };
-
-        static const std::size_t DEFAULT_HIGH_WATER = static_cast<const std::size_t>(64 * 1024 * 1024);
+        using ptr = ptr<session>;
+        using connect_callback = std::function<void(const session::ptr&, uint8_t)>;
+        using write_callback = std::function<void(const session::ptr&)>;
+        using high_water_callback = std::function<void(const session::ptr&)>;
+        using read_callback = std::function<void(const session::ptr&, io::buffer&, const timestamp&)>;
 
     private:
         const std::string name_ {};
+        io::cycle* cycle_ { nullptr };
+        io::event::ptr event_ { nullptr };
+        socket socket_;
 
-    protected:
-        core::Cycle* cycle_ { nullptr };
-        Socket::Ptr socket_ { nullptr };
-        core::Event::Ptr event_ { nullptr };
+        const host_address local_addr_ {};
+        const host_address peer_addr_ {};
 
-        const HostAddress local_addr_ {};
-        const HostAddress peer_addr_ {};
-
-        Buffer in_buffer_ {};
-        Buffer out_buffer_ {};
-        std::size_t high_water_mark_ { DEFAULT_HIGH_WATER };
+        io::buffer in_buffer_ {};
+        io::buffer out_buffer_ {};
+        size_t high_water_mark_ { DEFAULT_HIGH_WATER };
 
         bool reading_ { false };
-        State state_ { STATE_CONNECTING };
+        STATE state_ { STATE_CONNECTING };
+
+        connect_callback connect_ {};
 
     public:
-        virtual ~Session();
+        virtual ~session();
 
         inline auto name() const -> std::string { return name_; }
-        inline auto localAddress() const -> const HostAddress& { return local_addr_; }
-        inline auto peerAddress() const -> const HostAddress& { return local_addr_; }
-        inline auto state() const -> State { return state_; }
-        inline auto socket() const -> util_socket_t { return socket_->socket(); }
+        inline auto owner_cycle() const -> io::cycle* { return cycle_; }
+        inline auto local_address() const -> const host_address& { return local_addr_; }
+        inline auto peer_address() const -> const host_address& { return peer_addr_; }
+        inline auto state() const -> STATE { return state_; }
+        inline auto fd() const -> util_socket_t { return socket_.fd(); }
+        inline auto high_water_mark() const -> size_t { return high_water_mark_; }
+        inline void set_high_water_mark(size_t _high_water = DEFAULT_HIGH_WATER) { high_water_mark_ = _high_water; }
 
-        inline void setHighWaterMark(std::size_t high_water = DEFAULT_HIGH_WATER) { high_water_mark_ = high_water; }
+        auto shutdown() -> error;
+        auto force_close() -> error;
 
-        virtual auto send(const uint8_t* bytes, std::size_t length) -> bool = 0;
+        void start_read();
+        void stop_read();
 
-        auto shutdown() -> Error;
-        auto forceClose() -> Error;
-
-        void startRead();
-        void stopRead();
+        virtual auto send(void*, size_t) -> bool = 0;
+        virtual void set_read_callback(read_callback) = 0;
+        virtual void set_write_callback(write_callback) = 0;
+        virtual void set_high_water_callback(high_water_callback) = 0;
 
     protected:
-        Session(core::Cycle* cycle, Socket::TYPE type, 
-            HostAddress local_addr,
-            std::string name, int8_t family, util_socket_t target_fd,
-            HostAddress peer_addr);
+        session(io::cycle* _cycle, TYPE _type,
+            host_address _local_addr,
+            std::string _name, int8_t _family, util_socket_t _fd,
+            host_address _peer_addr);
 
-        inline void setState(STATE state) { state_ = state; }
+        inline void set_state(STATE _state) { state_ = _state; }
+        inline auto in_buffer() -> io::buffer& { return in_buffer_; }
+        inline auto out_buffer() -> io::buffer& { return out_buffer_; }
+        inline auto event() -> io::event::ptr& { return event_; }
+        inline auto socket() -> socket& { return socket_; }
 
-        virtual void connection(int32_t flag) = 0;
-        virtual void writeComplete() = 0;
-        virtual void highWaterMark() = 0;
-        virtual void read(Buffer& buffer, const Timestamp& time) = 0;
-        
-        virtual void handleRead(const Timestamp& receive_time) = 0;
-        virtual void handleWrite() = 0;
-        void handleClose();
-        void handleError();
+        void handle_callback(const io::event::ptr& _event, uint8_t _events, const timestamp& _receive_time);
+
+        virtual void handle_read(const timestamp&) = 0;
+        virtual void handle_write() = 0;
+        void handle_close();
+        void handle_error();
 
     private:
-        void connectEstablished();
-        void connectDestroyed();
+        void connect_established();
+        void connect_destroyed();
 
-        friend class HybridServe;
+        friend class hybrid_serve;
     };
 
 } // namespace net

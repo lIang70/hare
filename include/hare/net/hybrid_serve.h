@@ -2,54 +2,43 @@
 #define _HARE_NET_HYBRID_SERVE_H_
 
 #include <hare/net/acceptor.h>
-#include <hare/net/core/timer.h>
 #include <hare/net/session.h>
 
 #include <map>
-#include <memory>
 
 namespace hare {
 namespace net {
 
-    class HARE_API HybridServe  : public NonCopyable
-                                , public std::enable_shared_from_this<HybridServe> {
+    class HARE_API hybrid_serve : public non_copyable
+                                , public std::enable_shared_from_this<hybrid_serve> {
         std::string name_ {};
-        std::string reactor_type_ {};
 
         // the acceptor loop
-        std::shared_ptr<core::Cycle> cycle_ { nullptr };
-
+        ptr<io::cycle> cycle_ {};
         uint64_t session_id_ { 0 };
-
-        std::map<util_socket_t, Acceptor::Ptr> acceptors_ {};
-
+        std::map<util_socket_t, acceptor::ptr> acceptors_ {};
         bool started_ { false };
 
     public:
-        using Ptr = std::shared_ptr<HybridServe>;
+        using ptr = ptr<hybrid_serve>;
 
-        //! @brief Construct a new Tcp Serve object
-        //! @param type The type of reactor. EPOLL/POLL
-        explicit HybridServe(const std::string& type, const std::string& name = "HARE_SERVE");
-        virtual ~HybridServe();
+        explicit hybrid_serve(hare::ptr<io::cycle> _cycle, std::string _name = "HARE_SERVE");
+        virtual ~hybrid_serve();
 
-        auto isRunning() const -> bool { return started_; }
+        auto is_running() const -> bool { return started_; }
 
-        auto addAcceptor(const Acceptor::Ptr& acceptor) -> bool;
-        void removeAcceptor(util_socket_t acceptor_socket);
-
-        auto add(core::Timer* timer) -> core::Timer::Id;
-        void cancel(core::Timer::Id timer_id);
+        auto add_acceptor(const acceptor::ptr& _acceptor) -> bool;
+        void remove_acceptor(util_socket_t _fd);
 
         void exec();
         void exit();
 
     protected:
-        virtual void newSessionConnected(Session::Ptr session, Timestamp time, const Acceptor::Ptr& acceptor) = 0;
+        virtual void new_session_connected(session::ptr _session, timestamp _time, const acceptor::ptr& _acceptor) = 0;
 
     private:
-        void activeAcceptors();
-        void newSession(util_socket_t target_fd, HostAddress& address, const Timestamp& time, util_socket_t acceptor_socket);
+        void active_acceptors();
+        void new_session(util_socket_t _fd, host_address& _address, const timestamp& _time, util_socket_t _acceptor);
     };
 
 } // namespace net

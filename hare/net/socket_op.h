@@ -1,37 +1,38 @@
 #ifndef _HARE_NET_SOCKET_OP_H_
 #define _HARE_NET_SOCKET_OP_H_
 
+#include <hare/base/error.h>
 #include <hare/hare-config.h>
 #include <hare/net/util.h>
 
-#include <string>
+#include <cstddef>
 
 namespace hare {
-namespace socket {
+namespace socket_op {
 
-    extern auto createNonblockingOrDie(int8_t family) -> util_socket_t;
-    extern auto createDgramOrDie(int8_t family) -> util_socket_t;
-    
-    extern auto bind(util_socket_t target_fd, const struct sockaddr* addr) -> Error;
-    extern auto listen(util_socket_t target_fd) -> Error;
-    extern auto connect(util_socket_t target_fd, const struct sockaddr* addr) -> Error;
+    extern auto create_nonblocking_or_die(int8_t _family) -> util_socket_t;
+    extern auto create_dgram_or_die(int8_t _family) -> util_socket_t;
 
-    extern auto close(util_socket_t target_fd) -> Error;
-    extern auto accept(util_socket_t target_fd, struct sockaddr_in6* addr) -> util_socket_t;
-    extern auto shutdownWrite(util_socket_t target_fd) -> Error;
-    extern auto write(util_socket_t target_fd, const void* buf, size_t size) -> ssize_t;
-    extern auto read(util_socket_t target_fd, void* buf, size_t size) -> ssize_t;
-    extern auto recvfrom(util_socket_t target_fd, void* buf, size_t size, struct sockaddr* addr, size_t addr_len) -> ssize_t;
+    extern auto bind(util_socket_t _fd, const struct sockaddr* _addr) -> error;
+    extern auto listen(util_socket_t _fd) -> error;
+    extern auto connect(util_socket_t _fd, const struct sockaddr* _addr) -> error;
 
-    extern auto getBytesReadableOnSocket(util_socket_t target_fd) -> std::size_t;
-    extern auto getSocketErrorInfo(util_socket_t target_fd) -> std::string;
+    extern auto close(util_socket_t _fd) -> error;
+    extern auto accept(util_socket_t _fd, struct sockaddr_in6* _addr) -> util_socket_t;
+    extern auto shutdown_write(util_socket_t _fd) -> error;
+    extern auto write(util_socket_t _fd, const void* _buf, size_t _size) -> int64_t;
+    extern auto read(util_socket_t _fd, void* _buf, size_t _size) -> int64_t;
+    extern auto recvfrom(util_socket_t _fd, void* _buf, size_t _size, struct sockaddr* _addr, size_t _addr_len) -> int64_t;
 
-    extern void toIpPort(char* buf, size_t size, const struct sockaddr* addr);
-    extern void toIp(char* buf, size_t size, const struct sockaddr* addr);
-    extern auto fromIpPort(const char* target_ip, uint16_t port, struct sockaddr_in* addr) -> Error;
-    extern auto fromIpPort(const char* target_ip, uint16_t port, struct sockaddr_in6* addr) -> Error;
+    extern auto get_bytes_readable_on_socket(util_socket_t _fd) -> std::size_t;
+    extern auto get_socket_error_info(util_socket_t _fd) -> std::string;
 
-} // namespace socket
+    extern void to_ip_port(char* _buf, size_t _size, const struct sockaddr* _addr);
+    extern void to_ip(char* _buf, size_t _size, const struct sockaddr* _addr);
+    extern auto from_ip_port(const char* _ip, uint16_t _port, struct sockaddr_in* _addr) -> error;
+    extern auto from_ip_port(const char* _ip, uint16_t _port, struct sockaddr_in6* _addr) -> error;
+
+} // namespace socket_op
 } // namespace hare
 
 #endif // !_HARE_NET_SOCKET_OP_H_

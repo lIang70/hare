@@ -61,6 +61,7 @@ namespace io {
 namespace current_thread {
 
     struct data_storage {
+        /// local info
         thread::id tid { 0UL };
         std::string tid_str {};
         const char* tname { nullptr };
@@ -80,7 +81,7 @@ namespace current_thread {
 
     inline auto tid() -> thread::id
     {
-        if (__builtin_expect(static_cast<int64_t>(tstorage.tid == 0), 0) != 0) {
+        if (__builtin_expect((tstorage.tid == 0 ? 1 : 0), 0) != 0) {
             cache_thread_id();
         }
         return tstorage.tid;

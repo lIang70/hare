@@ -197,7 +197,7 @@ namespace io {
 
     void cycle::run_in_cycle(task _task)
     {
-        if (in_cycle_thread() || !is_running()) {
+        if (in_cycle_thread()) {
             _task();
         } else {
             queue_in_cycle(std::move(_task));

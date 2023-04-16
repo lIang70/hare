@@ -2,26 +2,20 @@
 #define _HARE_NET_ACCEPTOR_H_
 
 #include <hare/base/time/timestamp.h>
-#include <hare/net/core/event.h>
+#include <hare/base/io/event.h>
 #include <hare/net/host_address.h>
 #include <hare/net/socket.h>
 
-#include <functional>
-
 namespace hare {
-namespace core {
-    class Cycle;
-} // namespace core
-
 namespace net {
 
-    class HARE_API Acceptor : public core::Event {
+    class HARE_API acceptor : public io::event {
     public:
-        using NewSession = std::function<void(util_socket_t, HostAddress& peer_address, const Timestamp&, util_socket_t)>;
+        using new_session = std::function<void(util_socket_t, host_address&, const timestamp&, util_socket_t)>;
 
     private:
-        Socket socket_;
-        NewSession new_session_ {};
+        socket socket_;
+        new_session new_session_ {};
         int8_t family_ {};
         int16_t port_ { -1 };
 
@@ -33,24 +27,23 @@ namespace net {
 #endif
 
     public:
-        using Ptr = std::shared_ptr<Acceptor>;
+        using ptr = std::shared_ptr<acceptor>;
 
-        Acceptor(int8_t family, Socket::TYPE type, int16_t port, bool reuse_port = true);
-        ~Acceptor() override;
+        acceptor(int8_t _family, TYPE _type, int16_t _port, bool _reuse_port = true);
+        ~acceptor() override;
 
-        inline auto socket() const -> util_socket_t { return socket_.socket(); };
-        inline auto type() const -> Socket::TYPE { return socket_.type(); };
+        inline auto socket() const -> util_socket_t { return socket_.fd(); };
+        inline auto type() const -> TYPE { return socket_.type(); };
         inline auto port() const -> int16_t { return port_; };
 
     protected:
-        void eventCallBack(int32_t events, const Timestamp& receive_time) override;
+        void event_callback(const io::event::ptr& _event, uint8_t _events, const timestamp& _receive_time);
 
     private:
-        auto listen() -> Error;
+        auto listen() -> error;
+        void set_new_session(new_session _cb);
 
-        void setNewSessionCallBack(NewSession new_session);
-
-        friend class HybridServe;
+        friend class hybrid_serve;
     };
 
 } // namespace net

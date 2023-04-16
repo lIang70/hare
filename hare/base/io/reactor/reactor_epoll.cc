@@ -119,7 +119,7 @@ namespace io {
             _timeout_microseconds);
 
         auto saved_errno = errno;
-        auto now {timestamp::now() };
+        auto now { timestamp::now() };
         if (event_num > 0) {
             LOG_TRACE() << event_num << " events happened.";
             fill_active_events(event_num);

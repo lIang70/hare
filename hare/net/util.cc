@@ -1,4 +1,3 @@
-#include "hare/base/error.h"
 #include <hare/net/util.h>
 
 #include <cerrno>
@@ -15,27 +14,27 @@
 namespace hare {
 namespace net {
 
-    auto hostToNetwork64(uint64_t host64) -> uint64_t { return htobe64(host64); }
-    auto hostToNetwork32(uint32_t host32) -> uint32_t { return htobe32(host32); }
-    auto hostToNetwork16(uint16_t host16) -> uint16_t { return htobe16(host16); }
-    auto networkToHost64(uint64_t net64) -> uint64_t { return be64toh(net64); }
-    auto networkToHost32(uint32_t net32) -> uint32_t { return be32toh(net32); }
-    auto networkToHost16(uint16_t net16) -> uint16_t { return be16toh(net16); }
+    auto host_to_network64(uint64_t host64) -> uint64_t { return htobe64(host64); }
+    auto host_to_network32(uint32_t host32) -> uint32_t { return htobe32(host32); }
+    auto host_to_network16(uint16_t host16) -> uint16_t { return htobe16(host16); }
+    auto network_to_host64(uint64_t net64) -> uint64_t { return be64toh(net64); }
+    auto network_to_host32(uint32_t net32) -> uint32_t { return be32toh(net32); }
+    auto network_to_host16(uint16_t net16) -> uint16_t { return be16toh(net16); }
 
-    auto getLocalIp(int32_t type, std::list<std::string>& ip_list) -> Error
+    auto get_local_address(int32_t _type, std::list<std::string>& _addr_list) -> error
     {
         // Get the list of ip addresses of machine
         ::ifaddrs* if_addrs { nullptr };
         auto ret = ::getifaddrs(&if_addrs);
 
         if (ret != 0) {
-            return Error(HARE_ERROR_GET_LOCAL_ADDRESS);
+            return error(HARE_ERROR_GET_LOCAL_ADDRESS);
         }
 
         int32_t adress_buf_len {};
-        char address_buffer[INET6_ADDRSTRLEN] {};
+        std::array<char, INET6_ADDRSTRLEN> address_buffer {};
 
-        switch (type) {
+        switch (_type) {
         case AF_INET6:
             adress_buf_len = INET6_ADDRSTRLEN;
             break;
@@ -43,20 +42,28 @@ namespace net {
             adress_buf_len = INET_ADDRSTRLEN;
             break;
         default:
-            return Error(HARE_ERROR_WRONG_FAMILY);
+            return error(HARE_ERROR_WRONG_FAMILY);
         }
 
         while (if_addrs != nullptr) {
-            if (type == if_addrs->ifa_addr->sa_family) {
+            if (_type == if_addrs->ifa_addr->sa_family) {
                 // Is a valid IPv4 Address
                 auto* tmp = &(reinterpret_cast<struct sockaddr_in*>(if_addrs->ifa_addr))->sin_addr;
-                ::inet_ntop(type, tmp, address_buffer, adress_buf_len);
-                ip_list.emplace_back(address_buffer, adress_buf_len);
-                hare::setZero(address_buffer, INET6_ADDRSTRLEN);
+                ::inet_ntop(_type, tmp, address_buffer.data(), adress_buf_len);
+                _addr_list.emplace_back(address_buffer.data(), adress_buf_len);
+                address_buffer.fill('\0');
             }
             if_addrs = if_addrs->ifa_next;
         }
-        return Error(HARE_ERROR_SUCCESS);
+        return error(HARE_ERROR_SUCCESS);
+    }
+
+    auto get_socket_pair(int8_t _family, int32_t _type, int32_t _protocol, std::array<util_socket_t, 2>& _sockets) -> error
+    {
+#ifndef M_OS_WIN32
+        auto ret = ::socketpair(_family, _type, _protocol, _sockets.data());
+        return ret < 0 ? error(HARE_ERROR_GET_SOCKET_PAIR) : error(HARE_ERROR_SUCCESS);
+#endif
     }
 
 } // namespace net
