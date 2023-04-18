@@ -1,5 +1,7 @@
 #include <hare/net/hybrid_serve.h>
 
+#include "hare/net/io_pool.h"
+#include "hare/net/socket_op.h"
 #include <hare/base/io/cycle.h>
 #include <hare/base/logging.h>
 #include <hare/net/acceptor.h>
@@ -53,9 +55,15 @@ namespace net {
         });
     }
 
-    void hybrid_serve::exec()
+    auto hybrid_serve::exec(int32_t _thread_nbr) -> error
     {
-        HARE_ASSERT(cycle_, "Cannot create cycle.");
+        HARE_ASSERT(cycle_, "cannot create cycle.");
+
+        io_pool_ = std::make_shared<io_pool>("SERVER_WORKER");
+        auto ret = io_pool_->start(cycle_->type(), _thread_nbr);
+        if (!ret) {
+            return error(HARE_ERROR_INIT_IO_POOL);
+        }
 
         active_acceptors();
 
@@ -65,6 +73,9 @@ namespace net {
 
         acceptors_.clear();
         cycle_.reset();
+        io_pool_.reset();
+
+        return error(HARE_ERROR_SUCCESS);
     }
 
     void hybrid_serve::exit()
@@ -93,6 +104,7 @@ namespace net {
     void hybrid_serve::new_session(util_socket_t _fd, host_address& _address, const timestamp& _time, util_socket_t _acceptor)
     {
         HARE_ASSERT(started_ == true, "serve already stop...");
+        cycle_->assert_in_cycle_thread();
 
         auto acceptor_iter = acceptors_.find(_acceptor);
         if (acceptor_iter == acceptors_.end()) {
@@ -107,15 +119,22 @@ namespace net {
         snprintf(cache.data(), cache.size(), "-%s#%lu", local_addr.to_ip_port().c_str(), session_id_++);
         auto session_name = name_ + cache.data();
 
-        LOG_DEBUG() << "New session[" << session_name
+        LOG_DEBUG() << "new session[" << session_name
                     << "] in serve[" << name_
                     << "] from " << _address.to_ip_port()
                     << " in " << _time.to_fmt();
 
+        if (!new_session_) {
+            SYS_ERROR() << "you need register new_session_callback to serve[" << name_ << "]";
+            socket_op::close(_fd);
+            return;
+        }
+
+        auto* next_cycle = io_pool_->get_next();
         session::ptr session { nullptr };
         switch (acceptor->type()) {
         case TYPE_TCP:
-            session.reset(new tcp_session(cycle_.get(),
+            session.reset(new tcp_session(next_cycle,
                 std::move(local_addr),
                 session_name, acceptor->family_, _fd,
                 std::move(_address)));
@@ -123,11 +142,13 @@ namespace net {
         case TYPE_UDP:
         case TYPE_INVALID:
         default:
-            SYS_FATAL() << "Invalid type[" << acceptor->type() << "] of acceptor.";
+            SYS_FATAL() << "invalid type[" << acceptor->type() << "] of acceptor.";
         }
 
-        new_session_connected(session, _time, acceptor);
-        session->connect_established();
+        next_cycle->run_in_cycle(std::bind([=]() {
+            new_session_(session, _time, acceptor);
+            session->connect_established();
+        }));
     }
 
 } // namespace net

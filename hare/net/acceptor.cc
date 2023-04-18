@@ -16,16 +16,16 @@
 namespace hare {
 namespace net {
 
-    acceptor::acceptor(int8_t family, TYPE type, int16_t port, bool reuse_port)
-        : io::event(type == TYPE_TCP ? 
-                         socket_op::create_nonblocking_or_die(family) : (type == TYPE_UDP ? 
-                                                                   socket_op::create_dgram_or_die(family) : -1),
+    acceptor::acceptor(int8_t _family, TYPE _type, int16_t _port, bool _reuse_port)
+        : io::event(_type == TYPE_TCP ? 
+                         socket_op::create_nonblocking_or_die(_family) : (_type == TYPE_UDP ? 
+                                                                   socket_op::create_dgram_or_die(_family) : -1),
                 std::bind(&acceptor::event_callback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
                 io::EVENT_PERSIST | io::EVENT_READ,
                 0)
-        , socket_(family, type, fd())
-        , family_(family)
-        , port_(port)
+        , socket_(_family, _type, fd())
+        , family_(_family)
+        , port_(_port)
 #ifdef H_OS_LINUX
         , idle_fd_(::open("/dev/null", O_RDONLY | O_CLOEXEC))
     {
@@ -33,7 +33,7 @@ namespace net {
 #else
     {
 #endif
-        socket_.set_reuse_port(reuse_port);
+        socket_.set_reuse_port(_reuse_port);
         socket_.set_reuse_addr(true);
     }
 

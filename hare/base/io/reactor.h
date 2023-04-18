@@ -18,12 +18,15 @@ namespace hare {
 namespace io {
 
     class reactor : public non_copyable {
+        cycle::REACTOR_TYPE type_ {};
         cycle* owner_cycle_ { nullptr };
 
     public:
         static auto create_by_type(cycle::REACTOR_TYPE _type, cycle* _cycle) -> reactor*;
 
         virtual ~reactor() = default;
+
+        inline auto type() -> cycle::REACTOR_TYPE { return type_; }
 
         /**
          * @brief Polls the I/O events.
@@ -44,7 +47,7 @@ namespace io {
         virtual void event_remove(ptr<event> _event) = 0;
 
     protected:
-        explicit reactor(cycle* cycle);
+        explicit reactor(cycle* cycle, cycle::REACTOR_TYPE _type);
     };
 
 } // namespace io

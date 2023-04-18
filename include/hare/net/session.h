@@ -29,14 +29,8 @@ namespace net {
 
     class HARE_API session : public non_copyable
                            , public std::enable_shared_from_this<session> {
-    public:
-        using ptr = ptr<session>;
-        using connect_callback = std::function<void(const session::ptr&, uint8_t)>;
-        using write_callback = std::function<void(const session::ptr&)>;
-        using high_water_callback = std::function<void(const session::ptr&)>;
-        using read_callback = std::function<void(const session::ptr&, io::buffer&, const timestamp&)>;
+        using connect_callback = std::function<void(const ptr<session>&, uint8_t)>;
 
-    private:
         const std::string name_ {};
         io::cycle* cycle_ { nullptr };
         io::event::ptr event_ { nullptr };
@@ -55,6 +49,11 @@ namespace net {
         connect_callback connect_ {};
 
     public:
+        using ptr = ptr<session>;
+        using write_callback = std::function<void(const session::ptr&)>;
+        using high_water_callback = std::function<void(const session::ptr&)>;
+        using read_callback = std::function<void(const session::ptr&, io::buffer&, const timestamp&)>;
+
         virtual ~session();
 
         inline auto name() const -> std::string { return name_; }
@@ -65,6 +64,7 @@ namespace net {
         inline auto fd() const -> util_socket_t { return socket_.fd(); }
         inline auto high_water_mark() const -> size_t { return high_water_mark_; }
         inline void set_high_water_mark(size_t _high_water = DEFAULT_HIGH_WATER) { high_water_mark_ = _high_water; }
+        inline void set_connect_callback(connect_callback _connect) { connect_ = std::move(_connect); }
 
         auto shutdown() -> error;
         auto force_close() -> error;
@@ -72,6 +72,7 @@ namespace net {
         void start_read();
         void stop_read();
 
+        virtual auto append(io::buffer&) -> bool = 0;
         virtual auto send(void*, size_t) -> bool = 0;
         virtual void set_read_callback(read_callback) = 0;
         virtual void set_write_callback(write_callback) = 0;

@@ -24,7 +24,7 @@ namespace io {
             SYS_ERROR() << "unregistered command[" << command_line << "], you can register \"default handle\" to console for handling all command.";
         }
 
-        static console::default_handle s_handle = global_handle;
+        static console::default_handle s_command_handle = global_handle;
     }
 
     console::console()
@@ -49,7 +49,7 @@ namespace io {
     void console::register_default_handle(default_handle _handle) const
     {
         HARE_ASSERT(!attached_, "you need add handle to console before attached.");
-        detail::s_handle = std::move(_handle);
+        detail::s_command_handle = std::move(_handle);
     }
 
     auto console::attach(const ptr<cycle>& _cycle) -> bool
@@ -95,13 +95,13 @@ namespace io {
         while (line.back() == '\n') {
             line.pop_back();
         }
-        LOG_TRACE() << "recv console input[" << line << "] in " << _receive_time.to_string();
+        LOG_TRACE() << "recv console input[" << line << "] in " << _receive_time.to_fmt(true);
 
         auto iter = handlers_.find(line);
         if (iter != handlers_.end()) {
             iter->second();
         } else {
-            detail::s_handle(line);
+            detail::s_command_handle(line);
         }
     }
 

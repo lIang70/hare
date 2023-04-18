@@ -20,10 +20,12 @@ namespace net {
 
         ~tcp_session() override;
 
-        auto send(void* _bytes, size_t _length) -> bool override;
         inline void set_read_callback(read_callback _read) override { read_ = std::move(_read); }
         inline void set_write_callback(write_callback _write) override { write_ = std::move(_write); }
         inline void set_high_water_callback(high_water_callback _high_water) override { high_water_ = std::move(_high_water); }
+
+        auto append(io::buffer& _buffer) -> bool override;
+        auto send(void* _bytes, size_t _length) -> bool override;
 
         auto set_tcp_no_delay(bool _on) -> error;
 

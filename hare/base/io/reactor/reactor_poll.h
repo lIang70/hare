@@ -5,6 +5,7 @@
 #include <hare/hare-config.h>
 
 #include <map>
+#include <vector>
 
 #ifdef HARE__HAVE_POLL
 #include <sys/poll.h>
@@ -19,7 +20,7 @@ namespace io {
         std::map<util_socket_t, int32_t> inverse_map_ {};
 
     public:
-        explicit reactor_poll(cycle* _cycle);
+        explicit reactor_poll(cycle* _cycle, cycle::REACTOR_TYPE _type);
         ~reactor_poll() override;
 
         auto poll(int32_t _timeout_microseconds) -> timestamp override;

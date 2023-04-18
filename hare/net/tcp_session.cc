@@ -10,8 +10,41 @@ namespace net {
 
     tcp_session::~tcp_session() = default;
 
+    auto tcp_session::append(io::buffer& _buffer) -> bool
+    {
+        /// FIXME:
+        if (state() == STATE_CONNECTED) {
+            auto empty { false };
+            {
+                std::unique_lock<std::mutex> lock(write_mutex_);
+                empty = out_buffer().size() == 0;
+                out_buffer().append(_buffer);
+            }
+            if (empty) {
+                owner_cycle()->queue_in_cycle(std::bind([=](const wptr<session>& session) {
+                    auto tcp = session.lock();
+                    if (tcp) {
+                        handle_write();
+                    }
+                },
+                    std::static_pointer_cast<tcp_session>(shared_from_this())));
+            } else if (out_buffer().size() > high_water_mark()) {
+                owner_cycle()->queue_in_cycle(std::bind([=](const wptr<tcp_session>& session) {
+                    auto tcp = session.lock();
+                    if (tcp) {
+                        high_water_(shared_from_this());
+                    }
+                },
+                    std::static_pointer_cast<tcp_session>(shared_from_this())));
+            }
+            return true;
+        }
+        return false;
+    }
+
     auto tcp_session::send(void* _bytes, size_t _length) -> bool
     {
+        /// FIXME:
         if (state() == STATE_CONNECTED) {
             auto empty { false };
             {
@@ -36,6 +69,7 @@ namespace net {
                 },
                     std::static_pointer_cast<tcp_session>(shared_from_this())));
             }
+            return true;
         }
         return false;
     }
@@ -71,19 +105,18 @@ namespace net {
 
     void tcp_session::handle_write()
     {
-        if (CHECK_EVENT(event()->events(), SESSION_WRITE) != 0) {
+        if (event()->writing()) {
             std::unique_lock<std::mutex> lock(write_mutex_);
             auto write_n = out_buffer().write(fd(), -1);
             if (write_n > 0) {
                 if (out_buffer().size() == 0) {
-                    event()->disable_write();
                     owner_cycle()->queue_in_cycle(std::bind([=] (const wptr<tcp_session>& session) {
                         auto tcp = session.lock();
                         if (tcp) {
                             if (write_) {
                                 write_(tcp);
                             } else {
-                                SYS_ERROR() << "cannot set write_callback to tcp session[" << name() << "].";
+                                SYS_ERROR() << "not set write_callback to tcp session[" << name() << "].";
                             }
                         }
                     },

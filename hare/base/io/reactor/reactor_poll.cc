@@ -26,7 +26,7 @@ namespace io {
             if (CHECK_EVENT(events, EVENT_CLOSED) != 0) {
                 SET_EVENT(res, POLLRDHUP);
             }
-            return events;
+            return res;
         }
 
         auto encode_poll(decltype(pollfd::events) events) -> int32_t
@@ -73,8 +73,8 @@ namespace io {
 
     } // namespace detail
 
-    reactor_poll::reactor_poll(cycle* _cycle)
-        : reactor(_cycle)
+    reactor_poll::reactor_poll(cycle* _cycle, cycle::REACTOR_TYPE _type)
+        : reactor(_cycle, _type)
     {
     }
 

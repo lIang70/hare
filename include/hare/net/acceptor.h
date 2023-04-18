@@ -10,10 +10,8 @@ namespace hare {
 namespace net {
 
     class HARE_API acceptor : public io::event {
-    public:
         using new_session = std::function<void(util_socket_t, host_address&, const timestamp&, util_socket_t)>;
 
-    private:
         socket socket_;
         new_session new_session_ {};
         int8_t family_ {};

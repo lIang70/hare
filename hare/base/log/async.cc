@@ -3,7 +3,6 @@
 #include "hare/base/log/file.h"
 #include <hare/base/exception.h>
 #include <hare/base/time/timestamp.h>
-#include <hare/base/util/system_info.h>
 
 #include <cassert>
 
@@ -11,7 +10,8 @@ namespace hare {
 namespace log {
 
     async::async(int64_t _roll_size, std::string _name, int32_t _flush_interval)
-        : name_(std::move(_name))
+        : thread(std::bind(&async::run, this), "HARE_LOG")
+        , name_(std::move(_name))
         , roll_size_(_roll_size)
         , flush_interval_(_flush_interval)
     {
@@ -22,7 +22,7 @@ namespace log {
 
     async::~async()
     {
-        if (running_) {
+        if (started()) {
             stop();
         }
     }
@@ -45,32 +45,16 @@ namespace log {
         }
     }
 
-    void async::start()
-    {
-        running_ = true;
-        thread_ = std::make_shared<std::thread>(std::bind(&async::run, this));
-        latch_.await();
-    }
-
     void async::stop()
     {
         running_ = false;
         cv_.notify_all();
-        if (thread_ && thread_->joinable()) {
-            thread_->join();
-        }
+        join();
     }
 
     void async::run()
     {
-        if (!running_) {
-            throw exception("LOG_ASYNC is not running.");
-        }
-
-        util::set_tname("LOG_ASYNC");
-
-        latch_.count_down();
-
+        running_ = true;
         log::file output(name_, roll_size_, false);
         fixed_block::ptr new_block_1(new fixed_block);
         fixed_block::ptr new_block_2(new fixed_block);

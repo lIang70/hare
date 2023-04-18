@@ -29,12 +29,16 @@ namespace net {
         static auto local_address(util_socket_t _fd) -> host_address;
         static auto peer_address(util_socket_t _fd) -> host_address;
 
-        //! Constructs an endpoint with given port number.
-        //! Mostly used in server listening.
+        /**
+         * @brief Constructs an endpoint with given port number.
+         *   Mostly used in server listening.
+         */
         explicit host_address(uint16_t _port = 0, bool _loopback_only = false, bool _ipv6 = false);
 
-        //! Constructs an endpoint with given ip and port.
-        //! @c ip should be "1.2.3.4"
+        /**
+         * @brief Constructs an endpoint with given ip and port.
+         * @c ip should be "1.2.3.4"
+         */
         host_address(const std::string& _ip, uint16_t _port, bool _ipv6 = false);
         ~host_address();
 

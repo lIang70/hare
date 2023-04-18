@@ -37,7 +37,7 @@ namespace net {
     {
         if (state_ == STATE_CONNECTED) {
             set_state(STATE_DISCONNECTING);
-            if (CHECK_EVENT(event_->events(), io::EVENT_WRITE) == 0) {
+            if (!event_->writing()) {
                 return socket_.shutdown_write();
             }
             return error(HARE_ERROR_SOCKET_WRITING);
@@ -56,7 +56,7 @@ namespace net {
 
     void session::start_read()
     {
-        if (!reading_ || CHECK_EVENT(event_->events(), io::EVENT_READ) == 0) {
+        if (!reading_ || !event_->reading()) {
             event_->enable_read();
             reading_ = true;
         }
@@ -64,7 +64,7 @@ namespace net {
 
     void session::stop_read()
     {
-        if (reading_ || CHECK_EVENT(event_->events(), io::EVENT_READ) != 0) {
+        if (reading_ || event_->reading()) {
             event_->disable_read();
             reading_ = false;
         }

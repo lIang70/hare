@@ -249,7 +249,7 @@ else()
 endif()
 
 if(HARE__BUILD_TESTS)
-    # add_subdirectory(net/tests)
+    add_subdirectory(net/tests)
 endif(HARE__BUILD_TESTS)
 
 # Add hare_core's src

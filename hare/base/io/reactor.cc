@@ -19,13 +19,13 @@ namespace io {
         switch (_type) {
         case cycle::REACTOR_TYPE_EPOLL:
 #ifdef HARE__HAVE_POLL
-            return new reactor_epoll(_cycle);
+            return new reactor_epoll(_cycle, _type);
 #else
             throw exception("EPOLL reactor was not supported.");
 #endif
         case cycle::REACTOR_TYPE_POLL:
 #ifdef HARE__HAVE_POLL
-            return new reactor_poll(_cycle);
+            return new reactor_poll(_cycle, _type);
 #else
             throw exception("POLL reactor was not supported.");
 #endif
@@ -34,8 +34,9 @@ namespace io {
         }
     }
 
-    reactor::reactor(cycle* _cycle)
-        : owner_cycle_(_cycle)
+    reactor::reactor(cycle* _cycle, cycle::REACTOR_TYPE _type)
+        : type_(_type)
+        , owner_cycle_(_cycle)
     {
     }
 

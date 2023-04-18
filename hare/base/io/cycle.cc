@@ -52,7 +52,7 @@ namespace io {
             void send_notify()
             {
                 uint64_t one = 1;
-                auto write_n = ::send(fd(), &one, sizeof(one), 0);
+                auto write_n = ::write(fd(), &one, sizeof(one));
                 if (write_n != sizeof(one)) {
                     SYS_ERROR() << "write[" << write_n << " B] instead of " << sizeof(one);
                 }
@@ -65,7 +65,7 @@ namespace io {
 
                 if (CHECK_EVENT(_events, EVENT_READ) != 0) {
                     uint64_t one = 0;
-                    auto read_n = ::recv(fd(), &one, sizeof(one), 0);
+                    auto read_n = ::read(fd(), &one, sizeof(one));
                     if (read_n != sizeof(one) && one != static_cast<uint64_t>(1)) {
                         SYS_ERROR() << "read notify[" << read_n << " B] instead of " << sizeof(one);
                     }
@@ -111,10 +111,10 @@ namespace io {
         // Ignore signal[pipe]
         static detail::ignore_sigpipe s_ignore_sigpipe {};
 
-        LOG_TRACE() << "cycle[" << this << "] is being initialized in [" << tid_ << "]...";
+        LOG_TRACE() << "cycle[" << this << "] is being initialized in [" << current_thread::tid_str() << "]...";
         if (current_thread::tstorage.cycle != nullptr) {
             SYS_FATAL() << "another cycle[" << current_thread::tstorage.cycle
-                        << "] exists in this thread[" << current_thread::tid() << "].";
+                        << "] exists in this thread[" << current_thread::tid_str() << "].";
         } else {
             current_thread::tstorage.cycle = this;
         }
@@ -123,6 +123,7 @@ namespace io {
     cycle::~cycle()
     {
         // clear thread local data.
+        assert_in_cycle_thread();
         current_thread::tstorage.active_events.clear();
         current_thread::tstorage.events.clear();
         priority_timer().swap(current_thread::tstorage.ptimer);
@@ -134,6 +135,11 @@ namespace io {
     auto cycle::in_cycle_thread() const -> bool
     {
         return tid_ == current_thread::tid();
+    }
+
+    auto cycle::type() const -> REACTOR_TYPE
+    {
+        return reactor_->type();
     }
 
     void cycle::loop()
@@ -164,7 +170,7 @@ namespace io {
             for (auto& event_elem : current_thread::tstorage.active_events) {
                 current_active_event_ = event_elem.event_;
                 current_active_event_->handle_event(event_elem.revents_, reactor_time_);
-                if (CHECK_EVENT(current_active_event_->events_, EVENT_PERSIST) == 0) {
+                if (CHECK_EVENT(current_active_event_->events(), EVENT_PERSIST) == 0) {
                     event_remove(current_active_event_);
                 }
             }
@@ -222,7 +228,7 @@ namespace io {
         return pending_functions_.size();
     }
 
-    void cycle::event_update(ptr<event> _event)
+    void cycle::event_update(hare::ptr<event> _event)
     {
         if (_event->owner_cycle() != shared_from_this() && _event->id_ != -1) {
             SYS_ERROR() << "cannot add event from other cycle[" << _event->owner_cycle().get() << "]";
@@ -258,7 +264,7 @@ namespace io {
             _event));
     }
 
-    void cycle::event_remove(ptr<event> _event)
+    void cycle::event_remove(hare::ptr<event> _event)
     {
         if (!_event) {
             return;
@@ -298,7 +304,7 @@ namespace io {
             _event));
     }
 
-    auto cycle::event_check(const ptr<event>& _event) -> bool
+    auto cycle::event_check(const hare::ptr<event>& _event) -> bool
     {
         if (!_event || _event->id_ < 0) {
             return false;

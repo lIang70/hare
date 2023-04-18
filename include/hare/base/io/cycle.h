@@ -16,7 +16,6 @@
 #include <hare/base/time/timestamp.h>
 
 #include <list>
-#include <vector>
 
 namespace hare {
 namespace io {
@@ -44,6 +43,8 @@ namespace io {
 #endif
 
     public:
+        using ptr = ptr<cycle>;
+
         using REACTOR_TYPE = enum {
             REACTOR_TYPE_EPOLL,
             REACTOR_TYPE_POLL,
@@ -79,6 +80,8 @@ namespace io {
 
         auto in_cycle_thread() const -> bool;
 
+        auto type() const -> REACTOR_TYPE;
+
         /**
          * @brief loops forever.
          *   Must be called in the same thread as creation of the object.
@@ -109,14 +112,14 @@ namespace io {
 
         auto queue_size() const -> std::size_t;
 
-        void event_update(ptr<event> _event);
-        void event_remove(ptr<event> _event);
+        void event_update(hare::ptr<event> _event);
+        void event_remove(hare::ptr<event> _event);
 
         /**
          * @brief Detects whether the event is in the reactor.
          *   Must be called in the cycle thread.
          **/
-        auto event_check(const ptr<event>& _event) -> bool;
+        auto event_check(const hare::ptr<event>& _event) -> bool;
 
     private:
         void notify();

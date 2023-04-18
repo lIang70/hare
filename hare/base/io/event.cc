@@ -81,6 +81,11 @@ namespace io {
         }
     }
 
+    auto event::reading() -> bool
+    {
+        return CHECK_EVENT(events_, EVENT_READ) != 0;
+    }
+
     void event::enable_write()
     {
         SET_EVENT(events_, EVENT_WRITE);
@@ -101,6 +106,11 @@ namespace io {
         } else {
             SYS_ERROR() << "event[" << this << "] need to be added to cycle.";
         }
+    }
+
+    auto event::writing() -> bool
+    {
+        return CHECK_EVENT(events_, EVENT_WRITE) != 0;
     }
 
     void event::deactivate()

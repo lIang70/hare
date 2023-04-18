@@ -52,6 +52,8 @@ namespace io {
 
         auto chain_size() const -> size_t;
         void clear_all();
+
+        void append(buffer& _another);
         auto add(const void* _bytes, size_t _size) -> bool;
         auto read(util_socket_t _fd, int64_t _howmuch) -> int64_t;
 

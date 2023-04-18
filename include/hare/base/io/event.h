@@ -86,8 +86,10 @@ namespace io {
 
         void enable_read();
         void disable_read();
+        auto reading() -> bool;
         void enable_write();
         void disable_write();
+        auto writing() -> bool;
         void deactivate();
 
         auto event_string() const -> std::string;

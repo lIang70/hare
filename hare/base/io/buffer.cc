@@ -147,6 +147,62 @@ namespace io {
         block_chain_.clear();
         read_iter_ = block_chain_.begin();
         write_iter_ = block_chain_.begin();
+        total_len_ = 0;
+    }
+
+    void buffer::append(buffer& _another)
+    {
+        if (_another.total_len_ == 0) {
+            return;
+        }
+
+        total_len_ += _another.total_len_;
+        _another.total_len_ = 0;
+        auto empty = block_chain_.empty();
+
+        if (!empty && !(*write_iter_)->empty()) {
+            ++write_iter_;
+            if (write_iter_ == block_chain_.end()) {
+                write_iter_ = block_chain_.begin();
+            }
+        }
+
+        if (read_iter_ == write_iter_) {
+            ++write_iter_;
+            if (write_iter_ == block_chain_.end()) {
+                write_iter_ = block_chain_.begin();
+            }
+            block_chain_.insert(write_iter_, std::make_shared<fixed_block>());
+            --write_iter_;
+        }
+
+        while (_another.read_iter_ != _another.write_iter_) {
+            auto block = std::move(*_another.read_iter_);
+            _another.block_chain_.erase(_another.read_iter_++);
+            if (_another.read_iter_ == _another.block_chain_.end()) {
+                _another.read_iter_ = _another.block_chain_.begin();
+            }
+            if (!block->empty()) {
+                block_chain_.insert(write_iter_, block);
+            } else {
+                break;
+            }
+        }
+
+        if (!(*_another.read_iter_)->empty()) {
+            HARE_ASSERT(_another.read_iter_ == _another.write_iter_, "");
+            auto block = std::move(*_another.read_iter_);
+            _another.clear_all();
+            block_chain_.insert(write_iter_, block);
+        }
+
+        if (!empty && (*write_iter_)->empty()) {
+            --write_iter_;
+        } else if (empty) {
+            read_iter_ = block_chain_.begin();
+            write_iter_ = block_chain_.end();
+            --write_iter_;
+        }
     }
 
     auto buffer::add(const void* _bytes, size_t _size) -> bool
@@ -155,34 +211,19 @@ namespace io {
             return false;
         }
 
-        const auto* bytes = static_cast<const char*>(_bytes);
-        auto curr_block = get_block();
-
-        if (!curr_block) {
-            SYS_ERROR() << "cannot cast block.";
-            return false;
-        }
-
-        auto remain = curr_block->avail();
-        if (remain >= _size || curr_block->realign(_size)) {
-            /**
-             * @brief there's enough space to hold all the data in the
-             *  current last chain
-             **/
-            curr_block->append(bytes, _size);
-            total_len_ += _size;
-            return true;
-        }
-
         total_len_ += _size;
-        while (_size > 0) {
+        auto curr_block = get_block();
+        auto remain = curr_block->avail();
+        const auto* bytes = static_cast<const char*>(_bytes);
+        do {
             auto real_size = MIN(remain, _size);
             curr_block->append(bytes, real_size);
-            _size -= real_size;
+            _size = _size < real_size ? 0 : _size - real_size;
             bytes += real_size;
             curr_block = get_block();
             remain = curr_block->avail();
-        }
+        } while (_size > 0);
+
         return true;
     }
 
@@ -241,7 +282,6 @@ namespace io {
                 iter = block_chain_.begin();
             }
         }
-        HARE_ASSERT(read_iter_ != write_iter_, "buffer over size.");
 #endif
         total_len_ += readable;
         return static_cast<int64_t>(readable);
@@ -249,7 +289,7 @@ namespace io {
 
     auto buffer::write(util_socket_t _fd, int64_t _howmuch) -> int64_t
     {
-        auto write_n = static_cast<ssize_t>(-1);
+        auto write_n = static_cast<ssize_t>(0);
 
         if (_howmuch < 0 || _howmuch > total_len_) {
             _howmuch = static_cast<int64_t>(total_len_);
@@ -284,15 +324,17 @@ namespace io {
             }
 
             write_n = ::writev(_fd, iov, write_i);
+            total_len_ -= write_n;
 
             /**
              * @brief If the length of chain bigger than MAX_CHINA_SIZE,
              *  cleaning will begin.
              **/
             auto clean = chain_size() > MAX_CHINA_SIZE;
-            auto length = write_n;
+            auto length = static_cast<size_t>(write_n);
             auto curr_block = *read_iter_;
             while (length != 0U && length > curr_block->readable_size()) {
+                length = length < curr_block->readable_size() ? 0 : length - curr_block->readable_size();
                 if (clean) {
                     HARE_ASSERT(read_iter_ != write_iter_, "buffer over size.");
                     block_chain_.erase(read_iter_++);
@@ -371,34 +413,42 @@ namespace io {
         auto res = _howmuch;
         auto cur_iter = write_iter_;
 
-        for (; cur_iter != read_iter_;) {
-            auto cur_block = (*cur_iter);
-            res -= cur_block->avail();
-            HARE_ASSERT(write_iter_ != cur_iter && cur_block->empty(), "");
-            ++cur_iter;
+        if (block_chain_.empty()) {
+            HARE_ASSERT(write_iter_ == block_chain_.end(), "");
+            HARE_ASSERT(read_iter_ == block_chain_.end(), "");
+            ret = static_cast<int32_t>(res / static_cast<size_t>(HARE_LARGE_BUFFER));
+            block_chain_.push_back(std::make_shared<fixed_block>());
+            block_chain_.insert(block_chain_.begin(), ret, std::make_shared<fixed_block>());
+            write_iter_ = block_chain_.begin();
+            read_iter_ = block_chain_.begin();
+            return ret + 1;
+        }
+
+        if ((*cur_iter)->avail() > 0) {
             ++ret;
+            res = (*cur_iter)->avail() > res ? 0 : res - (*cur_iter)->avail();
+            ++cur_iter;
             if (cur_iter == block_chain_.end()) {
                 cur_iter = block_chain_.begin();
             }
         }
 
-        if (write_iter_ == read_iter_) {
-            if (block_chain_.empty()) {
-                HARE_ASSERT(write_iter_ == block_chain_.end(), "");
-                HARE_ASSERT(read_iter_ == block_chain_.end(), "");
-                block_chain_.emplace_back(new fixed_block);
-                write_iter_ = block_chain_.begin();
-                read_iter_ = block_chain_.begin();
-            }
-            res -= (*write_iter_)->avail();
-            ++ret;
+        if (res == 0) {
+            return ret;
         }
 
-        if (res > 0) {
-            auto cnt = (res / static_cast<size_t>(HARE_LARGE_BUFFER)) + 1;
-            ret += static_cast<int32_t>(cnt);
-            block_chain_.insert(cur_iter, cnt, std::make_shared<fixed_block>());
+        ret += static_cast<int32_t>(res / static_cast<size_t>(HARE_LARGE_BUFFER)) + 1;
+        auto index = ret - 1;
+        while (index != 0 && cur_iter != read_iter_) {
+            HARE_ASSERT((*cur_iter)->empty(), "the block must be empty.");
+            --index;
+            ++cur_iter;
+            if (cur_iter == block_chain_.end()) {
+                cur_iter = block_chain_.begin();
+            }
         }
+        block_chain_.insert(block_chain_.begin(), index, std::make_shared<fixed_block>());
+
         return ret;
     }
 
@@ -424,8 +474,16 @@ namespace io {
             }
         }
 
-        block_chain_.insert(write_iter_, std::make_shared<fixed_block>());
-        --write_iter_;
+        if (chain_size() == 1) {
+            block_chain_.insert(write_iter_, std::make_shared<fixed_block>());
+            --write_iter_;
+        } else {
+            ++write_iter_;
+            if (write_iter_ == block_chain_.end()) {
+                write_iter_ = block_chain_.begin();
+            }
+        }
+        HARE_ASSERT((*write_iter_)->empty(), "the block is not empty.");
         return (*write_iter_);
     }
 

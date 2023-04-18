@@ -4,6 +4,8 @@
 #include <hare/base/io/reactor.h>
 #include <hare/hare-config.h>
 
+#include <vector>
+
 #ifdef HARE__HAVE_EPOLL
 #include <sys/epoll.h>
 
@@ -17,7 +19,7 @@ namespace io {
         ep_event_list epoll_events_ {};
 
     public:
-        explicit reactor_epoll(cycle* cycle);
+        explicit reactor_epoll(cycle* cycle, cycle::REACTOR_TYPE _type);
         ~reactor_epoll() override;
 
         auto poll(int32_t _timeout_microseconds) -> timestamp override;

@@ -95,8 +95,8 @@ namespace io {
 
     } // namespace detail
 
-    reactor_epoll::reactor_epoll(cycle* cycle)
-        : reactor(cycle)
+    reactor_epoll::reactor_epoll(cycle* cycle, cycle::REACTOR_TYPE _type)
+        : reactor(cycle, _type)
         , epoll_fd_(::epoll_create1(EPOLL_CLOEXEC))
         , epoll_events_(detail::INIT_EVENTS_CNT)
     {

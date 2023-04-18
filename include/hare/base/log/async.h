@@ -14,6 +14,7 @@
 
 #include <hare/base/util/buffer.h>
 #include <hare/base/util/count_down_latch.h>
+#include <hare/base/thread/thread.h>
 
 #include <string>
 #include <thread>
@@ -22,18 +23,14 @@
 namespace hare {
 namespace log {
 
-    class HARE_API async {
-    public:
+    class HARE_API async : public thread {
         // Flush every second.
         static const int32_t META_FLUSH_INTERVAL = 1;
         static const int64_t BLOCK_NUMBER = 16;
 
-    private:
         using fixed_block = util::fixed_buffer<HARE_LARGE_BUFFER>;
         using blocks = std::vector<fixed_block::ptr>;
 
-        ptr<std::thread> thread_;
-        util::count_down_latch latch_ { 1 };
         std::mutex mutex_ {};
         std::condition_variable cv_ {};
         fixed_block::ptr current_block_ { new fixed_block };
@@ -46,13 +43,12 @@ namespace log {
         int32_t flush_interval_ { META_FLUSH_INTERVAL };
 
     public:
-        using ptr = ptr<async>;
+        using ptr = hare::ptr<async>;
 
         async(int64_t roll_size, std::string name, int32_t flush_interval = 3 * META_FLUSH_INTERVAL);
         ~async();
 
         void append(const char* log_line, int32_t size);
-        void start();
         void stop();
 
     private:

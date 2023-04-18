@@ -32,6 +32,7 @@ namespace detail {
         "Failed to active acceptor.",                               // HARE_ERROR_ACCEPTOR_ACTIVED
         "Session already disconnected.",                            // HARE_ERROR_SESSION_ALREADY_DISCONNECT
         "Failed to get pair socket.",                               // HARE_ERROR_GET_SOCKET_PAIR
+        "Failed to init io pool.",                                  // HARE_ERROR_INIT_IO_POOL
 
         // OpenSSL
         "Failed when openssl create the dh.",                       // HARE_ERROR_OPENSSL_CREATE_DH
