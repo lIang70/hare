@@ -16,7 +16,7 @@ namespace net {
 
         std::string name_ {};
         bool is_running_ { false };
-        int32_t last_ { -1 };
+        int32_t last_ { 0 };
         int32_t thread_nbr_ { 0 };
         cycle_list io_cycles_ {};
         thread_list cycle_thread_ {};

@@ -1,3 +1,4 @@
+#include <hare/base/io/console.h>
 #include <hare/base/io/cycle.h>
 #include <hare/base/logging.h>
 #include <hare/net/hybrid_serve.h>
@@ -6,8 +7,8 @@
 
 #define USAGE "echo_serve -p [port]"
 
-using hare::net::session;
 using hare::net::acceptor;
+using hare::net::session;
 
 void new_session(session::ptr _ses, hare::timestamp _ts, const acceptor::ptr& _acc)
 {
@@ -15,7 +16,7 @@ void new_session(session::ptr _ses, hare::timestamp _ts, const acceptor::ptr& _a
 
     auto iter = s_session.find(_ses->fd());
     if (iter == s_session.end()) {
-        _ses->set_connect_callback([=] (const session::ptr& _session, uint8_t _event) {
+        _ses->set_connect_callback([=](const session::ptr& _session, uint8_t _event) {
             if ((_event & hare::net::SESSION_CONNECTED) != 0) {
                 LOG_INFO() << "session[" << _session->name() << " is connected.";
             }
@@ -24,16 +25,16 @@ void new_session(session::ptr _ses, hare::timestamp _ts, const acceptor::ptr& _a
                 s_session.erase(_session->fd());
             }
         });
-        
-        _ses->set_read_callback([=] (const session::ptr& _session, hare::io::buffer& _buffer, const hare::timestamp&) {
+
+        _ses->set_read_callback([=](const session::ptr& _session, hare::io::buffer& _buffer, const hare::timestamp&) {
             _session->append(_buffer);
         });
 
-        _ses->set_write_callback([=] (const session::ptr& _session) {
-            
+        _ses->set_write_callback([=](const session::ptr& _session) {
+
         });
 
-        _ses->set_high_water_callback([=] (const session::ptr& _session) {
+        _ses->set_high_water_callback([=](const session::ptr& _session) {
             LOG_ERROR() << "session[" << _session->name() << "] is going offline because it is no longer receiving data.";
             s_session.erase(_session->fd());
         });
@@ -54,14 +55,21 @@ auto main(int32_t argc, char** argv) -> int32_t
         LOG_FATAL() << USAGE;
     }
 
-    acceptor::ptr acc { new acceptor(2, hare::net::TYPE_TCP, int16_t(std::stoi(std::string(argv[2])))) }; 
+    acceptor::ptr acc { new acceptor(2, hare::net::TYPE_TCP, int16_t(std::stoi(std::string(argv[2])))) };
 
-    hare::io::cycle::ptr main_cycle = std::make_shared<hare::io::cycle>(hare::io::cycle::REACTOR_TYPE_POLL);
+    hare::io::cycle::ptr main_cycle = std::make_shared<hare::io::cycle>(hare::io::cycle::REACTOR_TYPE_EPOLL);
     hare::net::hybrid_serve::ptr main_serve = std::make_shared<hare::net::hybrid_serve>(main_cycle, "ECHO");
 
     main_serve->set_new_session(new_session);
     main_serve->add_acceptor(acc);
+
+    hare::io::console console;
+    console.register_handle("quit", [=]{ main_cycle->exit(); });
+    console.attach(main_cycle);
+
     auto ret = main_serve->exec(1);
+
+    acc.reset();
 
     return (ret ? (0) : (-1));
 }

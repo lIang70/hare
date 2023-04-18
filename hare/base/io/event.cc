@@ -56,7 +56,7 @@ namespace io {
 
     event::~event()
     {
-        HARE_ASSERT(!cycle_.expired(), "When the event is destroyed, the event is still held by cycle.");
+        HARE_ASSERT(cycle_.expired(), "When the event is destroyed, the event is still held by cycle.");
     }
 
     void event::enable_read()
@@ -115,11 +115,8 @@ namespace io {
 
     void event::deactivate()
     {
-        auto cycle = cycle_.lock();
-        if (cycle) {
+        if (auto cycle = cycle_.lock()) {
             cycle->event_remove(shared_from_this());
-        } else {
-            SYS_ERROR() << "event[" << this << "] need to be added to cycle.";
         }
     }
 

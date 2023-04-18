@@ -49,7 +49,7 @@ namespace net {
     {
         if (state_ == STATE_CONNECTED || state_ == STATE_DISCONNECTING) {
             set_state(STATE_DISCONNECTING);
-            handle_close();
+            connect_destroyed();
         }
         return error(HARE_ERROR_SESSION_ALREADY_DISCONNECT);
     }
@@ -115,6 +115,7 @@ namespace net {
         } else {
             SYS_ERROR() << "cannot set connect_callback to session[" << name() << "], session is closed.";
         }
+        event_->deactivate();
     }
 
     void session::handle_error()

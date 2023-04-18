@@ -14,21 +14,22 @@ namespace net {
     {
         /// FIXME:
         if (state() == STATE_CONNECTED) {
-            auto empty { false };
+            size_t out_buffer_size { 0 };
             {
                 std::unique_lock<std::mutex> lock(write_mutex_);
-                empty = out_buffer().size() == 0;
+                out_buffer_size = out_buffer().size();
                 out_buffer().append(_buffer);
             }
-            if (empty) {
+            if (out_buffer_size == 0) {
                 owner_cycle()->queue_in_cycle(std::bind([=](const wptr<session>& session) {
                     auto tcp = session.lock();
                     if (tcp) {
+                        event()->enable_write();
                         handle_write();
                     }
                 },
                     std::static_pointer_cast<tcp_session>(shared_from_this())));
-            } else if (out_buffer().size() > high_water_mark()) {
+            } else if (out_buffer_size > high_water_mark()) {
                 owner_cycle()->queue_in_cycle(std::bind([=](const wptr<tcp_session>& session) {
                     auto tcp = session.lock();
                     if (tcp) {
@@ -46,21 +47,22 @@ namespace net {
     {
         /// FIXME:
         if (state() == STATE_CONNECTED) {
-            auto empty { false };
+            size_t out_buffer_size { 0 };
             {
                 std::unique_lock<std::mutex> lock(write_mutex_);
-                empty = out_buffer().size() == 0;
+                out_buffer_size = out_buffer().size();
                 out_buffer().add(_bytes, _length);
             }
-            if (empty) {
+            if (out_buffer_size == 0) {
                 owner_cycle()->queue_in_cycle(std::bind([=](const wptr<session>& session) {
                     auto tcp = session.lock();
                     if (tcp) {
+                        event()->enable_write();
                         handle_write();
                     }
                 },
                     std::static_pointer_cast<tcp_session>(shared_from_this())));
-            } else if (out_buffer().size() > high_water_mark()) {
+            } else if (out_buffer_size > high_water_mark()) {
                 owner_cycle()->queue_in_cycle(std::bind([=](const wptr<tcp_session>& session) {
                     auto tcp = session.lock();
                     if (tcp) {
@@ -108,8 +110,9 @@ namespace net {
         if (event()->writing()) {
             std::unique_lock<std::mutex> lock(write_mutex_);
             auto write_n = out_buffer().write(fd(), -1);
-            if (write_n > 0) {
+            if (write_n >= 0) {
                 if (out_buffer().size() == 0) {
+                    event()->disable_write();
                     owner_cycle()->queue_in_cycle(std::bind([=] (const wptr<tcp_session>& session) {
                         auto tcp = session.lock();
                         if (tcp) {

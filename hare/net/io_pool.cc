@@ -58,7 +58,7 @@ namespace net {
             return {};
         }
 
-        auto index = ++last_;
+        auto index = last_++;
         last_ %= thread_nbr_;
         return io_cycles_[index].get();
     }
