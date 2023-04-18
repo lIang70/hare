@@ -80,7 +80,7 @@ namespace log {
         ::fflush(stdout);
     }
 
-    timezone g_log_time_zone { EAST_OF_EIGHT, ""};
+    timezone g_log_time_zone { EAST_OF_EIGHT, "" };
     LEVEL g_log_level = init_level();
     logger::output g_output = default_output;
     logger::flush g_flush = default_flush;
@@ -141,10 +141,7 @@ void logger::data::format_time()
 
 void logger::data::finish()
 {
-#ifndef HARE_DEBUG
-    if (level_ <= log::LogLevel::DEBUG)
-#endif
-    {
+    if (level_ <= log::LEVEL_DEBUG) {
         stream_ << " - " << base_name_ << ':' << line_;
     }
     stream_ << '\n';

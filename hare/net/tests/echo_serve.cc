@@ -10,19 +10,26 @@
 using hare::net::acceptor;
 using hare::net::session;
 
-void new_session(session::ptr _ses, hare::timestamp _ts, const acceptor::ptr& _acc)
+using all_session = std::map<hare::util_socket_t, session::ptr>;
+
+static auto sessions() -> all_session&
 {
     static std::map<hare::util_socket_t, session::ptr> s_session {};
+    return s_session;
+}
 
-    auto iter = s_session.find(_ses->fd());
-    if (iter == s_session.end()) {
+static void new_session(session::ptr _ses, hare::timestamp _ts, const acceptor::ptr& _acc)
+{
+
+    auto iter = sessions().find(_ses->fd());
+    if (iter == sessions().end()) {
         _ses->set_connect_callback([=](const session::ptr& _session, uint8_t _event) {
             if ((_event & hare::net::SESSION_CONNECTED) != 0) {
-                LOG_INFO() << "session[" << _session->name() << " is connected.";
+                LOG_INFO() << "session[" << _session->name() << "] is connected.";
             }
             if ((_event & hare::net::SESSION_CLOSED) != 0) {
-                LOG_INFO() << "session[" << _session->name() << " is disconnected.";
-                s_session.erase(_session->fd());
+                LOG_INFO() << "session[" << _session->name() << "] is disconnected.";
+                sessions().erase(_session->fd());
             }
         });
 
@@ -36,11 +43,11 @@ void new_session(session::ptr _ses, hare::timestamp _ts, const acceptor::ptr& _a
 
         _ses->set_high_water_callback([=](const session::ptr& _session) {
             LOG_ERROR() << "session[" << _session->name() << "] is going offline because it is no longer receiving data.";
-            s_session.erase(_session->fd());
+            sessions().erase(_session->fd());
         });
 
         LOG_INFO() << "recv a new session[" << _ses->name() << "] at " << _ts.to_fmt(true) << " on acceptor=" << _acc->fd();
-        s_session.insert(std::make_pair(_ses->fd(), std::move(_ses)));
+        sessions().insert(std::make_pair(_ses->fd(), std::move(_ses)));
 
     } else {
         LOG_ERROR() << "have the same fd for session[" << _ses->fd() << "]";
@@ -49,7 +56,7 @@ void new_session(session::ptr _ses, hare::timestamp _ts, const acceptor::ptr& _a
 
 auto main(int32_t argc, char** argv) -> int32_t
 {
-    hare::logger::set_level(hare::log::LEVEL_TRACE);
+    hare::logger::set_level(hare::log::LEVEL_INFO);
 
     if (argc != 3) {
         LOG_FATAL() << USAGE;
@@ -64,10 +71,20 @@ auto main(int32_t argc, char** argv) -> int32_t
     main_serve->add_acceptor(acc);
 
     hare::io::console console;
-    console.register_handle("quit", [=]{ main_cycle->exit(); });
+    console.register_handle("quit", [=] { 
+        for (auto& session : sessions()) {
+            session.second->force_close();
+        }
+        sessions().clear();
+        main_cycle->exit(); 
+    });
     console.attach(main_cycle);
 
+    LOG_INFO() << "========= ECHO serve start =========";
+
     auto ret = main_serve->exec(1);
+
+    LOG_INFO() << "========= ECHO serve stop! =========";
 
     acc.reset();
 

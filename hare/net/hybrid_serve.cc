@@ -35,7 +35,7 @@ namespace net {
                     return;
                 }
                 acceptors_.insert(std::make_pair(_acceptor->socket(), _acceptor));
-                LOG_TRACE() << "add acceptor[" << _acceptor->socket() << "] to serve[" << this << "].";
+                LOG_DEBUG() << "add acceptor[" << _acceptor->socket() << "] to serve[" << this << "].";
             });
         }
         return true;
@@ -96,7 +96,7 @@ namespace net {
                 acceptors_.erase(iter++);
                 continue;
             }
-            LOG_INFO() << "hybrid_serve start to listen port[" << acc->port() << "].";
+            LOG_DEBUG() << "hybrid_serve start to listen port[" << acc->port() << "].";
             ++iter;
         }
     }

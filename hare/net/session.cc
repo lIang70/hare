@@ -48,8 +48,8 @@ namespace net {
     auto session::force_close() -> error
     {
         if (state_ == STATE_CONNECTED || state_ == STATE_DISCONNECTING) {
-            set_state(STATE_DISCONNECTING);
-            connect_destroyed();
+            handle_close();
+            return error(HARE_ERROR_SUCCESS);
         }
         return error(HARE_ERROR_SESSION_ALREADY_DISCONNECT);
     }
@@ -139,14 +139,6 @@ namespace net {
         event_->tie(shared_from_this());
         cycle_->event_update(event_);
         event_->enable_read();
-    }
-
-    void session::connect_destroyed()
-    {
-        if (state_ == STATE_CONNECTED) {
-            handle_close();
-        }
-        event_->deactivate();
     }
 
 } // namespace net

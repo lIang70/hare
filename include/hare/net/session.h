@@ -99,7 +99,6 @@ namespace net {
 
     private:
         void connect_established();
-        void connect_destroyed();
 
         friend class hybrid_serve;
     };
