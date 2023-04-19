@@ -10,48 +10,31 @@
 using hare::net::acceptor;
 using hare::net::session;
 
-using all_session = std::map<hare::util_socket_t, session::ptr>;
-
-static auto sessions() -> all_session&
+static void new_session(const session::ptr& _ses, hare::timestamp _ts, const acceptor::ptr& _acc)
 {
-    static std::map<hare::util_socket_t, session::ptr> s_session {};
-    return s_session;
-}
+    _ses->set_connect_callback([=](const session::ptr& _session, uint8_t _event) {
+        if ((_event & hare::net::SESSION_CONNECTED) != 0) {
+            LOG_INFO() << "session[" << _session->name() << "] is connected.";
+        }
+        if ((_event & hare::net::SESSION_CLOSED) != 0) {
+            LOG_INFO() << "session[" << _session->name() << "] is disconnected.";
+        }
+    });
 
-static void new_session(session::ptr _ses, hare::timestamp _ts, const acceptor::ptr& _acc)
-{
+    _ses->set_read_callback([=](const session::ptr& _session, hare::io::buffer& _buffer, const hare::timestamp&) {
+        _session->append(_buffer);
+    });
 
-    auto iter = sessions().find(_ses->fd());
-    if (iter == sessions().end()) {
-        _ses->set_connect_callback([=](const session::ptr& _session, uint8_t _event) {
-            if ((_event & hare::net::SESSION_CONNECTED) != 0) {
-                LOG_INFO() << "session[" << _session->name() << "] is connected.";
-            }
-            if ((_event & hare::net::SESSION_CLOSED) != 0) {
-                LOG_INFO() << "session[" << _session->name() << "] is disconnected.";
-                sessions().erase(_session->fd());
-            }
-        });
+    _ses->set_write_callback([=](const session::ptr& _session) {
 
-        _ses->set_read_callback([=](const session::ptr& _session, hare::io::buffer& _buffer, const hare::timestamp&) {
-            _session->append(_buffer);
-        });
+    });
 
-        _ses->set_write_callback([=](const session::ptr& _session) {
+    _ses->set_high_water_callback([=](const session::ptr& _session) {
+        LOG_ERROR() << "session[" << _session->name() << "] is going offline because it is no longer receiving data.";
+        _session->force_close();
+    });
 
-        });
-
-        _ses->set_high_water_callback([=](const session::ptr& _session) {
-            LOG_ERROR() << "session[" << _session->name() << "] is going offline because it is no longer receiving data.";
-            sessions().erase(_session->fd());
-        });
-
-        LOG_INFO() << "recv a new session[" << _ses->name() << "] at " << _ts.to_fmt(true) << " on acceptor=" << _acc->fd();
-        sessions().insert(std::make_pair(_ses->fd(), std::move(_ses)));
-
-    } else {
-        LOG_ERROR() << "have the same fd for session[" << _ses->fd() << "]";
-    }
+    LOG_INFO() << "recv a new session[" << _ses->name() << "] at " << _ts.to_fmt(true) << " on acceptor=" << _acc->fd();
 }
 
 auto main(int32_t argc, char** argv) -> int32_t
@@ -71,12 +54,8 @@ auto main(int32_t argc, char** argv) -> int32_t
     main_serve->add_acceptor(acc);
 
     hare::io::console console;
-    console.register_handle("quit", [=] { 
-        for (auto& session : sessions()) {
-            session.second->force_close();
-        }
-        sessions().clear();
-        main_cycle->exit(); 
+    console.register_handle("quit", [=] {
+        main_cycle->exit();
     });
     console.attach(main_cycle);
 

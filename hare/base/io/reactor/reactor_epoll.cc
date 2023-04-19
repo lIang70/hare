@@ -195,11 +195,11 @@ namespace io {
         LOG_TRACE() << "epoll_ctl op = " << detail::operation_to_string(_operation)
                     << "\n fd = " << target_fd << " event = { " << detail::epoll_to_string(detail::decode_epoll(_event->events())) << " }";
         if (::epoll_ctl(epoll_fd_, _operation, target_fd, &ep_event) < 0) {
-            // if (_operation == EPOLL_CTL_DEL) {
+            if (_operation == EPOLL_CTL_DEL) {
                 SYS_ERROR() << "epoll_ctl op =" << detail::operation_to_string(_operation) << " fd =" << target_fd;
-            // } else {
-            //     SYS_FATAL() << "epoll_ctl op =" << detail::operation_to_string(_operation) << " fd =" << target_fd;
-            // }
+            } else {
+                SYS_FATAL() << "epoll_ctl op =" << detail::operation_to_string(_operation) << " fd =" << target_fd;
+            }
         }
     }
 

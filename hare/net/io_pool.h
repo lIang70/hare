@@ -4,22 +4,30 @@
 #include <hare/base/io/cycle.h>
 #include <hare/base/thread/thread.h>
 
-#include <utility>
+#include <map>
 #include <vector>
 
 namespace hare {
 namespace net {
 
+    class session;
+
+    struct pool_item {
+        ptr<io::cycle> cycle {};
+        ptr<thread> thread {};
+        std::map<util_socket_t, ptr<session>> sessions {};
+    };
+
     class io_pool : public non_copyable {
-        using cycle_list = std::vector<ptr<io::cycle>>;
-        using thread_list = std::vector<ptr<thread>>;
+
+        using pool_items = std::vector<pool_item>;
 
         std::string name_ {};
         bool is_running_ { false };
         int32_t last_ { 0 };
         int32_t thread_nbr_ { 0 };
-        cycle_list io_cycles_ {};
-        thread_list cycle_thread_ {};
+
+        pool_items items_ {};
 
     public:
         explicit io_pool(std::string _name)
@@ -30,7 +38,6 @@ namespace net {
 
         inline auto name() const -> const std::string& { return name_; }
         inline auto is_running() const -> bool { return is_running_; }
-        inline auto get_all() const -> cycle_list { return io_cycles_; }
 
         auto start(io::cycle::REACTOR_TYPE _type, int32_t _thread_nbr) -> bool;
         void stop();
@@ -39,13 +46,15 @@ namespace net {
          * @brief Valid after calling start().
          *   round-robin
          */
-        auto get_next() -> io::cycle*;
+        auto get_next() -> pool_item;
 
         /**
          * @brief With the same hash code, it will always return the same EventLoop
          */
-        auto get_by_hash(size_t _hash_code) -> io::cycle*;
+        auto get_by_hash(size_t _hash_code) -> pool_item;
 
+        void add_session(thread::id _tid, util_socket_t _fd, const ptr<session>& _session);
+        void del_session(thread::id _tid, util_socket_t _fd);
     };
 
 } // namespace net

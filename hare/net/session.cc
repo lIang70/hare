@@ -116,6 +116,7 @@ namespace net {
             SYS_ERROR() << "cannot set connect_callback to session[" << name() << "], session is closed.";
         }
         event_->deactivate();
+        destroy_();
     }
 
     void session::handle_error()

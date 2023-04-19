@@ -71,6 +71,9 @@ namespace net {
         cycle_->loop();
         started_ = false;
 
+        LOG_TRACE() << "clean io pool...";
+        io_pool_->stop();
+
         acceptors_.clear();
         cycle_.reset();
         io_pool_.reset();
@@ -130,11 +133,11 @@ namespace net {
             return;
         }
 
-        auto* next_cycle = io_pool_->get_next();
+        auto next_item = io_pool_->get_next();
         session::ptr session { nullptr };
         switch (acceptor->type()) {
         case TYPE_TCP:
-            session.reset(new tcp_session(next_cycle,
+            session.reset(new tcp_session(next_item.cycle.get(),
                 std::move(local_addr),
                 session_name, acceptor->family_, _fd,
                 std::move(_address)));
@@ -145,10 +148,15 @@ namespace net {
             SYS_FATAL() << "invalid type[" << acceptor->type() << "] of acceptor.";
         }
 
-        next_cycle->run_in_cycle(std::bind([=]() {
+        session->destroy_ = std::bind([=] (thread::id _tid) {
+            io_pool_->del_session(_tid, _fd);
+        }, next_item.thread->tid());
+
+        next_item.cycle->run_in_cycle(std::bind([=] (thread::id _tid) mutable {
+            io_pool_->add_session(_tid, _fd, session);
             new_session_(session, _time, acceptor);
             session->connect_established();
-        }));
+        }, next_item.thread->tid()));
     }
 
 } // namespace net

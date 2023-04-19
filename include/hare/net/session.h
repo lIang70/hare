@@ -25,11 +25,10 @@ namespace net {
         STATE_DISCONNECTED
     };
 
-    static const size_t DEFAULT_HIGH_WATER = static_cast<size_t>(64 * 1024 * 1024);
-
     class HARE_API session : public non_copyable
                            , public std::enable_shared_from_this<session> {
         using connect_callback = std::function<void(const ptr<session>&, uint8_t)>;
+        using destroy = std::function<void()>;
 
         const std::string name_ {};
         io::cycle* cycle_ { nullptr };
@@ -39,14 +38,11 @@ namespace net {
         const host_address local_addr_ {};
         const host_address peer_addr_ {};
 
-        io::buffer in_buffer_ {};
-        io::buffer out_buffer_ {};
-        size_t high_water_mark_ { DEFAULT_HIGH_WATER };
-
         bool reading_ { false };
         STATE state_ { STATE_CONNECTING };
 
         connect_callback connect_ {};
+        destroy destroy_ {};
 
     public:
         using ptr = ptr<session>;
@@ -62,8 +58,6 @@ namespace net {
         inline auto peer_address() const -> const host_address& { return peer_addr_; }
         inline auto state() const -> STATE { return state_; }
         inline auto fd() const -> util_socket_t { return socket_.fd(); }
-        inline auto high_water_mark() const -> size_t { return high_water_mark_; }
-        inline void set_high_water_mark(size_t _high_water = DEFAULT_HIGH_WATER) { high_water_mark_ = _high_water; }
         inline void set_connect_callback(connect_callback _connect) { connect_ = std::move(_connect); }
 
         auto shutdown() -> error;
@@ -85,8 +79,6 @@ namespace net {
             host_address _peer_addr);
 
         inline void set_state(STATE _state) { state_ = _state; }
-        inline auto in_buffer() -> io::buffer& { return in_buffer_; }
-        inline auto out_buffer() -> io::buffer& { return out_buffer_; }
         inline auto event() -> io::event::ptr& { return event_; }
         inline auto socket() -> socket& { return socket_; }
 
