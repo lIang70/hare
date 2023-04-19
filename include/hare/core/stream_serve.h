@@ -1,24 +1,33 @@
 #ifndef _HARE_CORE_STREAM_SERVE_H_
 #define _HARE_CORE_STREAM_SERVE_H_
 
-#include <hare/net/tcp_serve.h>
+#include <hare/base/io/cycle.h>
+#include <hare/net/socket.h>
 
 namespace hare {
+namespace net {
+    class hybrid_serve;
+    class session;
+    class acceptor;
+} // namespace net
+
 namespace core {
 
-    class StreamServePrivate;
-    class HARE_API StreamServe : public net::TcpServe {
-        StreamServePrivate* p_ { nullptr };
+    class HARE_API stream_serve : public non_copyable {
+        ptr<io::cycle> main_cycle_ { nullptr };
+        ptr<net::hybrid_serve> serve_ { nullptr };
 
     public:
-        using Ptr = std::shared_ptr<StreamServe>;
+        explicit stream_serve(io::cycle::REACTOR_TYPE _type);
+        ~stream_serve();
 
-        explicit StreamServe(const std::string& type);
-        ~StreamServe() override;
+        auto listen(uint16_t _port, hare::net::TYPE _type, int8_t _family) -> bool;
+
+        void stop();
+        void run();
 
     protected:
-        auto createSession(net::TcpSessionPrivate* tsp) -> net::TcpSession::Ptr override;
-        void newSession(net::TcpSession::Ptr session, Timestamp time, const net::Acceptor::Ptr& acceptor) override;
+        void new_session(ptr<net::session> _session, timestamp _time, const ptr<net::acceptor>& _acceptor);
     };
 
 } // namespace core

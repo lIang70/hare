@@ -85,9 +85,9 @@
 namespace hare {
 namespace core {
 
-    class HARE_API ProtocolRTMP : public Protocol {
+    class HARE_API protocol_rtmp : public protocol {
     public:
-        enum MessageType : int8_t {
+        enum MESSAGE_TYPE : int8_t {
             /// RTMP reserves message type IDs 1-7 for protocol control messages.
             /// These messages contain information needed by the RTM Chunk Stream
             /// protocol or RTMP itself. Protocol messages with IDs 1 & 2 are
@@ -166,25 +166,25 @@ namespace core {
              *
              * @remark only used for decoding message from chunk stream.
              */
-            int32_t timestamp_delta_;
+            int32_t timestamp_delta;
 
             /**
              * @brief Three-byte field that represents the size of the payload in bytes.
              *   It is set in big-endian format.
              */
-            int32_t payload_length_;
+            int32_t payload_length;
 
             /**
              * @brief One-byte field to represent the message type. A range of type IDs
              *   (1-7) are reserved for protocol control messages.
              */
-            MessageType message_type_;
+            MESSAGE_TYPE message_type;
             
             /**
              * @brief Three-byte field that identifies the stream of the message. These
              *   bytes are set in big-endian format.
              */
-            int32_t stream_id_;
+            int32_t stream_id;
             
             /**
              * @brief Four-byte field that contains a timestamp of the message.
@@ -192,27 +192,17 @@ namespace core {
              *
              * @remark used as calc timestamp when decode and encode time.
              */
-            int32_t extended_timestamp_;
-
-            inline auto isAudio() const -> bool { return message_type_ == AUDIO_MESSAGE; }
-            inline auto isVideo() const -> bool { return message_type_ == VIDEO_MESSAGE; }
-            inline auto isAMF0Command() const -> bool { return message_type_ == AMF0_COMMAND_MESSAGE; }
-            inline auto isAMF0Data() const -> bool { return message_type_ == AMF0_DATA_MESSAGE; }
-            inline auto isAMF3Command() const -> bool { return message_type_ == AMF3_COMMAND_MESSAGE; }
-            inline auto isAMF3Data() const -> bool { return message_type_ == AMF3_DATA_MESSAGE; }
-	        inline auto isWindowAckledgementSize() const -> bool { return message_type_ == WINDOW_ACKNOWLEDGEMENT_SIZE; }
-	        inline auto isSetChunkSize() const -> bool { return message_type_ == SET_CHUNK_SIZE; }
-	        inline auto isUserControlMessage() const -> bool { return message_type_ == USER_CONTROL_MESSAGE; }
+            int32_t extended_timestamp;
         };
 
     private:
-        HandShake::Ptr hand_shark_ { nullptr };
+        handshake::ptr hand_shark_ { nullptr };
 
     public:
-        ProtocolRTMP();
-        ~ProtocolRTMP() override = default;
+        protocol_rtmp();
+        ~protocol_rtmp() override = default;
 
-        auto parse(net::Buffer& buffer, StreamSession::Ptr session) -> Error override;
+        auto parse(io::buffer& buffer, hare::ptr<net::session> session) -> error override;
 
     };
 

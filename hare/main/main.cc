@@ -5,30 +5,29 @@
 
 #include <cstdio>
 
-static void printLogo()
+static void print_logo()
 {
     ::fprintf(stdout, "====== Welcome to HARE ======\n");
     ::fflush(stdout);
 }
 
-auto main(int argc, char** argv) -> int
+auto main(int argc, char** argv) -> int32_t
 {
-    hare::manage::Input::instance().init(argc, argv);
+    manage::input::instance().init(argc, argv);
 
 #ifdef HARE__HAVE_EPOLL
-    hare::core::StreamServe::Ptr s_serve = std::make_shared<hare::core::StreamServe>("EPOLL");
+    hare::core::stream_serve stream_serve(hare::io::cycle::REACTOR_TYPE_EPOLL);
 #elif defined(HARE__HAVE_POLL)
-    hare::core::StreamServe::Ptr s_serve = std::make_shared<hare::core::StreamServe>("POLL");
+    hare::core::stream_serve s_serve(hare::io::cycle::REACTOR_TYPE_POLL);
 #endif
 
-    auto ret = hare::manage::Input::instance().initServe(s_serve);
-    if (!ret) {
+    if (!manage::input::instance().init_serve(stream_serve)) {
         return (-1);
     }
 
-    printLogo();
+    print_logo();
 
-    s_serve->exec();
+    stream_serve.run();
 
     return (0);
 }

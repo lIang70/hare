@@ -2,47 +2,48 @@
 #define _HARE_CORE_HAND_SHAKE_H_
 
 #include <hare/base/error.h>
-#include <hare/net/buffer.h>
-#include <hare/core/stream_session.h>
-#include <sys/types.h>
+#include <hare/base/io/buffer.h>
 
 namespace hare {
+namespace net {
+    class session;
+} // namespace net
+
 namespace core {
 
-    class HandShake {
-
+    class handshake {
         uint32_t proxy_real_ip_ { 0 };
         int32_t type_ { -1 };
         char* c0c1_ { nullptr };
 
     public:
-        using Ptr = std::shared_ptr<HandShake>;
+        using ptr = ptr<handshake>;
 
-        HandShake() = default;
-        virtual ~HandShake();
+        handshake() = default;
+        virtual ~handshake();
 
-        virtual auto handShakeWithClient(net::Buffer& buffer, StreamSession::Ptr session) -> Error = 0;
-        virtual auto handShakeWithServer(net::Buffer& buffer, StreamSession::Ptr session) -> Error = 0;
+        virtual auto hand_shake_client(io::buffer& buffer, hare::ptr<net::session> session) -> error = 0;
+        virtual auto hand_shake_server(io::buffer& buffer, hare::ptr<net::session> session) -> error = 0;
 
     protected:
-        auto readC0C1(net::Buffer& buffer) -> Error;
+        auto read_c0c1(io::buffer& buffer) -> error;
 
     };
 
-    class CpxHandShake final : public HandShake {
+    class complex_handshake final : public handshake {
     public:
-        ~CpxHandShake() final = default;
+        ~complex_handshake() final = default;
 
-        auto handShakeWithClient(net::Buffer& buffer, StreamSession::Ptr session) -> Error final;
-        auto handShakeWithServer(net::Buffer& buffer, StreamSession::Ptr session) -> Error final;
+        auto hand_shake_client(io::buffer& buffer, hare::ptr<net::session> session) -> error final;
+        auto hand_shake_server(io::buffer& buffer, hare::ptr<net::session> session) -> error final;
     };
 
-    class SimpleHandShake final : public HandShake {
+    class simple_handshake final : public handshake {
     public:
-        ~SimpleHandShake() final = default;
+        ~simple_handshake() final = default;
 
-        auto handShakeWithClient(net::Buffer& buffer, StreamSession::Ptr session) -> Error final;
-        auto handShakeWithServer(net::Buffer& buffer, StreamSession::Ptr session) -> Error final;
+        auto hand_shake_client(io::buffer& buffer, hare::ptr<net::session> session) -> error final;
+        auto hand_shake_server(io::buffer& buffer, hare::ptr<net::session> session) -> error final;
     };
 
 } // namespace core

@@ -1,38 +1,30 @@
-#ifndef _HARE_MANAGE_INPUT_H_
-#define _HARE_MANAGE_INPUT_H_
+#ifndef _MANAGE_INPUT_H_
+#define _MANAGE_INPUT_H_
 
-#include <hare/base/util/thread.h>
 #include <hare/core/stream_serve.h>
 
-#include <cstdint>
 #include <list>
 #include <tuple>
 
-namespace hare {
 namespace manage {
 
-    class Input {
-        
-        hare::Thread input_thread_;
+class input {
 
-        std::list<std::tuple<int32_t, int8_t>> listen_ports_ {};
+    std::list<std::tuple<int32_t, hare::net::TYPE, int8_t>> listen_ports_ {};
 
-    public:
-        static auto instance() -> Input&;
+public:
+    static auto instance() -> input&;
 
-        ~Input();
+    ~input();
 
-        void init(int32_t argc, char** argv);
+    void init(int32_t argc, char** argv);
 
-        auto initServe(core::StreamServe::Ptr& serve_ptr) -> bool;
+    auto init_serve(hare::core::stream_serve& serve_ptr) -> bool;
 
-    private:
-        Input();
-
-        void run();
-    };
+private:
+    input();
+};
 
 } // namespace manage
-} // namespace hare
 
-#endif // !_HARE_MANAGE_INPUT_H_
+#endif // !_MANAGE_INPUT_H_

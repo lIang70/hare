@@ -1,24 +1,22 @@
-#include "hare/base/util.h"
 #include <hare/core/rtmp/client.h>
 
-#include <hare/core/stream_session.h>
 #include <hare/core/protocol.h>
 #include <hare/base/logging.h>
 
 namespace hare {
 namespace core {
 
-    RTMPClient::RTMPClient()
-        : StreamClient(TYPE_RTMP)
+    rtmp_client::rtmp_client(hare::ptr<net::session> _session)
+        : stream_client(PROTOCOL_TYPE_RTMP, std::move(_session))
     {
     }
 
-    void RTMPClient::process(net::Buffer& buffer, const Timestamp& time)
+    void rtmp_client::process(io::buffer& buffer, const timestamp& time)
     {
         H_UNUSED(time);
         auto error = protocol()->parse(buffer, session());
         if (!error) {
-            LOG_ERROR() << "Failed to parse rtmp packet, detail: " << error.description();
+            SYS_ERROR() << "Failed to parse rtmp packet, detail: " << error.description();
         }
     }
 

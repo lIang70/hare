@@ -6,13 +6,12 @@
 namespace hare {
 namespace core {
 
-    class HARE_API RTMPClient : public StreamClient {
-
+    class HARE_API rtmp_client : public stream_client {
     public:
-        RTMPClient();
-        ~RTMPClient() override = default;
+        explicit rtmp_client(hare::ptr<net::session> _session);
+        ~rtmp_client() override = default;
 
-        void process(net::Buffer& buffer, const Timestamp& time) override;
+        void process(io::buffer& buffer, const timestamp& time) override;
     };
 
 } // namespace core

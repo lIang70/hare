@@ -54,7 +54,7 @@ namespace core {
             0x93, 0xB8, 0xE6, 0x36, 0xCF, 0xEB, 0x31, 0xAE
         }; // 62
 
-        static auto opensslHMACSha256(const void* data, int data_size, const void* key, int key_size, void* digest) -> Error
+        static auto opensslHMACSha256(const void* data, int data_size, const void* key, int key_size, void* digest) -> error
         {
             unsigned int digest_size { 0 };
 
@@ -66,7 +66,7 @@ namespace core {
                         static_cast<unsigned char*>(digest), &digest_size,
                         ::EVP_sha256(), nullptr)
                     < 0) {
-                    return Error(HARE_ERROR_OPENSSL_SHA256_EVP_DIGEST);
+                    return error(HARE_ERROR_OPENSSL_SHA256_EVP_DIGEST);
                 }
             } else {
                 ::HMAC(::EVP_sha256(),
@@ -75,32 +75,32 @@ namespace core {
                     static_cast<unsigned char*>(digest), &digest_size);
 
                 if (digest_size != 32) {
-                    return Error(HARE_ERROR_OPENSSL_SHA256_DIGEST_SIZE);
+                    return error(HARE_ERROR_OPENSSL_SHA256_DIGEST_SIZE);
                 }
             }
-            return Error(HARE_ERROR_SUCCESS);
+            return error(HARE_ERROR_SUCCESS);
         }
 
     } // namespace detail
 
-    HandShake::~HandShake()
+    handshake::~handshake()
     {
         delete[] c0c1_;
     }
 
-    auto HandShake::readC0C1(net::Buffer& buffer) -> Error
+    auto handshake::read_c0c1(io::buffer& _buffer) -> error
     {
         if (c0c1_ != nullptr) { 
-            return Error(HARE_ERROR_SUCCESS);
+            return error(HARE_ERROR_SUCCESS);
         }
 
         c0c1_ = new char[RTMP_C0C1_LENGTH];
 
-        if (buffer.length() < RTMP_C0C1_LENGTH) {
-            return Error(HARE_ERROR_RTMP_READ_C0C1);
+        if (_buffer.size() < RTMP_C0C1_LENGTH) {
+            return error(HARE_ERROR_RTMP_READ_C0C1);
         }
 
-        auto read_size = buffer.remove(c0c1_, RTMP_C0C1_LENGTH);
+        auto read_size = _buffer.remove(c0c1_, RTMP_C0C1_LENGTH);
         HARE_ASSERT(read_size == RTMP_C0C1_LENGTH, "read size unequal c0c1");
 
         // Whether RTMP proxy, @see https://github.com/ossrs/go-oryx/wiki/RtmpProxy
@@ -108,7 +108,7 @@ namespace core {
             uint16_t csid = static_cast<uint16_t>(c0c1_[1])<<BITS_PER_BYTE | static_cast<uint16_t>(c0c1_[2]);
             ssize_t csid_consumed = 3 + csid;
             if (csid > ONE_KILO) {
-                return Error(HARE_ERROR_RTMP_PROXY_EXCEED);
+                return error(HARE_ERROR_RTMP_PROXY_EXCEED);
             }
 
             // 4B client real IP.
@@ -121,31 +121,31 @@ namespace core {
             }
 
             memmove(c0c1_, c0c1_ + csid_consumed, RTMP_C0C1_LENGTH - csid_consumed);
-            if (buffer.length() < RTMP_C0C1_LENGTH) {
+            if (_buffer.size() < RTMP_C0C1_LENGTH) {
                 type_ = RTMP_FMT_TYPE3;
-                return Error(HARE_ERROR_RTMP_READ_C0C1);
+                return error(HARE_ERROR_RTMP_READ_C0C1);
             }
             // if ((err = io->read_fully(c0c1_ + RTMP_C0C1_LENGTH - csid_consumed, csid_consumed, &nsize)) != srs_success) {
             //     return srs_error_wrap(err, "read c0c1");
             // }
         }
 
-        return Error(HARE_ERROR_SUCCESS);
+        return error(HARE_ERROR_SUCCESS);
     }
 
-    auto CpxHandShake::handShakeWithClient(net::Buffer& buffer, StreamSession::Ptr session) -> Error
+    auto complex_handshake::hand_shake_client(io::buffer& buffer, hare::ptr<net::session> session) -> error
     {
-        auto err = readC0C1(buffer);
+        auto err = read_c0c1(buffer);
         if (!err) {
             return err;
         }
 
-        return Error(HARE_ERROR_SUCCESS);
+        return error(HARE_ERROR_SUCCESS);
     }
 
-    auto CpxHandShake::handShakeWithServer(net::Buffer& buffer, StreamSession::Ptr session) -> Error
+    auto complex_handshake::hand_shake_server(io::buffer& buffer, hare::ptr<net::session> session) -> error
     {
-        return Error(HARE_ERROR_SUCCESS);
+        return error(HARE_ERROR_SUCCESS);
     }
 
 } // namespace core

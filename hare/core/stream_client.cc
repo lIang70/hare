@@ -5,15 +5,15 @@
 namespace hare {
 namespace core {
 
-    StreamClient::StreamClient(Type type)
-        : client_type_(type)
+    stream_client::stream_client(PROTOCOL_TYPE _type, hare::ptr<net::session> _session)
+        : session_(std::move(_session))
     {
-        switch (client_type_) {
-            case TYPE_RTMP:
-                protocol_ = std::make_shared<ProtocolRTMP>();
-                break;
-            default:
-                break;
+        switch (_type) {
+        case PROTOCOL_TYPE_RTMP:
+            protocol_ = std::make_shared<protocol_rtmp>();
+            break;
+        default:
+            break;
         }
     }
 

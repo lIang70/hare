@@ -1,37 +1,27 @@
 #ifndef _HARE_CORE_STREAM_CLIENT_H_
 #define _HARE_CORE_STREAM_CLIENT_H_
 
+#include <hare/base/time/timestamp.h>
 #include <hare/core/protocol.h>
-#include <hare/core/stream_session.h>
 
 namespace hare {
 namespace core {
 
-    class HARE_API StreamClient {
-    public:
-        enum Type {
-            TYPE_INVALID,
-            TYPE_RTMP
-        };
-
-    private:
-        Type client_type_ { TYPE_INVALID };
-        Protocol::Ptr protocol_ { nullptr };
-        StreamSession::Ptr session_ { nullptr };
+    class HARE_API stream_client {
+        ptr<protocol> protocol_ { nullptr };
+        ptr<net::session> session_ { nullptr };
 
     public:
-        using Ptr = std::shared_ptr<StreamClient>;
+        using ptr = ptr<stream_client>;
 
-        explicit StreamClient(Type type);
-        virtual ~StreamClient() = default;
+        stream_client(PROTOCOL_TYPE _type, hare::ptr<net::session> _session);
+        virtual ~stream_client() = default;
 
-        inline auto clientType() -> Type { return client_type_; }
-        inline auto protocol() -> Protocol::Ptr { return protocol_; }
-        inline void setSession(StreamSession::Ptr session) { session_ = std::move(session); }
-        inline auto session() -> StreamSession::Ptr { return session_; }
+        inline auto type() -> PROTOCOL_TYPE { return protocol_->type(); }
+        inline auto protocol() -> hare::ptr<protocol> { return protocol_; }
+        inline auto session() -> hare::ptr<net::session> { return session_; }
 
-        virtual void process(net::Buffer& buffer, const Timestamp& time) = 0;
-
+        virtual void process(io::buffer& buffer, const timestamp& time) = 0;
     };
 
 } // namespace core
