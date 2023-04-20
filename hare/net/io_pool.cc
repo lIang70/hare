@@ -22,13 +22,14 @@ namespace net {
 
         LOG_TRACE() << "start io_pool.";
         for (auto i = 0; i < _thread_nbr; ++i) {
-            items_[i].thread = std::make_shared<thread>([=] {
-                items_[i].cycle = std::make_shared<io::cycle>(_type);
-                items_[i].cycle->loop();
-                items_[i].cycle.reset();
+            items_[i] = std::make_shared<pool_item>();
+            items_[i]->thread = std::make_shared<thread>([=] {
+                items_[i]->cycle = std::make_shared<io::cycle>(_type);
+                items_[i]->cycle->loop();
+                items_[i]->cycle.reset();
             },
                 name_ + std::to_string(i));
-            items_[i].thread->start();
+            items_[i]->thread->start();
         }
 
         is_running_ = true;
@@ -40,24 +41,24 @@ namespace net {
     {
         LOG_TRACE() << "stop io_pool.";
         for (auto& item : items_) {
-            item.cycle->run_in_cycle([=]() mutable {
-                for (const auto& session : item.sessions) {
+            item->cycle->run_in_cycle([=]() mutable {
+                for (const auto& session : item->sessions) {
                     session.second->force_close();
                 }
-                item.sessions.clear();
-                item.cycle->exit();
+                item->sessions.clear();
+                item->cycle->exit();
             });
         }
 
         for (auto& item : items_) {
-            item.thread->join();
+            item->thread->join();
         }
         is_running_ = false;
         thread_nbr_ = 0;
         items_.clear();
     }
 
-    auto io_pool::get_next() -> pool_item
+    auto io_pool::get_next() -> ptr<pool_item>
     {
         if (!is_running()) {
             return {};
@@ -68,33 +69,9 @@ namespace net {
         return items_[index];
     }
 
-    auto io_pool::get_by_hash(size_t _hash_code) -> pool_item
+    auto io_pool::get_by_hash(size_t _hash_code) -> ptr<pool_item>
     {
         return items_[_hash_code % thread_nbr_];
-    }
-
-    void io_pool::add_session(thread::id _tid, util_socket_t _fd, const ptr<session>& _session)
-    {
-        for (auto& item : items_) {
-            if (item.thread->tid() == _tid) {
-                HARE_ASSERT(item.sessions.find(_fd) == item.sessions.end(), "");
-                item.sessions.insert(std::make_pair(_fd, _session));
-                break;
-            }
-        }
-    }
-
-    void io_pool::del_session(thread::id _tid, util_socket_t _fd)
-    {
-        for (auto& item : items_) {
-            if (item.thread->tid() == _tid) {
-                item.cycle->run_in_cycle([&]() mutable {
-                    HARE_ASSERT(item.sessions.find(_fd) != item.sessions.end(), "");
-                    item.sessions.erase(_fd);
-                });
-                break;
-            }
-        }
     }
 
 } // namespace net

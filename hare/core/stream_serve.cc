@@ -3,10 +3,9 @@
 #include <hare/base/logging.h>
 #include <hare/core/rtmp/client.h>
 #include <hare/net/hybrid_serve.h>
+#include <hare/net/socket.h>
 #include <hare/net/tcp_session.h>
 
-#include <map>
-#include <mutex>
 
 namespace hare {
 namespace core {
@@ -26,9 +25,28 @@ namespace core {
         LOG_TRACE() << "stream serve is deleted.";
     }
 
+    auto stream_serve::listen(int16_t _port, PROTOCOL_TYPE _type, int8_t _family) -> bool
+    {
+        net::TYPE type { net::TYPE_INVALID };
+
+        if (_type == PROTOCOL_TYPE_RTMP) {
+            type = net::TYPE_TCP;
+        }
+
+        if (type == net::TYPE_INVALID) {
+            return false;
+        }
+
+        auto acc = std::make_shared<net::acceptor>(_family, type, _port, true);
+
+        types_map_.insert(std::make_pair(acc->fd(), _type));
+
+        return serve_->add_acceptor(acc);
+    }
+
     void stream_serve::stop()
     {
-
+        serve_->exit();
     }
 
     void stream_serve::run()
@@ -38,10 +56,17 @@ namespace core {
 
     void stream_serve::new_session(ptr<net::session> _session, timestamp _time, const ptr<net::acceptor>& _acceptor)
     {
-        LOG_INFO() << "New session[" << _session->name()
-                   << "] in " << _time.to_fmt();
+        LOG_INFO() << "New session[" << _session->name() << "] in " << _time.to_fmt() << " on " << _acceptor->fd();
 
-        
+        HARE_ASSERT(types_map_.find(_acceptor->fd()) != types_map_.end(), "unrecongize acceptor.");
+
+        auto client_type = types_map_[_acceptor->fd()];
+        switch (client_type) {
+        case PROTOCOL_TYPE_RTMP:
+        case PROTOCOL_TYPE_INVALID:
+        default:
+            break;
+        }
     }
 
 } // namespace core

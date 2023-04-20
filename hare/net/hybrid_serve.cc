@@ -137,7 +137,7 @@ namespace net {
         session::ptr session { nullptr };
         switch (acceptor->type()) {
         case TYPE_TCP:
-            session.reset(new tcp_session(next_item.cycle.get(),
+            session.reset(new tcp_session(next_item->cycle.get(),
                 std::move(local_addr),
                 session_name, acceptor->family_, _fd,
                 std::move(_address)));
@@ -148,15 +148,19 @@ namespace net {
             SYS_FATAL() << "invalid type[" << acceptor->type() << "] of acceptor.";
         }
 
-        session->destroy_ = std::bind([=] (thread::id _tid) {
-            io_pool_->del_session(_tid, _fd);
-        }, next_item.thread->tid());
+        session->destroy_ = std::bind([=]() {
+            next_item->cycle->run_in_cycle([&]() mutable {
+                HARE_ASSERT(next_item->sessions.find(_fd) != next_item->sessions.end(), "");
+                next_item->sessions.erase(_fd);
+            });
+        });
 
-        next_item.cycle->run_in_cycle(std::bind([=] (thread::id _tid) mutable {
-            io_pool_->add_session(_tid, _fd, session);
+        next_item->cycle->run_in_cycle(std::bind([=]() mutable {
+            HARE_ASSERT(next_item->sessions.find(_fd) == next_item->sessions.end(), "");
+            next_item->sessions.insert(std::make_pair(_fd, session));
             new_session_(session, _time, acceptor);
             session->connect_established();
-        }, next_item.thread->tid()));
+        }));
     }
 
 } // namespace net

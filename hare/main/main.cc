@@ -1,13 +1,19 @@
 #include "main/manage/input.h"
 
 #include <hare/hare-config.h>
-#include <hare/core/stream_serve.h>
-
-#include <cstdio>
 
 static void print_logo()
 {
-    ::fprintf(stdout, "====== Welcome to HARE ======\n");
+    ::fprintf(stdout, "%s\n", R"(=================== Welcome to HARE ================)");
+    ::fprintf(stdout, "%s\n", R"(      __    __   ______   _______   ________        )");
+    ::fprintf(stdout, "%s\n", R"(      |  \  |  \ /      \ |       \ |        \      )");
+    ::fprintf(stdout, "%s\n", R"(      | $$  | $$|  $$$$$$\| $$$$$$$\| $$$$$$$$      )");
+    ::fprintf(stdout, "%s\n", R"(      | $$__| $$| $$__| $$| $$__| $$| $$__          )");
+    ::fprintf(stdout, "%s\n", R"(      | $$    $$| $$    $$| $$    $$| $$  \         )");
+    ::fprintf(stdout, "%s\n", R"(      | $$$$$$$$| $$$$$$$$| $$$$$$$\| $$$$$         )");
+    ::fprintf(stdout, "%s\n", R"(      | $$  | $$| $$  | $$| $$  | $$| $$_____       )");
+    ::fprintf(stdout, "%s\n", R"(      | $$  | $$| $$  | $$| $$  | $$| $$     \      )");
+    ::fprintf(stdout, "%s\n", R"(       \$$   \$$ \$$   \$$ \$$   \$$ \$$$$$$$$      )");
     ::fflush(stdout);
 }
 

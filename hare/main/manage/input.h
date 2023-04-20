@@ -2,6 +2,7 @@
 #define _MANAGE_INPUT_H_
 
 #include <hare/core/stream_serve.h>
+#include <hare/core/protocol.h>
 
 #include <list>
 #include <tuple>
@@ -10,7 +11,7 @@ namespace manage {
 
 class input {
 
-    std::list<std::tuple<int32_t, hare::net::TYPE, int8_t>> listen_ports_ {};
+    std::list<std::tuple<int16_t, hare::core::PROTOCOL_TYPE, int8_t>> listen_ports_ {};
 
 public:
     static auto instance() -> input&;

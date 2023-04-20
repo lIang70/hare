@@ -39,9 +39,9 @@ static void new_session(const session::ptr& _ses, hare::timestamp _ts, const acc
 
 auto main(int32_t argc, char** argv) -> int32_t
 {
-    hare::logger::set_level(hare::log::LEVEL_INFO);
+    hare::logger::set_level(hare::log::LEVEL_DEBUG);
 
-    if (argc != 3) {
+    if (argc < 3) {
         LOG_FATAL() << USAGE;
     }
 

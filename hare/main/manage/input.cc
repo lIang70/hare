@@ -15,8 +15,7 @@
 #include <sys/stat.h>
 #endif
 
-#ifdef H_OS_WIN32
-#else
+#ifdef HARE__HAVE_UNISTD_H
 #include <unistd.h>
 #endif
 
@@ -33,7 +32,7 @@ namespace detail {
         bool print_stdout_ { true };
 
     public:
-        static auto instance() -> hare::ptr<global_log>
+        static auto instance() -> hare::ptr<global_log>&
         {
             static hare::ptr<global_log> s_glog {};
             return s_glog;
@@ -73,7 +72,7 @@ namespace detail {
         ::fprintf(stdout, "  hare [options]\n");
         ::fprintf(stdout, "\n");
         ::fprintf(stdout, "Options\n");
-        ::fprintf(stdout, "  -p <port-to-listen> <class> [<AF_INET/AF_INET6>]   =  Specify a port to listen in [tcp/udp]\n");
+        ::fprintf(stdout, "  -p <port-to-listen> <class> [<AF_INET/AF_INET6>]   =  Specify a port to listen in [rtmp]\n");
         ::fflush(stdout);
     }
 } // namespace detail
@@ -109,7 +108,7 @@ void input::init(int32_t argc, char** argv)
                     family = AF_INET6;
                 }
             }
-            listen_ports_.emplace_back(port, type == "TCP" ? hare::net::TYPE_TCP : hare::net::TYPE_UDP, family);
+            listen_ports_.emplace_back(port, type == "RTMP" ? hare::core::PROTOCOL_TYPE_RTMP : hare::core::PROTOCOL_TYPE_INVALID, family);
         }
     }
 

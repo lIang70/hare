@@ -20,7 +20,7 @@ namespace net {
 
     class io_pool : public non_copyable {
 
-        using pool_items = std::vector<pool_item>;
+        using pool_items = std::vector<ptr<pool_item>>;
 
         std::string name_ {};
         bool is_running_ { false };
@@ -46,15 +46,12 @@ namespace net {
          * @brief Valid after calling start().
          *   round-robin
          */
-        auto get_next() -> pool_item;
+        auto get_next() -> ptr<pool_item>;
 
         /**
          * @brief With the same hash code, it will always return the same EventLoop
          */
-        auto get_by_hash(size_t _hash_code) -> pool_item;
-
-        void add_session(thread::id _tid, util_socket_t _fd, const ptr<session>& _session);
-        void del_session(thread::id _tid, util_socket_t _fd);
+        auto get_by_hash(size_t _hash_code) -> ptr<pool_item>;
     };
 
 } // namespace net
