@@ -12,7 +12,7 @@
 #ifndef _HARE_BASE_FILE_H_
 #define _HARE_BASE_FILE_H_
 
-#include <hare/base/util/buffer.h>
+#include <hare/base/io/buffer.h>
 
 #include <string>
 
@@ -25,7 +25,7 @@ namespace util {
 
     private:
         FILE* fp_ { nullptr };
-        fixed_buffer<BUFFER_SIZE> buffer_ {};
+        io::fixed_cache<BUFFER_SIZE> buffer_ {};
         size_t written_bytes_ { 0 };
 
     public:

@@ -1,13 +1,9 @@
-#include <cstddef>
-#include <cstdint>
 #include <hare/base/io/buffer.h>
 
 #include <hare/base/logging.h>
-#include <hare/base/util/buffer.h>
 #include <hare/hare-config.h>
 
 #include <limits>
-#include <memory>
 #include <vector>
 
 #ifdef HARE__HAVE_SYS_IOCTL_H
@@ -45,8 +41,8 @@
 #endif
 #endif
 
+#define MIN_TO_ALLOC 512
 #define MAX_TO_COPY_IN_EXPAND 4096
-#define MAX_TO_REALIGN_IN_EXPAND 2048
 #define MAX_SIZE (std::numeric_limits<std::size_t>::max())
 #define MAX_CHINA_SIZE (16)
 
@@ -62,7 +58,8 @@ namespace hare {
 namespace io {
 
     namespace detail {
-        auto bytes_readable_on_socket(util_socket_t _fd) -> size_t
+
+        static auto bytes_readable_on_socket(util_socket_t _fd) -> int64_t
         {
 #if defined(FIONREAD) && defined(H_OS_WIN32)
             // auto reable_cnt = HARE_MAX_READ_DEFAULT;
@@ -81,56 +78,65 @@ namespace io {
             return HARE_MAX_READ_DEFAULT;
 #endif
         }
+
+        static auto round_up(size_t _size) -> size_t
+        {
+            size_t size { MIN_TO_ALLOC };
+            if (_size < MAX_SIZE / 2) {
+                while (size < _size) {
+                    size <<= 1;
+                }
+            } else {
+                size = _size;
+            }
+            return size;
+        }
+
+        class buffer_block : public cache {
+            char* data_ { nullptr };
+            char* cur_ { nullptr };
+            size_t max_size_ { 0 };
+
+        public:
+            explicit buffer_block(size_t _max_size)
+                : max_size_(_max_size)
+                , data_(new char[_max_size])
+            {
+                cur_ = data_;
+            }
+
+            ~buffer_block() override { delete[] data_; }
+
+            void append(const char* _buf, size_t _length) override
+            {
+                if (implicit_cast<size_t>(avail()) > _length) {
+                    memcpy(cur_, _buf, _length);
+                    cur_ += _length;
+                }
+            }
+
+            auto begin() -> char* override { return data_; }
+            auto begin() const -> const char* override { return data_; }
+            auto size() const -> size_t override { return static_cast<size_t>(cur_ - data_); }
+            auto max_size() const -> size_t override { return max_size_; }
+
+            // write to data_ directly
+            auto current() -> char* override { return cur_; }
+            auto current() const -> char* override { return cur_; }
+            auto avail() const -> size_t override { return static_cast<size_t>(end() - cur_); }
+            void skip(size_t _length) override { cur_ += _length; }
+
+            void reset() override { cur_ = data_; }
+            void bzero() override { set_zero(data_, max_size_); }
+
+        private:
+            auto end() const -> const char* { return data_ + max_size_; }
+        };
+
     } // namespace detail
 
-    using fixed_buffer = util::fixed_buffer<HARE_LARGE_BUFFER>;
-
-    /**
-     * @brief The block of buffer.
-     * @code
-     * +----------------+-------------+------------------+
-     * | misalign bytes |  off bytes  |  residual bytes  |
-     * |                |  (CONTENT)  |                  |
-     * +----------------+-------------+------------------+
-     * |                |             |                  |
-     * @endcode
-     */
-    class fixed_block : public fixed_buffer {
-        size_t misalign_ { 0 };
-
-    public:
-        inline auto readable() const -> char* { return const_cast<char*>(fixed_buffer::begin()) + misalign_; }
-        inline auto readable_size() const -> size_t { return fixed_buffer::length() - misalign_; }
-        inline auto full() const -> bool { return readable_size() + misalign_ == static_cast<size_t>(HARE_LARGE_BUFFER); }
-        inline auto empty() const -> bool { return readable_size() == 0; }
-        inline void clear()
-        {
-            reset();
-            misalign_ = 0;
-        }
-
-        void drain(size_t _size)
-        {
-            HARE_ASSERT(_size <= readable_size(), "oversize.");
-            misalign_ += _size;
-        }
-
-        auto realign(size_t _size) -> bool
-        {
-            auto off = readable_size();
-            if (fixed_buffer::avail() + misalign_ > _size && off < static_cast<size_t>(HARE_LARGE_BUFFER) / 2 && off <= MAX_TO_REALIGN_IN_EXPAND) {
-                ::memmove(fixed_buffer::begin(), readable(), off);
-                misalign_ = 0;
-                return true;
-            }
-            return false;
-        }
-
-        friend class io::buffer;
-    };
-
-    buffer::buffer(std::size_t max_read)
-        : max_read_(max_read)
+    buffer::buffer(int64_t _max_read)
+        : max_read_(_max_read)
     {
     }
 
@@ -145,7 +151,6 @@ namespace io {
     {
         /// FIXME: clear directly?
         block_chain_.clear();
-        read_iter_ = block_chain_.begin();
         write_iter_ = block_chain_.begin();
         total_len_ = 0;
     }
@@ -157,52 +162,31 @@ namespace io {
         }
 
         total_len_ += _another.total_len_;
-        _another.total_len_ = 0;
-        auto empty = block_chain_.empty();
 
-        if (!empty && !(*write_iter_)->empty()) {
-            ++write_iter_;
-            if (write_iter_ == block_chain_.end()) {
-                write_iter_ = block_chain_.begin();
-            }
-        }
-
-        if (read_iter_ == write_iter_) {
-            ++write_iter_;
-            if (write_iter_ == block_chain_.end()) {
-                write_iter_ = block_chain_.begin();
-            }
-            block_chain_.insert(write_iter_, std::make_shared<fixed_block>());
-            --write_iter_;
-        }
-
-        while (_another.read_iter_ != _another.write_iter_) {
-            auto block = std::move(*_another.read_iter_);
-            _another.block_chain_.erase(_another.read_iter_++);
-            if (_another.read_iter_ == _another.block_chain_.end()) {
-                _another.read_iter_ = _another.block_chain_.begin();
-            }
-            if (!block->empty()) {
-                block_chain_.insert(write_iter_, block);
-            } else {
-                break;
-            }
-        }
-
-        if (!(*_another.read_iter_)->empty()) {
-            HARE_ASSERT(_another.read_iter_ == _another.write_iter_, "");
-            auto block = std::move(*_another.read_iter_);
-            _another.clear_all();
-            block_chain_.insert(write_iter_, block);
-        }
-
-        if (!empty && (*write_iter_)->empty()) {
-            --write_iter_;
-        } else if (empty) {
-            read_iter_ = block_chain_.begin();
+        if (block_chain_.empty() || (write_iter_ == block_chain_.begin() && (*write_iter_)->empty())) {
+            block_chain_.swap(_another.block_chain_);
+            _another.write_iter_ = _another.block_chain_.begin();
+            _another.total_len_ = 0;
             write_iter_ = block_chain_.end();
             --write_iter_;
+            return;
         }
+
+        if (!(*write_iter_)->empty()) {
+            ++write_iter_;
+        }
+
+        ++_another.write_iter_;
+        auto cur = _another.block_chain_.begin();
+        while (cur != _another.write_iter_) {
+            block_chain_.insert(write_iter_, std::move(*cur));
+            ++cur;
+        }
+
+        --write_iter_;
+        _another.block_chain_.clear();
+        _another.write_iter_ = _another.block_chain_.begin();
+        _another.total_len_ = 0;
     }
 
     auto buffer::add(const void* _bytes, size_t _size) -> bool
@@ -212,17 +196,36 @@ namespace io {
         }
 
         total_len_ += _size;
-        auto curr_block = get_block();
-        auto remain = curr_block->avail();
-        const auto* bytes = static_cast<const char*>(_bytes);
-        do {
-            auto real_size = MIN(remain, _size);
-            curr_block->append(bytes, real_size);
-            _size = _size < real_size ? 0 : _size - real_size;
-            bytes += real_size;
-            curr_block = get_block();
-            remain = curr_block->avail();
-        } while (_size > 0);
+
+        auto cur { write_iter_ };
+        if (block_chain_.empty()) {
+            HARE_ASSERT(write_iter_ == block_chain_.end(), "");
+            block_chain_.emplace_back(new detail::buffer_block(detail::round_up(_size)));
+            write_iter_ = block_chain_.begin();
+            cur = write_iter_;
+        }
+
+        if ((*cur)->avail() < _size && !(*cur)->realign(_size)) {
+            ++cur;
+            while (cur != block_chain_.end()) {
+                HARE_ASSERT((*cur)->empty(), "error in buffer.");
+                if ((*cur)->max_size() > _size) {
+                    break;
+                }
+                block_chain_.erase(cur++);
+            }
+            if (cur == block_chain_.end()) {
+                block_chain_.insert(cur, std::make_shared<detail::buffer_block>(detail::round_up(_size)));
+            }
+            --cur;
+        }
+
+        /**
+         * @brief there's enough space to hold all the data
+         *   in thecurrent last chain.
+         **/
+        (*cur)->append(static_cast<const char*>(_bytes), _size);
+        write_iter_ = cur;
 
         return true;
     }
@@ -238,53 +241,57 @@ namespace io {
         }
 
 #ifdef USE_IOVEC_IMPL
-        auto nvecs = expand_fast(_howmuch);
-
-        IOV_TYPE vecs[nvecs];
+        std::vector<IOV_TYPE> vecs(2);
 
         auto iter = write_iter_;
-        auto index = 0;
-        for (; index < nvecs && iter != block_chain_.end(); ++index) {
+        auto vec_nbr = 0;
+        auto remain = readable;
+        for (; remain > 0; ++vec_nbr) {
+            if (vec_nbr >= 2) {
+                vecs.emplace_back();
+            }
+            if (iter == block_chain_.end()) {
+                block_chain_.insert(iter, std::make_shared<detail::buffer_block>(detail::round_up(remain)));
+                --iter;
+                if (write_iter_ == block_chain_.end()) {
+                    write_iter_ = block_chain_.begin();
+                }
+            }
             auto block = (*iter);
             if (!block->full()) {
-                vecs[index].IOV_PTR_FIELD = block->current();
-                vecs[index].IOV_LEN_FIELD = block->avail();
+                remain -= static_cast<int64_t>(block->avail());
+                vecs[vec_nbr].IOV_PTR_FIELD = block->current();
+                vecs[vec_nbr].IOV_LEN_FIELD = block->avail();
             }
             ++iter;
-            if (iter == block_chain_.end()) {
-                iter = block_chain_.begin();
-            }
         }
 
-        readable = ::readv(_fd, vecs, index);
+        readable = ::readv(_fd, vecs.data(), vec_nbr);
+
+        if (readable > 0) {
+            remain = readable;
+            iter = write_iter_;
+            for (auto i = 0; i < vec_nbr; ++i) {
+                auto space = (*iter)->avail();
+                if (space < remain) {
+                    (*iter)->skip(space);
+                    remain -= static_cast<int64_t>(space);
+                } else {
+                    (*iter)->skip(remain);
+                    write_iter_ = iter;
+                    break;
+                }
+                ++iter;
+            }
+        }
 
 #endif
 
         if (readable <= 0) {
-            return static_cast<int64_t>(readable);
+            return readable;
         }
-
-#ifdef USE_IOVEC_IMPL
-        auto remaining = readable;
-        iter = write_iter_;
-        for (auto i = 0; i < nvecs; ++i) {
-            auto space = (*iter)->avail();
-            if (space < remaining) {
-                (*iter)->add(space);
-                remaining -= space;
-            } else {
-                (*iter)->add(remaining);
-                write_iter_ = iter;
-                break;
-            }
-            ++iter;
-            if (iter == block_chain_.end()) {
-                iter = block_chain_.begin();
-            }
-        }
-#endif
-        total_len_ += readable;
-        return static_cast<int64_t>(readable);
+        total_len_ += static_cast<size_t>(readable);
+        return readable;
     }
 
     auto buffer::write(util_socket_t _fd, int64_t _howmuch) -> int64_t
@@ -296,63 +303,59 @@ namespace io {
         }
 
         if (_howmuch > 0) {
-
+            HARE_ASSERT(!block_chain_.empty(), "buffer is empty.");
 #ifdef USE_IOVEC_IMPL
-            IOV_TYPE iov[NUM_WRITE_IOVEC];
-            int32_t write_i = 0;
-            auto curr = read_iter_;
+            std::array<IOV_TYPE, NUM_WRITE_IOVEC> iov {};
+            auto curr { block_chain_.begin() };
+            auto write_i { 0 };
 
-            while (write_i < NUM_WRITE_IOVEC && (_howmuch != 0)) {
+            while (write_i < NUM_WRITE_IOVEC && _howmuch > 0) {
+                HARE_ASSERT(curr != block_chain_.end(), "iterator overflow.");
                 iov[write_i].IOV_PTR_FIELD = (*curr)->readable();
-                if (_howmuch >= (*curr)->readable_size()) {
+                if (_howmuch > (*curr)->readable_size()) {
                     /* XXXcould be problematic when windows supports mmap*/
                     iov[write_i++].IOV_LEN_FIELD = static_cast<IOV_LEN_TYPE>((*curr)->readable_size());
                     _howmuch -= static_cast<int64_t>((*curr)->readable_size());
                 } else {
                     /* XXXcould be problematic when windows supports mmap*/
                     iov[write_i++].IOV_LEN_FIELD = static_cast<IOV_LEN_TYPE>(_howmuch);
+                    _howmuch -= static_cast<int64_t>((*curr)->readable_size());
                     break;
                 }
                 ++curr;
-                if (curr == block_chain_.end()) {
-                    curr = block_chain_.begin();
-                }
             }
+
             if (write_i == 0) {
                 write_n = 0;
                 return (0);
             }
 
-            write_n = ::writev(_fd, iov, write_i);
+            write_n = ::writev(_fd, iov.data(), write_i);
             total_len_ -= write_n;
 
             /**
              * @brief If the length of chain bigger than MAX_CHINA_SIZE,
-             *  cleaning will begin.
+             *   cleaning will begin.
              **/
             auto clean = chain_size() > MAX_CHINA_SIZE;
-            auto length = static_cast<size_t>(write_n);
-            auto curr_block = *read_iter_;
-            while (length != 0U && length > curr_block->readable_size()) {
-                length = length < curr_block->readable_size() ? 0 : length - curr_block->readable_size();
-                if (clean) {
-                    HARE_ASSERT(read_iter_ != write_iter_, "buffer over size.");
-                    block_chain_.erase(read_iter_++);
-                } else {
+            auto remain = static_cast<size_t>(write_n);
+            curr = block_chain_.begin();
+            auto curr_block = *curr;
+            while (remain != 0U && remain > curr_block->readable_size()) {
+                HARE_ASSERT(curr != block_chain_.end(), "iterator overflow.");
+                remain = remain < curr_block->readable_size() ? 0 : remain - curr_block->readable_size();
+                if (!clean) {
                     curr_block->clear();
-                    ++read_iter_;
+                    block_chain_.emplace_back(std::move(*curr));
                 }
-                if (read_iter_ == block_chain_.end()) {
-                    read_iter_ = block_chain_.begin();
-                }
-                curr_block = *read_iter_;
+                block_chain_.erase(curr++);
+                curr_block = *curr;
             }
 
-            if (length != 0U) {
-                HARE_ASSERT(length <= curr_block->readable_size(), "buffer over size.");
-                curr_block->drain(length);
+            if (remain != 0U) {
+                HARE_ASSERT(remain <= curr_block->readable_size(), "buffer over size.");
+                curr_block->drain(remain);
             }
-
 #endif
         }
         return (write_n);
@@ -373,118 +376,35 @@ namespace io {
          *  cleaning will begin.
          **/
         auto clean = chain_size() > MAX_CHINA_SIZE;
+        auto curr = block_chain_.begin();
+        auto curr_block = *curr;
         auto* buffer = static_cast<char*>(_buffer);
-        auto curr_block = *read_iter_;
-        auto nread = _length;
+        size_t nread { 0 };
 
         while (_length != 0U && _length > curr_block->readable_size()) {
-            auto copylen = curr_block->readable_size();
-            memcpy(buffer, curr_block->readable(), copylen);
+            HARE_ASSERT(curr != block_chain_.end(), "iterator overflow.");
+            auto copy_len = curr_block->readable_size();
+            ::memcpy(buffer, curr_block->readable(), copy_len);
+            buffer += copy_len;
+            _length -= copy_len;
+            nread += copy_len;
+
             if (!clean) {
                 curr_block->clear();
+                block_chain_.emplace_back(std::move(*curr));
             }
-            buffer += copylen;
-            _length -= copylen;
-
-            if (clean) {
-                HARE_ASSERT(read_iter_ != write_iter_, "buffer over size.");
-                block_chain_.erase(read_iter_++);
-            } else {
-                ++read_iter_;
-            }
-            if (read_iter_ == block_chain_.end()) {
-                read_iter_ = block_chain_.begin();
-            }
-            curr_block = *read_iter_;
+            block_chain_.erase(curr++);
+            curr_block = *curr;
         }
 
         if (_length != 0U) {
             HARE_ASSERT(_length <= curr_block->readable_size(), "buffer over size.");
-            memcpy(buffer, curr_block->readable(), _length);
+            ::memcpy(buffer, curr_block->readable(), _length);
             curr_block->drain(_length);
+            nread += _length;
         }
 
         return nread;
-    }
-
-    auto buffer::expand_fast(size_t _howmuch) -> int32_t
-    {
-        auto ret { 0 };
-        auto res = _howmuch;
-        auto cur_iter = write_iter_;
-
-        if (block_chain_.empty()) {
-            HARE_ASSERT(write_iter_ == block_chain_.end(), "");
-            HARE_ASSERT(read_iter_ == block_chain_.end(), "");
-            ret = static_cast<int32_t>(res / static_cast<size_t>(HARE_LARGE_BUFFER));
-            block_chain_.push_back(std::make_shared<fixed_block>());
-            block_chain_.insert(block_chain_.begin(), ret, std::make_shared<fixed_block>());
-            write_iter_ = block_chain_.begin();
-            read_iter_ = block_chain_.begin();
-            return ret + 1;
-        }
-
-        if ((*cur_iter)->avail() > 0) {
-            ++ret;
-            res = (*cur_iter)->avail() > res ? 0 : res - (*cur_iter)->avail();
-            ++cur_iter;
-            if (cur_iter == block_chain_.end()) {
-                cur_iter = block_chain_.begin();
-            }
-        }
-
-        if (res == 0) {
-            return ret;
-        }
-
-        ret += static_cast<int32_t>(res / static_cast<size_t>(HARE_LARGE_BUFFER)) + 1;
-        auto index = ret - 1;
-        while (index != 0 && cur_iter != read_iter_) {
-            HARE_ASSERT((*cur_iter)->empty(), "the block must be empty.");
-            --index;
-            ++cur_iter;
-            if (cur_iter == block_chain_.end()) {
-                cur_iter = block_chain_.begin();
-            }
-        }
-        block_chain_.insert(block_chain_.begin(), index, std::make_shared<fixed_block>());
-
-        return ret;
-    }
-
-    auto buffer::get_block() -> block
-    {
-        if (block_chain_.empty()) {
-            HARE_ASSERT(write_iter_ == block_chain_.end(), "");
-            HARE_ASSERT(read_iter_ == block_chain_.end(), "");
-            block_chain_.emplace_back(new fixed_block);
-            write_iter_ = block_chain_.begin();
-            read_iter_ = block_chain_.begin();
-            return (*write_iter_);
-        }
-
-        for (; write_iter_ != read_iter_;) {
-            auto cur_block = (*write_iter_);
-            if (!cur_block->full()) {
-                return cur_block;
-            }
-            ++write_iter_;
-            if (write_iter_ == block_chain_.end()) {
-                write_iter_ = block_chain_.begin();
-            }
-        }
-
-        if (chain_size() == 1) {
-            block_chain_.insert(write_iter_, std::make_shared<fixed_block>());
-            --write_iter_;
-        } else {
-            ++write_iter_;
-            if (write_iter_ == block_chain_.end()) {
-                write_iter_ = block_chain_.begin();
-            }
-        }
-        HARE_ASSERT((*write_iter_)->empty(), "the block is not empty.");
-        return (*write_iter_);
     }
 
 } // namespace io

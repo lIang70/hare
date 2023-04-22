@@ -64,8 +64,8 @@ namespace log {
         blocks block_2_write;
         block_2_write.reserve(BLOCK_NUMBER);
         while (running_) {
-            assert(new_block_1 && new_block_1->length() == 0);
-            assert(new_block_2 && new_block_2->length() == 0);
+            assert(new_block_1 && new_block_1->size() == 0);
+            assert(new_block_2 && new_block_2->size() == 0);
             assert(block_2_write.empty());
 
             {
@@ -96,7 +96,7 @@ namespace log {
 
             for (const auto& buffer : block_2_write) {
                 // FIXME: use unbuffered stdio FILE ? or use ::writev ?
-                output.append(buffer->begin(), buffer->length());
+                output.append(buffer->begin(), buffer->size());
             }
 
             if (block_2_write.size() > 2) {

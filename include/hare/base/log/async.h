@@ -12,9 +12,9 @@
 #ifndef _HARE_BASE_LOG_ASYNC_H_
 #define _HARE_BASE_LOG_ASYNC_H_
 
-#include <hare/base/util/buffer.h>
-#include <hare/base/util/count_down_latch.h>
+#include <hare/base/io/buffer.h>
 #include <hare/base/thread/thread.h>
+#include <hare/base/util/count_down_latch.h>
 
 #include <string>
 #include <thread>
@@ -28,7 +28,7 @@ namespace log {
         static const int32_t META_FLUSH_INTERVAL = 1;
         static const int64_t BLOCK_NUMBER = 16;
 
-        using fixed_block = util::fixed_buffer<HARE_LARGE_BUFFER>;
+        using fixed_block = io::fixed_cache<HARE_LARGE_BUFFER>;
         using blocks = std::vector<fixed_block::ptr>;
 
         std::mutex mutex_ {};

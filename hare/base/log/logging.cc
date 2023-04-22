@@ -175,8 +175,8 @@ logger::~logger()
     data_.finish();
 
     if (data_.level_ >= log::g_log_level) {
-        const log::stream::fixed_buffer& buf(stream().buffer());
-        log::g_output(buf.begin(), buf.length());
+        const log::stream::cache& buf(stream().buffer());
+        log::g_output(buf.begin(), buf.size());
     }
 
     if (log::g_flush) {
@@ -184,7 +184,7 @@ logger::~logger()
     }
 
     if (data_.level_ == log::LEVEL_FATAL) {
-        ::fwrite(stream().buffer().begin(), 1, stream().buffer().length(), stderr);
+        ::fwrite(stream().buffer().begin(), 1, stream().buffer().size(), stderr);
         ::fflush(stderr);
         std::abort();
     }

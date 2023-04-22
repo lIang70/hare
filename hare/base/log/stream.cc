@@ -94,9 +94,9 @@ namespace log {
     template <typename Type>
     void stream::format_integer(Type _num)
     {
-        if (buffer_.avail() >= MAX_NUMERSIC_SIZE) {
-            auto len = detail::convert(buffer_.current(), _num);
-            buffer_.add(len);
+        if (cache_.avail() >= MAX_NUMERSIC_SIZE) {
+            auto len = detail::convert(cache_.current(), _num);
+            cache_.skip(len);
         }
     }
 
@@ -139,22 +139,22 @@ namespace log {
     auto stream::operator<<(const void* _pointer) -> stream&
     {
         auto intptr = reinterpret_cast<uintptr_t>(_pointer);
-        if (buffer_.avail() >= MAX_NUMERSIC_SIZE) {
-            auto* buf = buffer_.current();
+        if (cache_.avail() >= MAX_NUMERSIC_SIZE) {
+            auto* buf = cache_.current();
             buf[0] = '0';
             buf[1] = 'x';
             auto len = detail::convert_hex(buf + 2, intptr);
-            buffer_.add(len + 2);
+            cache_.skip(len + 2);
         }
         return *this;
     }
 
     auto stream::operator<<(double _num) -> stream&
     {
-        if (buffer_.avail() >= MAX_NUMERSIC_SIZE) {
+        if (cache_.avail() >= MAX_NUMERSIC_SIZE) {
             /// FIXME: replace this with Grisu3 by Florian Loitsch.
-            auto len = ::snprintf(buffer_.current(), MAX_NUMERSIC_SIZE, "%.12g", _num);
-            buffer_.add(len);
+            auto len = ::snprintf(cache_.current(), MAX_NUMERSIC_SIZE, "%.12g", _num);
+            cache_.skip(len);
         }
         return *this;
     }

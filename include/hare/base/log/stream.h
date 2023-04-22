@@ -13,7 +13,7 @@
 #ifndef _HARE_BASE_LOG_STREAM_H_
 #define _HARE_BASE_LOG_STREAM_H_
 
-#include <hare/base/util/buffer.h>
+#include <hare/base/io/buffer.h>
 
 #include <string>
 
@@ -37,13 +37,13 @@ namespace log {
 
     class HARE_API stream {
     public:
-        using fixed_buffer = util::fixed_buffer<HARE_SMALL_BUFFER>;
+        using cache = io::fixed_cache<HARE_SMALL_BUFFER>;
         using format = detail::fmt;
 
         static const int32_t MAX_NUMERSIC_SIZE = 48;
 
     private:
-        fixed_buffer buffer_;
+        cache cache_ {};
 
     public:
         auto operator<<(bool _check) -> stream&
@@ -70,7 +70,7 @@ namespace log {
 
         auto operator<<(char _ch) -> stream&
         {
-            buffer_.append(&_ch, 1);
+            cache_.append(&_ch, 1);
             return *this;
         }
 
@@ -78,9 +78,9 @@ namespace log {
         {
             const auto null_size = 6;
             if (_str != nullptr) {
-                buffer_.append(_str, strlen(_str));
+                cache_.append(_str, strlen(_str));
             } else {
-                buffer_.append("(null)", null_size);
+                cache_.append("(null)", null_size);
             }
             return *this;
         }
@@ -92,19 +92,19 @@ namespace log {
 
         auto operator<<(const std::string& _str) -> stream&
         {
-            buffer_.append(_str.c_str(), _str.size());
+            cache_.append(_str.c_str(), _str.size());
             return *this;
         }
 
-        auto operator<<(const fixed_buffer& _buffer) -> stream&
+        auto operator<<(const cache& _buffer) -> stream&
         {
             *this << _buffer.to_string();
             return *this;
         }
 
-        void append(const char* _data, size_t _len) { buffer_.append(_data, _len); }
-        auto buffer() const -> const fixed_buffer& { return buffer_; }
-        void reset() { buffer_.reset(); }
+        void append(const char* _data, size_t _len) { cache_.append(_data, _len); }
+        auto buffer() const -> const cache& { return cache_; }
+        void reset() { cache_.reset(); }
 
     private:
         static void static_check();
