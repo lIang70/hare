@@ -1,14 +1,16 @@
-#include "hare/core/protocol.h"
-#include <hare/core/rtmp/hand_shake.h>
+#include <hare/streaming/protocol/rtmp/hand_shake.h>
 
 #include <hare/base/logging.h>
-#include <hare/core/rtmp/protocol_rtmp.h>
+#include <hare/streaming/protocol/rtmp/protocol_rtmp.h>
 
 #include <openssl/dh.h>
 #include <openssl/evp.h>
 #include <openssl/hmac.h>
 
 #include <cstdint>
+
+#define ONE_KILO 1024
+#define BITS_PER_BYTE 8
 
 #define RFC2409_PRIME_1024                             \
     "FFFFFFFFFFFFFFFFC90FDAA22168C234C4C6628B80DC1CD1" \
@@ -25,7 +27,7 @@
 #define RTMP_C0C1_LENGTH 1537
 
 namespace hare {
-namespace core {
+namespace streaming {
 
     namespace detail {
 
@@ -148,5 +150,5 @@ namespace core {
         return error(HARE_ERROR_SUCCESS);
     }
 
-} // namespace core
+} // namespace streaming
 } // namespace hare

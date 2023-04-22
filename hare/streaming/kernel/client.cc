@@ -1,11 +1,11 @@
-#include <hare/streaming/stream_client.h>
+#include <hare/streaming/kernel/client.h>
 
-#include <hare/core/rtmp/protocol_rtmp.h>
+#include <hare/streaming/protocol/rtmp/protocol_rtmp.h>
 
 namespace hare {
-namespace core {
+namespace streaming {
 
-    stream_client::stream_client(PROTOCOL_TYPE _type, hare::ptr<net::session> _session)
+    client::client(PROTOCOL_TYPE _type, hare::ptr<net::session> _session)
         : session_(std::move(_session))
     {
         switch (_type) {
@@ -17,5 +17,5 @@ namespace core {
         }
     }
 
-} // namespace core
+} // namespace streaming
 } // namespace hare

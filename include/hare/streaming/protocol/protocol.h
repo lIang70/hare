@@ -1,5 +1,5 @@
-#ifndef _HARE_CORE_PROTOCOL_H_
-#define _HARE_CORE_PROTOCOL_H_
+#ifndef _HARE_STREAMING_PROTOCOL_H_
+#define _HARE_STREAMING_PROTOCOL_H_
 
 #include <hare/base/error.h>
 #include <hare/base/io/buffer.h>
@@ -31,4 +31,4 @@ namespace streaming {
 } // namespace streaming
 } // namespace hare
 
-#endif // !_HARE_CORE_PROTOCOL_H_
+#endif // !_HARE_STREAMING_PROTOCOL_H_

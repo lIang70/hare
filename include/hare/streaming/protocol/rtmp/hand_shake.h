@@ -1,5 +1,5 @@
-#ifndef _HARE_CORE_HAND_SHAKE_H_
-#define _HARE_CORE_HAND_SHAKE_H_
+#ifndef _HARE_STREAMING_HAND_SHAKE_RTMP_H_
+#define _HARE_STREAMING_HAND_SHAKE_RTMP_H_
 
 #include <hare/base/error.h>
 #include <hare/base/io/buffer.h>
@@ -9,7 +9,7 @@ namespace net {
     class session;
 } // namespace net
 
-namespace core {
+namespace streaming {
 
     class handshake {
         uint32_t proxy_real_ip_ { 0 };
@@ -46,7 +46,7 @@ namespace core {
         auto hand_shake_server(io::buffer& buffer, hare::ptr<net::session> session) -> error final;
     };
 
-} // namespace core
+} // namespace streaming
 } // namespace hare
 
-#endif // !_HARE_CORE_HAND_SHAKE_H_
+#endif // !_HARE_STREAMING_HAND_SHAKE_RTMP_H_

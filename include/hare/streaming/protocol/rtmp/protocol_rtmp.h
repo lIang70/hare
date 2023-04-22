@@ -1,8 +1,8 @@
-#ifndef _HARE_CORE_PROTOCOL_RTMP_H_
-#define _HARE_CORE_PROTOCOL_RTMP_H_
+#ifndef _HARE_STREAMING_PROTOCOL_RTMP_H_
+#define _HARE_STREAMING_PROTOCOL_RTMP_H_
 
-#include <hare/core/protocol.h>
-#include <hare/core/rtmp/hand_shake.h>
+#include <hare/streaming/protocol/protocol.h>
+#include <hare/streaming/protocol/rtmp/hand_shake.h>
 
 /**
  * @code 
@@ -83,7 +83,7 @@
 #define RTMP_AMF0_DATA_ON_METADATA          "onMetaData"
 
 namespace hare {
-namespace core {
+namespace streaming {
 
     class HARE_API protocol_rtmp : public protocol {
     public:
@@ -206,7 +206,7 @@ namespace core {
 
     };
 
-} // namespace core
+} // namespace streaming
 } // namespace hare
 
-#endif // !_HARE_CORE_PROTOCOL_RTMP_H_
+#endif // !_HARE_STREAMING_PROTOCOL_RTMP_H_

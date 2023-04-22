@@ -1,1 +1,1 @@
-#include <hare/core/protocol.h>
+#include <hare/streaming/protocol/protocol.h>

@@ -20,6 +20,8 @@ namespace streaming {
         ptr<manage> manage_ { nullptr };
 
     public:
+        static void start_logo();
+
         explicit serve(io::cycle::REACTOR_TYPE _type);
         ~serve();
 

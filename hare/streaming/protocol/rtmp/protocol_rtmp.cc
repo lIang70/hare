@@ -1,7 +1,7 @@
-#include <hare/core/rtmp/protocol_rtmp.h>
+#include <hare/streaming/protocol/rtmp/protocol_rtmp.h>
 
 namespace hare {
-namespace core {
+namespace streaming {
 
     // inline auto isAudio() const -> bool { return message_type_ == AUDIO_MESSAGE; }
     // inline auto isVideo() const -> bool { return message_type_ == VIDEO_MESSAGE; }
@@ -25,5 +25,5 @@ namespace core {
         return err;
     }
 
-} // namespace core
+} // namespace streaming
 } // namespace hare
