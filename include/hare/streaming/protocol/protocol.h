@@ -4,15 +4,12 @@
 #include <hare/base/error.h>
 #include <hare/base/io/buffer.h>
 
-#define BITS_PER_BYTE 8
-#define ONE_KILO 1024
-
 namespace hare {
 namespace net {
     class session;
 } // namespace net
 
-namespace core {
+namespace streaming {
 
     using PROTOCOL_TYPE = enum {
         PROTOCOL_TYPE_INVALID,
@@ -23,10 +20,7 @@ namespace core {
         PROTOCOL_TYPE type_ { PROTOCOL_TYPE_INVALID };
 
     public:
-        explicit protocol(PROTOCOL_TYPE _type)
-            : type_(_type)
-        {
-        }
+        explicit protocol(PROTOCOL_TYPE _type) : type_(_type) { }
         virtual ~protocol() = default;
 
         inline auto type() -> PROTOCOL_TYPE { return type_; }
@@ -34,7 +28,7 @@ namespace core {
         virtual auto parse(io::buffer& buffer, ptr<net::session> session) -> error = 0;
     };
 
-} // namespace core
+} // namespace streaming
 } // namespace hare
 
 #endif // !_HARE_CORE_PROTOCOL_H_

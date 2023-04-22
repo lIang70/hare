@@ -23,36 +23,17 @@ namespace net {
 
     auto hybrid_serve::add_acceptor(const acceptor::ptr& _acceptor) -> bool
     {
-        if (!is_running()) {
-            acceptors_.insert(std::make_pair(_acceptor->socket(), _acceptor));
-        } else {
-            cycle_->queue_in_cycle([=] {
-                cycle_->event_update(_acceptor);
-                _acceptor->set_new_session(std::bind(&hybrid_serve::new_session, shared_from_this(), std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
-                auto ret = _acceptor->listen();
-                if (!ret) {
-                    SYS_ERROR() << "acceptor[" << _acceptor->socket() << "] cannot listen.";
-                    return;
-                }
-                acceptors_.insert(std::make_pair(_acceptor->socket(), _acceptor));
-                LOG_DEBUG() << "add acceptor[" << _acceptor->socket() << "] to serve[" << this << "].";
-            });
-        }
-        return true;
-    }
-
-    void hybrid_serve::remove_acceptor(util_socket_t _fd)
-    {
-        cycle_->queue_in_cycle([=] {
-            auto iter = acceptors_.find(_fd);
-            if (iter == acceptors_.end()) {
+        cycle_->run_in_cycle([=] {
+            cycle_->event_update(_acceptor);
+            _acceptor->set_new_session(std::bind(&hybrid_serve::new_session, shared_from_this(), std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
+            auto ret = _acceptor->listen();
+            if (!ret) {
+                SYS_ERROR() << "acceptor[" << _acceptor->socket() << "] cannot listen.";
                 return;
             }
-            auto acceptor = std::move(iter->second);
-            acceptors_.erase(iter);
-            LOG_TRACE() << "remove acceptor[" << _fd << "] from serve[" << this << "].";
-            acceptor.reset();
+            LOG_DEBUG() << "add acceptor[" << _acceptor->socket() << "] to serve[" << this << "].";
         });
+        return true;
     }
 
     auto hybrid_serve::exec(int32_t _thread_nbr) -> error
@@ -65,8 +46,6 @@ namespace net {
             return error(HARE_ERROR_INIT_IO_POOL);
         }
 
-        active_acceptors();
-
         started_ = true;
         cycle_->loop();
         started_ = false;
@@ -74,7 +53,6 @@ namespace net {
         LOG_TRACE() << "clean io pool...";
         io_pool_->stop();
 
-        acceptors_.clear();
         cycle_.reset();
         io_pool_.reset();
 
@@ -86,36 +64,11 @@ namespace net {
         cycle_->exit();
     }
 
-    void hybrid_serve::active_acceptors()
-    {
-        for (auto iter = acceptors_.begin(); iter != acceptors_.end();) {
-            auto& acc = iter->second;
-            LOG_TRACE() << "add acceptor[" << acc->socket() << "] to serve[" << this << "].";
-            cycle_->event_update(acc);
-            acc->set_new_session(std::bind(&hybrid_serve::new_session, shared_from_this(), std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
-            auto ret = acc->listen();
-            if (!ret) {
-                SYS_ERROR() << "socket[" << acc->socket() << "] fail to listen.";
-                acceptors_.erase(iter++);
-                continue;
-            }
-            LOG_DEBUG() << "hybrid_serve start to listen port[" << acc->port() << "].";
-            ++iter;
-        }
-    }
-
-    void hybrid_serve::new_session(util_socket_t _fd, host_address& _address, const timestamp& _time, util_socket_t _acceptor)
+    void hybrid_serve::new_session(util_socket_t _fd, host_address& _address, const timestamp& _time, acceptor* _acceptor)
     {
         HARE_ASSERT(started_ == true, "serve already stop...");
         cycle_->assert_in_cycle_thread();
 
-        auto acceptor_iter = acceptors_.find(_acceptor);
-        if (acceptor_iter == acceptors_.end()) {
-            SYS_ERROR() << "cannot find specific acceptor";
-            return;
-        }
-
-        auto acceptor = acceptor_iter->second;
         auto local_addr = host_address::local_address(_fd);
 
         std::array<char, static_cast<size_t>(HARE_SMALL_FIXED_SIZE * 2)> cache {};
@@ -135,17 +88,17 @@ namespace net {
 
         auto next_item = io_pool_->get_next();
         session::ptr session { nullptr };
-        switch (acceptor->type()) {
+        switch (_acceptor->type()) {
         case TYPE_TCP:
             session.reset(new tcp_session(next_item->cycle.get(),
                 std::move(local_addr),
-                session_name, acceptor->family_, _fd,
+                session_name, _acceptor->family_, _fd,
                 std::move(_address)));
             break;
         case TYPE_UDP:
         case TYPE_INVALID:
         default:
-            SYS_FATAL() << "invalid type[" << acceptor->type() << "] of acceptor.";
+            SYS_FATAL() << "invalid type[" << _acceptor->type() << "] of acceptor.";
         }
 
         session->destroy_ = std::bind([=]() {
@@ -158,7 +111,7 @@ namespace net {
         next_item->cycle->run_in_cycle(std::bind([=]() mutable {
             HARE_ASSERT(next_item->sessions.find(_fd) == next_item->sessions.end(), "");
             next_item->sessions.insert(std::make_pair(_fd, session));
-            new_session_(session, _time, acceptor);
+            new_session_(session, _time, std::static_pointer_cast<acceptor>(_acceptor->shared_from_this()));
             session->connect_established();
         }));
     }

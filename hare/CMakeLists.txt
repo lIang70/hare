@@ -205,18 +205,16 @@ file(GLOB HARE_BASE_SOURCES
     "base/io/*.cc"
     "base/io/reactor/*.cc"
 )
-
 # Add the source code to the project's executable。
 add_library(hare_base ${HARE__LIBRARY_TYPE} ${HARE_BASE_SOURCES})
 target_include_directories(hare_base PUBLIC ${CMAKE_SOURCE_DIR}/include)
-
 if(JEMALLOC_FOUND)
     target_link_libraries(hare_base PkgConfig::Jemalloc)
 endif()
-
 if(HARE__BUILD_TESTS)
     add_subdirectory(base/tests)
 endif(HARE__BUILD_TESTS)
+
 
 if(EXISTS "${CMAKE_SOURCE_DIR}/lib/openssl/" AND IS_DIRECTORY "${CMAKE_SOURCE_DIR}/lib/openssl/")
     message(STATUS "OpenSSL is built")
@@ -233,55 +231,36 @@ if(OPENSSL_FOUND)
     message(STATUS "OPENSSL_LIBRARIES = ${OPENSSL_LIBRARIES}")
 endif(OPENSSL_FOUND)
 
+
 # Add hare_net's src
 file(GLOB HARE_NET_SOURCES
     "net/*.cc"
 )
-
 # Add the source code to the project's executable。
 add_library(hare_net ${HARE__LIBRARY_TYPE} ${HARE_NET_SOURCES})
 target_include_directories(hare_net PUBLIC ${CMAKE_SOURCE_DIR}/include)
-
 if(JEMALLOC_FOUND)
     target_link_libraries(hare_net hare_base PkgConfig::Jemalloc ${OPENSSL_LIBRARIES})
 else()
     target_link_libraries(hare_net hare_base ${OPENSSL_LIBRARIES})
 endif()
-
 if(HARE__BUILD_TESTS)
-    add_subdirectory(net/tests)
+    add_subdirectory(net/samples)
 endif(HARE__BUILD_TESTS)
 
-# Add hare_core's src
-file(GLOB HARE_CORE_SOURCES
-    "core/*.cc"
-)
 
-file(GLOB HARE_CORE_RTMP_SOURCES
-    "core/rtmp/*.cc"
-)
-
-# Add the source code to the project's executable。
-add_library(hare_core   ${HARE__LIBRARY_TYPE}
-                        ${HARE_CORE_SOURCES}
-                        ${HARE_CORE_RTMP_SOURCES})
-target_include_directories(hare_core PUBLIC ${CMAKE_SOURCE_DIR}/include)
-
-if(JEMALLOC_FOUND)
-    target_link_libraries(hare_core hare_net hare_base PkgConfig::Jemalloc ${OPENSSL_LIBRARIES})
-else()
-    target_link_libraries(hare_core hare_net hare_base ${OPENSSL_LIBRARIES})
-endif()
-
-# Add hare_main's src
-file(GLOB_RECURSE HARE_MAIN_SOURCES
-    "main/*.cc"
+# Add hare_streaming's src
+file(GLOB HARE_STREAMING_SOURCES
+    "streaming/kernel/*.cc"
+    "streaming/protocol/*.cc"
+    "streaming/protocol/rtmp/*.cc"
 )
 
 # Add the source code to the project's executable。
-add_executable(hare_main ${HARE_MAIN_SOURCES})
+add_library(hare_streaming ${HARE__LIBRARY_TYPE} ${HARE_STREAMING_SOURCES})
+target_include_directories(hare_streaming PUBLIC ${CMAKE_SOURCE_DIR}/include)
 if(JEMALLOC_FOUND)
-    target_link_libraries(hare_main hare_core hare_net hare_base PkgConfig::Jemalloc ${OPENSSL_LIBRARIES})
+    target_link_libraries(hare_streaming hare_net hare_base PkgConfig::Jemalloc ${OPENSSL_LIBRARIES})
 else()
-    target_link_libraries(hare_main hare_core hare_net hare_base ${OPENSSL_LIBRARIES})
+    target_link_libraries(hare_streaming hare_net hare_base ${OPENSSL_LIBRARIES})
 endif()

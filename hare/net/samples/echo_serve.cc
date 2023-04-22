@@ -2,6 +2,7 @@
 #include <hare/base/io/cycle.h>
 #include <hare/base/logging.h>
 #include <hare/net/hybrid_serve.h>
+#include <hare/net/acceptor.h>
 
 #include <map>
 

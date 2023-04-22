@@ -1,0 +1,11 @@
+include_directories(${CMAKE_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/include)
+
+file(GLOB SAMPLES_LIST *.cc)
+
+foreach(SAMPLE_PATH ${SAMPLES_LIST})
+    get_filename_component(SAMPLE ${SAMPLE_PATH} NAME_WE)
+    get_filename_component(SAMPLE_FILE ${SAMPLE_PATH} NAME)
+    add_executable(${SAMPLE} ${SAMPLE_PATH})
+    target_link_libraries(${SAMPLE} hare_base hare_net)
+    message( STATUS "Add sample[${SAMPLE}] by [${SAMPLE_FILE}]")
+endforeach()

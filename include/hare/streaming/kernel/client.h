@@ -1,21 +1,21 @@
-#ifndef _HARE_CORE_STREAM_CLIENT_H_
-#define _HARE_CORE_STREAM_CLIENT_H_
+#ifndef _HARE_STREAMING_CLIENT_H_
+#define _HARE_STREAMING_CLIENT_H_
 
 #include <hare/base/time/timestamp.h>
-#include <hare/core/protocol.h>
+#include <hare/streaming/protocol/protocol.h>
 
 namespace hare {
-namespace core {
+namespace streaming {
 
-    class HARE_API stream_client {
+    class HARE_API client {
         ptr<protocol> protocol_ { nullptr };
         ptr<net::session> session_ { nullptr };
 
     public:
-        using ptr = ptr<stream_client>;
+        using ptr = ptr<client>;
 
-        stream_client(PROTOCOL_TYPE _type, hare::ptr<net::session> _session);
-        virtual ~stream_client() = default;
+        client(PROTOCOL_TYPE _type, hare::ptr<net::session> _session);
+        virtual ~client() = default;
 
         inline auto type() -> PROTOCOL_TYPE { return protocol_->type(); }
         inline auto protocol() -> hare::ptr<protocol> { return protocol_; }
@@ -24,7 +24,7 @@ namespace core {
         virtual void process(io::buffer& buffer, const timestamp& time) = 0;
     };
 
-} // namespace core
+} // namespace streaming
 } // namespace hare
 
-#endif // !_HARE_CORE_STREAM_CLIENT_H_
+#endif // !_HARE_STREAMING_CLIENT_H_

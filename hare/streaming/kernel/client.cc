@@ -1,4 +1,4 @@
-#include <hare/core/stream_client.h>
+#include <hare/streaming/stream_client.h>
 
 #include <hare/core/rtmp/protocol_rtmp.h>
 

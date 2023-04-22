@@ -4,16 +4,16 @@
 
 static void print_logo()
 {
-    ::fprintf(stdout, "%s\n", R"(=================== Welcome to HARE ================)");
-    ::fprintf(stdout, "%s\n", R"(      __    __   ______   _______   ________        )");
-    ::fprintf(stdout, "%s\n", R"(      |  \  |  \ /      \ |       \ |        \      )");
-    ::fprintf(stdout, "%s\n", R"(      | $$  | $$|  $$$$$$\| $$$$$$$\| $$$$$$$$      )");
-    ::fprintf(stdout, "%s\n", R"(      | $$__| $$| $$__| $$| $$__| $$| $$__          )");
-    ::fprintf(stdout, "%s\n", R"(      | $$    $$| $$    $$| $$    $$| $$  \         )");
-    ::fprintf(stdout, "%s\n", R"(      | $$$$$$$$| $$$$$$$$| $$$$$$$\| $$$$$         )");
-    ::fprintf(stdout, "%s\n", R"(      | $$  | $$| $$  | $$| $$  | $$| $$_____       )");
-    ::fprintf(stdout, "%s\n", R"(      | $$  | $$| $$  | $$| $$  | $$| $$     \      )");
-    ::fprintf(stdout, "%s\n", R"(       \$$   \$$ \$$   \$$ \$$   \$$ \$$$$$$$$      )");
+    ::fprintf(stdout, "%s\n", R"(       __    __   ______   _______   ________    )");
+    ::fprintf(stdout, "%s\n", R"(      |  \  |  \ /      \ |       \ |        \   )");
+    ::fprintf(stdout, "%s\n", R"(      | $$  | $$|  $$$$$$\| $$$$$$$\| $$$$$$$$   )");
+    ::fprintf(stdout, "%s\n", R"(      | $$__| $$| $$__| $$| $$__| $$| $$__       )");
+    ::fprintf(stdout, "%s\n", R"(      | $$    $$| $$    $$| $$    $$| $$  \      )");
+    ::fprintf(stdout, "%s\n", R"(      | $$$$$$$$| $$$$$$$$| $$$$$$$\| $$$$$      )");
+    ::fprintf(stdout, "%s\n", R"(      | $$  | $$| $$  | $$| $$  | $$| $$_____    )");
+    ::fprintf(stdout, "%s\n", R"(      | $$  | $$| $$  | $$| $$  | $$| $$     \   )");
+    ::fprintf(stdout, "%s\n", R"(       \$$   \$$ \$$   \$$ \$$   \$$ \$$$$$$$$   )");
+    ::fprintf(stdout, "%s\n", R"(=================== Welcome to HARE =============)");
     ::fflush(stdout);
 }
 
