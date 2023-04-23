@@ -1,9 +1,13 @@
 #include <hare/streaming/kernel/serve.h>
 
+#include "hare/streaming/kernel/client_rtmp.h"
+#include "hare/streaming/kernel/manage.h"
+#include <hare/base/io/console.h>
 #include <hare/base/logging.h>
 #include <hare/net/acceptor.h>
 #include <hare/net/hybrid_serve.h>
-#include <hare/streaming/kernel/manage.h>
+
+#include <memory>
 
 namespace hare {
 namespace streaming {
@@ -62,13 +66,15 @@ namespace streaming {
 
         auto acc = std::make_shared<net::acceptor>(_family, type, _port, true);
         HARE_ASSERT(acc, "an error occurred during the creation acceptor.");
-        auto ret = serve_->add_acceptor(acc);
 
-        if (ret) {
-            manage_->add_node(_type, acc);
-        }
+        return serve_->add_acceptor(acc) ? manage_->add_node(_type, acc) : false;
+    }
 
-        return ret;
+    auto serve::create_console() -> hare::ptr<io::console>
+    {
+        auto console = std::make_shared<io::console>();
+        console->attach(main_cycle_);
+        return console;
     }
 
     void serve::stop()
@@ -81,14 +87,31 @@ namespace streaming {
         serve_->exec(static_cast<int32_t>(std::thread::hardware_concurrency()));
     }
 
-    void serve::new_session(ptr<net::session> _session, timestamp _time, const ptr<net::acceptor>& _acceptor)
+    void serve::new_session(const hare::ptr<net::session>& _session, timestamp _time, const hare::ptr<net::acceptor>& _acceptor)
     {
         H_UNUSED(_time);
 
-        auto client_type = manage_->node_type(_acceptor->fd());
+        auto acceptor_fd = _acceptor->fd();
+        auto session_fd = _session->fd();
+        auto client_type = manage_->node_type(acceptor_fd);
+
         switch (client_type) {
-        case PROTOCOL_TYPE_RTMP:
-            break;
+        case PROTOCOL_TYPE_RTMP: {
+            auto rtmp_client = hare::ptr<client>(new client_rtmp(session_fd));
+            _session->set_read_callback([=](const net::session::ptr& _session, io::buffer& _buffer, const timestamp&) {
+                rtmp_client->process(_buffer, _session);
+            });
+            _session->set_write_callback([](const net::session::ptr& _session) {
+            });
+            _session->set_high_water_callback([](const net::session::ptr& _session) {
+            });
+            _session->set_connect_callback([](const net::session::ptr& _session, uint8_t events) {
+            });
+            auto ret = manage_->add_client(acceptor_fd, rtmp_client);
+            if (!ret) {
+                _session->force_close();
+            }
+        } break;
         default:
             _session->force_close();
             break;

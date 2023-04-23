@@ -4,6 +4,7 @@
 #include <hare/streaming/kernel/client.h>
 
 #include <map>
+#include <mutex>
 
 namespace hare {
 namespace net {
@@ -14,9 +15,10 @@ namespace net {
 
 namespace streaming {
 
-    class HARE_API manage {
+    class manage {
         struct node;
 
+        std::mutex node_mutex_ {};
         std::map<util_socket_t, ptr<struct node>> nodes_ {};
 
     public:
@@ -24,7 +26,9 @@ namespace streaming {
         ~manage();
 
         auto add_node(PROTOCOL_TYPE _type, ptr<net::acceptor> _acceptor) -> bool;
-        auto node_type(util_socket_t _fd) -> PROTOCOL_TYPE;
+        auto node_type(util_socket_t _accept_fd) -> PROTOCOL_TYPE;
+        auto add_client(util_socket_t _accept_fd, const ptr<client>& _client) -> bool;
+        void del_client(util_socket_t _accept_fd, util_socket_t _fd);
 
     };
 

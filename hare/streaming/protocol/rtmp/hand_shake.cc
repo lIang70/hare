@@ -92,7 +92,7 @@ namespace streaming {
 
     auto handshake::read_c0c1(io::buffer& _buffer) -> error
     {
-        if (c0c1_ != nullptr) { 
+        if (c0c1_ != nullptr) {
             return error(HARE_ERROR_SUCCESS);
         }
 
@@ -103,11 +103,13 @@ namespace streaming {
         }
 
         auto read_size = _buffer.remove(c0c1_, RTMP_C0C1_LENGTH);
-        HARE_ASSERT(read_size == RTMP_C0C1_LENGTH, "read size unequal c0c1");
+        if (read_size != RTMP_C0C1_LENGTH) {
+            return error(HARE_ERROR_RTMP_READ_C0C1);
+        }
 
-        // Whether RTMP proxy, @see https://github.com/ossrs/go-oryx/wiki/RtmpProxy
+        /// whether RTMP proxy, @see https://github.com/ossrs/go-oryx/wiki/RtmpProxy
         if (static_cast<uint8_t>(c0c1_[0]) == static_cast<uint8_t>(RTMP_FMT_TYPE3)) {
-            uint16_t csid = static_cast<uint16_t>(c0c1_[1])<<BITS_PER_BYTE | static_cast<uint16_t>(c0c1_[2]);
+            uint16_t csid = static_cast<uint16_t>(c0c1_[1]) << BITS_PER_BYTE | static_cast<uint16_t>(c0c1_[2]);
             ssize_t csid_consumed = 3 + csid;
             if (csid > ONE_KILO) {
                 return error(HARE_ERROR_RTMP_PROXY_EXCEED);
@@ -117,19 +119,21 @@ namespace streaming {
             if (csid >= 4) {
                 proxy_real_ip_ = 0;
                 for (auto index = 0; index <= 3; ++index) {
-                    proxy_real_ip_ |= (static_cast<uint32_t>(c0c1_[3 + index])<<(BITS_PER_BYTE * (3 - index)));
+                    proxy_real_ip_ |= (static_cast<uint32_t>(c0c1_[3 + index]) << (BITS_PER_BYTE * (3 - index)));
                 }
                 csid -= 4;
             }
 
-            memmove(c0c1_, c0c1_ + csid_consumed, RTMP_C0C1_LENGTH - csid_consumed);
+            ::memmove(c0c1_, c0c1_ + csid_consumed, RTMP_C0C1_LENGTH - csid_consumed);
             if (_buffer.size() < RTMP_C0C1_LENGTH) {
                 type_ = RTMP_FMT_TYPE3;
                 return error(HARE_ERROR_RTMP_READ_C0C1);
             }
-            // if ((err = io->read_fully(c0c1_ + RTMP_C0C1_LENGTH - csid_consumed, csid_consumed, &nsize)) != srs_success) {
-            //     return srs_error_wrap(err, "read c0c1");
-            // }
+
+            read_size = _buffer.remove(c0c1_ + RTMP_C0C1_LENGTH - csid_consumed, csid_consumed);
+            if (read_size != csid_consumed) {
+                return error(HARE_ERROR_RTMP_READ_C0C1);
+            }
         }
 
         return error(HARE_ERROR_SUCCESS);

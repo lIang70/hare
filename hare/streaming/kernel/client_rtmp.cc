@@ -6,17 +6,16 @@
 namespace hare {
 namespace streaming {
 
-    client_rtmp::client_rtmp(hare::ptr<net::session> _session)
-        : client(PROTOCOL_TYPE_RTMP, std::move(_session))
+    client_rtmp::client_rtmp(util_socket_t _fd)
+        : client(PROTOCOL_TYPE_RTMP, _fd)
     {
     }
 
-    void client_rtmp::process(io::buffer& buffer, const timestamp& time)
+    void client_rtmp::process(io::buffer& buffer, const hare::ptr<net::session>& _session)
     {
-        H_UNUSED(time);
-        auto error = protocol()->parse(buffer, session());
+        auto error = protocol()->parse(buffer, _session);
         if (!error) {
-            SYS_ERROR() << "Failed to parse rtmp packet, detail: " << error.description();
+            SYS_ERROR() << "failed to parse rtmp packet, detail: " << error.description();
         }
     }
 

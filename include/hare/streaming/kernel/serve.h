@@ -5,6 +5,10 @@
 #include <hare/streaming/protocol/protocol.h>
 
 namespace hare {
+namespace io {
+    class console;
+} // namespace io
+
 namespace net {
     class hybrid_serve;
     class session;
@@ -20,6 +24,8 @@ namespace streaming {
         ptr<manage> manage_ { nullptr };
 
     public:
+        using ptr = ptr<serve>;
+
         static void start_logo();
 
         explicit serve(io::cycle::REACTOR_TYPE _type);
@@ -27,11 +33,15 @@ namespace streaming {
 
         auto listen(int16_t _port, PROTOCOL_TYPE _type, int8_t _family) -> bool;
 
+        auto create_console() -> hare::ptr<io::console>;
+
         void stop();
         void run();
 
     protected:
-        void new_session(ptr<net::session> _session, timestamp _time, const ptr<net::acceptor>& _acceptor);
+        void new_session(const hare::ptr<net::session>& _session, timestamp _time, const hare::ptr<net::acceptor>& _acceptor);
+
+
     };
 
 } // namespace streaming

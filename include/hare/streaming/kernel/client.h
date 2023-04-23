@@ -8,20 +8,20 @@ namespace hare {
 namespace streaming {
 
     class HARE_API client {
+        util_socket_t fd_ { 0 };
         ptr<protocol> protocol_ { nullptr };
-        ptr<net::session> session_ { nullptr };
 
     public:
         using ptr = ptr<client>;
 
-        client(PROTOCOL_TYPE _type, hare::ptr<net::session> _session);
+        client(PROTOCOL_TYPE _type, util_socket_t _fd);
         virtual ~client() = default;
 
-        inline auto type() -> PROTOCOL_TYPE { return protocol_->type(); }
+        inline auto fd() const -> util_socket_t { return fd_; }
+        inline auto type() const -> PROTOCOL_TYPE { return protocol_->type(); }
         inline auto protocol() -> hare::ptr<protocol> { return protocol_; }
-        inline auto session() -> hare::ptr<net::session> { return session_; }
 
-        virtual void process(io::buffer& buffer, const timestamp& time) = 0;
+        virtual void process(io::buffer& buffer, const hare::ptr<net::session>& _session) = 0;
     };
 
 } // namespace streaming

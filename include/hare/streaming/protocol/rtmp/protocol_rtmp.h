@@ -19,19 +19,19 @@
 // Chunks of Type 0 are 11 bytes long. This type MUST be used at the
 //  start of a chunk stream, and whenever the stream timestamp goes
 //  backward (e.g., because of a backward seek).
-#define RTMP_FMT_TYPE0 0
+#define RTMP_FMT_TYPE0 0x00
 // Chunks of Type 1 are 7 bytes long. The message stream ID is not
 //  included; this chunk takes the same stream ID as the preceding chunk.
 //  Streams with variable-sized messages (for example, many video
 //  formats) SHOULD use this format for the first chunk of each new
 //  message after the first.
-#define RTMP_FMT_TYPE1 1
+#define RTMP_FMT_TYPE1 0x01
 // Chunks of Type 2 are 3 bytes long. Neither the stream ID nor the
 //  message length is included; this chunk has the same stream ID and
 //  message length as the preceding chunk. Streams with constant-sized
 //  messages (for example, some audio and data formats) SHOULD use this
 //  format for the first chunk of each message after the first.
-#define RTMP_FMT_TYPE2 0xF2
+#define RTMP_FMT_TYPE2 0x02
 // Chunks of Type 3 have no header. Stream ID, message length and
 //  timestamp delta are not present; chunks of this type take values from
 //  the preceding chunk. When a single message is split into chunks, all

@@ -11,7 +11,7 @@ namespace net {
     class io_pool;
     class acceptor;
     class HARE_API hybrid_serve : public non_copyable, public std::enable_shared_from_this<hybrid_serve> {
-        using new_session_callback = std::function<void(session::ptr, timestamp, const hare::ptr<acceptor>&)>;
+        using new_session_callback = std::function<void(const session::ptr&, timestamp, const hare::ptr<acceptor>&)>;
 
         std::string name_ {};
 

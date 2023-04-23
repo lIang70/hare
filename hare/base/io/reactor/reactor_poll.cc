@@ -90,7 +90,7 @@ namespace io {
             LOG_TRACE() << event_num << " events happened";
             fill_active_events(event_num);
         } else if (event_num == 0) {
-            LOG_TRACE() << " nothing happened";
+            LOG_TRACE() << "nothing happened";
         } else {
             if (saved_errno != EINTR) {
                 errno = saved_errno;

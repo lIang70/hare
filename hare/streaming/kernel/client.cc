@@ -5,8 +5,8 @@
 namespace hare {
 namespace streaming {
 
-    client::client(PROTOCOL_TYPE _type, hare::ptr<net::session> _session)
-        : session_(std::move(_session))
+    client::client(PROTOCOL_TYPE _type, util_socket_t _fd)
+        : fd_(_fd)
     {
         switch (_type) {
         case PROTOCOL_TYPE_RTMP:

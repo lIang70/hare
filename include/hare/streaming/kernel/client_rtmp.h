@@ -8,10 +8,10 @@ namespace streaming {
 
     class HARE_API client_rtmp : public client {
     public:
-        explicit client_rtmp(hare::ptr<net::session> _session);
+        explicit client_rtmp(util_socket_t _fd);
         ~client_rtmp() override = default;
 
-        void process(io::buffer& buffer, const timestamp& time) override;
+        void process(io::buffer& buffer, const hare::ptr<net::session>& _session) override;
     };
 
 } // namespace streaming
