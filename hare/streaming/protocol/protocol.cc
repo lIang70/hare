@@ -1,1 +1,0 @@
-#include <hare/streaming/protocol/protocol.h>

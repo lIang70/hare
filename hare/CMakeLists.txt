@@ -247,35 +247,3 @@ endif()
 if(HARE__BUILD_TESTS)
     add_subdirectory(net/samples)
 endif(HARE__BUILD_TESTS)
-
-
-# Add hare_streaming's src
-file(GLOB HARE_STREAMING_SOURCES
-    "streaming/kernel/*.cc"
-    "streaming/protocol/*.cc"
-    "streaming/protocol/rtmp/*.cc"
-)
-
-# Add the source code to the project's executable。
-add_library(hare_streaming ${HARE__LIBRARY_TYPE} ${HARE_STREAMING_SOURCES})
-target_include_directories(hare_streaming PUBLIC ${CMAKE_SOURCE_DIR}/include)
-if(JEMALLOC_FOUND)
-    target_link_libraries(hare_streaming hare_net hare_base PkgConfig::Jemalloc ${OPENSSL_LIBRARIES})
-else()
-    target_link_libraries(hare_streaming hare_net hare_base ${OPENSSL_LIBRARIES})
-endif()
-
-
-# Add streaming_serve's src
-file(GLOB HARE_SERVE_SOURCES
-    "main/streaming_serve.cc"
-)
-
-# Add the source code to the project's executable。
-add_executable(streaming_serve ${HARE_SERVE_SOURCES})
-target_include_directories(streaming_serve PUBLIC ${CMAKE_SOURCE_DIR}/include)
-if(JEMALLOC_FOUND)
-    target_link_libraries(streaming_serve hare_streaming hare_net hare_base PkgConfig::Jemalloc ${OPENSSL_LIBRARIES})
-else()
-    target_link_libraries(streaming_serve hare_streaming hare_net hare_base ${OPENSSL_LIBRARIES})
-endif()
