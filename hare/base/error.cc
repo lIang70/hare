@@ -33,26 +33,6 @@ namespace detail {
         "Session already disconnected.",                            // HARE_ERROR_SESSION_ALREADY_DISCONNECT
         "Failed to get pair socket.",                               // HARE_ERROR_GET_SOCKET_PAIR
         "Failed to init io pool.",                                  // HARE_ERROR_INIT_IO_POOL
-
-        // OpenSSL
-        "Failed when openssl create the dh.",                       // HARE_ERROR_OPENSSL_CREATE_DH
-        "Failed when openssl create the private key.",              // HARE_ERROR_OPENSSL_CREATE_PRIVATE_KEY
-        "Failed when openssl create G.",                            // HARE_ERROR_OPENSSL_CREATE_G
-        "Failed when openssl set G.",                               // HARE_ERROR_OPENSSL_SET_G,
-        "Failed when openssl parse P1024.",                         // HARE_ERROR_OPENSSL_PARSE_P1024,
-        "Failed when openssl generate DHKeys.",                     // HARE_ERROR_OPENSSL_GENERATE_DH_KEYS,
-        "Failed when openssl share key already computed.",          // HARE_ERROR_OPENSSL_SHARE_KEY_COMPUTED,
-        "Failed when openssl get shared key size.",                 // HARE_ERROR_OPENSSL_GET_SHARED_KEY_SIZE,
-        "Failed when openssl get peer public key.",                 // HARE_ERROR_OPENSSL_GET_PEER_PUBLIC_KEY,
-        "Failed when openssl compute shared key.",                  // HARE_ERROR_OPENSSL_COMPUTE_SHARED_KEY,
-        "Failed when openssl is invalid DH state.",                 // HARE_ERROR_OPENSSL_INVALID_DH_STATE,
-        "Failed when openssl copy key.",                            // HARE_ERROR_OPENSSL_COPY_KEY,
-        "Failed to calculate evp digest of HMAC sha256 for SSL.",   // HARE_ERROR_OPENSSL_SHA256_EVP_DIGEST,
-        "Failed when openssl sha256 digest key invalid size.",      // HARE_ERROR_OPENSSL_SHA256_DIGEST_SIZE,
-
-        // RTMP
-        "", // HARE_ERROR_RTMP_READ_C0C1
-        "", // HARE_ERROR_RTMP_PROXY_EXCEED
     };
 
 } // namespace detail
