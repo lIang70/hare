@@ -6,7 +6,7 @@
 #include <algorithm>
 #include <sstream>
 
-#ifdef HARE__HAVE_POLL
+#if HARE__HAVE_POLL
 
 namespace hare {
 namespace io {

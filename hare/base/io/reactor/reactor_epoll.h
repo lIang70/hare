@@ -6,7 +6,7 @@
 
 #include <vector>
 
-#ifdef HARE__HAVE_EPOLL
+#if HARE__HAVE_EPOLL
 #include <sys/epoll.h>
 
 namespace hare {

@@ -6,7 +6,7 @@
 #include <limits>
 #include <vector>
 
-#ifdef HARE__HAVE_SYS_IOCTL_H
+#if HARE__HAVE_SYS_IOCTL_H
 #include <sys/ioctl.h>
 #endif
 
@@ -18,7 +18,7 @@
 
 #ifdef USE_IOVEC_IMPL
 
-#ifdef HARE__HAVE_SYS_UIO_H
+#if HARE__HAVE_SYS_UIO_H
 #include <sys/uio.h>
 #define DEFAULT_WRITE_IOVEC 128
 #if defined(UIO_MAXIOV) && UIO_MAXIOV < DEFAULT_WRITE_IOVEC

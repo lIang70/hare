@@ -3,11 +3,11 @@
 #include <hare/base/io/event.h>
 #include <hare/hare-config.h>
 
-#ifdef HARE__HAVE_EPOLL
+#if HARE__HAVE_EPOLL
 #include "hare/base/io/reactor/reactor_epoll.h"
 #endif
 
-#ifdef HARE__HAVE_POLL
+#if HARE__HAVE_POLL
 #include "hare/base/io/reactor/reactor_poll.h"
 #endif
 
@@ -18,13 +18,13 @@ namespace io {
     {
         switch (_type) {
         case cycle::REACTOR_TYPE_EPOLL:
-#ifdef HARE__HAVE_POLL
+#if HARE__HAVE_POLL
             return new reactor_epoll(_cycle, _type);
 #else
             throw exception("EPOLL reactor was not supported.");
 #endif
         case cycle::REACTOR_TYPE_POLL:
-#ifdef HARE__HAVE_POLL
+#if HARE__HAVE_POLL
             return new reactor_poll(_cycle, _type);
 #else
             throw exception("POLL reactor was not supported.");

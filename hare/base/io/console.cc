@@ -6,11 +6,11 @@
 #include <hare/base/util/count_down_latch.h>
 #include <hare/hare-config.h>
 
-#ifdef HARE__HAVE_UNISTD_H
+#if HARE__HAVE_UNISTD_H
 #include <unistd.h>
 #endif
 
-#ifdef HARE__HAVE_SYS_SOCKET_H
+#if HARE__HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif
 

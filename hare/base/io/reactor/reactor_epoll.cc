@@ -5,7 +5,7 @@
 
 #include <sstream>
 
-#ifdef HARE__HAVE_EPOLL
+#if HARE__HAVE_EPOLL
 
 #ifdef H_OS_LINUX
 #include <unistd.h>
@@ -178,7 +178,7 @@ namespace io {
             auto event_id = current_thread::tstorage.inverse_map[event->fd()];
             HARE_ASSERT(current_thread::tstorage.events.find(event_id) != current_thread::tstorage.events.end(), "cannot find event.");
             auto revent = current_thread::tstorage.events[event_id];
-#ifdef HARE_DEBUG
+#if HARE_DEBUG
             HARE_ASSERT(event == revent.get(), "event is incorrect.");
 #endif
             current_thread::tstorage.active_events.emplace_back(revent, detail::encode_epoll(epoll_events_[i].events));

@@ -6,6 +6,7 @@
 #include <hare/base/logging.h>
 #include <hare/net/acceptor.h>
 #include <hare/net/tcp_session.h>
+#include <hare/net/udp_session.h>
 
 namespace hare {
 namespace net {
@@ -31,7 +32,10 @@ namespace net {
                 SYS_ERROR() << "acceptor[" << _acceptor->socket() << "] cannot listen.";
                 return;
             }
-            LOG_DEBUG() << "add acceptor[" << _acceptor->socket() << "] to serve[" << this << "].";
+            LOG_DEBUG() << "add acceptor[" << _acceptor->socket()
+                        << ", port=" << _acceptor->port_ 
+                        << ", type=" << socket::type_str(_acceptor->type()) 
+                        << "] to serve[" << this << "].";
         });
         return true;
     }
@@ -96,6 +100,11 @@ namespace net {
                 std::move(_address)));
             break;
         case TYPE_UDP:
+            session.reset(new udp_session(next_item->cycle.get(),
+                std::move(local_addr),
+                session_name, _acceptor->family_, _fd,
+                std::move(_address)));
+            break;
         case TYPE_INVALID:
         default:
             SYS_FATAL() << "invalid type[" << _acceptor->type() << "] of acceptor.";

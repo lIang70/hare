@@ -5,11 +5,11 @@
 
 #include <cstring>
 
-#ifdef HARE__HAVE_NETINET_IN_H
+#if HARE__HAVE_NETINET_IN_H
 #include <netinet/in.h>
 #endif // HARE__HAVE_NETINET_IN_H
 
-#ifdef HARE__HAVE_NETDB_H
+#if HARE__HAVE_NETDB_H
 #include <netdb.h>
 #endif // HARE__HAVE_NETDB_H
 
@@ -89,7 +89,7 @@ namespace net {
         } else {
             set_zero((addr_.in_), sizeof(struct sockaddr_in));
             addr_.in_->sin_family = AF_INET;
-            in_addr_t addr = _loopback_only ? INADDR_ANY : INADDR_LOOPBACK;
+            in_addr_t addr = _loopback_only ? INADDR_LOOPBACK : INADDR_ANY;
             addr_.in_->sin_addr.s_addr = host_to_network32(addr);
             addr_.in_->sin_port = host_to_network16(_port);
         }

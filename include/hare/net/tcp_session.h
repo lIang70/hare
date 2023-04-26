@@ -9,6 +9,10 @@ namespace hare {
 namespace net {
 
     class HARE_API tcp_session : public session {
+        using write_callback = std::function<void(const hare::ptr<tcp_session>&)>;
+        using high_water_callback = std::function<void(const hare::ptr<tcp_session>&)>;
+        using read_callback = std::function<void(const hare::ptr<tcp_session>&, io::buffer&, const timestamp&)>;
+
         static const size_t DEFAULT_HIGH_WATER { static_cast<size_t>(64 * 1024 * 1024) };
 
         io::buffer in_buffer_ {};
@@ -22,16 +26,14 @@ namespace net {
         read_callback read_ {};
 
     public:
-        using ptr = hare::ptr<tcp_session>;
-
         ~tcp_session() override;
 
         inline void set_high_water_mark(size_t _hwm) { high_water_mark_ = _hwm; }
-        inline void set_read_callback(read_callback _read) override { read_ = std::move(_read); }
-        inline void set_write_callback(write_callback _write) override { write_ = std::move(_write); }
-        inline void set_high_water_callback(high_water_callback _high_water) override { high_water_ = std::move(_high_water); }
+        inline void set_read_callback(read_callback _read) { read_ = std::move(_read); }
+        inline void set_write_callback(write_callback _write) { write_ = std::move(_write); }
+        inline void set_high_water_callback(high_water_callback _high_water) { high_water_ = std::move(_high_water); }
 
-        auto append(io::buffer& _buffer) -> bool override;
+        auto append(io::buffer& _buffer) -> bool;
         auto send(void* _bytes, size_t _length) -> bool override;
 
         auto set_tcp_no_delay(bool _on) -> error;

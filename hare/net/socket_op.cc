@@ -4,23 +4,27 @@
 #include <hare/base/io/buffer.h>
 #include <hare/base/logging.h>
 
-#ifdef HARE__HAVE_UNISTD_H
+#if HARE__HAVE_FCNTL_H
+#include <fcntl.h>
+#endif
+
+#if HARE__HAVE_UNISTD_H
 #include <unistd.h>
 #endif
 
-#ifdef HARE__HAVE_NETINET_IN_H
+#if HARE__HAVE_NETINET_IN_H
 #include <netinet/in.h>
 #endif
 
-#ifdef HARE__HAVE_SYS_SOCKET_H
+#if HARE__HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif
 
-#ifdef HARE__HAVE_SYS_IOCTL_H
+#if HARE__HAVE_SYS_IOCTL_H
 #include <sys/ioctl.h>
 #endif
 
-#ifdef HARE__HAVE_ARPA_INET_H
+#if HARE__HAVE_ARPA_INET_H
 #include <arpa/inet.h>
 #endif
 
@@ -53,7 +57,7 @@ namespace socket_op {
 #ifdef H_OS_LINUX
         auto _fd = ::socket(_family, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0);
         if (_fd < 0) {
-            throw exception("Cannot create non-blocking socket");
+            throw exception("cannot create non-blocking socket");
         }
 #endif
         return _fd;
@@ -64,7 +68,15 @@ namespace socket_op {
 #ifdef H_OS_LINUX
         auto _fd = ::socket(_family, SOCK_DGRAM, 0);
         if (_fd < 0) {
-            throw exception("Cannot create dgram socket");
+            throw exception("cannot create dgram socket");
+        }
+        auto flags = ::fcntl(_fd, F_GETFL, 0);
+        if (flags < 0) {
+            throw exception("cannot create dgram socket");
+        }
+        auto ret = ::fcntl(_fd, F_SETFL, flags | O_NONBLOCK);
+        if (ret < 0) {
+            throw exception("cannot create dgram socket");
         }
 #endif
         return _fd;

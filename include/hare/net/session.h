@@ -46,9 +46,6 @@ namespace net {
 
     public:
         using ptr = ptr<session>;
-        using write_callback = std::function<void(const session::ptr&)>;
-        using high_water_callback = std::function<void(const session::ptr&)>;
-        using read_callback = std::function<void(const session::ptr&, io::buffer&, const timestamp&)>;
 
         virtual ~session();
 
@@ -66,11 +63,7 @@ namespace net {
         void start_read();
         void stop_read();
 
-        virtual auto append(io::buffer&) -> bool = 0;
         virtual auto send(void*, size_t) -> bool = 0;
-        virtual void set_read_callback(read_callback) = 0;
-        virtual void set_write_callback(write_callback) = 0;
-        virtual void set_high_water_callback(high_water_callback) = 0;
 
     protected:
         session(io::cycle* _cycle, TYPE _type,

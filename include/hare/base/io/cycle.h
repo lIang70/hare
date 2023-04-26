@@ -38,7 +38,7 @@ namespace io {
         mutable std::mutex functions_mutex_ {};
         std::list<task> pending_functions_ {};
 
-#ifdef HARE_DEBUG
+#if HARE_DEBUG
         uint64_t cycle_index_ { 0 };
 #endif
 
@@ -62,7 +62,7 @@ namespace io {
         inline auto event_handling() const -> bool { return event_handling_; }
         inline auto is_running() const -> bool { return is_running_; }
 
-#ifdef HARE_DEBUG
+#if HARE_DEBUG
 
         inline auto cycle_index() const -> uint64_t
         {

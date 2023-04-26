@@ -7,7 +7,7 @@
 #include <map>
 #include <vector>
 
-#ifdef HARE__HAVE_POLL
+#if HARE__HAVE_POLL
 #include <sys/poll.h>
 
 namespace hare {

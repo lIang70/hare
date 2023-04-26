@@ -164,7 +164,7 @@ auto check_not_null(logger::file_path _file, int _line, const char* _names, Ty* 
 #define SYS_FATAL() \
     hare::logger(__FILE__, __LINE__, true).stream()
 
-#ifdef HARE_DEBUG
+#if HARE_DEBUG
 #define HARE_ASSERT(val, what)                                     \
     do {                                                           \
         if (!(val)) {                                              \

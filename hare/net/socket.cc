@@ -3,16 +3,28 @@
 #include "hare/net/socket_op.h"
 #include <hare/base/logging.h>
 
-#ifdef HARE__HAVE_NETINET_IN_H
+#if HARE__HAVE_NETINET_IN_H
 #include <netinet/in.h>
 #endif
 
-#ifdef HARE__HAVE_NETINET_TCP_H
+#if HARE__HAVE_NETINET_TCP_H
 #include <netinet/tcp.h>
 #endif
 
 namespace hare {
 namespace net {
+
+    auto socket::type_str(TYPE _type) -> const char*
+    {
+        switch (_type) {
+        case TYPE_TCP:
+            return "TCP";
+        case TYPE_UDP:
+            return "UDP";
+        default:
+            return "INVALID";
+        }
+    }
 
     socket::socket(int8_t family, TYPE type, util_socket_t socket)
         : socket_(socket)

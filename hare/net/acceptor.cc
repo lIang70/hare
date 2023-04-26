@@ -5,11 +5,11 @@
 #include <hare/net/socket.h>
 #include <hare/base/logging.h>
 
-#ifdef HARE__HAVE_FCNTL_H
+#if HARE__HAVE_FCNTL_H
 #include <fcntl.h>
 #endif // HARE__HAVE_FCNTL_H
 
-#ifdef HARE__HAVE_NETINET_IN_H
+#if HARE__HAVE_NETINET_IN_H
 #include <netinet/in.h>
 #endif // HARE__HAVE_NETINET_IN_H
 

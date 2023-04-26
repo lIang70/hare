@@ -22,6 +22,8 @@ namespace net {
     public:
         using ptr = std::shared_ptr<socket>;
 
+        static auto type_str(TYPE _type) -> const char*;
+
         socket(int8_t family, TYPE type, util_socket_t socket = -1);
         ~socket();
 

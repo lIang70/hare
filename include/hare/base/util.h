@@ -23,7 +23,7 @@
 #ifdef H_OS_WIN32
 #ifndef HARE_STATIC
 // Windows platforms
-#ifdef HARE_EXPORTS
+#if HARE_EXPORTS
 // From DLL side, we must export
 #define HARE_API __declspec(dllexport)
 #else

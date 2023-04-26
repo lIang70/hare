@@ -10,7 +10,7 @@
 #include <memory>
 #include <mutex>
 
-#ifdef HARE__HAVE_EVENTFD
+#if HARE__HAVE_EVENTFD
 #include <sys/eventfd.h>
 #endif
 
@@ -25,7 +25,7 @@ namespace io {
 
         auto create_notify_fd() -> util_socket_t
         {
-#ifdef HARE__HAVE_EVENTFD
+#if HARE__HAVE_EVENTFD
             auto evtfd = ::eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
             if (evtfd < 0) {
                 SYS_FATAL() << "failed to get event fd in ::eventfd.";
@@ -156,7 +156,7 @@ namespace io {
 
             reactor_time_ = reactor_->poll(get_wait_time());
 
-#ifdef HARE_DEBUG
+#if HARE_DEBUG
             ++cycle_index_;
 #endif
 

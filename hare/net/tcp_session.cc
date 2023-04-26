@@ -12,7 +12,6 @@ namespace net {
 
     auto tcp_session::append(io::buffer& _buffer) -> bool
     {
-        /// FIXME:
         if (state() == STATE_CONNECTED) {
             size_t out_buffer_size { 0 };
             {
@@ -21,7 +20,7 @@ namespace net {
                 out_buffer_.append(_buffer);
             }
             if (out_buffer_size == 0) {
-                owner_cycle()->queue_in_cycle(std::bind([=](const wptr<session>& session) {
+                owner_cycle()->queue_in_cycle(std::bind([=](const wptr<tcp_session>& session) {
                     auto tcp = session.lock();
                     if (tcp) {
                         event()->enable_write();
@@ -33,7 +32,7 @@ namespace net {
                 owner_cycle()->queue_in_cycle(std::bind([=](const wptr<tcp_session>& session) {
                     auto tcp = session.lock();
                     if (tcp) {
-                        high_water_(shared_from_this());
+                        high_water_(tcp);
                     }
                 },
                     std::static_pointer_cast<tcp_session>(shared_from_this())));
@@ -45,7 +44,6 @@ namespace net {
 
     auto tcp_session::send(void* _bytes, size_t _length) -> bool
     {
-        /// FIXME:
         if (state() == STATE_CONNECTED) {
             size_t out_buffer_size { 0 };
             {
@@ -54,7 +52,7 @@ namespace net {
                 out_buffer_.add(_bytes, _length);
             }
             if (out_buffer_size == 0) {
-                owner_cycle()->queue_in_cycle(std::bind([=](const wptr<session>& session) {
+                owner_cycle()->queue_in_cycle(std::bind([=](const wptr<tcp_session>& session) {
                     auto tcp = session.lock();
                     if (tcp) {
                         event()->enable_write();
@@ -66,7 +64,7 @@ namespace net {
                 owner_cycle()->queue_in_cycle(std::bind([=](const wptr<tcp_session>& session) {
                     auto tcp = session.lock();
                     if (tcp) {
-                        high_water_(shared_from_this());
+                        high_water_(tcp);
                     }
                 },
                     std::static_pointer_cast<tcp_session>(shared_from_this())));
@@ -85,7 +83,7 @@ namespace net {
         host_address _local_addr,
         std::string _name, int8_t _family, util_socket_t _fd,
         host_address _peer_addr)
-        : session(_cycle, TYPE_TCP,
+        : session(HARE_CHECK_NULL(_cycle), TYPE_TCP,
             std::move(_local_addr),
             std::move(_name), _family, _fd,
             std::move(_peer_addr))
@@ -99,7 +97,7 @@ namespace net {
         if (read_n == 0) {
             handle_close();
         } else if (read_n > 0) {
-            read_(shared_from_this(), in_buffer_, _time);
+            read_(std::static_pointer_cast<tcp_session>(shared_from_this()), in_buffer_, _time);
         } else {
             handle_error();
         }
