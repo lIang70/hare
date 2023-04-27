@@ -66,16 +66,8 @@ namespace socket_op {
     auto create_dgram_or_die(int8_t _family) -> util_socket_t
     {
 #ifdef H_OS_LINUX
-        auto _fd = ::socket(_family, SOCK_DGRAM, 0);
+        auto _fd = ::socket(_family, SOCK_DGRAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0);
         if (_fd < 0) {
-            throw exception("cannot create dgram socket");
-        }
-        auto flags = ::fcntl(_fd, F_GETFL, 0);
-        if (flags < 0) {
-            throw exception("cannot create dgram socket");
-        }
-        auto ret = ::fcntl(_fd, F_SETFL, flags | O_NONBLOCK);
-        if (ret < 0) {
             throw exception("cannot create dgram socket");
         }
 #endif
@@ -84,7 +76,7 @@ namespace socket_op {
 
     auto bind(int _fd, const struct sockaddr* _addr) -> error
     {
-        return ::bind(_fd, _addr, static_cast<socklen_t>(sizeof(struct sockaddr_in6))) < 0 ? error(HARE_ERROR_SOCKET_BIND) : error(HARE_ERROR_SUCCESS);
+        return ::bind(_fd, _addr, sizeof(struct sockaddr_in6)) != 0 ? error(HARE_ERROR_SOCKET_BIND) : error(HARE_ERROR_SUCCESS);
     }
 
     auto listen(int _fd) -> error

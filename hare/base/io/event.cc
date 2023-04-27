@@ -139,9 +139,9 @@ namespace io {
             if (!object) {
                 return;
             }
-        }
-        if (callback_) {
-            callback_(shared_from_this(), _flag, _receive_time);
+            if (callback_) {
+                callback_(shared_from_this(), _flag, _receive_time);
+            }
         }
     }
 

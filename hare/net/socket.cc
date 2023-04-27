@@ -122,14 +122,14 @@ namespace net {
     {
         auto opt_val = no_delay ? 1 : 0;
         auto ret = ::setsockopt(socket_, SOL_SOCKET, TCP_NODELAY, &opt_val, static_cast<socklen_t>(sizeof(opt_val)));
-        return ret < 0 ? error(HARE_ERROR_SOCKET_TCP_NO_DELAY) : error(HARE_ERROR_SUCCESS);
+        return ret != 0 ? error(HARE_ERROR_SOCKET_TCP_NO_DELAY) : error(HARE_ERROR_SUCCESS);
     }
 
     auto socket::set_reuse_addr(bool reuse) const -> error
     {
         auto optval = reuse ? 1 : 0;
         auto ret = ::setsockopt(socket_, SOL_SOCKET, SO_REUSEADDR, &optval, static_cast<socklen_t>(sizeof(optval)));
-        return ret < 0 ? error(HARE_ERROR_SOCKET_REUSE_ADDR) : error(HARE_ERROR_SUCCESS);
+        return ret != 0 ? error(HARE_ERROR_SOCKET_REUSE_ADDR) : error(HARE_ERROR_SUCCESS);
     }
 
     auto socket::set_reuse_port(bool reuse) const -> error
@@ -141,14 +141,14 @@ namespace net {
         SYS_ERROR() << "reuse-port is not supported.";
         auto ret = -1;
 #endif
-        return ret < 0 ? error(HARE_ERROR_SOCKET_REUSE_PORT) : error(HARE_ERROR_SUCCESS);
+        return ret != 0 ? error(HARE_ERROR_SOCKET_REUSE_PORT) : error(HARE_ERROR_SUCCESS);
     }
 
     auto socket::set_keep_alive(bool keep_alive) const -> error
     {
         auto optval = keep_alive ? 1 : 0;
         auto ret = ::setsockopt(socket_, SOL_SOCKET, SO_KEEPALIVE, &optval, static_cast<socklen_t>(sizeof(optval)));
-        return ret < 0 ? error(HARE_ERROR_SOCKET_KEEP_ALIVE) : error(HARE_ERROR_SUCCESS);
+        return ret != 0 ? error(HARE_ERROR_SOCKET_KEEP_ALIVE) : error(HARE_ERROR_SUCCESS);
     }
 
 } // namespace net

@@ -148,6 +148,7 @@ namespace io {
         is_running_ = true;
         quit_ = false;
         event_update(notify_event_);
+        notify_event_->tie(shared_from_this());
 
         LOG_TRACE() << "cycle[" << this << "] start running...";
 
@@ -183,6 +184,7 @@ namespace io {
         }
 
         notify_event_->deactivate();
+        notify_event_->tie(nullptr);
         is_running_ = false;
 
         LOG_TRACE() << "cycle[" << this << "] stop running.";

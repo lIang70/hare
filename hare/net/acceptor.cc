@@ -21,7 +21,7 @@ namespace net {
                          socket_op::create_nonblocking_or_die(_family) : (_type == TYPE_UDP ? 
                                                                    socket_op::create_dgram_or_die(_family) : -1),
                 std::bind(&acceptor::event_callback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
-                io::EVENT_PERSIST | io::EVENT_READ,
+                io::EVENT_PERSIST,
                 0)
         , socket_(_family, _type, fd())
         , family_(_family)
@@ -39,6 +39,7 @@ namespace net {
 
     acceptor::~acceptor()
     {
+        tie(nullptr);
         deactivate();
 #ifdef H_OS_LINUX
         socket_op::close(idle_fd_);
@@ -83,7 +84,6 @@ namespace net {
                 accepted = true;
             }
                 break;
-            case TYPE_INVALID:
             default:
                 break;
         }
@@ -110,10 +110,9 @@ namespace net {
             SYS_ERROR() << "this acceptor[" << this << "] has not been added to any cycle.";
             return error(HARE_ERROR_ACCEPTOR_ACTIVED);
         }
-        const host_address host_address(port_, false, family_ == AF_INET6);
-        auto ret = socket_.bind_address(host_address);
+        const host_address address(port_, false, family_ == AF_INET6);
+        auto ret = socket_.bind_address(address);
         if (!ret) {
-            SYS_ERROR() << "cannot bind port[" << port_ << "].";
             return ret;
         }
         if (type() == TYPE_TCP) {
@@ -122,6 +121,7 @@ namespace net {
                 return ret;
             }
         }
+        tie(shared_from_this());
         enable_read();
         return ret;
     }

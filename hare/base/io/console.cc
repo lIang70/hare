@@ -18,7 +18,7 @@ namespace hare {
 namespace io {
 
     namespace detail {
-        
+
         static void global_handle(const std::string& command_line)
         {
             SYS_ERROR() << "unregistered command[" << command_line << "], you can register \"default handle\" to console for handling all command.";
@@ -37,6 +37,7 @@ namespace io {
 
     console::~console()
     {
+        console_event_->tie(nullptr);
         console_event_->deactivate();
     }
 
@@ -72,6 +73,8 @@ namespace io {
         } else {
             _cycle->event_update(console_event_);
         }
+
+        console_event_->tie(_cycle);
         attached_ = true;
         return true;
     }
@@ -81,7 +84,7 @@ namespace io {
         HARE_ASSERT(console_event_ == _event, "error event.");
         if (!CHECK_EVENT(_events, EVENT_READ)) {
             SYS_ERROR() << "cannot check EVENT_READ.";
-            return ;
+            return;
         }
 
         std::array<char, static_cast<size_t>(HARE_SMALL_BUFFER)> console_line {};
