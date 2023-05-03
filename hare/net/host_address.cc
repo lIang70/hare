@@ -83,14 +83,14 @@ namespace net {
         if (_ipv6) {
             set_zero((addr_.in6_), sizeof(struct sockaddr_in6));
             addr_.in6_->sin6_family = AF_INET6;
-            in6_addr addr = _loopback_only ? in6addr_loopback : in6addr_any;
+            auto addr = _loopback_only ? in6addr_loopback : in6addr_any;
             addr_.in6_->sin6_addr = addr;
             addr_.in6_->sin6_port = host_to_network16(_port);
         } else {
             set_zero((addr_.in_), sizeof(struct sockaddr_in));
             addr_.in_->sin_family = AF_INET;
-            in_addr_t addr = _loopback_only ? INADDR_LOOPBACK : INADDR_ANY;
-            addr_.in_->sin_addr.s_addr = host_to_network32(addr);
+            auto addr = _loopback_only ? INADDR_LOOPBACK : INADDR_ANY;
+            addr_.in_->sin_addr.s_addr = addr;
             addr_.in_->sin_port = host_to_network16(_port);
         }
     }

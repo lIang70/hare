@@ -110,7 +110,7 @@ namespace io {
          **/
         void queue_in_cycle(task _task);
 
-        auto queue_size() const -> std::size_t;
+        auto queue_size() const -> size_t;
 
         void event_update(hare::ptr<event> _event);
         void event_remove(hare::ptr<event> _event);

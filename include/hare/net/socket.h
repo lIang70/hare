@@ -43,7 +43,7 @@ namespace net {
          *   On error, -1 is returned, and peeraddr is untouched.
          *
          */
-        auto accept(host_address& peer_addr, host_address* local_addr = nullptr) const -> util_socket_t;
+        auto accept(host_address& peer_addr) const -> util_socket_t;
 
         auto shutdown_write() const -> error;
 

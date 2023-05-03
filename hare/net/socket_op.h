@@ -24,7 +24,8 @@ namespace socket_op {
     extern auto read(util_socket_t _fd, void* _buf, size_t _size) -> int64_t;
     extern auto recvfrom(util_socket_t _fd, void* _buf, size_t _size, struct sockaddr* _addr, size_t _addr_len) -> int64_t;
 
-    extern auto get_bytes_readable_on_socket(util_socket_t _fd) -> std::size_t;
+    extern auto get_addr_len(int32_t _family) -> size_t;
+    extern auto get_bytes_readable_on_socket(util_socket_t _fd) -> size_t;
     extern auto get_socket_error_info(util_socket_t _fd) -> std::string;
 
     extern void to_ip_port(char* _buf, size_t _size, const struct sockaddr* _addr);

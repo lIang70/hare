@@ -43,7 +43,7 @@
 
 #define MIN_TO_ALLOC 512
 #define MAX_TO_COPY_IN_EXPAND 4096
-#define MAX_SIZE (std::numeric_limits<std::size_t>::max())
+#define MAX_SIZE (std::numeric_limits<size_t>::max())
 #define MAX_CHINA_SIZE (16)
 
 #ifndef MAX

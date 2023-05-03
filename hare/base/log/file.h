@@ -11,7 +11,7 @@ namespace log {
 
     class file {
         const std::string base_name_ {};
-        const std::size_t roll_size_ { 0 };
+        const size_t roll_size_ { 0 };
         const int32_t flush_interval_ { 0 };
         const int32_t check_every_n_ { 0 };
 
@@ -28,7 +28,7 @@ namespace log {
         const static int32_t CHECK_COUNT = 1024;
 
         file(std::string _base_name,
-            std::size_t _roll_size,
+            size_t _roll_size,
             bool _thread_safe = true,
             int32_t _flush_interval = 3,
             int32_t _check_every_n = CHECK_COUNT);

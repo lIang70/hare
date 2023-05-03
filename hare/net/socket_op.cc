@@ -159,7 +159,12 @@ namespace socket_op {
         return ::recvfrom(_fd, _buf, size, 0, _addr, reinterpret_cast<socklen_t*>(&addr_len));
     }
 
-    auto get_bytes_readable_on_socket(util_socket_t _fd) -> std::size_t
+    auto get_addr_len(int32_t _family) -> size_t
+    {
+        return _family == PF_INET ? sizeof(struct sockaddr_in) : sizeof(struct sockaddr_in6);
+    }
+
+    auto get_bytes_readable_on_socket(util_socket_t _fd) -> size_t
     {
 #if defined(FIONREAD) && defined(H_OS_WIN32)
         auto lng = HARE_MAX_READ_DEFAULT;

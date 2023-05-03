@@ -8,6 +8,10 @@
 #include <hare/net/tcp_session.h>
 #include <hare/net/udp_session.h>
 
+#if HARE__HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif
+
 namespace hare {
 namespace net {
 
@@ -33,8 +37,8 @@ namespace net {
                 return;
             }
             LOG_DEBUG() << "add acceptor[" << _acceptor->socket()
-                        << ", port=" << _acceptor->port_ 
-                        << ", type=" << socket::type_str(_acceptor->type()) 
+                        << ", port=" << _acceptor->port_
+                        << ", type=" << socket::type_str(_acceptor->type())
                         << "] to serve[" << this << "].";
         });
         return true;
@@ -73,39 +77,78 @@ namespace net {
         HARE_ASSERT(started_ == true, "serve already stop...");
         cycle_->assert_in_cycle_thread();
 
-        auto local_addr = host_address::local_address(_fd);
-
-        std::array<char, static_cast<size_t>(HARE_SMALL_FIXED_SIZE * 2)> cache {};
-        snprintf(cache.data(), cache.size(), "-%s#%lu", local_addr.to_ip_port().c_str(), session_id_++);
-        auto session_name = name_ + cache.data();
-
-        LOG_DEBUG() << "new session[" << session_name
-                    << "] in serve[" << name_
-                    << "] from " << _address.to_ip_port()
-                    << " in " << _time.to_fmt();
-
-        if (!new_session_) {
-            SYS_ERROR() << "you need register new_session_callback to serve[" << name_ << "]";
-            socket_op::close(_fd);
-            return;
-        }
-
         auto next_item = io_pool_->get_next();
         session::ptr session { nullptr };
+
         switch (_acceptor->type()) {
-        case TYPE_TCP:
+        case TYPE_TCP: {
+            HARE_ASSERT(_fd != -1, "socket error.");
+            auto local_addr = host_address::local_address(_fd);
+
+            std::array<char, static_cast<size_t>(HARE_SMALL_FIXED_SIZE * 2)> cache {};
+            snprintf(cache.data(), cache.size(), "-%s#%lu", local_addr.to_ip_port().c_str(), session_id_++);
+            auto session_name = name_ + cache.data();
+
+            LOG_DEBUG() << "new session[" << session_name
+                        << "] in serve[" << name_
+                        << "] from " << _address.to_ip_port()
+                        << " in " << _time.to_fmt();
+
+            if (!new_session_) {
+                SYS_ERROR() << "you need register new_session_callback to serve[" << name_ << "]";
+                socket_op::close(_fd);
+                return;
+            }
+
             session.reset(new tcp_session(next_item->cycle.get(),
                 std::move(local_addr),
                 session_name, _acceptor->family_, _fd,
                 std::move(_address)));
-            break;
-        case TYPE_UDP:
+        } break;
+        case TYPE_UDP: {
+            HARE_ASSERT(_fd == -1, "socket error.");
+
+            struct sockaddr_in6 addr { };
+            size_t addr_len = socket_op::get_addr_len(_acceptor->family_);
+            /// FIXME: recv the first package. 
+            socket_op::recvfrom(_acceptor->socket(), nullptr, 0, sockaddr_cast(&addr), addr_len);
+
+            host_address peer_addr {};
+            peer_addr.set_sockaddr_in6(&addr);
+
+            auto accept_fd = socket_op::create_dgram_or_die(_acceptor->family_);
+            auto reuse { 1 };
+            auto ret = ::setsockopt(accept_fd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse));
+            if (ret < 0) {
+                socket_op::close(accept_fd);
+            }
+            ret = ::setsockopt(accept_fd, SOL_SOCKET, SO_REUSEPORT, &reuse, sizeof(reuse));
+            if (ret < 0) {
+                socket_op::close(accept_fd);
+            }
+            auto err = socket_op::bind(accept_fd, _address.get_sockaddr());
+            if (!err) {
+                socket_op::close(accept_fd);
+            }
+            err = socket_op::connect(accept_fd, sockaddr_cast(&addr));
+            if (!err) {
+                socket_op::close(accept_fd);
+            }
+
+            std::array<char, static_cast<size_t>(HARE_SMALL_FIXED_SIZE * 2)> cache {};
+            snprintf(cache.data(), cache.size(), "-%s#%lu", _address.to_ip_port().c_str(), session_id_++);
+            auto session_name = name_ + cache.data();
+
+            LOG_DEBUG() << "new session[" << session_name
+                        << "] in serve[" << name_
+                        << "] from " << peer_addr.to_ip_port()
+                        << " in " << _time.to_fmt();
+            
             session.reset(new udp_session(next_item->cycle.get(),
-                std::move(local_addr),
+                std::move(_address),
                 session_name, _acceptor->family_, _fd,
-                std::move(_address)));
-            break;
-        case TYPE_INVALID:
+                std::move(peer_addr)));
+        } break;
         default:
             SYS_FATAL() << "invalid type[" << _acceptor->type() << "] of acceptor.";
         }

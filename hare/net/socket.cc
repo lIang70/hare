@@ -71,42 +71,11 @@ namespace net {
         return error(HARE_ERROR_SUCCESS);
     }
 
-    auto socket::accept(host_address& peer_addr, host_address* local_addr) const -> util_socket_t
+    auto socket::accept(host_address& peer_addr) const -> util_socket_t
     {
         struct sockaddr_in6 addr { };
-        util_socket_t accept_fd { -1 };
         set_zero(&addr, sizeof(addr));
-        if (type_ == TYPE_TCP) {
-            accept_fd = socket_op::accept(socket_, &addr);
-        } else {
-            if (local_addr == nullptr) {
-                return accept_fd;
-            }
-            size_t addr_len = family_ == PF_INET ? sizeof(struct sockaddr_in) : sizeof(struct sockaddr_in6);
-            socket_op::recvfrom(socket_, nullptr, 0, sockaddr_cast(&addr), addr_len);
-            accept_fd = socket_op::create_dgram_or_die(family_);
-            auto reuse { 1 };
-            auto ret = setsockopt(accept_fd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse));
-            if (ret < 0) {
-                socket_op::close(accept_fd);
-                return -1;
-            }
-            ret = setsockopt(accept_fd, SOL_SOCKET, SO_REUSEPORT, &reuse, sizeof(reuse));
-            if (ret < 0) {
-                socket_op::close(accept_fd);
-                return -1;
-            }
-            auto err = socket_op::bind(accept_fd, local_addr->get_sockaddr());
-            if (!err) {
-                socket_op::close(accept_fd);
-                return -1;
-            }
-            err = socket_op::connect(accept_fd, sockaddr_cast(&addr));
-            if (!err) {
-                socket_op::close(accept_fd);
-                return -1;
-            }
-        }
+        auto accept_fd = socket_op::accept(socket_, &addr);
         if (accept_fd >= 0) {
             peer_addr.set_sockaddr_in6(&addr);
         }

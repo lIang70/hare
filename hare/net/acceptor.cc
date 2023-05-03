@@ -64,7 +64,7 @@ namespace net {
         switch (type()) {
             case TYPE_TCP: 
             if ((conn_fd = socket_.accept(peer_addr)) >= 0) {
-                LOG_TRACE() << "accepts of " << peer_addr.to_ip_port();
+                LOG_TRACE() << "accepts of tcp[" << peer_addr.to_ip_port() << "].";
                 if (new_session_) {
                     new_session_(conn_fd, peer_addr, _receive_time, this);
                 } else {
@@ -74,15 +74,10 @@ namespace net {
             }
                 break;
             case TYPE_UDP:
-            if ((conn_fd = socket_.accept(peer_addr, &local_addr)) >= 0) {
-                LOG_TRACE() << "accepts of " << peer_addr.to_ip_port();
                 if (new_session_) {
-                    new_session_(conn_fd, peer_addr, _receive_time, this);
-                } else {
-                    socket_op::close(conn_fd);
+                    new_session_(-1, local_addr, _receive_time, this);
                 }
                 accepted = true;
-            }
                 break;
             default:
                 break;

@@ -7,6 +7,8 @@
 
 #include <map>
 
+#include <sys/socket.h>
+
 #define USAGE "echo_serve -p [port] [udp/tcp]"
 
 using hare::net::acceptor;
@@ -59,7 +61,7 @@ auto main(int32_t argc, char** argv) -> int32_t
         acceptor_type = hare::net::TYPE_UDP;
     }
 
-    acceptor::ptr acc { new acceptor(2, acceptor_type, int16_t(std::stoi(std::string(argv[2])))) };
+    acceptor::ptr acc { new acceptor(AF_INET, acceptor_type, int16_t(std::stoi(std::string(argv[2])))) };
 
     hare::io::cycle::ptr main_cycle = std::make_shared<hare::io::cycle>(hare::io::cycle::REACTOR_TYPE_EPOLL);
     hare::net::hybrid_serve::ptr main_serve = std::make_shared<hare::net::hybrid_serve>(main_cycle, "ECHO");

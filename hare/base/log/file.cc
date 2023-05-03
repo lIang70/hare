@@ -6,7 +6,7 @@ namespace hare {
 namespace log {
 
     file::file(std::string _base_name,
-        std::size_t _roll_size, bool _thread_safe,
+        size_t _roll_size, bool _thread_safe,
         int32_t _flush_interval, int32_t _check_every_n)
         : base_name_(std::move(_base_name))
         , roll_size_(_roll_size)
