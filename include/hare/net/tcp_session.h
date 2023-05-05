@@ -13,14 +13,9 @@ namespace net {
         using high_water_callback = std::function<void(const hare::ptr<tcp_session>&)>;
         using read_callback = std::function<void(const hare::ptr<tcp_session>&, io::buffer&, const timestamp&)>;
 
-        static const size_t DEFAULT_HIGH_WATER { static_cast<size_t>(64 * 1024 * 1024) };
-
-        io::buffer in_buffer_ {};
-        size_t high_water_mark_ { DEFAULT_HIGH_WATER };
-
-        std::mutex out_mutex_ {};
         io::buffer out_buffer_ {};
-
+        io::buffer in_buffer_ {};
+        size_t high_water_mark_ { static_cast<size_t>(HARE_DEFAULT_HIGH_WATER) };
         write_callback write_ {};
         high_water_callback high_water_ {};
         read_callback read_ {};

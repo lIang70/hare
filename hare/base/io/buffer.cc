@@ -404,6 +404,7 @@ namespace io {
             nread += _length;
         }
 
+        total_len_ -= nread;
         return nread;
     }
 

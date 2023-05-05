@@ -1,7 +1,7 @@
 #include <hare/net/tcp_session.h>
 
-#include "hare/net/socket_op.h"
 #include "hare/base/io/reactor.h"
+#include "hare/net/socket_op.h"
 #include <hare/base/io/cycle.h>
 #include <hare/base/logging.h>
 
@@ -13,30 +13,22 @@ namespace net {
     auto tcp_session::append(io::buffer& _buffer) -> bool
     {
         if (state() == STATE_CONNECTED) {
-            size_t out_buffer_size { 0 };
-            {
-                std::unique_lock<std::mutex> lock(out_mutex_);
-                out_buffer_size = out_buffer_.size();
-                out_buffer_.append(_buffer);
-            }
-            if (out_buffer_size == 0) {
-                owner_cycle()->queue_in_cycle(std::bind([=](const wptr<tcp_session>& session) {
-                    auto tcp = session.lock();
-                    if (tcp) {
-                        event()->enable_write();
-                        handle_write();
+            auto tmp = std::make_shared<io::buffer>();
+            tmp->append(_buffer);
+            owner_cycle()->queue_in_cycle(std::bind([](const wptr<tcp_session>& session, io::buffer::ptr& buffer) {
+                auto tcp = session.lock();
+                if (tcp) {
+                    auto out_buffer_size = tcp->out_buffer_.size();
+                    tcp->out_buffer_.append(*buffer);
+                    if (out_buffer_size == 0) {
+                        tcp->event()->enable_write();
+                        tcp->handle_write();
+                    } else if (out_buffer_size > tcp->high_water_mark_) {
+                        tcp->high_water_(tcp);
                     }
-                },
-                    std::static_pointer_cast<tcp_session>(shared_from_this())));
-            } else if (out_buffer_size > high_water_mark_) {
-                owner_cycle()->queue_in_cycle(std::bind([=](const wptr<tcp_session>& session) {
-                    auto tcp = session.lock();
-                    if (tcp) {
-                        high_water_(tcp);
-                    }
-                },
-                    std::static_pointer_cast<tcp_session>(shared_from_this())));
-            }
+                }
+            },
+                std::static_pointer_cast<tcp_session>(shared_from_this()), std::move(tmp)));
             return true;
         }
         return false;
@@ -45,30 +37,22 @@ namespace net {
     auto tcp_session::send(void* _bytes, size_t _length) -> bool
     {
         if (state() == STATE_CONNECTED) {
-            size_t out_buffer_size { 0 };
-            {
-                std::unique_lock<std::mutex> lock(out_mutex_);
-                out_buffer_size = out_buffer_.size();
-                out_buffer_.add(_bytes, _length);
-            }
-            if (out_buffer_size == 0) {
-                owner_cycle()->queue_in_cycle(std::bind([=](const wptr<tcp_session>& session) {
-                    auto tcp = session.lock();
-                    if (tcp) {
-                        event()->enable_write();
-                        handle_write();
+            auto tmp = std::make_shared<io::buffer>();
+            tmp->add(_bytes, _length);
+            owner_cycle()->queue_in_cycle(std::bind([](const wptr<tcp_session>& session, io::buffer::ptr& buffer) {
+                auto tcp = session.lock();
+                if (tcp) {
+                    auto out_buffer_size = tcp->out_buffer_.size();
+                    tcp->out_buffer_.append(*buffer);
+                    if (out_buffer_size == 0) {
+                        tcp->event()->enable_write();
+                        tcp->handle_write();
+                    } else if (out_buffer_size > tcp->high_water_mark_) {
+                        tcp->high_water_(tcp);
                     }
-                },
-                    std::static_pointer_cast<tcp_session>(shared_from_this())));
-            } else if (out_buffer_size > high_water_mark_) {
-                owner_cycle()->queue_in_cycle(std::bind([=](const wptr<tcp_session>& session) {
-                    auto tcp = session.lock();
-                    if (tcp) {
-                        high_water_(tcp);
-                    }
-                },
-                    std::static_pointer_cast<tcp_session>(shared_from_this())));
-            }
+                }
+            },
+                std::static_pointer_cast<tcp_session>(shared_from_this()), std::move(tmp)));
             return true;
         }
         return false;
@@ -106,12 +90,11 @@ namespace net {
     void tcp_session::handle_write()
     {
         if (event()->writing()) {
-            std::unique_lock<std::mutex> lock(out_mutex_);
             auto write_n = out_buffer_.write(fd(), -1);
             if (write_n >= 0) {
                 if (out_buffer_.size() == 0) {
                     event()->disable_write();
-                    owner_cycle()->queue_in_cycle(std::bind([=] (const wptr<tcp_session>& session) {
+                    owner_cycle()->queue_in_cycle(std::bind([=](const wptr<tcp_session>& session) {
                         auto tcp = session.lock();
                         if (tcp) {
                             if (write_) {

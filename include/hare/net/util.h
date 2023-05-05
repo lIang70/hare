@@ -6,6 +6,8 @@
 #include <array>
 #include <list>
 
+#define HARE_DEFAULT_HIGH_WATER (64 * 1024 * 1024)
+
 struct sockaddr;
 struct sockaddr_in;
 struct sockaddr_in6;

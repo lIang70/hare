@@ -10,7 +10,7 @@ namespace net {
     auto udp_session::send(void* _bytes, size_t _length) -> bool
     {
         if (state() == STATE_CONNECTED) {
-
+            
             return true;
         }
         return false;

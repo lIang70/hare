@@ -137,7 +137,7 @@ namespace io {
         
     };
 
-    class HARE_API buffer : non_copyable {
+    class HARE_API buffer : public non_copyable {
         using block = ptr<cache>;
         using block_list = std::list<block>;
 
@@ -168,12 +168,12 @@ namespace io {
         void clear_all();
 
         void append(buffer& _another);
+
+        // for tcp
         auto add(const void* _bytes, size_t _size) -> bool;
         auto read(util_socket_t _fd, int64_t _howmuch) -> int64_t;
-
         auto write(util_socket_t _fd, int64_t _howmuch = -1) -> int64_t;
         auto remove(void* _buffer, size_t _length) -> size_t;
-
     };
 
 } // namespace io
