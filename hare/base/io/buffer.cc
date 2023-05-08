@@ -62,12 +62,12 @@ namespace io {
         static auto bytes_readable_on_socket(util_socket_t _fd) -> int64_t
         {
 #if defined(FIONREAD) && defined(H_OS_WIN32)
-            // auto reable_cnt = HARE_MAX_READ_DEFAULT;
-            // if (::ioctlsocket(target_fd, FIONREAD, &reable_cnt) < 0) {
-            //     return (-1);
-            // }
-            // /* Can overflow, but mostly harmlessly. XXXX */
-            // return reable_cnt;
+            auto reable_cnt = HARE_MAX_READ_DEFAULT;
+            if (::ioctlsocket(target_fd, FIONREAD, &reable_cnt) < 0) {
+                return (-1);
+            }
+            /* Can overflow, but mostly harmlessly. XXXX */
+            return reable_cnt;
 #elif defined(FIONREAD)
             auto reable_cnt = HARE_MAX_READ_DEFAULT;
             if (::ioctl(_fd, FIONREAD, &reable_cnt) < 0) {
@@ -105,6 +105,13 @@ namespace io {
                 cur_ = data_;
             }
 
+            buffer_block(char* _data, size_t _max_size)
+                : max_size_(_max_size)
+                , data_(_data)
+            {
+                cur_ = data_ + _max_size;
+            }
+
             ~buffer_block() override { delete[] data_; }
 
             void append(const char* _buf, size_t _length) override
@@ -131,6 +138,8 @@ namespace io {
 
         private:
             auto end() const -> const char* { return data_ + max_size_; }
+
+            friend class io::buffer;
         };
 
     } // namespace detail
@@ -149,7 +158,6 @@ namespace io {
 
     void buffer::clear_all()
     {
-        /// FIXME: clear directly?
         block_chain_.clear();
         write_iter_ = block_chain_.begin();
         total_len_ = 0;
@@ -406,6 +414,32 @@ namespace io {
 
         total_len_ -= nread;
         return nread;
+    }
+
+    auto buffer::add_block(void* _bytes, size_t _size) -> bool
+    {
+        block_chain_.emplace_back(new detail::buffer_block(static_cast<char*>(_bytes), _size));
+        total_len_ += _size;
+        return true;
+    }
+
+    auto buffer::get_block(void** _bytes, size_t& _size) -> bool
+    {
+        if (block_chain_.empty()) {
+            *_bytes = nullptr;
+            _size = 0;
+            return false;
+        }
+
+        auto bolck = std::move(block_chain_.front());
+        block_chain_.pop_front();
+        
+        *_bytes = bolck->begin();
+        _size = bolck->max_size();
+        std::static_pointer_cast<detail::buffer_block>(bolck)->data_ = nullptr;
+        
+        total_len_ -= _size;
+        return true;
     }
 
 } // namespace io

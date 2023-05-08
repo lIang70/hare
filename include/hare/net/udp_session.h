@@ -7,11 +7,23 @@ namespace hare {
 namespace net {
 
     class HARE_API udp_session : public session {
+        using write_callback = std::function<void(const hare::ptr<udp_session>&)>;
+        using read_callback = std::function<void(const hare::ptr<udp_session>&, io::buffer&, const timestamp&)>;
+
+        io::buffer out_buffer_ {};
+        io::buffer in_buffer_ {};
+        write_callback write_ {};
+        read_callback read_ {};
+        
     public:
         using ptr = hare::ptr<udp_session>;
 
         ~udp_session() override;
 
+        inline void set_read_callback(read_callback _read) { read_ = std::move(_read); }
+        inline void set_write_callback(write_callback _write) { write_ = std::move(_write); }
+
+        auto append(io::buffer& _buffer) -> bool;
         auto send(void* _bytes, size_t _length) -> bool override;
 
     protected:

@@ -23,6 +23,7 @@ namespace socket_op {
     extern auto write(util_socket_t _fd, const void* _buf, size_t _size) -> int64_t;
     extern auto read(util_socket_t _fd, void* _buf, size_t _size) -> int64_t;
     extern auto recvfrom(util_socket_t _fd, void* _buf, size_t _size, struct sockaddr* _addr, size_t _addr_len) -> int64_t;
+    extern auto sendto(util_socket_t _fd, void* _buf, size_t _size, struct sockaddr* _addr, size_t _addr_len) -> int64_t;
 
     extern auto get_addr_len(int32_t _family) -> size_t;
     extern auto get_bytes_readable_on_socket(util_socket_t _fd) -> size_t;

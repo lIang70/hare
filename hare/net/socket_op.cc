@@ -159,6 +159,11 @@ namespace socket_op {
         return ::recvfrom(_fd, _buf, size, 0, _addr, reinterpret_cast<socklen_t*>(&addr_len));
     }
 
+    auto sendto(util_socket_t _fd, void* _buf, size_t _size, struct sockaddr* _addr, size_t _addr_len) -> int64_t
+    {
+        return ::sendto(_fd, _buf, _size, 0, _addr, _addr_len);
+    }
+
     auto get_addr_len(int32_t _family) -> size_t
     {
         return _family == PF_INET ? sizeof(struct sockaddr_in) : sizeof(struct sockaddr_in6);

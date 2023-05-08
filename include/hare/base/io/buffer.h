@@ -85,7 +85,8 @@ namespace io {
     };
 
     template <size_t SIZE>
-    class HARE_API fixed_cache : public non_copyable, public cache {
+    class HARE_API fixed_cache : public non_copyable
+                               , public cache {
         void (*cookie_)() { nullptr };
         std::array<char, SIZE> data_ {};
         char* cur_ { nullptr };
@@ -174,6 +175,11 @@ namespace io {
         auto read(util_socket_t _fd, int64_t _howmuch) -> int64_t;
         auto write(util_socket_t _fd, int64_t _howmuch = -1) -> int64_t;
         auto remove(void* _buffer, size_t _length) -> size_t;
+
+        // for udp
+        auto add_block(void* _bytes, size_t _size) -> bool;
+        auto get_block(void** _bytes, size_t& _size) -> bool;
+
     };
 
 } // namespace io

@@ -4,6 +4,7 @@
 #include <hare/net/acceptor.h>
 #include <hare/net/hybrid_serve.h>
 #include <hare/net/tcp_session.h>
+#include <hare/net/udp_session.h>
 
 #include <map>
 
@@ -14,6 +15,7 @@
 using hare::net::acceptor;
 using hare::net::session;
 using hare::net::tcp_session;
+using hare::net::udp_session;
 
 static void new_session(const session::ptr& _ses, hare::timestamp _ts, const acceptor::ptr& _acc)
 {
@@ -40,6 +42,27 @@ static void new_session(const session::ptr& _ses, hare::timestamp _ts, const acc
         tsession->set_high_water_callback([=](const hare::ptr<tcp_session>& _session) {
             LOG_ERROR() << "session[" << _session->name() << "] is going offline because it is no longer receiving data.";
             _session->force_close();
+        });
+
+        LOG_INFO() << "recv a new session[" << _ses->name() << "] at " << _ts.to_fmt(true) << " on acceptor=" << _acc->fd();
+    } else if (_acc->type() == hare::net::TYPE_UDP) {
+        _ses->set_connect_callback([=](const session::ptr& _session, uint8_t _event) {
+            if ((_event & hare::net::SESSION_CONNECTED) != 0) {
+                LOG_INFO() << "session[" << _session->name() << "] is connected.";
+            }
+            if ((_event & hare::net::SESSION_CLOSED) != 0) {
+                LOG_INFO() << "session[" << _session->name() << "] is disconnected.";
+            }
+        });
+
+        auto usession = std::static_pointer_cast<udp_session>(_ses);
+
+        usession->set_read_callback([](const hare::ptr<udp_session>& _session, hare::io::buffer& _buffer, const hare::timestamp&) {
+            _session->append(_buffer);
+        });
+
+        usession->set_write_callback([=](const hare::ptr<udp_session>& _session) {
+            
         });
 
         LOG_INFO() << "recv a new session[" << _ses->name() << "] at " << _ts.to_fmt(true) << " on acceptor=" << _acc->fd();

@@ -20,6 +20,10 @@ namespace net {
         auto create_udp_socket(host_address& local_addr, int8_t _family, host_address& peer_addr) -> util_socket_t
         {
             auto accept_fd = socket_op::create_dgram_or_die(_family);
+            if (accept_fd <= 0) {
+                return accept_fd;
+            }
+
             auto reuse { 1 };
             auto ret = ::setsockopt(accept_fd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse));
             if (ret < 0) {
@@ -27,18 +31,21 @@ namespace net {
                 socket_op::close(accept_fd);
                 return -1;
             }
+
             ret = ::setsockopt(accept_fd, SOL_SOCKET, SO_REUSEPORT, &reuse, sizeof(reuse));
             if (ret < 0) {
                 SYS_ERROR() << "cannot set address-port to socket.";
                 socket_op::close(accept_fd);
                 return -1;
             }
+
             auto err = socket_op::bind(accept_fd, local_addr.get_sockaddr());
             if (!err) {
                 SYS_ERROR() << "socket[" << accept_fd << "] cannot bind address " << local_addr.to_ip_port() << ".";
                 socket_op::close(accept_fd);
                 return -1;
             }
+
             err = socket_op::connect(accept_fd, peer_addr.get_sockaddr());
             if (!err) {
                 SYS_ERROR() << "socket[" << accept_fd << "] cannot connect address " << peer_addr.to_ip_port() << ".";
@@ -150,7 +157,8 @@ namespace net {
             size_t addr_len = socket_op::get_addr_len(_acceptor->family_);
             auto buffer_size = socket_op::get_bytes_readable_on_socket(_acceptor->socket());
             auto* buffer = new uint8_t[buffer_size];
-            socket_op::recvfrom(_acceptor->socket(), buffer, buffer_size, sockaddr_cast(&addr), addr_len);
+            auto recv_size = socket_op::recvfrom(_acceptor->socket(), buffer, buffer_size, sockaddr_cast(&addr), addr_len);
+            HARE_ASSERT(recv_size == buffer_size, "error size from udp.");
 
             host_address peer_addr {};
             peer_addr.set_sockaddr_in6(&addr);
@@ -170,30 +178,37 @@ namespace net {
                 std::move(peer_addr)));
 
             auto udp = std::static_pointer_cast<udp_session>(session);
+            udp->in_buffer_.add_block(buffer, buffer_size);
+
         } break;
         default:
             SYS_FATAL() << "invalid type[" << _acceptor->type() << "] of acceptor.";
         }
 
-        if (session) {
-            session->destroy_ = std::bind([=]() {
-                next_item->cycle->run_in_cycle([=]() mutable {
-                    HARE_ASSERT(next_item->sessions.find(_fd) != next_item->sessions.end(), "");
-                    next_item->sessions.erase(_fd);
-                });
-            });
-
-            next_item->cycle->run_in_cycle(std::bind([=]() mutable {
-                HARE_ASSERT(next_item->sessions.find(_fd) == next_item->sessions.end(), "");
-                next_item->sessions.insert(std::make_pair(_fd, session));
-                new_session_(session, _time, std::static_pointer_cast<acceptor>(_acceptor->shared_from_this()));
-                session->connect_established();
-
-                if (type == TYPE_UDP) {
-                    session->handle_read(_time);
-                }
-            }));
+        if (!session) {
+            return;
         }
+
+        session->destroy_ = std::bind([=]() {
+            next_item->cycle->run_in_cycle([=]() mutable {
+                HARE_ASSERT(next_item->sessions.find(_fd) != next_item->sessions.end(), "");
+                next_item->sessions.erase(_fd);
+            });
+        });
+
+        next_item->cycle->run_in_cycle(std::bind([=]() mutable {
+            HARE_ASSERT(next_item->sessions.find(_fd) == next_item->sessions.end(), "");
+            next_item->sessions.insert(std::make_pair(_fd, session));
+            new_session_(session, _time, std::static_pointer_cast<acceptor>(_acceptor->shared_from_this()));
+            session->connect_established();
+
+            if (type == TYPE_UDP) {
+                auto udp = std::static_pointer_cast<udp_session>(session);
+                if (udp->read_) {
+                    udp->read_(udp, udp->in_buffer_, _time);
+                }
+            }
+        }));
     }
 
 } // namespace net
