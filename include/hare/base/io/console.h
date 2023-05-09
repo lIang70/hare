@@ -13,7 +13,6 @@
 #define _HARE_BASE_IO_CONSOLE_H_
 
 #include <hare/base/io/event.h>
-#include <hare/base/thread/thread.h>
 
 #include <map>
 

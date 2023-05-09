@@ -7,8 +7,7 @@ namespace hare {
 
 namespace detail {
 
-    static const auto description_length { HARE_ERRORS };
-    static std::array<const char*, description_length> error_description {
+    static std::array<const char*, HARE_ERRORS_NBR> error_description {
         "Illegal error occurred, please contact the developer.",    // HARE_ERROR_ILLEGAL
         "Success.",                                                 // HARE_ERROR_SUCCESS
         

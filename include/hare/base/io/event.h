@@ -35,7 +35,7 @@ namespace io {
         /**
         * @brief Persistent event: won't get removed automatically when activated.
         *
-        * When a persistent event with a timeout becomes activated, its timeout
+        *   When a persistent event with a timeout becomes activated, its timeout
         *   is reset to 0.
         **/
         EVENT_PERSIST	= 0x08,
@@ -48,7 +48,7 @@ namespace io {
         *   connection has been closed, without having to read all the pending data
         *   from a connection.
         *
-        * Not all backends support EV_CLOSED.
+        *   Not all backends support EV_CLOSED.
         **/
         EVENT_CLOSED = 0x20,
     };

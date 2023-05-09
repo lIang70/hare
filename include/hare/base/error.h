@@ -42,7 +42,7 @@ using HARE_ERROR = enum {
     HARE_ERROR_GET_SOCKET_PAIR,
     HARE_ERROR_INIT_IO_POOL,
 
-    HARE_ERRORS
+    HARE_ERRORS_NBR
 }; 
 
 class HARE_API error {
