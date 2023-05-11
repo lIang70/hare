@@ -84,48 +84,50 @@ namespace net {
 
     void udp_session::handle_write()
     {
-        if (event()->writing()) {
-            void* tmp_buffer {};
-            size_t buffer_size {};
-            auto ret = out_buffer_.get_block(&tmp_buffer, buffer_size);
+        if (!event()->writing()) {
+            LOG_TRACE() << "udp session[fd: " << fd() << ", name: " << name() << "] is down, no more writing";
+            return;
+        }
 
-            if (ret) {
-                int64_t res { 0 };
-                while (buffer_size != 0) {
-                    res = socket_op::sendto(fd(), static_cast<uint8_t*>(tmp_buffer) + res, buffer_size,
-                        peer_address().get_sockaddr(), socket_op::get_addr_len(socket().family()));
-                    if (res < 0) {
-                        SYS_ERROR() << "sendto error to " << peer_address().to_ip_port() << ", the session will shutdown.";
-                        shutdown();
-                    }
-                    buffer_size -= res;
-                }
-                delete[] static_cast<uint8_t*>(tmp_buffer);
-            }
+        void* tmp_buffer {};
+        size_t buffer_size {};
+        auto ret = out_buffer_.get_block(&tmp_buffer, buffer_size);
 
-            if (buffer_size >= 0) {
-                if (out_buffer_.size() == 0) {
-                    event()->disable_write();
-                    owner_cycle()->queue_in_cycle(std::bind([=](const wptr<udp_session>& session) {
-                        auto udp = session.lock();
-                        if (udp) {
-                            if (write_) {
-                                write_(udp);
-                            } else {
-                                SYS_ERROR() << "not set write_callback to udp session[" << name() << "].";
-                            }
-                        }
-                    },
-                        std::static_pointer_cast<udp_session>(shared_from_this())));
-                }
-                if (state() == STATE_DISCONNECTING) {
+        if (ret) {
+            int64_t res { 0 };
+            while (buffer_size != 0) {
+                res = socket_op::sendto(fd(), static_cast<uint8_t*>(tmp_buffer) + res, buffer_size,
+                    peer_address().get_sockaddr(), socket_op::get_addr_len(socket().family()));
+                if (res < 0) {
+                    SYS_ERROR() << "sendto error to " << peer_address().to_ip_port() << ", the session will shutdown.";
                     shutdown();
+                    break;
                 }
-            } else {
-                SYS_ERROR() << "an error occurred while writing the socket, detail: " << socket_op::get_socket_error_info(fd());
+                buffer_size -= res;
+            }
+            delete[] static_cast<uint8_t*>(tmp_buffer);
+        }
+
+        if (buffer_size >= 0) {
+            if (out_buffer_.size() == 0) {
+                event()->disable_write();
+                owner_cycle()->queue_in_cycle(std::bind([=](const wptr<udp_session>& session) {
+                    auto udp = session.lock();
+                    if (udp) {
+                        if (write_) {
+                            write_(udp);
+                        } else {
+                            SYS_ERROR() << "not set write_callback to udp session[" << name() << "].";
+                        }
+                    }
+                },
+                    std::static_pointer_cast<udp_session>(shared_from_this())));
+            }
+            if (state() == STATE_DISCONNECTING) {
+                shutdown();
             }
         } else {
-            LOG_TRACE() << "udp session[fd: " << fd() << ", name: " << name() << "] is down, no more writing";
+            SYS_ERROR() << "an error occurred while writing the socket, detail: " << socket_op::get_socket_error_info(fd());
         }
     }
 
