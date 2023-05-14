@@ -4,6 +4,7 @@
 #include "hare/net/socket_op.h"
 #include <hare/base/io/cycle.h>
 #include <hare/base/logging.h>
+#include <hare/base/util/count_down_latch.h>
 #include <hare/net/acceptor.h>
 #include <hare/net/tcp_session.h>
 #include <hare/net/udp_session.h>
@@ -71,20 +72,32 @@ namespace net {
 
     auto hybrid_serve::add_acceptor(const acceptor::ptr& _acceptor) -> bool
     {
-        cycle_->run_in_cycle([=] {
+        util::count_down_latch cdl(1);
+        auto in_cycle = cycle_->in_cycle_thread();
+        auto added { false };
+
+        cycle_->run_in_cycle([&] {
             cycle_->event_update(_acceptor);
             _acceptor->set_new_session(std::bind(&hybrid_serve::new_session, shared_from_this(), std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
             auto ret = _acceptor->listen();
             if (!ret) {
                 SYS_ERROR() << "acceptor[" << _acceptor->socket() << "] cannot listen.";
+                cdl.count_down();
                 return;
             }
             LOG_DEBUG() << "add acceptor[" << _acceptor->socket()
                         << ", port=" << _acceptor->port_
                         << ", type=" << socket::type_str(_acceptor->type())
                         << "] to serve[" << this << "].";
+            added = true;
+            cdl.count_down();
         });
-        return true;
+
+        if (!in_cycle) {
+            cdl.await();
+        }
+
+        return added;
     }
 
     auto hybrid_serve::exec(int32_t _thread_nbr) -> error

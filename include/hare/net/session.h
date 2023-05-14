@@ -37,6 +37,7 @@ namespace net {
 
         const host_address local_addr_ {};
         const host_address peer_addr_ {};
+        ptr<void> context_ {};
 
         bool reading_ { false };
         STATE state_ { STATE_CONNECTING };
@@ -56,6 +57,8 @@ namespace net {
         inline auto state() const -> STATE { return state_; }
         inline auto fd() const -> util_socket_t { return socket_.fd(); }
         inline void set_connect_callback(connect_callback _connect) { connect_ = std::move(_connect); }
+        inline void set_context(const hare::ptr<void>& context) { context_ = context; }
+        auto get_context() const -> const hare::ptr<void>& { return context_; }
 
         auto shutdown() -> error;
         auto force_close() -> error;
@@ -63,7 +66,7 @@ namespace net {
         void start_read();
         void stop_read();
 
-        virtual auto send(void*, size_t) -> bool = 0;
+        virtual auto send(const void*, size_t) -> bool = 0;
 
     protected:
         session(io::cycle* _cycle, TYPE _type,

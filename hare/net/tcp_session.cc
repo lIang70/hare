@@ -34,7 +34,7 @@ namespace net {
         return false;
     }
 
-    auto tcp_session::send(void* _bytes, size_t _length) -> bool
+    auto tcp_session::send(const void* _bytes, size_t _length) -> bool
     {
         if (state() == STATE_CONNECTED) {
             auto tmp = std::make_shared<io::buffer>();
@@ -107,7 +107,7 @@ namespace net {
                         std::static_pointer_cast<tcp_session>(shared_from_this())));
                 }
                 if (state() == STATE_DISCONNECTING) {
-                    shutdown();
+                    handle_close();
                 }
             } else {
                 SYS_ERROR() << "an error occurred while writing the socket, detail: " << socket_op::get_socket_error_info(fd());

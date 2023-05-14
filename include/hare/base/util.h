@@ -62,7 +62,7 @@ using wptr = std::weak_ptr<Ty>;
 
 using task = std::function<void()>;
 
-HARE_API inline void set_zero(void* _des, size_t _len)
+inline void set_zero(void* _des, size_t _len)
 {
     ::memset(_des, 0, _len);
 }
@@ -122,7 +122,7 @@ HARE_API inline void set_zero(void* _des, size_t _len)
 // but the proposal was submitted too late.  It will probably make
 // its way into the language in the future.
 template <typename To, typename From>
-HARE_API inline auto implicit_cast(From const& _from) -> To
+inline auto implicit_cast(From const& _from) -> To
 {
     return _from;
 }

@@ -31,11 +31,11 @@ namespace net {
         return false;
     }
 
-    auto udp_session::send(void* _bytes, size_t _length) -> bool
+    auto udp_session::send(const void* _bytes, size_t _length) -> bool
     {
         if (state() == STATE_CONNECTED) {
             auto tmp = std::make_shared<io::buffer>();
-            decltype(_bytes) tmp_buffer = new uint8_t[_length];
+            auto *tmp_buffer = new uint8_t[_length];
             ::memcpy(tmp_buffer, _bytes, _length);
             tmp->add_block(tmp_buffer, _length);
             owner_cycle()->queue_in_cycle(std::bind([](const wptr<udp_session>& session, io::buffer::ptr& buffer) {
