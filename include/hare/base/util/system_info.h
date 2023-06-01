@@ -26,7 +26,7 @@ namespace util {
     HARE_API auto page_size() -> size_t;
     HARE_API auto cpu_usage(int32_t _pid) -> double;
     HARE_API auto stack_trace(bool demangle) -> std::string;
-    HARE_API auto set_tname(const char* tname) -> error;
+    HARE_API auto set_thread_name(const char* tname) -> error;
 
 } // namespace util
 } // namespace hare

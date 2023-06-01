@@ -1,6 +1,7 @@
 #include <hare/base/io/buffer.h>
 
 #include <hare/base/logging.h>
+#include <hare/base/exception.h>
 #include <hare/hare-config.h>
 
 #include <limits>
@@ -150,6 +151,25 @@ namespace io {
     }
 
     buffer::~buffer() = default;
+
+    auto buffer::operator[](size_t _index) -> char
+    {
+        if (_index > total_len_) {
+            throw exception("over buffer size.");
+        }
+
+        auto iter = block_chain_.begin();
+
+        while (_index > (*iter)->size()) {
+            _index -= (*iter)->size();
+            ++iter;
+        }
+
+        HARE_ASSERT(iter != block_chain_.end(), "buffer iter over size");
+        HARE_ASSERT(_index <= (*iter)->size(), "buffer index over size");
+
+        return (*iter)->readable()[_index];
+    }
 
     auto buffer::chain_size() const -> size_t
     {

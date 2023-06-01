@@ -252,7 +252,7 @@ namespace util {
 #endif
     }
 
-    auto set_tname(const char* tname) -> error
+    auto set_thread_name(const char* tname) -> error
     {
 #ifdef H_OS_LINUX
         auto ret = ::prctl(PR_SET_NAME, tname);

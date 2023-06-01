@@ -173,7 +173,7 @@ auto check_not_null(logger::file_path _file, int _line, const char* _names, Ty* 
         }                                                          \
     } while (0)
 #else
-#define HARE_ASSERT(val, what) H_UNUSED(val), H_UNUSED(what)
+#define HARE_ASSERT(val, what)
 #endif
 
 /**

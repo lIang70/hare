@@ -56,9 +56,11 @@ namespace net {
         inline auto peer_address() const -> const host_address& { return peer_addr_; }
         inline auto state() const -> STATE { return state_; }
         inline auto fd() const -> util_socket_t { return socket_.fd(); }
+        
         inline void set_connect_callback(connect_callback _connect) { connect_ = std::move(_connect); }
+        
         inline void set_context(const hare::ptr<void>& context) { context_ = context; }
-        auto get_context() const -> const hare::ptr<void>& { return context_; }
+        inline auto get_context() const -> const hare::ptr<void>& { return context_; }
 
         auto shutdown() -> error;
         auto force_close() -> error;

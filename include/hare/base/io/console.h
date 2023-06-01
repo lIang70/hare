@@ -27,6 +27,8 @@ namespace io {
     public:
         using default_handle = std::function<void(const std::string& command_line)>;
 
+        static void register_default_handle(default_handle _handle);
+
         console();
         ~console();
 
@@ -34,7 +36,6 @@ namespace io {
          * @brief not thread-safe.
          **/
         void register_handle(std::string _handle_mask, task _handle);
-        void register_default_handle(default_handle _handle) const;
         auto attach(const ptr<cycle>& _cycle) -> bool;
 
     private:

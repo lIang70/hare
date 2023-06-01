@@ -27,6 +27,12 @@ namespace io {
         static console::default_handle s_command_handle = global_handle;
     }
 
+    void console::register_default_handle(default_handle _handle)
+    {
+        HARE_ASSERT(!attached_, "you need add handle to console before attached.");
+        detail::s_command_handle = std::move(_handle);
+    }
+
     console::console()
         : console_event_(new event(STDIN_FILENO,
             std::bind(&console::process, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
@@ -45,12 +51,6 @@ namespace io {
     {
         HARE_ASSERT(!attached_, "you need add handle to console before attached.");
         handlers_.emplace(_handle_mask, _handle);
-    }
-
-    void console::register_default_handle(default_handle _handle) const
-    {
-        HARE_ASSERT(!attached_, "you need add handle to console before attached.");
-        detail::s_command_handle = std::move(_handle);
     }
 
     auto console::attach(const ptr<cycle>& _cycle) -> bool

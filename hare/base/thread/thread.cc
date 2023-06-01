@@ -84,7 +84,7 @@ void thread::run()
     current_thread::tstorage.tname = name_.empty() ? "HARE_THREAD" : name_.c_str();
 
     // For debug
-    util::set_tname(name_.c_str());
+    util::set_thread_name(name_.c_str());
 
     try {
         task_();

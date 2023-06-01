@@ -165,8 +165,13 @@ namespace io {
         inline auto size() const -> size_t { return total_len_; }
         inline void set_max_read(int64_t _max_read) { max_read_ = _max_read; }
 
+        auto operator[](size_t _index) -> char;
+
         auto chain_size() const -> size_t;
         void clear_all();
+
+        auto find(const char* _begin, const char* _end) -> int64_t;
+        void skip(size_t _size);
 
         void append(buffer& _another);
 

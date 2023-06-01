@@ -60,6 +60,7 @@ namespace io {
 
             void event_callback(const event::ptr& _event, uint8_t _events, const timestamp& _receive_time)
             {
+                H_UNUSED(_event);
                 H_UNUSED(_receive_time);
                 HARE_ASSERT(_event == this->shared_from_this(), "error occurs in event_notify.");
 

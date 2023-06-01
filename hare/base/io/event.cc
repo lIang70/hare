@@ -19,22 +19,22 @@ namespace io {
                 oss << "DEFAULT";
                 return oss.str();
             }
-            if ((flag & EVENT_TIMEOUT) != 0) {
+            if (CHECK_EVENT(flag, EVENT_TIMEOUT) != 0) {
                 oss << "TIMEOUT ";
             }
-            if ((flag & EVENT_READ) != 0) {
+            if (CHECK_EVENT(flag, EVENT_READ) != 0) {
                 oss << "READ ";
             }
-            if ((flag & EVENT_WRITE) != 0) {
+            if (CHECK_EVENT(flag, EVENT_WRITE) != 0) {
                 oss << "WRITE ";
             }
-            if ((flag & EVENT_PERSIST) != 0) {
+            if (CHECK_EVENT(flag, EVENT_PERSIST) != 0) {
                 oss << "PERSIST ";
             }
-            if ((flag & EVENT_ET) != 0) {
+            if (CHECK_EVENT(flag, EVENT_ET) != 0) {
                 oss << "ET ";
             }
-            if ((flag & EVENT_CLOSED) != 0) {
+            if (CHECK_EVENT(flag, EVENT_CLOSED) != 0) {
                 oss << "CLOSED ";
             }
             return oss.str();
