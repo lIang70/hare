@@ -1,7 +1,7 @@
 #include <hare/base/io/buffer.h>
 
-#include <hare/base/logging.h>
 #include <hare/base/exception.h>
+#include <hare/base/logging.h>
 #include <hare/hare-config.h>
 
 #include <limits>
@@ -93,6 +93,10 @@ namespace io {
             return size;
         }
 
+        static void get_next()
+        {
+        }
+
         class buffer_block : public cache {
             char* data_ { nullptr };
             char* cur_ { nullptr };
@@ -102,15 +106,15 @@ namespace io {
             explicit buffer_block(size_t _max_size)
                 : max_size_(_max_size)
                 , data_(new char[_max_size])
+                , cur_(data_)
             {
-                cur_ = data_;
             }
 
             buffer_block(char* _data, size_t _max_size)
                 : max_size_(_max_size)
                 , data_(_data)
+                , cur_(data_ + _max_size)
             {
-                cur_ = data_ + _max_size;
             }
 
             ~buffer_block() override { delete[] data_; }
@@ -181,6 +185,36 @@ namespace io {
         block_chain_.clear();
         write_iter_ = block_chain_.begin();
         total_len_ = 0;
+    }
+
+    auto buffer::find(const char* _begin, const char* _end) -> int64_t
+    {
+    }
+
+    void buffer::skip(size_t _size)
+    {
+        if (_size >= total_len_) {
+            total_len_ = 0;
+            block_chain_.clear();
+            goto done;
+        }
+
+        while (block_chain_.front()->readable_size() <= _size) {
+            HARE_ASSERT(!block_chain_.empty(), "error skip.");
+            _size -= block_chain_.front()->readable_size();
+            block_chain_.pop_front();
+        }
+
+        HARE_ASSERT(_size < 0, "error skip.");
+
+        if (_size > 0) {
+            HARE_ASSERT(!block_chain_.empty(), "error skip.");
+            HARE_ASSERT(block_chain_.front()->readable_size() > _size, "error skip.");
+            block_chain_.front()->drain(_size);
+        }
+
+    done:
+        write_iter_ = block_chain_.begin();
     }
 
     void buffer::append(buffer& _another)
@@ -406,7 +440,7 @@ namespace io {
         auto clean = chain_size() > MAX_CHINA_SIZE;
         auto curr = block_chain_.begin();
         auto curr_block = *curr;
-        auto* buffer = static_cast<char*>(_buffer);
+        auto* buffer = static_cast<uint8_t*>(_buffer);
         size_t nread { 0 };
 
         while (_length != 0U && _length > curr_block->readable_size()) {
@@ -453,11 +487,11 @@ namespace io {
 
         auto bolck = std::move(block_chain_.front());
         block_chain_.pop_front();
-        
+
         *_bytes = bolck->begin();
         _size = bolck->max_size();
         std::static_pointer_cast<detail::buffer_block>(bolck)->data_ = nullptr;
-        
+
         total_len_ -= _size;
         return true;
     }

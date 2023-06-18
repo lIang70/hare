@@ -60,7 +60,7 @@ namespace io {
 
 namespace current_thread {
 
-    struct data_storage {
+    using TDS = struct thread_data_storage {
         /// local info
         thread::id tid { 0UL };
         std::string tid_str {};
@@ -75,26 +75,26 @@ namespace current_thread {
         io::event_list active_events {};
     };
 
-    extern thread_local struct data_storage tstorage;
+    extern auto get_tds() -> TDS&;
 
     extern void cache_thread_id();
 
     inline auto tid() -> thread::id
     {
-        if (__builtin_expect((tstorage.tid == 0 ? 1 : 0), 0) != 0) {
+        if (__builtin_expect((get_tds().tid == 0 ? 1 : 0), 0) != 0) {
             cache_thread_id();
         }
-        return tstorage.tid;
+        return get_tds().tid;
     }
 
     inline auto tid_str() -> std::string
     {
-        return tstorage.tid_str;
+        return get_tds().tid_str;
     }
 
     inline auto thread_name() -> const char*
     {
-        return tstorage.tname;
+        return get_tds().tname;
     }
 
 } // namespace current_thread

@@ -112,7 +112,7 @@ namespace io {
 
     auto reactor_epoll::poll(int32_t _timeout_microseconds) -> timestamp
     {
-        LOG_TRACE() << "active events total count: " << current_thread::tstorage.active_events.size();
+        LOG_TRACE() << "active events total count: " << current_thread::get_tds().active_events.size();
 
         auto event_num = ::epoll_wait(epoll_fd_,
             &*epoll_events_.begin(), static_cast<int32_t>(epoll_events_.size()),
@@ -145,16 +145,16 @@ namespace io {
         if (event_id == -1) {
             // a new one, add with EPOLL_CTL_ADD
             auto target_fd = _event->fd();
-            HARE_ASSERT(current_thread::tstorage.inverse_map.find(target_fd) == current_thread::tstorage.inverse_map.end(), "event already inserted in epoll.");
+            HARE_ASSERT(current_thread::get_tds().inverse_map.find(target_fd) == current_thread::get_tds().inverse_map.end(), "event already inserted in epoll.");
             update(EPOLL_CTL_ADD, _event);
             return ;
         }
 
         // update existing one with EPOLL_CTL_MOD/DEL
         auto target_fd = _event->fd();
-        HARE_ASSERT(current_thread::tstorage.inverse_map.find(target_fd) != current_thread::tstorage.inverse_map.end(), "cannot find event.");
-        HARE_ASSERT(current_thread::tstorage.events.find(event_id) != current_thread::tstorage.events.end(), "cannot find event.");
-        HARE_ASSERT(current_thread::tstorage.events[event_id] == _event, "event is incorrect.");
+        HARE_ASSERT(current_thread::get_tds().inverse_map.find(target_fd) != current_thread::get_tds().inverse_map.end(), "cannot find event.");
+        HARE_ASSERT(current_thread::get_tds().events.find(event_id) != current_thread::get_tds().events.end(), "cannot find event.");
+        HARE_ASSERT(current_thread::get_tds().events[event_id] == _event, "event is incorrect.");
         update(EPOLL_CTL_MOD, _event);
     }
 
@@ -163,7 +163,7 @@ namespace io {
         const auto target_fd = _event->fd();
         const auto event_id = _event->event_id();
         LOG_TRACE() << "epoll-remove: fd=" << target_fd << ", flags=" << _event->events();
-        HARE_ASSERT(current_thread::tstorage.inverse_map.find(target_fd) != current_thread::tstorage.inverse_map.end(), "cannot find event.");
+        HARE_ASSERT(current_thread::get_tds().inverse_map.find(target_fd) != current_thread::get_tds().inverse_map.end(), "cannot find event.");
         HARE_ASSERT(event_id == -1, "incorrect status.");
 
         update(EPOLL_CTL_DEL, _event);
@@ -174,14 +174,14 @@ namespace io {
         HARE_ASSERT(implicit_cast<size_t>(_num_of_events) <= epoll_events_.size(), "oversize.");
         for (auto i = 0; i < _num_of_events; ++i) {
             auto* event = static_cast<io::event*>(epoll_events_[i].data.ptr);
-            HARE_ASSERT(current_thread::tstorage.inverse_map.find(event->fd()) != current_thread::tstorage.inverse_map.end(), "cannot find fd.");
-            auto event_id = current_thread::tstorage.inverse_map[event->fd()];
-            HARE_ASSERT(current_thread::tstorage.events.find(event_id) != current_thread::tstorage.events.end(), "cannot find event.");
-            auto revent = current_thread::tstorage.events[event_id];
+            HARE_ASSERT(current_thread::get_tds().inverse_map.find(event->fd()) != current_thread::get_tds().inverse_map.end(), "cannot find fd.");
+            auto event_id = current_thread::get_tds().inverse_map[event->fd()];
+            HARE_ASSERT(current_thread::get_tds().events.find(event_id) != current_thread::get_tds().events.end(), "cannot find event.");
+            auto revent = current_thread::get_tds().events[event_id];
 #if HARE_DEBUG
             HARE_ASSERT(event == revent.get(), "event is incorrect.");
 #endif
-            current_thread::tstorage.active_events.emplace_back(revent, detail::encode_epoll(epoll_events_[i].events));
+            current_thread::get_tds().active_events.emplace_back(revent, detail::encode_epoll(epoll_events_[i].events));
         }
     }
 

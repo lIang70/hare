@@ -80,7 +80,8 @@ namespace io {
             ignore_sigpipe()
             {
                 LOG_TRACE() << "ignore signal[SIGPIPE]";
-                ::signal(SIGPIPE, SIG_IGN);
+                auto ret = ::signal(SIGPIPE, SIG_IGN);
+                H_UNUSED(ret);
             }
         };
 
@@ -88,18 +89,16 @@ namespace io {
 
     auto get_wait_time() -> int32_t
     {
-        const auto& tstorage = current_thread::tstorage;
-        if (tstorage.ptimer.empty()) {
+        if (current_thread::get_tds().ptimer.empty()) {
             return POLL_TIME_MICROSECONDS;
         }
-        auto time = static_cast<int32_t>(tstorage.ptimer.top().stamp_.microseconds_since_epoch() - timestamp::now().microseconds_since_epoch());
+        auto time = static_cast<int32_t>(current_thread::get_tds().ptimer.top().stamp_.microseconds_since_epoch() - timestamp::now().microseconds_since_epoch());
         return time <= 0 ? static_cast<int32_t>(1) : std::min(time, POLL_TIME_MICROSECONDS);
     }
 
     void print_active_events()
     {
-        const auto& tstorage = current_thread::tstorage;
-        for (const auto& event_elem : tstorage.active_events) {
+        for (const auto& event_elem : current_thread::get_tds().active_events) {
             LOG_TRACE() << "event[" << event_elem.event_->fd() << "] debug info: " << event_elem.event_->event_string() << ".";
         }
     }
@@ -113,11 +112,11 @@ namespace io {
         static detail::ignore_sigpipe s_ignore_sigpipe {};
 
         LOG_TRACE() << "cycle[" << this << "] is being initialized in [" << current_thread::tid_str() << "]...";
-        if (current_thread::tstorage.cycle != nullptr) {
-            SYS_FATAL() << "another cycle[" << current_thread::tstorage.cycle
+        if (current_thread::get_tds().cycle != nullptr) {
+            SYS_FATAL() << "another cycle[" << current_thread::get_tds().cycle
                         << "] exists in this thread[" << current_thread::tid_str() << "].";
         } else {
-            current_thread::tstorage.cycle = this;
+            current_thread::get_tds().cycle = this;
         }
     }
 
@@ -125,12 +124,12 @@ namespace io {
     {
         // clear thread local data.
         assert_in_cycle_thread();
-        current_thread::tstorage.active_events.clear();
-        current_thread::tstorage.events.clear();
-        priority_timer().swap(current_thread::tstorage.ptimer);
+        current_thread::get_tds().active_events.clear();
+        current_thread::get_tds().events.clear();
+        priority_timer().swap(current_thread::get_tds().ptimer);
         pending_functions_.clear();
         notify_event_.reset();
-        current_thread::tstorage.cycle = nullptr;
+        current_thread::get_tds().cycle = nullptr;
     }
 
     auto cycle::in_cycle_thread() const -> bool
@@ -154,7 +153,7 @@ namespace io {
         LOG_TRACE() << "cycle[" << this << "] start running...";
 
         while (!quit_) {
-            current_thread::tstorage.active_events.clear();
+            current_thread::get_tds().active_events.clear();
 
             reactor_time_ = reactor_->poll(get_wait_time());
 
@@ -169,7 +168,7 @@ namespace io {
             /// TODO(l1ang): sort event by priority
             event_handling_ = true;
 
-            for (auto& event_elem : current_thread::tstorage.active_events) {
+            for (auto& event_elem : current_thread::get_tds().active_events) {
                 current_active_event_ = event_elem.event_;
                 current_active_event_->handle_event(event_elem.revents_, reactor_time_);
                 if (CHECK_EVENT(current_active_event_->events(), EVENT_PERSIST) == 0) {
@@ -250,18 +249,18 @@ namespace io {
 
             if (sevent->id_ == -1) {
                 sevent->cycle_ = this->shared_from_this();
-                sevent->id_ = current_thread::tstorage.event_id++;
+                sevent->id_ = current_thread::get_tds().event_id++;
 
-                HARE_ASSERT(current_thread::tstorage.events.find(sevent->id_) == current_thread::tstorage.events.end(), "an error occurred while creating the event id.");
-                current_thread::tstorage.events.insert(std::make_pair(sevent->id_, sevent));
+                HARE_ASSERT(current_thread::get_tds().events.find(sevent->id_) == current_thread::get_tds().events.end(), "an error occurred while creating the event id.");
+                current_thread::get_tds().events.insert(std::make_pair(sevent->id_, sevent));
 
                 if (sevent->fd() >= 0) {
-                    current_thread::tstorage.inverse_map.insert(std::make_pair(sevent->fd(), sevent->id_));
+                    current_thread::get_tds().inverse_map.insert(std::make_pair(sevent->fd(), sevent->id_));
                 }
             }
 
             if (CHECK_EVENT(sevent->events_, EVENT_TIMEOUT) != 0) {
-                current_thread::tstorage.ptimer.emplace(sevent->id_, timestamp(timestamp::now().microseconds_since_epoch() + sevent->timeval()));
+                current_thread::get_tds().ptimer.emplace(sevent->id_, timestamp(timestamp::now().microseconds_since_epoch() + sevent->timeval()));
             }
         },
             _event));
@@ -287,8 +286,8 @@ namespace io {
             auto event_id = sevent->id_;
             auto socket = sevent->fd();
 
-            auto iter = current_thread::tstorage.events.find(event_id);
-            if (iter == current_thread::tstorage.events.end()) {
+            auto iter = current_thread::get_tds().events.find(event_id);
+            if (iter == current_thread::get_tds().events.end()) {
                 SYS_ERROR() << "cannot find event in cycle[" << this << "]";
             } else {
                 HARE_ASSERT(iter->second == sevent, "error event.");
@@ -298,10 +297,10 @@ namespace io {
 
                 if (socket >= 0) {
                     reactor_->event_remove(sevent);
-                    current_thread::tstorage.inverse_map.erase(socket);
+                    current_thread::get_tds().inverse_map.erase(socket);
                 }
 
-                current_thread::tstorage.events.erase(iter);
+                current_thread::get_tds().events.erase(iter);
             }
         },
             _event));
@@ -313,7 +312,7 @@ namespace io {
             return false;
         }
         assert_in_cycle_thread();
-        return current_thread::tstorage.events.find(_event->id_) != current_thread::tstorage.events.end();
+        return current_thread::get_tds().events.find(_event->id_) != current_thread::get_tds().events.end();
     }
 
     void cycle::notify()
@@ -351,8 +350,8 @@ namespace io {
 
     void cycle::notify_timer()
     {
-        auto& priority_event = current_thread::tstorage.ptimer;
-        auto& events = current_thread::tstorage.events;
+        auto& priority_event = current_thread::get_tds().ptimer;
+        auto& events = current_thread::get_tds().events;
         const auto revent = EVENT_TIMEOUT;
         auto now = timestamp::now();
 

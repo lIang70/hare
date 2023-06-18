@@ -49,7 +49,7 @@ void thread::start()
         thread_ = std::make_shared<std::thread>(&thread::run, this);
         count_down_latch_->await();
     } catch (const std::exception& e) {
-        current_thread::tstorage.tname = "crashed";
+        current_thread::get_tds().tname = "crashed";
         fprintf(stderr, "fail to create thread! Detail:\n %s", e.what());
         std::abort();
     } catch (...) {
@@ -81,29 +81,29 @@ void thread::run()
         count_down_latch_->count_down();
     }
 
-    current_thread::tstorage.tname = name_.empty() ? "HARE_THREAD" : name_.c_str();
+    current_thread::get_tds().tname = name_.empty() ? "HARE_THREAD" : name_.c_str();
 
     // For debug
     util::set_thread_name(name_.c_str());
 
     try {
         task_();
-        current_thread::tstorage.tname = "finished";
+        current_thread::get_tds().tname = "finished";
         thread_id_ = 0;
         started_ = false;
     } catch (const exception& e) {
-        current_thread::tstorage.tname = "crashed";
+        current_thread::get_tds().tname = "crashed";
         fprintf(stderr, "exception caught in Thread %s\n", name_.c_str());
         fprintf(stderr, "reason: %s\n", e.what());
         fprintf(stderr, "stack trace: %s\n", e.stack_trace());
         std::abort();
     } catch (const std::exception& e) {
-        current_thread::tstorage.tname = "crashed";
+        current_thread::get_tds().tname = "crashed";
         fprintf(stderr, "exception caught in Thread %s\n", name_.c_str());
         fprintf(stderr, "reason: %s\n", e.what());
         std::abort();
     } catch (...) {
-        current_thread::tstorage.tname = "crashed";
+        current_thread::get_tds().tname = "crashed";
         fprintf(stderr, "exception caught in Thread %s\n", name_.c_str());
         throw;
     }

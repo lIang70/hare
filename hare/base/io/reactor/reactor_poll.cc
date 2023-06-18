@@ -105,11 +105,10 @@ namespace io {
         LOG_TRACE() << "poll-update: fd=" << _event->fd() << ", events=" << _event->events();
         auto target_fd = _event->fd();
         auto inverse_iter = inverse_map_.find(target_fd);
-        auto& tstorage = current_thread::tstorage;
         
         if (_event->event_id() == -1) {
             // a new one, add to pollfd_list
-            HARE_ASSERT(tstorage.inverse_map.find(target_fd) == tstorage.inverse_map.end(), "error in event.");
+            HARE_ASSERT(current_thread::get_tds().inverse_map.find(target_fd) == current_thread::get_tds().inverse_map.end(), "error in event.");
             HARE_ASSERT(inverse_iter == inverse_map_.end(), "the fd already inserted into poll.");
             struct pollfd poll_fd {};
             set_zero(&poll_fd, sizeof(poll_fd));
@@ -124,8 +123,8 @@ namespace io {
 
         // update existing one
         auto event_id = _event->event_id();
-        HARE_ASSERT(tstorage.events.find(event_id) != tstorage.events.end(), "cannot find event.");
-        HARE_ASSERT(tstorage.events[event_id] == _event, "event is incorrect.");
+        HARE_ASSERT(current_thread::get_tds().events.find(event_id) != current_thread::get_tds().events.end(), "cannot find event.");
+        HARE_ASSERT(current_thread::get_tds().events[event_id] == _event, "event is incorrect.");
         HARE_ASSERT(inverse_iter != inverse_map_.end(), "the fd doesn't exist in poll.");
         auto& index = inverse_iter->second;
         HARE_ASSERT(0 <= index && index < static_cast<int32_t>(poll_fds_.size()), "oversize.");
@@ -138,7 +137,6 @@ namespace io {
 
     void reactor_poll::event_remove(ptr<event> _event)
     {
-        auto& tstorage = current_thread::tstorage;
         const auto target_fd = _event->fd();
 
         auto inverse_iter = inverse_map_.find(target_fd);
@@ -164,16 +162,15 @@ namespace io {
 
     void reactor_poll::fill_active_events(int32_t _num_of_events)
     {
-        auto& tstorage = current_thread::tstorage;
         const auto size = poll_fds_.size();
         for (auto event_id = 0; event_id < size && _num_of_events > 0; ++event_id) {
             const auto& pfd = poll_fds_[event_id];
             if (pfd.revents > 0) {
                 --_num_of_events;
-                auto event_iter = tstorage.events.find(event_id);
-                HARE_ASSERT(event_iter != tstorage.events.end(), "the event does not exist in the reactor.");
+                auto event_iter = current_thread::get_tds().events.find(event_id);
+                HARE_ASSERT(event_iter != current_thread::get_tds().events.end(), "the event does not exist in the reactor.");
                 HARE_ASSERT(event_iter->second->fd() == pfd.fd, "the event's fd does not match.");
-                tstorage.active_events.emplace_back(event_iter->second, detail::encode_poll(pfd.revents));
+                current_thread::get_tds().active_events.emplace_back(event_iter->second, detail::encode_poll(pfd.revents));
             }
         }
     }

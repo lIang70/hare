@@ -29,16 +29,20 @@ namespace current_thread {
         }
     } // namespace detail
 
-    thread_local struct data_storage tstorage;
+    auto get_tds() -> TDS&
+    {
+        static thread_local TDS s_tds;
+        return s_tds;
+    }
 
     void cache_thread_id()
     {
-        if (tstorage.tid == 0) {
+        if (get_tds().tid == 0) {
             std::ostringstream oss;
             oss << std::this_thread::get_id();
-            tstorage.tid_str = oss.str();
-            tstorage.tid = std::stoull(tstorage.tid_str);
-            detail::convertHex(tstorage.tid_str, tstorage.tid);
+            get_tds().tid_str = oss.str();
+            get_tds().tid = std::stoull(get_tds().tid_str);
+            detail::convertHex(get_tds().tid_str, get_tds().tid);
         }
     }
 
