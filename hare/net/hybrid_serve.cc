@@ -151,7 +151,8 @@ namespace net {
             HARE_ASSERT(_fd != -1, "socket error.");
             auto local_addr = host_address::local_address(_fd);
 
-            snprintf(cache.data(), cache.size(), "%s-%s#tcp%lu", name_.c_str(), local_addr.to_ip_port().c_str(), session_id_++);
+            auto ret = snprintf(cache.data(), cache.size(), "%s-%s#tcp%lu", name_.c_str(), local_addr.to_ip_port().c_str(), session_id_++);
+            H_UNUSED(ret);
 
             LOG_DEBUG() << "new session[" << cache.data()
                         << "] in serve[" << name_
@@ -178,7 +179,8 @@ namespace net {
 
             auto accept_fd = detail::create_udp_socket(_address, _acceptor->family_, peer_addr);
 
-            snprintf(cache.data(), cache.size(), "%s-%s#udp%lu", name_.c_str(), peer_addr.to_ip_port().c_str(), session_id_++);
+            auto ret = ::snprintf(cache.data(), cache.size(), "%s-%s#udp%lu", name_.c_str(), peer_addr.to_ip_port().c_str(), session_id_++);
+            H_UNUSED(ret);
 
             LOG_DEBUG() << "new session[" << cache.data()
                         << "] in serve[" << name_

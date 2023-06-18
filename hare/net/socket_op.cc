@@ -207,7 +207,8 @@ namespace socket_op {
             const auto* addr6 = net::sockaddr_in6_cast(_addr);
             auto port = net::network_to_host16(addr6->sin6_port);
             HARE_ASSERT(size > end, "");
-            snprintf(_buf + end, size - end, "]:%u", port);
+            auto ret = ::snprintf(_buf + end, size - end, "]:%u", port);
+            H_UNUSED(ret);
             return;
         }
         to_ip(_buf, size, _addr);
@@ -215,7 +216,8 @@ namespace socket_op {
         const auto* addr4 = net::sockaddr_in_cast(_addr);
         auto port = net::network_to_host16(addr4->sin_port);
         HARE_ASSERT(size > end, "");
-        snprintf(_buf + end, size - end, ":%u", port);
+        auto ret = ::snprintf(_buf + end, size - end, ":%u", port);
+        H_UNUSED(ret);
     }
 
     void to_ip(char* _buf, size_t size, const struct sockaddr* _addr)
