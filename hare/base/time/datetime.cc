@@ -9,7 +9,7 @@ namespace time {
 
         // algorithm and explanation see:
         //   http://www.faqs.org/faqs/calendars/faq/part2/
-        static auto get_julian_day_number(int32_t year, int32_t month, int32_t day) -> int32_t
+        static auto get_julian_day_number(int32_t year, int32_t month, int32_t day) noexcept -> int32_t
         {
             static_assert(sizeof(int) >= sizeof(int32_t), "request 32 bit integer at least.");
             auto a = (14 - month) / 12;
@@ -48,8 +48,9 @@ namespace time {
     auto date_time::to_fmt() const -> std::string
     {
         std::array<char, static_cast<size_t>(HARE_SMALL_FIXED_SIZE) * 2> buffer {};
-        ::snprintf(buffer.data(), buffer.size(), "%04d-%02d-%02d %02d:%02d:%02d",
+        auto ret = ::snprintf(buffer.data(), buffer.size(), "%04d-%02d-%02d %02d:%02d:%02d",
             year_, month_, day_, hour_, minute_, second_);
+        H_UNUSED(ret);
         return buffer.data();
     }
 
@@ -74,7 +75,8 @@ namespace time {
     {
         std::array<char, HARE_SMALL_FIXED_SIZE> buffer {};
         ymd year_month_day(detail());
-        ::snprintf(buffer.data(), buffer.size(), "%4d-%02d-%02d", year_month_day.year, year_month_day.month, year_month_day.day);
+        auto ret = ::snprintf(buffer.data(), buffer.size(), "%4d-%02d-%02d", year_month_day.year, year_month_day.month, year_month_day.day);
+        H_UNUSED(ret);
         return buffer.data();
     }
 

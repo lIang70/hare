@@ -27,7 +27,8 @@ namespace util {
 
     append_file::~append_file()
     {
-        ::fclose(fp_);
+        auto ret = ::fclose(fp_);
+        H_UNUSED(ret);
     }
 
     void append_file::append(const char* _log_line, size_t _len)
@@ -39,7 +40,8 @@ namespace util {
             auto write_n = write(_log_line + written, remain);
             if (write_n != remain) {
                 if (auto err = ::ferror(fp_)) {
-                    ::fprintf(stderr, "append_file::append() failed %s\n", log::errnostr(err));
+                    auto ret = ::fprintf(stderr, "append_file::append() failed %s\n", log::errnostr(err));
+                    H_UNUSED(ret);
                     break;
                 }
             }
@@ -51,7 +53,8 @@ namespace util {
 
     void append_file::flush()
     {
-        ::fflush(fp_);
+        auto ret = ::fflush(fp_);
+        H_UNUSED(ret);
     }
 
     auto append_file::write(const char* log_line, size_t len) -> size_t

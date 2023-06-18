@@ -35,6 +35,12 @@ namespace util {
             size_t page_size_ { 0 };
 
         public:
+            static auto instance() -> system_info
+            {
+                static system_info s_info {};
+                return s_info;
+            }
+
             system_info()
             {
 #ifdef H_OS_LINUX
@@ -85,9 +91,9 @@ namespace util {
                 return 0;
             }
 
-            ::fgets(buffer.data(), FILE_LENGTH, stat_fd);
-            ::sscanf(buffer.data(), "%s %ld %ld %ld %ld", name.data(), &user_time, &nice_time, &system_time, &idle_time);
-            ::fclose(stat_fd);
+            auto* ret_c = ::fgets(buffer.data(), FILE_LENGTH, stat_fd);
+            auto ret = ::sscanf(buffer.data(), "%s %ld %ld %ld %ld", name.data(), &user_time, &nice_time, &system_time, &idle_time);
+            ret = ::fclose(stat_fd);
 
             return (user_time + nice_time + system_time + idle_time);
 #endif
@@ -97,7 +103,7 @@ namespace util {
         static auto get_cpu_proc_occupy(int32_t _pid) -> uint64_t
         {
 #ifdef H_OS_LINUX
-#define PROCESS_ITEM 14
+            static const auto PROCESS_ITEM = 14;
             // get specific pid cpu use time
             uint32_t tmp_pid {};
             uint64_t user_time {};
@@ -107,14 +113,14 @@ namespace util {
             std::array<char, static_cast<size_t>(HARE_SMALL_FIXED_SIZE) * 2> name {};
             std::array<char, FILE_LENGTH> buffer {};
 
-            ::sprintf(name.data(), "/proc/%d/stat", _pid);
+            auto ret = ::sprintf(name.data(), "/proc/%d/stat", _pid);
             auto* stat_fd = ::fopen(name.data(), "r");
             if (stat_fd == nullptr) {
                 return 0;
             }
 
-            ::fgets(buffer.data(), FILE_LENGTH, stat_fd);
-            ::sscanf(buffer.data(), "%u", &tmp_pid);
+            auto* ret_c = ::fgets(buffer.data(), FILE_LENGTH, stat_fd);
+            ret = ::sscanf(buffer.data(), "%u", &tmp_pid);
             auto* item = buffer.data();
             {
                 auto len = ::strlen(item);
@@ -132,8 +138,8 @@ namespace util {
                 }
             }
 
-            ::sscanf(item, "%ld %ld %ld %ld", &user_time, &system_time, &cutime, &cstime);
-            ::fclose(stat_fd);
+            ret = ::sscanf(item, "%ld %ld %ld %ld", &user_time, &system_time, &cutime, &cstime);
+            ret = ::fclose(stat_fd);
 
             return (user_time + system_time + cutime + cstime);
 #undef PROCESS_ITEM
@@ -147,29 +153,26 @@ namespace util {
             return ::sysconf(_SC_NPROCESSORS_ONLN);
 #endif
         }
-
-        static struct system_info s_system_info;
-
     } // namespace detail
 
     auto system_dir() -> std::string
     {
-        return detail::s_system_info.system_dir_.data();
+        return detail::system_info::instance().system_dir_.data();
     }
 
     auto hostname() -> std::string
     {
-        return detail::s_system_info.host_name_.data();
+        return detail::system_info::instance().host_name_.data();
     }
 
     auto pid() -> int32_t
     {
-        return detail::s_system_info.pid_;
+        return detail::system_info::instance().pid_;
     }
 
     auto page_size() -> size_t
     {
-        return detail::s_system_info.page_size_;
+        return detail::system_info::instance().page_size_;
     }
 
     auto cpu_usage(int32_t _pid) -> double
@@ -198,9 +201,9 @@ namespace util {
 
     auto stack_trace(bool demangle) -> std::string
     {
-        static const int MAX_STACK_FRAMES = 20;
+        static const auto MAX_STACK_FRAMES = 20;
 #ifdef H_OS_LINUX
-#define DEMANGLE_SIZE 256
+        static const auto DEMANGLE_SIZE = 256;
 
         std::string stack;
         std::array<void*, MAX_STACK_FRAMES> frames {};
@@ -245,10 +248,9 @@ namespace util {
             stack.append(strings[i]);
             stack.push_back('\n');
         }
-        free(demangled);
-        free(strings);
+        ::free(demangled);
+        ::free(strings);
         return stack;
-#undef DEMANGLE_SIZE
 #endif
     }
 

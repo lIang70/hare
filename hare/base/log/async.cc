@@ -85,11 +85,12 @@ namespace log {
             assert(!block_2_write.empty());
 
             if (block_2_write.size() > BLOCK_NUMBER * 2) {
-                std::array<char, static_cast<int64_t>(HARE_SMALL_FIXED_SIZE) * 4> buf;
-                ::snprintf(buf.data(), buf.size(), "[WARN ] dropped log messages at [%s], %zd larger buffers\n",
+                std::array<char, static_cast<int64_t>(HARE_SMALL_FIXED_SIZE) * 4> buf {};
+                auto ret = ::snprintf(buf.data(), buf.size(), "[WARN ] dropped log messages at [%s], %zd larger buffers\n",
                     timestamp::now().to_fmt().c_str(),
                     block_2_write.size() - 2);
-                fputs(buf.data(), stderr);
+                ret = fputs(buf.data(), stderr);
+                H_UNUSED(ret);
                 output.append(buf.data(), buf.size());
                 block_2_write.erase(block_2_write.begin() + 2, block_2_write.end());
             }

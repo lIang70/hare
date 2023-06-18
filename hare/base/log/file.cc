@@ -81,18 +81,18 @@ namespace log {
     auto file::get_file_name(const std::string& _basename, time_t* _now) -> std::string
     {
 
-        std::string file_name;
-        file_name.reserve(_basename.size() + static_cast<uint64_t>(HARE_SMALL_FIXED_SIZE * 2));
+        std::string file_name {};
+        file_name.resize(_basename.size() + static_cast<uint64_t>(HARE_SMALL_FIXED_SIZE * 2));
         file_name = _basename;
 
-        std::array<char, HARE_SMALL_FIXED_SIZE> cache;
+        std::array<char, HARE_SMALL_FIXED_SIZE> cache {};
         struct tm stm { };
         *_now = ::time(nullptr);
         ::localtime_r(_now, &stm);
-        ::strftime(cache.data(), HARE_SMALL_FIXED_SIZE, ".%Y%m%d-%H%M%S.", &stm);
+        auto ret = ::strftime(cache.data(), HARE_SMALL_FIXED_SIZE, ".%Y%m%d-%H%M%S.", &stm);
         file_name += cache.data();
         file_name += util::hostname();
-        ::snprintf(cache.data(), HARE_SMALL_FIXED_SIZE, ".%d", util::pid());
+        ret = ::snprintf(cache.data(), HARE_SMALL_FIXED_SIZE, ".%d", util::pid());
         file_name += cache.data();
         file_name += ".log";
 

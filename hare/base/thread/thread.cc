@@ -50,10 +50,12 @@ void thread::start()
         count_down_latch_->await();
     } catch (const std::exception& e) {
         current_thread::get_tds().tname = "crashed";
-        fprintf(stderr, "fail to create thread! Detail:\n %s", e.what());
+        auto ret = ::fprintf(stderr, "fail to create thread! Detail:\n %s", e.what());
+        H_UNUSED(ret);
         std::abort();
     } catch (...) {
-        fprintf(stderr, "unknown exception caught in thread %s\n", name_.c_str());
+        auto ret = ::fprintf(stderr, "unknown exception caught in thread %s\n", name_.c_str());
+        H_UNUSED(ret);
         throw; // rethrow
     }
 }
@@ -93,18 +95,21 @@ void thread::run()
         started_ = false;
     } catch (const exception& e) {
         current_thread::get_tds().tname = "crashed";
-        fprintf(stderr, "exception caught in Thread %s\n", name_.c_str());
-        fprintf(stderr, "reason: %s\n", e.what());
-        fprintf(stderr, "stack trace: %s\n", e.stack_trace());
+        auto ret = ::fprintf(stderr, "exception caught in Thread %s\n", name_.c_str());
+        ret = ::fprintf(stderr, "reason: %s\n", e.what());
+        ret = ::fprintf(stderr, "stack trace: %s\n", e.stack_trace());
+        H_UNUSED(ret);
         std::abort();
     } catch (const std::exception& e) {
         current_thread::get_tds().tname = "crashed";
-        fprintf(stderr, "exception caught in Thread %s\n", name_.c_str());
-        fprintf(stderr, "reason: %s\n", e.what());
+        auto ret = ::fprintf(stderr, "exception caught in Thread %s\n", name_.c_str());
+        ret = ::fprintf(stderr, "reason: %s\n", e.what());
+        H_UNUSED(ret);
         std::abort();
     } catch (...) {
         current_thread::get_tds().tname = "crashed";
-        fprintf(stderr, "exception caught in Thread %s\n", name_.c_str());
+        auto ret = ::fprintf(stderr, "exception caught in Thread %s\n", name_.c_str());
+        H_UNUSED(ret);
         throw;
     }
 }
