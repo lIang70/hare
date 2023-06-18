@@ -83,7 +83,7 @@ namespace io {
         auto type() const -> REACTOR_TYPE;
 
         /**
-         * @brief loops forever.
+         * @brief Loops forever.
          *   Must be called in the same thread as creation of the object.
          **/
         void loop();
