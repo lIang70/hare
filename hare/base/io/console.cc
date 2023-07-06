@@ -29,7 +29,6 @@ namespace io {
 
     void console::register_default_handle(default_handle _handle)
     {
-        HARE_ASSERT(!attached_, "you need add handle to console before attached.");
         detail::s_command_handle = std::move(_handle);
     }
 
