@@ -93,53 +93,105 @@ namespace io {
             return size;
         }
 
-        static void get_next()
+        static auto get_next(const char* _begin, size_t _size) -> std::vector<int>
         {
+            std::vector<int> next(_size, 0);
+            int k = -1;
+            for (int j = 0; j < _size;) {
+                if (k == -1 || _begin[j] == _begin[k]) {
+                    ++j, ++k;
+                    if (_begin[j] != _begin[k]) {
+                        next[j] = k;
+                    } else {
+                        next[j] = next[k];
+                    }
+                } else {
+                    k = next[k];
+                }
+            }
+            return next;
         }
 
-        class buffer_block : public cache {
+        /**
+         * @brief The block of buffer.
+         * @code
+         * +----------------+-------------+------------------+
+         * | misalign bytes |  off bytes  |  residual bytes  |
+         * |                |  (CONTENT)  |                  |
+         * +----------------+-------------+------------------+
+         * |                |             |                  |
+         * @endcode
+         **/
+        class cache {
             char* data_ { nullptr };
             char* cur_ { nullptr };
             size_t max_size_ { 0 };
+            size_t misalign_ { 0 };
 
         public:
-            explicit buffer_block(size_t _max_size)
+            explicit cache(size_t _max_size)
                 : max_size_(_max_size)
                 , data_(new char[_max_size])
                 , cur_(data_)
             {
             }
 
-            buffer_block(char* _data, size_t _max_size)
+            cache(char* _data, size_t _max_size)
                 : max_size_(_max_size)
                 , data_(_data)
                 , cur_(data_ + _max_size)
             {
             }
 
-            ~buffer_block() override { delete[] data_; }
+            ~cache() { delete[] data_; }
 
-            void append(const char* _buf, size_t _length) override
+            void append(const char* _buf, size_t _length)
             {
-                if (implicit_cast<size_t>(avail()) > _length) {
+                if (implicit_cast<size_t>(writeable_size()) > _length) {
                     memcpy(cur_, _buf, _length);
                     cur_ += _length;
                 }
             }
 
-            auto begin() -> char* override { return data_; }
-            auto begin() const -> const char* override { return data_; }
-            auto size() const -> size_t override { return static_cast<size_t>(cur_ - data_); }
-            auto max_size() const -> size_t override { return max_size_; }
+            inline auto begin() -> char* { return data_; }
+            inline auto begin() const -> const char* { return data_; }
+            inline auto size() const -> size_t { return static_cast<size_t>(cur_ - data_); }
+            inline auto max_size() const -> size_t { return max_size_; }
 
             // write to data_ directly
-            auto current() -> char* override { return cur_; }
-            auto current() const -> char* override { return cur_; }
-            auto avail() const -> size_t override { return static_cast<size_t>(end() - cur_); }
-            void skip(size_t _length) override { cur_ += _length; }
+            inline auto writeable() -> char* { return cur_; }
+            inline auto writeable() const -> char* { return cur_; }
+            inline auto writeable_size() const -> size_t { return static_cast<size_t>(end() - cur_); }
+            inline void skip(size_t _length) { cur_ += _length; }
 
-            void reset() override { cur_ = data_; }
-            void bzero() override { set_zero(data_, max_size_); }
+            inline auto readable() const -> char* { return const_cast<char*>(begin()) + misalign_; }
+            inline auto readable_size() const -> size_t { return size() - misalign_; }
+            inline auto full() const -> bool { return readable_size() + misalign_ == max_size(); }
+            inline auto empty() const -> bool { return readable_size() == 0; }
+            inline void clear()
+            {
+                reset();
+                misalign_ = 0;
+            }
+
+            inline void drain(size_t _size)
+            {
+                misalign_ += _size;
+            }
+
+            auto realign(size_t _size) -> bool
+            {
+                auto off = readable_size();
+                if (writeable_size() + misalign_ > _size && off < static_cast<size_t>(HARE_LARGE_BUFFER) / 2 && off <= HARE_MAX_TO_REALIGN) {
+                    ::memmove(begin(), readable(), off);
+                    misalign_ = 0;
+                    return true;
+                }
+                return false;
+            }
+
+            inline void reset() { cur_ = data_; }
+            inline void bzero() { set_zero(data_, max_size_); }
 
         private:
             auto end() const -> const char* { return data_ + max_size_; }
@@ -187,8 +239,22 @@ namespace io {
         total_len_ = 0;
     }
 
-    auto buffer::find(const char* _begin, const char* _end) -> int64_t
+    auto buffer::find(const char* _begin, size_t _size) -> int64_t
     {
+        auto next_val = detail::get_next(_begin, _size);
+        auto i = 0, j = 0;
+        while (i < total_len_ && j < _size) {
+            if (j == -1 || (*this)[i] == _begin[j]) {
+                ++i, ++j;
+            } else {
+                j = next_val[j];
+            }
+        }
+
+        if (j >= _size) {
+            return static_cast<int64_t>(static_cast<size_t>(i) - _size);
+        }
+        return -1;
     }
 
     void buffer::skip(size_t _size)
@@ -262,12 +328,12 @@ namespace io {
         auto cur { write_iter_ };
         if (block_chain_.empty()) {
             assert(write_iter_ == block_chain_.end());
-            block_chain_.emplace_back(new detail::buffer_block(detail::round_up(_size)));
+            block_chain_.emplace_back(new detail::cache(detail::round_up(_size)));
             write_iter_ = block_chain_.begin();
             cur = write_iter_;
         }
 
-        if ((*cur)->avail() < _size && !(*cur)->realign(_size)) {
+        if ((*cur)->writeable_size() < _size && !(*cur)->realign(_size)) {
             ++cur;
             while (cur != block_chain_.end()) {
                 assert((*cur)->empty());
@@ -277,7 +343,7 @@ namespace io {
                 block_chain_.erase(cur++);
             }
             if (cur == block_chain_.end()) {
-                block_chain_.insert(cur, std::make_shared<detail::buffer_block>(detail::round_up(_size)));
+                block_chain_.emplace(cur, new detail::cache(detail::round_up(_size)));
             }
             --cur;
         }
@@ -313,17 +379,17 @@ namespace io {
                 vecs.emplace_back();
             }
             if (iter == block_chain_.end()) {
-                block_chain_.insert(iter, std::make_shared<detail::buffer_block>(detail::round_up(remain)));
+                block_chain_.emplace(iter, new detail::cache(detail::round_up(remain)));
                 --iter;
                 if (write_iter_ == block_chain_.end()) {
                     write_iter_ = block_chain_.begin();
                 }
             }
-            auto block = (*iter);
+            auto& block = (*iter);
             if (!block->full()) {
-                remain -= static_cast<int64_t>(block->avail());
-                vecs[vec_nbr].IOV_PTR_FIELD = block->current();
-                vecs[vec_nbr].IOV_LEN_FIELD = block->avail();
+                remain -= static_cast<int64_t>(block->writeable_size());
+                vecs[vec_nbr].IOV_PTR_FIELD = block->writeable();
+                vecs[vec_nbr].IOV_LEN_FIELD = block->writeable_size();
             }
             ++iter;
         }
@@ -334,7 +400,7 @@ namespace io {
             remain = readable;
             iter = write_iter_;
             for (auto i = 0; i < vec_nbr; ++i) {
-                auto space = (*iter)->avail();
+                auto space = (*iter)->writeable_size();
                 if (space < remain) {
                     (*iter)->skip(space);
                     remain -= static_cast<int64_t>(space);
@@ -402,21 +468,20 @@ namespace io {
             auto clean = chain_size() > MAX_CHINA_SIZE;
             auto remain = static_cast<size_t>(write_n);
             curr = block_chain_.begin();
-            auto curr_block = *curr;
-            while (remain != 0U && remain > curr_block->readable_size()) {
+            while (remain != 0U && remain > (*curr)->readable_size()) {
                 assert(curr != block_chain_.end());
+                auto& curr_block = *curr;
                 remain = remain < curr_block->readable_size() ? 0 : remain - curr_block->readable_size();
                 if (!clean) {
                     curr_block->clear();
                     block_chain_.emplace_back(std::move(*curr));
                 }
                 block_chain_.erase(curr++);
-                curr_block = *curr;
             }
 
             if (remain != 0U) {
-                assert(remain <= curr_block->readable_size());
-                curr_block->drain(remain);
+                assert(remain <= (*curr)->readable_size());
+                (*curr)->drain(remain);
             }
 #endif
         }
@@ -439,12 +504,12 @@ namespace io {
          **/
         auto clean = chain_size() > MAX_CHINA_SIZE;
         auto curr = block_chain_.begin();
-        auto curr_block = *curr;
         auto* buffer = static_cast<uint8_t*>(_buffer);
         size_t nread { 0 };
 
-        while (_length != 0U && _length > curr_block->readable_size()) {
+        while (_length != 0U && _length > (*curr)->readable_size()) {
             assert(curr != block_chain_.end());
+            auto& curr_block = *curr;
             auto copy_len = curr_block->readable_size();
             ::memcpy(buffer, curr_block->readable(), copy_len);
             buffer += copy_len;
@@ -456,13 +521,12 @@ namespace io {
                 block_chain_.emplace_back(std::move(*curr));
             }
             block_chain_.erase(curr++);
-            curr_block = *curr;
         }
 
         if (_length != 0U) {
-            assert(_length <= curr_block->readable_size());
-            ::memcpy(buffer, curr_block->readable(), _length);
-            curr_block->drain(_length);
+            assert(_length <= (*curr)->readable_size());
+            ::memcpy(buffer, (*curr)->readable(), _length);
+            (*curr)->drain(_length);
             nread += _length;
         }
 
@@ -472,7 +536,7 @@ namespace io {
 
     auto buffer::add_block(void* _bytes, size_t _size) -> bool
     {
-        block_chain_.emplace_back(new detail::buffer_block(static_cast<char*>(_bytes), _size));
+        block_chain_.emplace_back(new detail::cache(static_cast<char*>(_bytes), _size));
         total_len_ += _size;
         return true;
     }
@@ -490,7 +554,7 @@ namespace io {
 
         *_bytes = bolck->begin();
         _size = bolck->max_size();
-        std::static_pointer_cast<detail::buffer_block>(bolck)->data_ = nullptr;
+        bolck->data_ = nullptr;
 
         total_len_ -= _size;
         return true;
