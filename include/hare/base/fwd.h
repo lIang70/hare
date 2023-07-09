@@ -1,22 +1,26 @@
 /**
- * @file hare/base/util/util.h
+ * @file hare/base/fwd.h
  * @author l1ang70 (gog_017@outlook.com)
  * @brief Describe the macro and functions
- *   associated with util.h
+ *   associated with fwd.h
  * @version 0.1-beta
  * @date 2023-02-09
- * 
+ *
  * @copyright Copyright (c) 2023
- * 
+ *
  **/
 
-#ifndef _HARE_BASE_UTIL_H_
-#define _HARE_BASE_UTIL_H_
+#ifndef _HARE_BASE_FWD_H_
+#define _HARE_BASE_FWD_H_
 
 #include <hare/base/util/system_check.h>
 
-#include <cstring>
+// C header
 #include <cinttypes>
+#include <cstring>
+
+// C++ header
+#include <array>
 #include <functional>
 #include <memory>
 
@@ -54,11 +58,14 @@ using util_socket_t = intptr_t;
 using util_socket_t = int;
 #endif
 
-template<class Ty>
+template <class Ty>
 using ptr = std::shared_ptr<Ty>;
 
-template<class Ty>
+template <class Ty>
 using wptr = std::weak_ptr<Ty>;
+
+template <class Ty>
+using uptr = std::unique_ptr<Ty>;
 
 using task = std::function<void()>;
 
@@ -129,4 +136,4 @@ inline auto implicit_cast(From const& _from) -> To
 
 } // namespace hare
 
-#endif // !_HARE_BASE_UTIL_H_
+#endif // !_HARE_BASE_FWD_H_

@@ -1,8 +1,7 @@
 #include "hare/base/io/reactor/reactor_epoll.h"
+#include "hare/base/io/local.h"
 
-#include "hare/base/thread/local.h"
-#include <hare/base/logging.h>
-
+#include <cassert>
 #include <sstream>
 
 #if HARE__HAVE_EPOLL
@@ -27,7 +26,7 @@ namespace io {
             case EPOLL_CTL_MOD:
                 return "MOD";
             default:
-                HARE_ASSERT(false, "error op for EPOLL");
+                assert(false);
                 return "Unknown Operation";
             }
         }
@@ -101,7 +100,8 @@ namespace io {
         , epoll_events_(detail::INIT_EVENTS_CNT)
     {
         if (epoll_fd_ < 0) {
-            SYS_FATAL() << "cannot create a epoll fd.";
+            // SYS_FATAL() << "cannot create a epoll fd.";
+            std::abort();
         }
     }
 
@@ -112,7 +112,7 @@ namespace io {
 
     auto reactor_epoll::poll(int32_t _timeout_microseconds) -> timestamp
     {
-        LOG_TRACE() << "active events total count: " << current_thread::get_tds().active_events.size();
+        // LOG_TRACE() << "active events total count: " << current_thread::get_tds().active_events.size();
 
         auto event_num = ::epoll_wait(epoll_fd_,
             &*epoll_events_.begin(), static_cast<int32_t>(epoll_events_.size()),
@@ -121,18 +121,18 @@ namespace io {
         auto saved_errno = errno;
         auto now { timestamp::now() };
         if (event_num > 0) {
-            LOG_TRACE() << event_num << " events happened.";
+            // LOG_TRACE() << event_num << " events happened.";
             fill_active_events(event_num);
             if (implicit_cast<size_t>(event_num) == epoll_events_.size()) {
                 epoll_events_.resize(epoll_events_.size() * 2);
             }
         } else if (event_num == 0) {
-            LOG_TRACE() << "nothing happened";
+            // LOG_TRACE() << "nothing happened";
         } else {
             // error happens, log uncommon ones
             if (saved_errno != EINTR) {
                 errno = saved_errno;
-                SYS_ERROR() << "there was an error in the reactor.";
+                // SYS_ERROR() << "there was an error in the reactor.";
             }
         }
         return now;
@@ -141,20 +141,20 @@ namespace io {
     void reactor_epoll::event_update(ptr<event> _event)
     {
         auto event_id = _event->event_id();
-        LOG_TRACE() << "epoll-update: fd=" << _event->fd() << ", flags=" << _event->events();
+        // LOG_TRACE() << "epoll-update: fd=" << _event->fd() << ", flags=" << _event->events();
         if (event_id == -1) {
             // a new one, add with EPOLL_CTL_ADD
             auto target_fd = _event->fd();
-            HARE_ASSERT(current_thread::get_tds().inverse_map.find(target_fd) == current_thread::get_tds().inverse_map.end(), "event already inserted in epoll.");
+            assert(current_thread::get_tds().inverse_map.find(target_fd) == current_thread::get_tds().inverse_map.end());
             update(EPOLL_CTL_ADD, _event);
             return ;
         }
 
         // update existing one with EPOLL_CTL_MOD/DEL
         auto target_fd = _event->fd();
-        HARE_ASSERT(current_thread::get_tds().inverse_map.find(target_fd) != current_thread::get_tds().inverse_map.end(), "cannot find event.");
-        HARE_ASSERT(current_thread::get_tds().events.find(event_id) != current_thread::get_tds().events.end(), "cannot find event.");
-        HARE_ASSERT(current_thread::get_tds().events[event_id] == _event, "event is incorrect.");
+        assert(current_thread::get_tds().inverse_map.find(target_fd) != current_thread::get_tds().inverse_map.end());
+        assert(current_thread::get_tds().events.find(event_id) != current_thread::get_tds().events.end());
+        assert(current_thread::get_tds().events[event_id] == _event);
         update(EPOLL_CTL_MOD, _event);
     }
 
@@ -162,24 +162,24 @@ namespace io {
     {
         const auto target_fd = _event->fd();
         const auto event_id = _event->event_id();
-        LOG_TRACE() << "epoll-remove: fd=" << target_fd << ", flags=" << _event->events();
-        HARE_ASSERT(current_thread::get_tds().inverse_map.find(target_fd) != current_thread::get_tds().inverse_map.end(), "cannot find event.");
-        HARE_ASSERT(event_id == -1, "incorrect status.");
+        // LOG_TRACE() << "epoll-remove: fd=" << target_fd << ", flags=" << _event->events();
+        assert(current_thread::get_tds().inverse_map.find(target_fd) != current_thread::get_tds().inverse_map.end());
+        assert(event_id == -1);
 
         update(EPOLL_CTL_DEL, _event);
     }
 
     void reactor_epoll::fill_active_events(int32_t _num_of_events)
     {
-        HARE_ASSERT(implicit_cast<size_t>(_num_of_events) <= epoll_events_.size(), "oversize.");
+        assert(implicit_cast<size_t>(_num_of_events) <= epoll_events_.size());
         for (auto i = 0; i < _num_of_events; ++i) {
             auto* event = static_cast<io::event*>(epoll_events_[i].data.ptr);
-            HARE_ASSERT(current_thread::get_tds().inverse_map.find(event->fd()) != current_thread::get_tds().inverse_map.end(), "cannot find fd.");
+            assert(current_thread::get_tds().inverse_map.find(event->fd()) != current_thread::get_tds().inverse_map.end());
             auto event_id = current_thread::get_tds().inverse_map[event->fd()];
-            HARE_ASSERT(current_thread::get_tds().events.find(event_id) != current_thread::get_tds().events.end(), "cannot find event.");
+            assert(current_thread::get_tds().events.find(event_id) != current_thread::get_tds().events.end());
             auto revent = current_thread::get_tds().events[event_id];
 #if HARE_DEBUG
-            HARE_ASSERT(event == revent.get(), "event is incorrect.");
+            assert(event == revent.get());
 #endif
             current_thread::get_tds().active_events.emplace_back(revent, detail::encode_epoll(epoll_events_[i].events));
         }
@@ -192,13 +192,14 @@ namespace io {
         ep_event.events = detail::decode_epoll(_event->events());
         ep_event.data.ptr = _event.get();
         auto target_fd = _event->fd();
-        LOG_TRACE() << "epoll_ctl op = " << detail::operation_to_string(_operation)
-                    << "\n fd = " << target_fd << " event = { " << detail::epoll_to_string(detail::decode_epoll(_event->events())) << " }";
+        // LOG_TRACE() << "epoll_ctl op = " << detail::operation_to_string(_operation)
+        //             << "\n fd = " << target_fd << " event = { " << detail::epoll_to_string(detail::decode_epoll(_event->events())) << " }";
         if (::epoll_ctl(epoll_fd_, _operation, target_fd, &ep_event) < 0) {
             if (_operation == EPOLL_CTL_DEL) {
-                SYS_ERROR() << "epoll_ctl op =" << detail::operation_to_string(_operation) << " fd =" << target_fd;
+                // SYS_ERROR() << "epoll_ctl op =" << detail::operation_to_string(_operation) << " fd =" << target_fd;
             } else {
-                SYS_FATAL() << "epoll_ctl op =" << detail::operation_to_string(_operation) << " fd =" << target_fd;
+                // SYS_FATAL() << "epoll_ctl op =" << detail::operation_to_string(_operation) << " fd =" << target_fd;
+                std::abort();
             }
         }
     }

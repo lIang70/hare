@@ -4,15 +4,15 @@
  * @brief Describe the class associated with exception.h
  * @version 0.1-beta
  * @date 2023-02-09
- * 
+ *
  * @copyright Copyright (c) 2023
- * 
+ *
  **/
 
 #ifndef _HARE_BASE_EXCEPTION_H_
 #define _HARE_BASE_EXCEPTION_H_
 
-#include <hare/base/util.h>
+#include <hare/base/fwd.h>
 
 #include <exception>
 #include <string>

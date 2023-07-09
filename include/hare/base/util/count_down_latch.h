@@ -4,15 +4,15 @@
  * @brief Describe the class associated with count_down_latch.h
  * @version 0.1-beta
  * @date 2023-02-09
- * 
+ *
  * @copyright Copyright (c) 2023
- * 
+ *
  **/
 
 #ifndef _HARE_BASE_COUNT_DOWN_LATCH_H_
 #define _HARE_BASE_COUNT_DOWN_LATCH_H_
 
-#include <hare/base/util.h>
+#include <hare/base/fwd.h>
 
 #include <condition_variable>
 #include <mutex>
@@ -26,8 +26,6 @@ namespace util {
         std::condition_variable cv_ {};
 
     public:
-        using ptr = ptr<count_down_latch>;
-
         explicit count_down_latch(uint32_t count);
         ~count_down_latch();
 

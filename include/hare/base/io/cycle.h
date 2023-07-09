@@ -12,10 +12,12 @@
 #ifndef _HARE_BASE_IO_CYCLE_H_
 #define _HARE_BASE_IO_CYCLE_H_
 
-#include <hare/base/thread/thread.h>
+#include <hare/base/util/non_copyable.h>
 #include <hare/base/time/timestamp.h>
 
 #include <list>
+#include <mutex>
+#include <thread>
 
 namespace hare {
 namespace io {
@@ -25,7 +27,7 @@ namespace io {
     class HARE_API cycle : public non_copyable
                          , public std::enable_shared_from_this<cycle> {
         timestamp reactor_time_ {};
-        thread::id tid_ { 0 };
+        std::thread::id tid_ { 0 };
         bool is_running_ { false };
         bool quit_ { false };
         bool event_handling_ { false };
@@ -48,6 +50,7 @@ namespace io {
         using REACTOR_TYPE = enum {
             REACTOR_TYPE_EPOLL,
             REACTOR_TYPE_POLL,
+            REACTOR_TYPE_SELECT,
 
             REACTOR_TYPE_NBRS
         };

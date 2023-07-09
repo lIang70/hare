@@ -265,5 +265,12 @@ namespace util {
         return error(HARE_ERROR_SUCCESS);
     }
 
+    auto errnostr(int _errorno) -> const char*
+    {
+        static thread_local std::array<char, static_cast<size_t>(HARE_SMALL_FIXED_SIZE* HARE_SMALL_FIXED_SIZE) / 2> t_errno_buf;
+        ::strerror_r(_errorno, t_errno_buf.data(), t_errno_buf.size());
+        return t_errno_buf.data();
+    }
+
 } // namespace util
 } // namespace hare

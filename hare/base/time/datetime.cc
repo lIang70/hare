@@ -1,7 +1,5 @@
 #include <hare/base/time/datetime.h>
 
-#include <array>
-
 namespace hare {
 namespace time {
 
@@ -9,18 +7,18 @@ namespace time {
 
         // algorithm and explanation see:
         //   http://www.faqs.org/faqs/calendars/faq/part2/
-        static auto get_julian_day_number(int32_t year, int32_t month, int32_t day) noexcept -> int32_t
+        static auto get_julian_day_number(int32_t _year, int32_t _month, int32_t _day) noexcept -> int32_t
         {
             static_assert(sizeof(int) >= sizeof(int32_t), "request 32 bit integer at least.");
-            auto a = (14 - month) / 12;
-            auto y = year + 4800 - a;
-            auto m = month + 12 * a - 3;
-            return day + (153 * m + 2) / 5 + y * 365 + y / 4 - y / 100 + y / 400 - 32045;
+            auto a = (14 - _month) / 12;
+            auto y = _year + 4800 - a;
+            auto m = _month + 12 * a - 3;
+            return _day + (153 * m + 2) / 5 + y * 365 + y / 4 - y / 100 + y / 400 - 32045;
         }
 
-        static auto get_year_month_day(int32_t julianDayNumber) -> date::ymd
+        static auto get_year_month_day(int32_t _julian_day_number) -> date::ymd
         {
-            auto a = julianDayNumber + 32044;
+            auto a = _julian_day_number + 32044;
             auto b = (4 * a + 3) / 146097;
             auto c = a - ((b * 146097) / 4);
             auto d = (4 * c + 3) / 1461;

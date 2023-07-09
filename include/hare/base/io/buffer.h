@@ -14,7 +14,6 @@
 
 #include <hare/base/util/non_copyable.h>
 
-#include <array>
 #include <list>
 #include <string>
 

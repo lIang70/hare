@@ -3,8 +3,6 @@
 
 #include <hare/base/io/cycle.h>
 #include <hare/base/io/event.h>
-#include <hare/base/logging.h>
-#include <hare/net/util.h>
 
 #include <string>
 

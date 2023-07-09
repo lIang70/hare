@@ -1,9 +1,9 @@
 #include <hare/base/io/buffer.h>
 
 #include <hare/base/exception.h>
-#include <hare/base/logging.h>
 #include <hare/hare-config.h>
 
+#include <cassert>
 #include <limits>
 #include <vector>
 
@@ -169,8 +169,8 @@ namespace io {
             ++iter;
         }
 
-        HARE_ASSERT(iter != block_chain_.end(), "buffer iter over size");
-        HARE_ASSERT(_index <= (*iter)->size(), "buffer index over size");
+        assert(iter != block_chain_.end());
+        assert(_index <= (*iter)->size());
 
         return (*iter)->readable()[_index];
     }
@@ -200,16 +200,16 @@ namespace io {
         }
 
         while (block_chain_.front()->readable_size() <= _size) {
-            HARE_ASSERT(!block_chain_.empty(), "error skip.");
+            assert(!block_chain_.empty());
             _size -= block_chain_.front()->readable_size();
             block_chain_.pop_front();
         }
 
-        HARE_ASSERT(_size < 0, "error skip.");
+        assert(_size < 0);
 
         if (_size > 0) {
-            HARE_ASSERT(!block_chain_.empty(), "error skip.");
-            HARE_ASSERT(block_chain_.front()->readable_size() > _size, "error skip.");
+            assert(!block_chain_.empty());
+            assert(block_chain_.front()->readable_size() > _size);
             block_chain_.front()->drain(_size);
         }
 
@@ -261,7 +261,7 @@ namespace io {
 
         auto cur { write_iter_ };
         if (block_chain_.empty()) {
-            HARE_ASSERT(write_iter_ == block_chain_.end(), "");
+            assert(write_iter_ == block_chain_.end());
             block_chain_.emplace_back(new detail::buffer_block(detail::round_up(_size)));
             write_iter_ = block_chain_.begin();
             cur = write_iter_;
@@ -270,7 +270,7 @@ namespace io {
         if ((*cur)->avail() < _size && !(*cur)->realign(_size)) {
             ++cur;
             while (cur != block_chain_.end()) {
-                HARE_ASSERT((*cur)->empty(), "error in buffer.");
+                assert((*cur)->empty());
                 if ((*cur)->max_size() > _size) {
                     break;
                 }
@@ -365,14 +365,14 @@ namespace io {
         }
 
         if (_howmuch > 0) {
-            HARE_ASSERT(!block_chain_.empty(), "buffer is empty.");
+            assert(!block_chain_.empty());
 #ifdef USE_IOVEC_IMPL
             std::array<IOV_TYPE, NUM_WRITE_IOVEC> iov {};
             auto curr { block_chain_.begin() };
             auto write_i { 0 };
 
             while (write_i < NUM_WRITE_IOVEC && _howmuch > 0) {
-                HARE_ASSERT(curr != block_chain_.end(), "iterator overflow.");
+                assert(curr != block_chain_.end());
                 iov[write_i].IOV_PTR_FIELD = (*curr)->readable();
                 if (_howmuch > (*curr)->readable_size()) {
                     /* XXXcould be problematic when windows supports mmap*/
@@ -404,7 +404,7 @@ namespace io {
             curr = block_chain_.begin();
             auto curr_block = *curr;
             while (remain != 0U && remain > curr_block->readable_size()) {
-                HARE_ASSERT(curr != block_chain_.end(), "iterator overflow.");
+                assert(curr != block_chain_.end());
                 remain = remain < curr_block->readable_size() ? 0 : remain - curr_block->readable_size();
                 if (!clean) {
                     curr_block->clear();
@@ -415,7 +415,7 @@ namespace io {
             }
 
             if (remain != 0U) {
-                HARE_ASSERT(remain <= curr_block->readable_size(), "buffer over size.");
+                assert(remain <= curr_block->readable_size());
                 curr_block->drain(remain);
             }
 #endif
@@ -444,7 +444,7 @@ namespace io {
         size_t nread { 0 };
 
         while (_length != 0U && _length > curr_block->readable_size()) {
-            HARE_ASSERT(curr != block_chain_.end(), "iterator overflow.");
+            assert(curr != block_chain_.end());
             auto copy_len = curr_block->readable_size();
             ::memcpy(buffer, curr_block->readable(), copy_len);
             buffer += copy_len;
@@ -460,7 +460,7 @@ namespace io {
         }
 
         if (_length != 0U) {
-            HARE_ASSERT(_length <= curr_block->readable_size(), "buffer over size.");
+            assert(_length <= curr_block->readable_size());
             ::memcpy(buffer, curr_block->readable(), _length);
             curr_block->drain(_length);
             nread += _length;

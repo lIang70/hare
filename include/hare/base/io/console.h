@@ -20,25 +20,33 @@ namespace hare {
 namespace io {
 
     class HARE_API console {
+        using default_handle = std::function<void(const std::string& command_line)>;
+
         ptr<event> console_event_ { nullptr };
         std::map<std::string, task> handlers_ {};
+        default_handle default_ {};
         bool attached_ { false };
 
     public:
-        using default_handle = std::function<void(const std::string& command_line)>;
+        static auto instance() -> console&;
 
-        static void register_default_handle(default_handle _handle);
-
-        console();
         ~console();
 
         /**
          * @brief not thread-safe.
          **/
+        void register_default_handle(default_handle _handle);
         void register_handle(std::string _handle_mask, task _handle);
         auto attach(const ptr<cycle>& _cycle) -> bool;
 
+        console(const console&) = delete;
+        console(console&&) = delete;
+        auto operator=(const console&) -> console = delete;
+        auto operator=(console&&) -> console = delete;
+
     private:
+        console();
+
         void process(const event::ptr& _event, uint8_t _events, const timestamp& _receive_time);
     };
 

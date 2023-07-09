@@ -12,7 +12,7 @@
 #ifndef _HARE_BASE_TIME_DATETIME_H_
 #define _HARE_BASE_TIME_DATETIME_H_
 
-#include <hare/base/util.h>
+#include <hare/base/fwd.h>
 
 #include <ctime>
 #include <string>

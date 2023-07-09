@@ -198,8 +198,6 @@ include_directories(${CMAKE_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR}/include)
 # Add hare_base's src
 file(GLOB HARE_BASE_SOURCES
     "base/*.cc"
-    "base/log/*.cc"
-    "base/thread/*.cc"
     "base/time/*.cc"
     "base/util/*.cc"
     "base/io/*.cc"

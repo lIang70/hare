@@ -12,7 +12,7 @@
 #ifndef _HARE_BASE_NON_COPYABLE_H_
 #define _HARE_BASE_NON_COPYABLE_H_
 
-#include <hare/base/util.h>
+#include <hare/base/fwd.h>
 
 namespace hare {
 

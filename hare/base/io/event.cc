@@ -1,9 +1,7 @@
-#include <cstdint>
+#include "hare/base/io/reactor.h"
 #include <hare/base/io/event.h>
 
-#include "hare/base/io/reactor.h"
-#include <hare/base/logging.h>
-
+#include <cassert>
 #include <sstream>
 
 namespace hare {
@@ -50,13 +48,13 @@ namespace io {
         if (CHECK_EVENT(events_, EVENT_TIMEOUT) != 0 && CHECK_EVENT(events_, EVENT_PERSIST) != 0) {
             CLEAR_EVENT(events_, EVENT_TIMEOUT);
             timeval_ = 0;
-            SYS_ERROR() << "cannot be set EVENT_PERSIST and EVENT_TIMEOUT at the same time.";
+            // SYS_ERROR() << "cannot be set EVENT_PERSIST and EVENT_TIMEOUT at the same time.";
         }
     }
 
     event::~event()
     {
-        HARE_ASSERT(cycle_.expired(), "When the event is destroyed, the event is still held by cycle.");
+        assert(cycle_.expired());
     }
 
     void event::enable_read()
@@ -66,7 +64,7 @@ namespace io {
         if (cycle) {
             cycle->event_update(shared_from_this());
         } else {
-            SYS_ERROR() << "event[" << this << "] need to be added to cycle.";
+            // SYS_ERROR() << "event[" << this << "] need to be added to cycle.";
         }
     }
 
@@ -77,7 +75,7 @@ namespace io {
         if (cycle) {
             cycle->event_update(shared_from_this());
         } else {
-            SYS_ERROR() << "event[" << this << "] need to be added to cycle.";
+            // SYS_ERROR() << "event[" << this << "] need to be added to cycle.";
         }
     }
 
@@ -93,7 +91,7 @@ namespace io {
         if (cycle) {
             cycle->event_update(shared_from_this());
         } else {
-            SYS_ERROR() << "event[" << this << "] need to be added to cycle.";
+            // SYS_ERROR() << "event[" << this << "] need to be added to cycle.";
         }
     }
 
@@ -104,7 +102,7 @@ namespace io {
         if (cycle) {
             cycle->event_update(shared_from_this());
         } else {
-            SYS_ERROR() << "event[" << this << "] need to be added to cycle.";
+            // SYS_ERROR() << "event[" << this << "] need to be added to cycle.";
         }
     }
 

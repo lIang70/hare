@@ -4,19 +4,19 @@
  * @brief Describe the class associated with timestamp.h
  * @version 0.1-beta
  * @date 2023-02-09
- * 
+ *
  * @copyright Copyright (c) 2023
- * 
- **/ 
+ *
+ **/
 
 #ifndef _HARE_BASE_TIMESTAMP_H_
 #define _HARE_BASE_TIMESTAMP_H_
 
-#include <hare/base/util.h>
+#include <hare/base/fwd.h>
 
 #include <string>
 
-#define MICROSECONDS_PER_SECOND (1000 * 1000)
+#define HARE_MICROSECONDS_PER_SECOND (1000 * 1000)
 
 namespace hare {
 
@@ -24,11 +24,9 @@ class HARE_API timestamp {
     int64_t microseconds_since_epoch_ { -1 };
 
 public:
-    using ptr = ptr<timestamp>;
-
     /**
      * @brief Get time of now.
-     * 
+     *
      */
     static auto now() -> timestamp;
     static auto invalid() -> timestamp
@@ -43,13 +41,13 @@ public:
 
     static auto from_unix_time(time_t _time, int64_t _microseconds) -> timestamp
     {
-        return timestamp(_time * static_cast<int64_t>(MICROSECONDS_PER_SECOND) + _microseconds);
+        return timestamp(_time * static_cast<int64_t>(HARE_MICROSECONDS_PER_SECOND) + _microseconds);
     }
 
     static auto difference(timestamp& _high, timestamp& _low) -> double
     {
         int64_t diff = _high.microseconds_since_epoch() - _low.microseconds_since_epoch();
-        return static_cast<double>(diff) / MICROSECONDS_PER_SECOND;
+        return static_cast<double>(diff) / HARE_MICROSECONDS_PER_SECOND;
     }
 
     timestamp() = default;
@@ -65,7 +63,7 @@ public:
     inline auto microseconds_since_epoch() const -> int64_t { return microseconds_since_epoch_; }
     inline auto seconds_since_epoch() const -> time_t
     {
-        return static_cast<time_t>(microseconds_since_epoch_ / static_cast<int64_t>(MICROSECONDS_PER_SECOND));
+        return static_cast<time_t>(microseconds_since_epoch_ / static_cast<int64_t>(HARE_MICROSECONDS_PER_SECOND));
     }
 
     inline auto operator==(const timestamp& _another) const -> bool { return microseconds_since_epoch_ == _another.microseconds_since_epoch_; }

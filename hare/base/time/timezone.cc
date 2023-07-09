@@ -1,8 +1,9 @@
 #include <hare/base/time/timezone.h>
 
-#include <hare/base/logging.h>
-#include <hare/base/time/datetime.h>
+// c header
+#include <cassert>
 
+// c++ header
 #include <algorithm>
 #include <string>
 #include <vector>
@@ -46,8 +47,7 @@ namespace detail {
 
 } // namespace detail
 
-struct timezone::data {
-
+struct timezone::zone_data {
     struct compare_utc_time;
     struct compare_local_time;
 
@@ -66,7 +66,7 @@ struct timezone::data {
 
         friend struct compare_utc_time;
         friend struct compare_local_time;
-        friend struct timezone::data;
+        friend struct timezone::zone_data;
     };
 
     struct compare_utc_time {
@@ -83,8 +83,8 @@ struct timezone::data {
         }
     };
 
-    struct LocalTime {
-        LocalTime(int32_t _offset, bool _dst, int32_t _idx)
+    struct local_time {
+        local_time(int32_t _offset, bool _dst, int32_t _idx)
             : utc_offset(_offset)
             , desig_idx(_idx)
             , is_dst(_dst)
@@ -97,7 +97,7 @@ struct timezone::data {
         bool is_dst;
 
         friend class timezone;
-        friend struct timezone::data;
+        friend struct timezone::zone_data;
     };
 
     void add_local_time(int32_t _utc_offset, bool _is_dst, int32_t _desig_idx)
@@ -105,27 +105,37 @@ struct timezone::data {
         local_times.emplace_back(_utc_offset, _is_dst, _desig_idx);
     }
 
-    void addTransition(int64_t _utc_time, int32_t _local_time_idx)
+    void add_transition(int64_t _utc_time, int32_t _local_time_idx)
     {
         auto& local = local_times.at(_local_time_idx);
         transitions.emplace_back(_utc_time, _utc_time + local.utc_offset, _local_time_idx);
     }
 
-    auto find_local_time(int64_t _utc_time) const -> const LocalTime*;
-    auto find_local_time(const struct time::date_time& _tdt, bool _post_transition) const -> const LocalTime*;
+    auto clone() const -> uptr<zone_data>
+    {
+        uptr<zone_data> clone_data(new zone_data);
+        clone_data->abbreviation.assign(abbreviation.begin(), abbreviation.end());
+        clone_data->local_times.assign(local_times.begin(), local_times.end());
+        clone_data->abbreviation = abbreviation;
+        clone_data->tz_string = tz_string;
+        return std::move(clone_data);
+    }
+
+    auto find_local_time(int64_t _utc_time) const -> const local_time*;
+    auto find_local_time(const struct time::date_time& _tdt, bool _post_transition) const -> const local_time*;
 
 private:
     std::vector<transition> transitions {};
-    std::vector<LocalTime> local_times {};
+    std::vector<local_time> local_times {};
     std::string abbreviation {};
     std::string tz_string {};
 
     friend class timezone;
 };
 
-auto timezone::data::find_local_time(int64_t _utc_time) const -> const timezone::data::LocalTime*
+auto timezone::zone_data::find_local_time(int64_t _utc_time) const -> const timezone::zone_data::local_time*
 {
-    const LocalTime* local { nullptr };
+    const local_time* local { nullptr };
 
     // row UTC time             isdst  offset  Local time (PRC)
     //  1  1989-09-16 17:00:00Z   0      8.0   1989-09-17 01:00:00
@@ -143,7 +153,7 @@ auto timezone::data::find_local_time(int64_t _utc_time) const -> const timezone:
     } else {
         transition sentry(_utc_time, 0, 0);
         auto trans_iter = std::upper_bound(transitions.begin(), transitions.end(), sentry, compare_utc_time());
-        HARE_ASSERT(trans_iter != transitions.begin(), "fail to upper_bound.");
+        assert(trans_iter != transitions.begin());
         if (trans_iter != transitions.end()) {
             --trans_iter;
             local = &local_times[trans_iter->local_time_idx];
@@ -156,7 +166,7 @@ auto timezone::data::find_local_time(int64_t _utc_time) const -> const timezone:
     return local;
 }
 
-auto timezone::data::find_local_time(const struct time::date_time& _tdt, bool _post_transition) const -> const timezone::data::LocalTime*
+auto timezone::zone_data::find_local_time(const struct time::date_time& _tdt, bool _post_transition) const -> const timezone::zone_data::local_time*
 {
     const auto local_time = from_utc_time(_tdt);
 
@@ -167,7 +177,7 @@ auto timezone::data::find_local_time(const struct time::date_time& _tdt, bool _p
 
     transition sentry(0, local_time, 0);
     auto trans_iter = std::upper_bound(transitions.begin(), transitions.end(), sentry, compare_local_time());
-    HARE_ASSERT(trans_iter != transitions.begin(), "fail to upper_bound.");
+    assert(trans_iter != transitions.begin());
 
     if (trans_iter == transitions.end()) {
         // FIXME: use TZ-env
@@ -224,23 +234,17 @@ auto timezone::utc() -> timezone
 }
 
 timezone::timezone(int32_t east_of_utc, const char* name)
-    : d_(new data)
+    : data_(new zone_data)
 {
-    d_->add_local_time(east_of_utc, false, 0);
-    d_->abbreviation = name;
+    data_->add_local_time(east_of_utc, false, 0);
+    data_->abbreviation = name;
 }
 
 timezone::timezone(const timezone& another)
 {
     if (another) {
-        d_ = new data;
-        *d_ = *another.d_;
+        data_ = another.data_->clone();
     }
-}
-
-timezone::~timezone()
-{
-    delete d_;
 }
 
 auto timezone::operator=(const timezone& another) -> timezone&
@@ -250,19 +254,16 @@ auto timezone::operator=(const timezone& another) -> timezone&
     }
 
     if (another) {
-        if (d_ == nullptr) {
-            d_ = new data;
-        }
-        *d_ = *another.d_;
+        data_ = another.data_->clone();
     }
     return (*this);
 }
 
 auto timezone::to_local(int64_t _seconds, int32_t* _utc_offset) const -> struct time::date_time {
     struct time::date_time localTime;
-    HARE_ASSERT(d_, "");
+    assert(data_ != nullptr);
 
-    const auto* local = d_->find_local_time(_seconds);
+    const auto* local = data_->find_local_time(_seconds);
 
     if (local != nullptr) {
         localTime = detail::break_time(_seconds + local->utc_offset);
@@ -274,11 +275,10 @@ auto timezone::to_local(int64_t _seconds, int32_t* _utc_offset) const -> struct 
     return localTime;
 }
 
-auto
-timezone::from_local(const struct time::date_time& _dt, bool _post_transition) const -> int64_t
+auto timezone::from_local(const struct time::date_time& _dt, bool _post_transition) const -> int64_t
 {
-    HARE_ASSERT(d_, "Fail to get data of TimeZone.");
-    const auto* local = d_->find_local_time(_dt, _post_transition);
+    assert(data_ != nullptr);
+    const auto* local = data_->find_local_time(_dt, _post_transition);
     const auto local_seconds = from_utc_time(_dt);
     if (local != nullptr) {
         return local_seconds - local->utc_offset;
