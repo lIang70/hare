@@ -28,7 +28,7 @@ namespace io {
     } // namespace detail
 
     class HARE_API buffer : public non_copyable {
-        using block = uptr<detail::cache>;
+        using block = ptr<detail::cache>;
         using block_list = std::list<block>;
 
         /** @code
