@@ -89,9 +89,9 @@ namespace io {
             return;
         }
 
-        std::array<char, static_cast<size_t>(HARE_SMALL_BUFFER)> console_line {};
+        std::array<char, static_cast<std::size_t>(HARE_SMALL_BUFFER)> console_line {};
 
-        auto len = ::read(_event->fd(), console_line.data(), static_cast<size_t>(HARE_SMALL_BUFFER));
+        auto len = ::read(_event->fd(), console_line.data(), static_cast<std::size_t>(HARE_SMALL_BUFFER));
         if (len < 0) {
             // SYS_ERROR() << "cannot read from STDIN.";
             return;

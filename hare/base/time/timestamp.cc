@@ -23,7 +23,7 @@ auto timestamp::to_string() const -> std::string
 
 auto timestamp::to_fmt(bool show_microseconds) const -> std::string
 {
-    std::array<char, static_cast<size_t>(HARE_SMALL_FIXED_SIZE) * 2> buffer {};
+    std::array<char, static_cast<std::size_t>(HARE_SMALL_FIXED_SIZE) * 2> buffer {};
     auto seconds = seconds_since_epoch();
     struct tm tm_time { };
     ::gmtime_r(&seconds, &tm_time);

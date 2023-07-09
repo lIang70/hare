@@ -15,7 +15,7 @@
 namespace hare {
 namespace io {
 
-    class reactor : public non_copyable {
+    class reactor : public util::non_copyable {
         cycle::REACTOR_TYPE type_ {};
         cycle* owner_cycle_ { nullptr };
 

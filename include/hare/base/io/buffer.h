@@ -13,6 +13,7 @@
 #define _HARE_BASE_IO_BUFFER_H_
 
 #include <hare/base/util/non_copyable.h>
+#include <hare/base/util/buffer.h>
 
 #include <list>
 #include <string>
@@ -24,10 +25,10 @@ namespace hare {
 namespace io {
 
     namespace detail {
-        struct cache;
+        class cache;
     } // namespace detail
 
-    class HARE_API buffer : public non_copyable {
+    class HARE_API buffer : public util::non_copyable {
         using block = ptr<detail::cache>;
         using block_list = std::list<block>;
 
@@ -42,7 +43,7 @@ namespace io {
         block_list block_chain_ {};
         block_list::iterator write_iter_ { block_chain_.begin() };
 
-        size_t total_len_ { 0 };
+        std::size_t total_len_ { 0 };
         int64_t max_read_ { HARE_MAX_READ_DEFAULT };
 
     public:
@@ -51,28 +52,28 @@ namespace io {
         explicit buffer(int64_t _max_read = HARE_MAX_READ_DEFAULT);
         ~buffer();
 
-        inline auto size() const -> size_t { return total_len_; }
+        inline auto size() const -> std::size_t { return total_len_; }
         inline void set_max_read(int64_t _max_read) { max_read_ = _max_read; }
 
-        auto operator[](size_t _index) -> char;
+        auto operator[](std::size_t _index) -> char;
 
-        auto chain_size() const -> size_t;
+        auto chain_size() const -> std::size_t;
         void clear_all();
 
-        auto find(const char* _begin, size_t _size) -> int64_t;
-        void skip(size_t _size);
+        auto find(const char* _begin, std::size_t _size) -> int64_t;
+        void skip(std::size_t _size);
 
         void append(buffer& _another);
 
         // for tcp
-        auto add(const void* _bytes, size_t _size) -> bool;
+        auto add(const void* _bytes, std::size_t _size) -> bool;
         auto read(util_socket_t _fd, int64_t _howmuch) -> int64_t;
         auto write(util_socket_t _fd, int64_t _howmuch = -1) -> int64_t;
-        auto remove(void* _buffer, size_t _length) -> size_t;
+        auto remove(void* _buffer, std::size_t _length) -> std::size_t;
 
         // for udp
-        auto add_block(void* _bytes, size_t _size) -> bool;
-        auto get_block(void** _bytes, size_t& _size) -> bool;
+        auto add_block(void* _bytes, std::size_t _size) -> bool;
+        auto get_block(void** _bytes, std::size_t& _size) -> bool;
     };
 
 } // namespace io

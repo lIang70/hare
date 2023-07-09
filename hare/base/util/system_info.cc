@@ -32,7 +32,7 @@ namespace util {
             std::array<char, NAME_LENGTH> host_name_ {};
             std::array<char, NAME_LENGTH> system_dir_ {};
             int32_t pid_ { 0 };
-            size_t page_size_ { 0 };
+            std::size_t page_size_ { 0 };
 
         public:
             static auto instance() -> system_info
@@ -72,7 +72,7 @@ namespace util {
             friend auto util::system_dir() -> std::string;
             friend auto util::hostname() -> std::string;
             friend auto util::pid() -> int32_t;
-            friend auto util::page_size() -> size_t;
+            friend auto util::page_size() -> std::size_t;
         };
 
         static auto get_cpu_total_occupy() -> uint64_t
@@ -83,7 +83,7 @@ namespace util {
             uint64_t nice_time {};
             uint64_t system_time {};
             uint64_t idle_time {};
-            std::array<char, static_cast<size_t>(HARE_SMALL_FIXED_SIZE) * 2> name {};
+            std::array<char, static_cast<std::size_t>(HARE_SMALL_FIXED_SIZE) * 2> name {};
             std::array<char, FILE_LENGTH> buffer {};
 
             auto* stat_fd = ::fopen("/proc/stat", "r");
@@ -110,7 +110,7 @@ namespace util {
             uint64_t system_time {};
             uint64_t cutime {}; // all user time
             uint64_t cstime {}; // all dead time
-            std::array<char, static_cast<size_t>(HARE_SMALL_FIXED_SIZE) * 2> name {};
+            std::array<char, static_cast<std::size_t>(HARE_SMALL_FIXED_SIZE) * 2> name {};
             std::array<char, FILE_LENGTH> buffer {};
 
             auto ret = ::sprintf(name.data(), "/proc/%d/stat", _pid);
@@ -170,7 +170,7 @@ namespace util {
         return detail::system_info::instance().pid_;
     }
 
-    auto page_size() -> size_t
+    auto page_size() -> std::size_t
     {
         return detail::system_info::instance().page_size_;
     }
@@ -212,7 +212,7 @@ namespace util {
         if (strings == nullptr) {
             return stack;
         }
-        size_t len = DEMANGLE_SIZE;
+        std::size_t len = DEMANGLE_SIZE;
         auto* demangled = demangle ? static_cast<char*>(::malloc(len)) : nullptr;
         for (auto i = 1; i < nptrs; ++i) {
             // skipping the 0-th, which is this function.
@@ -267,7 +267,7 @@ namespace util {
 
     auto errnostr(int _errorno) -> const char*
     {
-        static thread_local std::array<char, static_cast<size_t>(HARE_SMALL_FIXED_SIZE* HARE_SMALL_FIXED_SIZE) / 2> t_errno_buf;
+        static thread_local std::array<char, static_cast<std::size_t>(HARE_SMALL_FIXED_SIZE* HARE_SMALL_FIXED_SIZE) / 2> t_errno_buf;
         ::strerror_r(_errorno, t_errno_buf.data(), t_errno_buf.size());
         return t_errno_buf.data();
     }

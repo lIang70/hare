@@ -9,8 +9,8 @@
  *
  **/
 
-#ifndef _HARE_BASE_ANY_H_
-#define _HARE_BASE_ANY_H_
+#ifndef _HARE_BASE_UTIL_ANY_H_
+#define _HARE_BASE_UTIL_ANY_H_
 
 #include <hare/base/fwd.h>
 
@@ -87,4 +87,4 @@ namespace util {
 } // namespace util
 } // namespace hare
 
-#endif // _HARE_BASE_ANY_H_
+#endif // _HARE_BASE_UTIL_ANY_H_

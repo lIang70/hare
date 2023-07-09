@@ -32,7 +32,7 @@
 #define IOV_TYPE struct iovec
 #define IOV_PTR_FIELD iov_base
 #define IOV_LEN_FIELD iov_len
-#define IOV_LEN_TYPE size_t
+#define IOV_LEN_TYPE std::size_t
 #else
 #define NUM_WRITE_IOVEC 16
 #define IOV_TYPE WSABUF
@@ -44,7 +44,7 @@
 
 #define MIN_TO_ALLOC 512
 #define MAX_TO_COPY_IN_EXPAND 4096
-#define MAX_SIZE (std::numeric_limits<size_t>::max())
+#define MAX_SIZE (std::numeric_limits<std::size_t>::max())
 #define MAX_CHINA_SIZE (16)
 
 #ifndef MAX
@@ -80,9 +80,9 @@ namespace io {
 #endif
         }
 
-        static auto round_up(size_t _size) -> size_t
+        static auto round_up(std::size_t _size) -> std::size_t
         {
-            size_t size { MIN_TO_ALLOC };
+            std::size_t size { MIN_TO_ALLOC };
             if (_size < MAX_SIZE / 2) {
                 while (size < _size) {
                     size <<= 1;
@@ -93,7 +93,7 @@ namespace io {
             return size;
         }
 
-        static auto get_next(const char* _begin, size_t _size) -> std::vector<int>
+        static auto get_next(const char* _begin, std::size_t _size) -> std::vector<int>
         {
             std::vector<int> next(_size, 0);
             int k = -1;
@@ -122,55 +122,39 @@ namespace io {
          * |                |             |                  |
          * @endcode
          **/
-        class cache {
-            char* data_ { nullptr };
-            char* cur_ { nullptr };
-            size_t max_size_ { 0 };
+        class cache : public util::buffer<std::int8_t> {
             size_t misalign_ { 0 };
 
+        private:
+            void grow(std::size_t capacity) override { }
+
         public:
+            using base = util::buffer<std::int8_t>;
+
             explicit cache(size_t _max_size)
-                : max_size_(_max_size)
-                , data_(new char[_max_size])
-                , cur_(data_)
+                : base(new base::value_type[_max_size], 0, _max_size)
             {
             }
 
-            cache(char* _data, size_t _max_size)
-                : max_size_(_max_size)
-                , data_(_data)
-                , cur_(data_ + _max_size)
+            cache(base::value_type* _data, size_t _max_size)
+                : base(_data, _max_size, _max_size)
             {
             }
 
-            ~cache() { delete[] data_; }
-
-            void append(const char* _buf, size_t _length)
-            {
-                if (implicit_cast<size_t>(writeable_size()) > _length) {
-                    memcpy(cur_, _buf, _length);
-                    cur_ += _length;
-                }
-            }
-
-            inline auto begin() -> char* { return data_; }
-            inline auto begin() const -> const char* { return data_; }
-            inline auto size() const -> size_t { return static_cast<size_t>(cur_ - data_); }
-            inline auto max_size() const -> size_t { return max_size_; }
+            ~cache() override { delete[] begin(); }
 
             // write to data_ directly
-            inline auto writeable() -> char* { return cur_; }
-            inline auto writeable() const -> char* { return cur_; }
-            inline auto writeable_size() const -> size_t { return static_cast<size_t>(end() - cur_); }
-            inline void skip(size_t _length) { cur_ += _length; }
+            inline auto writeable() -> base::value_type* { return begin() + size(); }
+            inline auto writeable() const -> const base::value_type* { return begin() + size(); }
+            inline auto writeable_size() const -> std::size_t { return capacity() - size(); }
 
-            inline auto readable() const -> char* { return const_cast<char*>(begin()) + misalign_; }
-            inline auto readable_size() const -> size_t { return size() - misalign_; }
-            inline auto full() const -> bool { return readable_size() + misalign_ == max_size(); }
+            inline auto readable() -> base::value_type* { return data() + misalign_; }
+            inline auto readable_size() const -> std::size_t { return size() - misalign_; }
+            inline auto full() const -> bool { return readable_size() + misalign_ == capacity(); }
             inline auto empty() const -> bool { return readable_size() == 0; }
             inline void clear()
             {
-                reset();
+                base::clear();
                 misalign_ = 0;
             }
 
@@ -190,11 +174,10 @@ namespace io {
                 return false;
             }
 
-            inline void reset() { cur_ = data_; }
-            inline void bzero() { set_zero(data_, max_size_); }
+            inline void bzero() { set_zero(data(), capacity()); }
 
         private:
-            auto end() const -> const char* { return data_ + max_size_; }
+            auto end() const -> const base::value_type* { return data() + capacity(); }
 
             friend class io::buffer;
         };
@@ -337,7 +320,7 @@ namespace io {
             ++cur;
             while (cur != block_chain_.end()) {
                 assert((*cur)->empty());
-                if ((*cur)->max_size() > _size) {
+                if ((*cur)->capacity() > _size) {
                     break;
                 }
                 block_chain_.erase(cur++);
@@ -352,7 +335,9 @@ namespace io {
          * @brief there's enough space to hold all the data
          *   in thecurrent last chain.
          **/
-        (*cur)->append(static_cast<const char*>(_bytes), _size);
+        assert((*cur)->writeable_size() > _size);
+        (*cur)->append(static_cast<const int8_t*>(_bytes),
+            static_cast<const int8_t*>(_bytes) + _size);
         write_iter_ = cur;
 
         return true;
@@ -536,7 +521,7 @@ namespace io {
 
     auto buffer::add_block(void* _bytes, size_t _size) -> bool
     {
-        block_chain_.emplace_back(new detail::cache(static_cast<char*>(_bytes), _size));
+        block_chain_.emplace_back(new detail::cache(static_cast<std::int8_t*>(_bytes), _size));
         total_len_ += _size;
         return true;
     }
@@ -553,8 +538,8 @@ namespace io {
         block_chain_.pop_front();
 
         *_bytes = bolck->begin();
-        _size = bolck->max_size();
-        bolck->data_ = nullptr;
+        _size = bolck->capacity();
+        bolck->set(nullptr, 0);
 
         total_len_ -= _size;
         return true;

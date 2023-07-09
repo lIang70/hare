@@ -54,7 +54,7 @@ namespace io {
     };
 
     class cycle;
-    class HARE_API event : public non_copyable
+    class HARE_API event : public util::non_copyable
                          , public std::enable_shared_from_this<event> {
     public:
         using id = int32_t;

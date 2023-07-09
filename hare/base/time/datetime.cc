@@ -45,7 +45,7 @@ namespace time {
 
     auto date_time::to_fmt() const -> std::string
     {
-        std::array<char, static_cast<size_t>(HARE_SMALL_FIXED_SIZE) * 2> buffer {};
+        std::array<char, static_cast<std::size_t>(HARE_SMALL_FIXED_SIZE) * 2> buffer {};
         auto ret = ::snprintf(buffer.data(), buffer.size(), "%04d-%02d-%02d %02d:%02d:%02d",
             year_, month_, day_, hour_, minute_, second_);
         H_UNUSED(ret);

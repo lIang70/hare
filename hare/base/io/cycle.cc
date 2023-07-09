@@ -221,7 +221,7 @@ namespace io {
         }
     }
 
-    auto cycle::queue_size() const -> size_t
+    auto cycle::queue_size() const -> std::size_t
     {
         std::lock_guard<std::mutex> guard(functions_mutex_);
         return pending_functions_.size();

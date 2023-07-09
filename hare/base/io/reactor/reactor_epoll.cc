@@ -123,7 +123,7 @@ namespace io {
         if (event_num > 0) {
             // LOG_TRACE() << event_num << " events happened.";
             fill_active_events(event_num);
-            if (implicit_cast<size_t>(event_num) == epoll_events_.size()) {
+            if (implicit_cast<std::size_t>(event_num) == epoll_events_.size()) {
                 epoll_events_.resize(epoll_events_.size() * 2);
             }
         } else if (event_num == 0) {
@@ -171,7 +171,7 @@ namespace io {
 
     void reactor_epoll::fill_active_events(int32_t _num_of_events)
     {
-        assert(implicit_cast<size_t>(_num_of_events) <= epoll_events_.size());
+        assert(implicit_cast<std::size_t>(_num_of_events) <= epoll_events_.size());
         for (auto i = 0; i < _num_of_events; ++i) {
             auto* event = static_cast<io::event*>(epoll_events_[i].data.ptr);
             assert(current_thread::get_tds().inverse_map.find(event->fd()) != current_thread::get_tds().inverse_map.end());

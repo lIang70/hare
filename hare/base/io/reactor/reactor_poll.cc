@@ -145,7 +145,7 @@ namespace io {
         assert(0 <= index && index < static_cast<int32_t>(poll_fds_.size()));
         const auto& pfd = poll_fds_[index];
         assert(pfd.events == detail::decode_poll(_event->events()));
-        if (implicit_cast<size_t>(index) == poll_fds_.size() - 1) {
+        if (implicit_cast<std::size_t>(index) == poll_fds_.size() - 1) {
             poll_fds_.pop_back();
         } else {
             // modify the id of event.

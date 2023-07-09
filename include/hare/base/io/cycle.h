@@ -24,7 +24,7 @@ namespace io {
 
     class reactor;
     class event;
-    class HARE_API cycle : public non_copyable
+    class HARE_API cycle : public util::non_copyable
                          , public std::enable_shared_from_this<cycle> {
         timestamp reactor_time_ {};
         std::thread::id tid_ { 0 };
@@ -113,7 +113,7 @@ namespace io {
          **/
         void queue_in_cycle(task _task);
 
-        auto queue_size() const -> size_t;
+        auto queue_size() const -> std::size_t;
 
         void event_update(hare::ptr<event> _event);
         void event_remove(hare::ptr<event> _event);

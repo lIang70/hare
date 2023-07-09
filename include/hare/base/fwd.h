@@ -69,7 +69,7 @@ using uptr = std::unique_ptr<Ty>;
 
 using task = std::function<void()>;
 
-inline void set_zero(void* _des, size_t _len)
+inline void set_zero(void* _des, std::size_t _len)
 {
     ::memset(_des, 0, _len);
 }

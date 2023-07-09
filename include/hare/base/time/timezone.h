@@ -1,5 +1,5 @@
 /**
- * @file hare/base/time/time_zone.h
+ * @file hare/base/time/timezone.h
  * @author l1ang70 (gog_017@outlook.com)
  * @brief Describe the class associated with time_zone.h
  * @version 0.1-beta
@@ -9,8 +9,8 @@
  *
  **/
 
-#ifndef _HARE_BASE_TIME_ZONE_H_
-#define _HARE_BASE_TIME_ZONE_H_
+#ifndef _HARE_BASE_TIMEZONE_H_
+#define _HARE_BASE_TIMEZONE_H_
 
 #include <hare/base/time/datetime.h>
 
@@ -42,4 +42,4 @@ public:
 
 } // namespace hare
 
-#endif // !_HARE_BASE_TIME_ZONE_H_
+#endif // !_HARE_BASE_TIMEZONE_H_

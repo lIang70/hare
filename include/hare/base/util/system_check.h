@@ -9,8 +9,8 @@
  * 
  **/
 
-#ifndef _HARE_BASE_SYSTEM_CHECK_H_
-#define _HARE_BASE_SYSTEM_CHECK_H_
+#ifndef _HARE_BASE_UTIL_SYSTEM_CHECK_H_
+#define _HARE_BASE_UTIL_SYSTEM_CHECK_H_
 
 /**
  * The operating system, must be one of: (H_OS_x)
@@ -53,4 +53,4 @@
 #define H_OS_UNIX
 #endif
 
-#endif // !_HARE_BASE_SYSTEM_CHECK_H_
+#endif // !_HARE_BASE_UTIL_SYSTEM_CHECK_H_
