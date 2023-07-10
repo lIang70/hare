@@ -76,7 +76,7 @@ namespace util {
         using const_reference = const T&;
 
         virtual ~buffer() = default;
-        
+
         buffer(const buffer&) = delete;
         void operator=(const buffer&) = delete;
 
@@ -101,7 +101,8 @@ namespace util {
         /** Clears this buffer. */
         inline void clear() { size_ = 0; }
 
-        inline void skip(std::size_t size) {
+        inline void skip(std::size_t size)
+        {
             if (size_ + size > capacity_) {
                 size_ = capacity_;
             } else {
@@ -148,6 +149,30 @@ namespace util {
         constexpr auto operator[](Idx index) const -> const T&
         {
             return ptr_[index];
+        }
+    };
+
+    struct buffer_traits {
+        explicit buffer_traits(std::size_t) { }
+        auto count() const -> std::size_t { return 0; }
+        auto limit(std::size_t size) -> std::size_t { return size; }
+    };
+
+    class fixed_buffer_traits {
+        std::size_t count_ = 0;
+        std::size_t limit_;
+
+    public:
+        explicit fixed_buffer_traits(std::size_t limit)
+            : limit_(limit)
+        {
+        }
+        auto count() const -> std::size_t { return count_; }
+        auto limit(std::size_t size) -> std::size_t
+        {
+            auto n = limit_ > count_ ? limit_ - count_ : 0;
+            count_ += size;
+            return size < n ? size : n;
         }
     };
 

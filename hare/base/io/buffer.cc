@@ -122,14 +122,14 @@ namespace io {
          * |                |             |                  |
          * @endcode
          **/
-        class cache : public util::buffer<std::int8_t> {
+        class cache : public util::buffer<char> {
             size_t misalign_ { 0 };
 
         private:
             void grow(std::size_t capacity) override { }
 
         public:
-            using base = util::buffer<std::int8_t>;
+            using base = util::buffer<char>;
 
             explicit cache(size_t _max_size)
                 : base(new base::value_type[_max_size], 0, _max_size)
@@ -336,8 +336,8 @@ namespace io {
          *   in thecurrent last chain.
          **/
         assert((*cur)->writeable_size() > _size);
-        (*cur)->append(static_cast<const int8_t*>(_bytes),
-            static_cast<const int8_t*>(_bytes) + _size);
+        (*cur)->append(static_cast<const char*>(_bytes),
+            static_cast<const char*>(_bytes) + _size);
         write_iter_ = cur;
 
         return true;
@@ -521,7 +521,7 @@ namespace io {
 
     auto buffer::add_block(void* _bytes, size_t _size) -> bool
     {
-        block_chain_.emplace_back(new detail::cache(static_cast<std::int8_t*>(_bytes), _size));
+        block_chain_.emplace_back(new detail::cache(static_cast<char*>(_bytes), _size));
         total_len_ += _size;
         return true;
     }
