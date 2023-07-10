@@ -14,9 +14,9 @@ namespace hare {
 namespace io {
 
     namespace detail {
-        const int32_t INIT_EVENTS_CNT = 16;
+        const std::int32_t INIT_EVENTS_CNT = 16;
 
-        auto operation_to_string(int32_t _op) -> std::string
+        auto operation_to_string(std::int32_t _op) -> std::string
         {
             switch (_op) {
             case EPOLL_CTL_ADD:
@@ -31,7 +31,7 @@ namespace io {
             }
         }
 
-        auto decode_epoll(uint8_t _events) -> decltype(epoll_event::events)
+        auto decode_epoll(std::uint8_t _events) -> decltype(epoll_event::events)
         {
             decltype(epoll_event::events) events = 0;
             if (CHECK_EVENT(_events, EVENT_READ) != 0) {
@@ -46,9 +46,9 @@ namespace io {
             return events;
         }
 
-        auto encode_epoll(decltype(epoll_event::events) _events) -> uint8_t
+        auto encode_epoll(decltype(epoll_event::events) _events) -> std::uint8_t
         {
-            uint8_t events { EVENT_DEFAULT };
+            std::uint8_t events { EVENT_DEFAULT };
 
             if ((CHECK_EVENT(_events, EPOLLERR) != 0) || 
                 (CHECK_EVENT(_events, EPOLLHUP) != 0 && CHECK_EVENT(_events, EPOLLRDHUP) == 0)) {
@@ -110,12 +110,12 @@ namespace io {
         ::close(epoll_fd_);
     }
 
-    auto reactor_epoll::poll(int32_t _timeout_microseconds) -> timestamp
+    auto reactor_epoll::poll(std::int32_t _timeout_microseconds) -> timestamp
     {
         // LOG_TRACE() << "active events total count: " << current_thread::get_tds().active_events.size();
 
         auto event_num = ::epoll_wait(epoll_fd_,
-            &*epoll_events_.begin(), static_cast<int32_t>(epoll_events_.size()),
+            &*epoll_events_.begin(), static_cast<std::int32_t>(epoll_events_.size()),
             _timeout_microseconds);
 
         auto saved_errno = errno;
@@ -169,7 +169,7 @@ namespace io {
         update(EPOLL_CTL_DEL, _event);
     }
 
-    void reactor_epoll::fill_active_events(int32_t _num_of_events)
+    void reactor_epoll::fill_active_events(std::int32_t _num_of_events)
     {
         assert(implicit_cast<std::size_t>(_num_of_events) <= epoll_events_.size());
         for (auto i = 0; i < _num_of_events; ++i) {
@@ -185,7 +185,7 @@ namespace io {
         }
     }
 
-    void reactor_epoll::update(int32_t _operation, const ptr<event>& _event) const
+    void reactor_epoll::update(std::int32_t _operation, const ptr<event>& _event) const
     {
         struct epoll_event ep_event { };
         set_zero(&ep_event, sizeof(ep_event));

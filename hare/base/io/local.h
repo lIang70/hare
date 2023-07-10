@@ -14,10 +14,10 @@ namespace io {
 
     class event_elem {
         event::ptr event_ { nullptr };
-        uint8_t revents_ { io::EVENT_DEFAULT };
+        std::uint8_t revents_ { io::EVENT_DEFAULT };
 
     public:
-        event_elem(event::ptr _event, uint8_t _revents)
+        event_elem(event::ptr _event, std::uint8_t _revents)
             : event_(std::move(_event))
             , revents_(_revents)
         {
@@ -40,7 +40,7 @@ namespace io {
 
         friend class io::cycle;
         friend struct timer_priority;
-        friend auto get_wait_time() -> int32_t;
+        friend auto get_wait_time() -> std::int32_t;
     };
 
     struct timer_priority {

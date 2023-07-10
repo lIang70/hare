@@ -3,7 +3,7 @@
 namespace hare {
 namespace util {
 
-    count_down_latch::count_down_latch(uint32_t count)
+    count_down_latch::count_down_latch(std::uint32_t count)
         : count_(count)
     {
     }
@@ -22,7 +22,7 @@ namespace util {
         }
     }
 
-    void count_down_latch::await(int32_t milliseconds)
+    void count_down_latch::await(std::int32_t milliseconds)
     {
         std::unique_lock<std::mutex> lock(mutex_);
         while (count_ > 0) {
@@ -34,7 +34,7 @@ namespace util {
         }
     }
 
-    auto count_down_latch::count() -> uint32_t
+    auto count_down_latch::count() -> std::uint32_t
     {
         std::lock_guard<std::mutex> lock(mutex_);
         return count_;

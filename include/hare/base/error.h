@@ -27,24 +27,24 @@ using HARE_ERROR = enum : int {
 };
 
 class HARE_API error {
-    int error_code_ { HARE_ERROR_SUCCESS };
-    int system_code_ { 0 };
+    std::int32_t error_code_ { HARE_ERROR_SUCCESS };
+    std::int32_t system_code_ { 0 };
 
 public:
-    explicit error(int error_code);
+    explicit error(std::int32_t error_code);
     virtual ~error() = default;
 
     /**
      * @brief Get the error code of hare.
      *
      **/
-    inline auto code() const -> int { return error_code_; }
+    inline auto code() const -> std::int32_t { return error_code_; }
 
     /**
      * @brief Get the system code 'errno'.
      *
      **/
-    inline auto system_code() const -> int { return system_code_; }
+    inline auto system_code() const -> std::int32_t { return system_code_; }
 
     inline explicit operator bool() const { return error_code_ == HARE_ERROR_SUCCESS; }
     inline auto operator==(HARE_ERROR error) const -> bool { return error_code_ == error; }

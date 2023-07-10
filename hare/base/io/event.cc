@@ -9,7 +9,7 @@ namespace io {
 
     namespace detail {
 
-        auto to_string(util_socket_t fd, uint8_t flag) -> std::string
+        auto to_string(util_socket_t fd, std::uint8_t flag) -> std::string
         {
             std::stringstream oss {};
             oss << fd << ": ";
@@ -39,7 +39,7 @@ namespace io {
         }
     } // namespace detail
 
-    event::event(util_socket_t _fd, callback _cb, uint8_t _flag, int64_t _timeval)
+    event::event(util_socket_t _fd, callback _cb, std::uint8_t _flag, std::int64_t _timeval)
         : fd_(_fd)
         , events_(_flag)
         , callback_(std::move(_cb))
@@ -129,7 +129,7 @@ namespace io {
         tied_ = true;
     }
 
-    void event::handle_event(uint8_t _flag, timestamp& _receive_time)
+    void event::handle_event(std::uint8_t _flag, timestamp& _receive_time)
     {
         hare::ptr<void> object;
         if (tied_) {

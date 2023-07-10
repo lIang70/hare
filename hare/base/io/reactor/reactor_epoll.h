@@ -22,13 +22,13 @@ namespace io {
         explicit reactor_epoll(cycle* cycle, cycle::REACTOR_TYPE _type);
         ~reactor_epoll() override;
 
-        auto poll(int32_t _timeout_microseconds) -> timestamp override;
+        auto poll(std::int32_t _timeout_microseconds) -> timestamp override;
         void event_update(ptr<event> _event) override;
         void event_remove(ptr<event> _event) override;
 
     private:
-        void fill_active_events(int32_t _num_of_events);
-        void update(int32_t _operation, const ptr<event>& _event) const;
+        void fill_active_events(std::int32_t _num_of_events);
+        void update(std::int32_t _operation, const ptr<event>& _event) const;
     };
 
 } // namespace io

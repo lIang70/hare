@@ -17,18 +17,18 @@ namespace io {
         using pollfd_list = std::vector<struct pollfd>;
 
         pollfd_list poll_fds_ {};
-        std::map<util_socket_t, int32_t> inverse_map_ {};
+        std::map<util_socket_t, std::int32_t> inverse_map_ {};
 
     public:
         explicit reactor_poll(cycle* _cycle, cycle::REACTOR_TYPE _type);
         ~reactor_poll() override;
 
-        auto poll(int32_t _timeout_microseconds) -> timestamp override;
+        auto poll(std::int32_t _timeout_microseconds) -> timestamp override;
         void event_update(ptr<event> _event) override;
         void event_remove(ptr<event> _event) override;
 
     private:
-        void fill_active_events(int32_t _num_of_events);
+        void fill_active_events(std::int32_t _num_of_events);
     };
 
 } // namespace io

@@ -30,7 +30,7 @@ namespace io {
          * @brief Polls the I/O events.
          *   Must be called in the cycle thread.
          */
-        virtual auto poll(int32_t _timeout_microseconds) -> timestamp = 0;
+        virtual auto poll(std::int32_t _timeout_microseconds) -> timestamp = 0;
 
         /**
          *  @brief Changes the interested I/O events.

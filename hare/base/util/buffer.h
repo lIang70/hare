@@ -21,9 +21,6 @@ namespace util {
 
     namespace detail {
         template <typename T>
-        using checked_ptr = T*;
-
-        template <typename T>
         constexpr auto make_checked(T* p, std::size_t) -> T*
         {
             return p;
@@ -59,6 +56,7 @@ namespace util {
         {
         }
 
+        ~buffer() = default;
         buffer(buffer&&) noexcept = default;
 
         /** Sets the buffer data and capacity. */
@@ -74,8 +72,6 @@ namespace util {
     public:
         using value_type = T;
         using const_reference = const T&;
-
-        virtual ~buffer() = default;
 
         buffer(const buffer&) = delete;
         void operator=(const buffer&) = delete;
@@ -149,30 +145,6 @@ namespace util {
         constexpr auto operator[](Idx index) const -> const T&
         {
             return ptr_[index];
-        }
-    };
-
-    struct buffer_traits {
-        explicit buffer_traits(std::size_t) { }
-        auto count() const -> std::size_t { return 0; }
-        auto limit(std::size_t size) -> std::size_t { return size; }
-    };
-
-    class fixed_buffer_traits {
-        std::size_t count_ = 0;
-        std::size_t limit_;
-
-    public:
-        explicit fixed_buffer_traits(std::size_t limit)
-            : limit_(limit)
-        {
-        }
-        auto count() const -> std::size_t { return count_; }
-        auto limit(std::size_t size) -> std::size_t
-        {
-            auto n = limit_ > count_ ? limit_ - count_ : 0;
-            count_ += size;
-            return size < n ? size : n;
         }
     };
 

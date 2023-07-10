@@ -31,7 +31,7 @@ namespace util {
         class system_info {
             std::array<char, NAME_LENGTH> host_name_ {};
             std::array<char, NAME_LENGTH> system_dir_ {};
-            int32_t pid_ { 0 };
+            std::int32_t pid_ { 0 };
             std::size_t page_size_ { 0 };
 
         public:
@@ -71,18 +71,18 @@ namespace util {
 
             friend auto util::system_dir() -> std::string;
             friend auto util::hostname() -> std::string;
-            friend auto util::pid() -> int32_t;
+            friend auto util::pid() -> std::int32_t;
             friend auto util::page_size() -> std::size_t;
         };
 
-        static auto get_cpu_total_occupy() -> uint64_t
+        static auto get_cpu_total_occupy() -> std::uint64_t
         {
 #ifdef H_OS_LINUX
             // different mode cpu occupy time
-            uint64_t user_time {};
-            uint64_t nice_time {};
-            uint64_t system_time {};
-            uint64_t idle_time {};
+            std::uint64_t user_time {};
+            std::uint64_t nice_time {};
+            std::uint64_t system_time {};
+            std::uint64_t idle_time {};
             std::array<char, static_cast<std::size_t>(HARE_SMALL_FIXED_SIZE) * 2> name {};
             std::array<char, FILE_LENGTH> buffer {};
 
@@ -100,16 +100,16 @@ namespace util {
             return 0;
         }
 
-        static auto get_cpu_proc_occupy(int32_t _pid) -> uint64_t
+        static auto get_cpu_proc_occupy(std::int32_t _pid) -> std::uint64_t
         {
 #ifdef H_OS_LINUX
             static const auto PROCESS_ITEM = 14;
             // get specific pid cpu use time
-            uint32_t tmp_pid {};
-            uint64_t user_time {};
-            uint64_t system_time {};
-            uint64_t cutime {}; // all user time
-            uint64_t cstime {}; // all dead time
+            std::uint32_t tmp_pid {};
+            std::uint64_t user_time {};
+            std::uint64_t system_time {};
+            std::uint64_t cutime {}; // all user time
+            std::uint64_t cstime {}; // all dead time
             std::array<char, static_cast<std::size_t>(HARE_SMALL_FIXED_SIZE) * 2> name {};
             std::array<char, FILE_LENGTH> buffer {};
 
@@ -165,7 +165,7 @@ namespace util {
         return detail::system_info::instance().host_name_.data();
     }
 
-    auto pid() -> int32_t
+    auto pid() -> std::int32_t
     {
         return detail::system_info::instance().pid_;
     }
@@ -175,7 +175,7 @@ namespace util {
         return detail::system_info::instance().page_size_;
     }
 
-    auto cpu_usage(int32_t _pid) -> double
+    auto cpu_usage(std::int32_t _pid) -> double
     {
 #ifdef H_OS_LINUX
         auto total_cputime1 = detail::get_cpu_total_occupy();

@@ -81,7 +81,7 @@ namespace io {
     {
     }
 
-    void console::process(const event::ptr& _event, uint8_t _events, const timestamp& _receive_time)
+    void console::process(const event::ptr& _event, std::uint8_t _events, const timestamp& _receive_time)
     {
         assert(console_event_ == _event);
         if (!CHECK_EVENT(_events, EVENT_READ)) {

@@ -36,7 +36,7 @@ namespace detail {
 
 } // namespace detail
 
-error::error(int32_t error_code)
+error::error(std::int32_t error_code)
     : error_code_(error_code)
     , system_code_(errno)
 {

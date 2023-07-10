@@ -7,16 +7,16 @@ namespace time {
 
         // algorithm and explanation see:
         //   http://www.faqs.org/faqs/calendars/faq/part2/
-        static auto get_julian_day_number(int32_t _year, int32_t _month, int32_t _day) noexcept -> int32_t
+        static auto get_julian_day_number(std::int32_t _year, std::int32_t _month, std::int32_t _day) noexcept -> std::int32_t
         {
-            static_assert(sizeof(int) >= sizeof(int32_t), "request 32 bit integer at least.");
+            static_assert(sizeof(int) >= sizeof(std::int32_t), "request 32 bit integer at least.");
             auto a = (14 - _month) / 12;
             auto y = _year + 4800 - a;
             auto m = _month + 12 * a - 3;
             return _day + (153 * m + 2) / 5 + y * 365 + y / 4 - y / 100 + y / 400 - 32045;
         }
 
-        static auto get_year_month_day(int32_t _julian_day_number) -> date::ymd
+        static auto get_year_month_day(std::int32_t _julian_day_number) -> date::ymd
         {
             auto a = _julian_day_number + 32044;
             auto b = (4 * a + 3) / 146097;
@@ -52,10 +52,10 @@ namespace time {
         return buffer.data();
     }
 
-    const int32_t date::DAYS_PER_WEEK { 7 };
-    const int32_t date::JULIAN_DAY_OF_19700101 { detail::get_julian_day_number(1970, 1, 1) };
+    const std::int32_t date::DAYS_PER_WEEK { 7 };
+    const std::int32_t date::JULIAN_DAY_OF_19700101 { detail::get_julian_day_number(1970, 1, 1) };
 
-    date::date(int32_t year, int32_t month, int32_t day)
+    date::date(std::int32_t year, std::int32_t month, std::int32_t day)
         : julian_day_number_(detail::get_julian_day_number(year, month, day))
     {
     }

@@ -49,23 +49,23 @@ namespace io {
 
             void send_notify()
             {
-                uint64_t one = 1;
+                std::uint64_t one = 1;
                 auto write_n = ::write(fd(), &one, sizeof(one));
                 if (write_n != sizeof(one)) {
                     // SYS_ERROR() << "write[" << write_n << " B] instead of " << sizeof(one);
                 }
             }
 
-            void event_callback(const event::ptr& _event, uint8_t _events, const timestamp& _receive_time)
+            void event_callback(const event::ptr& _event, std::uint8_t _events, const timestamp& _receive_time)
             {
                 H_UNUSED(_event);
                 H_UNUSED(_receive_time);
                 assert(_event == this->shared_from_this());
 
                 if (CHECK_EVENT(_events, EVENT_READ) != 0) {
-                    uint64_t one = 0;
+                    std::uint64_t one = 0;
                     auto read_n = ::read(fd(), &one, sizeof(one));
-                    if (read_n != sizeof(one) && one != static_cast<uint64_t>(1)) {
+                    if (read_n != sizeof(one) && one != static_cast<std::uint64_t>(1)) {
                         // SYS_ERROR() << "read notify[" << read_n << " B] instead of " << sizeof(one);
                     }
                 } else {
@@ -85,13 +85,13 @@ namespace io {
 
     } // namespace detail
 
-    auto get_wait_time() -> int32_t
+    auto get_wait_time() -> std::int32_t
     {
         if (current_thread::get_tds().ptimer.empty()) {
             return POLL_TIME_MICROSECONDS;
         }
-        auto time = static_cast<int32_t>(current_thread::get_tds().ptimer.top().stamp_.microseconds_since_epoch() - timestamp::now().microseconds_since_epoch());
-        return time <= 0 ? static_cast<int32_t>(1) : std::min(time, POLL_TIME_MICROSECONDS);
+        auto time = static_cast<std::int32_t>(current_thread::get_tds().ptimer.top().stamp_.microseconds_since_epoch() - timestamp::now().microseconds_since_epoch());
+        return time <= 0 ? static_cast<std::int32_t>(1) : std::min(time, POLL_TIME_MICROSECONDS);
     }
 
     void print_active_events()
