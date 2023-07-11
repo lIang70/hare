@@ -1,5 +1,5 @@
-#ifndef _HARE_NET_REACTOR_EPOLL_H_
-#define _HARE_NET_REACTOR_EPOLL_H_
+#ifndef _HARE_BASE_IO_REACTOR_EPOLL_H_
+#define _HARE_BASE_IO_REACTOR_EPOLL_H_
 
 #include "hare/base/io/reactor.h"
 #include <hare/hare-config.h>
@@ -36,4 +36,4 @@ namespace io {
 
 #endif // HARE__HAVE_EPOLL
 
-#endif // !_HARE_NET_REACTOR_EPOLL_H_
+#endif // !_HARE_BASE_IO_REACTOR_EPOLL_H_

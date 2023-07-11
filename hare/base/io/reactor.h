@@ -1,5 +1,5 @@
-#ifndef _HARE_NET_REACTOR_H_
-#define _HARE_NET_REACTOR_H_
+#ifndef _HARE_BASE_IO_REACTOR_H_
+#define _HARE_BASE_IO_REACTOR_H_
 
 #include <hare/base/io/cycle.h>
 #include <hare/base/io/event.h>
@@ -52,4 +52,4 @@ namespace io {
 } // namespace io
 } // namespace hare
 
-#endif // !_HARE_NET_REACTOR_H_
+#endif // !_HARE_BASE_IO_REACTOR_H_

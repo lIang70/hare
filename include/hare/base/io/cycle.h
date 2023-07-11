@@ -50,7 +50,6 @@ namespace io {
         using REACTOR_TYPE = enum {
             REACTOR_TYPE_EPOLL,
             REACTOR_TYPE_POLL,
-            REACTOR_TYPE_SELECT,
 
             REACTOR_TYPE_NBRS
         };
