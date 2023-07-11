@@ -243,13 +243,9 @@ namespace io {
             return;
         }
 
-        auto same_thread = in_cycle_thread();
-        util::count_down_latch cdl(1);
-
         run_in_cycle(std::bind([&](const wptr<event>& wevent) {
             auto sevent = wevent.lock();
             if (!sevent) {
-                cdl.count_down();
                 return;
             }
 
@@ -272,14 +268,8 @@ namespace io {
             if (CHECK_EVENT(sevent->events_, EVENT_TIMEOUT) != 0) {
                 current_thread::get_tds().ptimer.emplace(sevent->id_, timestamp(timestamp::now().microseconds_since_epoch() + sevent->timeval()));
             }
-
-            cdl.count_down();
         },
             _event));
-
-        if (!same_thread) {
-            cdl.await();
-        }
     }
 
     void cycle::event_remove(const hare::ptr<event>& _event)
@@ -293,14 +283,10 @@ namespace io {
             return;
         }
 
-        auto same_thread = in_cycle_thread();
-        util::count_down_latch cdl(1);
-
         run_in_cycle(std::bind([&](const wptr<event>& wevent) {
             auto sevent = wevent.lock();
             if (!sevent) {
                 MSG_ERROR("event is empty before it was released.");
-                cdl.count_down();
                 return;
             }
             auto event_id = sevent->id_;
@@ -322,13 +308,8 @@ namespace io {
 
                 current_thread::get_tds().events.erase(iter);
             }
-            cdl.count_down();
         },
             _event));
-
-        if (!same_thread) {
-            cdl.await();
-        }
     }
 
     auto cycle::event_check(const hare::ptr<event>& _event) -> bool

@@ -12,8 +12,9 @@
 #ifndef _HARE_BASE_IO_CYCLE_H_
 #define _HARE_BASE_IO_CYCLE_H_
 
-#include <hare/base/util/non_copyable.h>
+#include <hare/base/error.h>
 #include <hare/base/time/timestamp.h>
+#include <hare/base/util/non_copyable.h>
 
 #include <list>
 #include <mutex>

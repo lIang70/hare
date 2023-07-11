@@ -191,7 +191,7 @@ namespace io {
         ep_event.data.ptr = _event.get();
         auto target_fd = _event->fd();
 
-        MSG_TRACE("epoll_ctl op={}\n fd={} event=[{}].",
+        MSG_TRACE("epoll_ctl op={} fd={} event=[{}].",
             detail::operation_to_string(_operation), target_fd, detail::epoll_to_string(detail::decode_epoll(_event->events())));
 
         if (::epoll_ctl(epoll_fd_, _operation, target_fd, &ep_event) < 0) {

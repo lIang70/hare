@@ -31,7 +31,6 @@ namespace io {
     console::~console()
     {
         console_event_->tie(nullptr);
-        console_event_->deactivate();
     }
 
     void console::register_default_handle(default_handle _handle)

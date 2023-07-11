@@ -90,6 +90,7 @@ namespace io {
         HARE_INLINE
         auto event_id() const -> id { return id_; }
 
+        // None of the following interfaces are thread-safe.
         void enable_read();
         void disable_read();
         auto reading() -> bool;

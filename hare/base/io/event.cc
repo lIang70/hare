@@ -109,7 +109,11 @@ namespace io {
 
     void event::deactivate()
     {
-        cycle_->event_remove(shared_from_this());
+        if (cycle_) {
+            cycle_->event_remove(shared_from_this());
+        } else {
+            MSG_ERROR("event[{}] need to be added to cycle.", (void*)this);
+        }
     }
 
     auto event::event_string() const -> std::string
