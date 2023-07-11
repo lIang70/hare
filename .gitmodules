@@ -1,6 +1,7 @@
 [submodule "jemalloc"]
 	path = 3rdparty/jemalloc
 	url = https://github.com/jemalloc/jemalloc.git
+	branch = 5.3.0
 
 [submodule "googletest"]
 	path = 3rdparty/googletest
