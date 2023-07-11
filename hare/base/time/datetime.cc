@@ -48,7 +48,7 @@ namespace time {
         std::array<char, static_cast<std::size_t>(HARE_SMALL_FIXED_SIZE) * 2> buffer {};
         auto ret = ::snprintf(buffer.data(), buffer.size(), "%04d-%02d-%02d %02d:%02d:%02d",
             year_, month_, day_, hour_, minute_, second_);
-        H_UNUSED(ret);
+        ignore_unused(ret);
         return buffer.data();
     }
 
@@ -74,7 +74,7 @@ namespace time {
         std::array<char, HARE_SMALL_FIXED_SIZE> buffer {};
         ymd year_month_day(detail());
         auto ret = ::snprintf(buffer.data(), buffer.size(), "%4d-%02d-%02d", year_month_day.year, year_month_day.month, year_month_day.day);
-        H_UNUSED(ret);
+        ignore_unused(ret);
         return buffer.data();
     }
 

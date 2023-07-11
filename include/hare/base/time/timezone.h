@@ -16,6 +16,7 @@
 
 namespace hare {
 
+HARE_CLASS_API
 class HARE_API timezone {
     struct zone_data;
     uptr<zone_data> data_ {};
@@ -34,7 +35,8 @@ public:
     // timegm(3)
     static auto from_utc_time(const time::date_time& _dt) -> int64_t;
 
-    inline explicit operator bool() const { return bool(data_); }
+    HARE_INLINE
+    explicit operator bool() const { return bool(data_); }
 
     auto to_local(int64_t _seconds_since_epoch, int* _utc_offset = nullptr) const -> time::date_time;
     auto from_local(const time::date_time& _dt, bool _post_transition = false) const -> int64_t;

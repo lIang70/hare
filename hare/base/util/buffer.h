@@ -14,25 +14,26 @@
 
 #include <hare/base/fwd.h>
 
-#include <cassert>
-
 namespace hare {
 namespace util {
 
     namespace detail {
+#if defined(_SECURE_SCL) && _SECURE_SCL
+        // Make a checked iterator to avoid MSVC warnings.
+        template <typename T> using checked_ptr = stdext::checked_array_iterator<T*>;
         template <typename T>
-        constexpr auto make_checked(T* p, std::size_t) -> T*
+        constexpr auto make_checked(T* p, size_t size) -> checked_ptr<T>
+        {
+            return { p, size };
+        }
+#else
+        template <typename T> using checked_ptr = T*;
+        template <typename T>
+        constexpr auto make_checked(T* p, size_t) -> T*
         {
             return p;
         }
-
-        template <typename Int>
-        inline auto to_unsigned(Int value) ->
-            typename std::make_unsigned<Int>::type
-        {
-            assert(std::is_unsigned<Int>::value || value >= 0);
-            return static_cast<typename std::make_unsigned<Int>::type>(value);
-        }
+#endif
     } // namespace detail
 
     template <typename T>
@@ -60,7 +61,8 @@ namespace util {
         buffer(buffer&&) noexcept = default;
 
         /** Sets the buffer data and capacity. */
-        inline void set(T* buf_data, std::size_t buf_capacity) noexcept
+        HARE_INLINE
+        void set(T* buf_data, std::size_t buf_capacity) noexcept
         {
             ptr_ = buf_data;
             capacity_ = buf_capacity;
@@ -76,11 +78,15 @@ namespace util {
         buffer(const buffer&) = delete;
         void operator=(const buffer&) = delete;
 
-        inline auto begin() noexcept -> T* { return ptr_; }
-        inline auto end() noexcept -> T* { return ptr_ + size_; }
+        HARE_INLINE
+        auto begin() noexcept -> T* { return ptr_; }
+        HARE_INLINE
+        auto end() noexcept -> T* { return ptr_ + size_; }
 
-        inline auto begin() const noexcept -> const T* { return ptr_; }
-        inline auto end() const noexcept -> const T* { return ptr_ + size_; }
+        HARE_INLINE
+        auto begin() const noexcept -> const T* { return ptr_; }
+        HARE_INLINE
+        auto end() const noexcept -> const T* { return ptr_ + size_; }
 
         /** Returns the size of this buffer. */
         constexpr auto size() const noexcept -> std::size_t { return size_; }
@@ -95,9 +101,11 @@ namespace util {
         constexpr auto data() const noexcept -> const T* { return ptr_; }
 
         /** Clears this buffer. */
-        inline void clear() { size_ = 0; }
+        HARE_INLINE
+        void clear() { size_ = 0; }
 
-        inline void skip(std::size_t size)
+        HARE_INLINE
+        void skip(std::size_t size)
         {
             if (size_ + size > capacity_) {
                 size_ = capacity_;
@@ -153,7 +161,7 @@ namespace util {
     void buffer<T>::append(const U* begin, const U* end)
     {
         while (begin != end) {
-            auto count = detail::to_unsigned(end - begin);
+            auto count = hare::detail::to_unsigned(end - begin);
             try_reserve(size_ + count);
             auto free_cap = capacity_ - size_;
             if (free_cap < count) {

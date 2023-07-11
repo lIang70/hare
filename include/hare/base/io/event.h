@@ -54,6 +54,7 @@ namespace io {
     };
 
     class cycle;
+    HARE_CLASS_API
     class HARE_API event : public util::non_copyable
                          , public std::enable_shared_from_this<event> {
     public:
@@ -78,11 +79,16 @@ namespace io {
         event(util_socket_t _fd, callback _cb, uint8_t _flag, int64_t _timeval);
         virtual ~event();
 
-        inline auto fd() const -> util_socket_t { return fd_; }
-        inline auto events() const -> uint8_t { return events_; }
-        inline auto timeval() const -> int64_t { return timeval_; }
-        inline auto owner_cycle() const -> hare::ptr<cycle> { return cycle_.lock(); }
-        inline auto event_id() const -> id { return id_; }
+        HARE_INLINE
+        auto fd() const -> util_socket_t { return fd_; }
+        HARE_INLINE
+        auto events() const -> uint8_t { return events_; }
+        HARE_INLINE
+        auto timeval() const -> int64_t { return timeval_; }
+        HARE_INLINE
+        auto owner_cycle() const -> hare::ptr<cycle> { return cycle_.lock(); }
+        HARE_INLINE
+        auto event_id() const -> id { return id_; }
 
         void enable_read();
         void disable_read();

@@ -17,6 +17,7 @@
 namespace hare {
 namespace util {
 
+    HARE_CLASS_API
     class HARE_API non_copyable {
     public:
         non_copyable(const non_copyable&) = delete;

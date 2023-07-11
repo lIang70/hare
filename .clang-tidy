@@ -69,7 +69,6 @@ cert-oop57-cpp,\
 cert-oop58-cpp,\
 concurrency-*,\
 cppcoreguidelines-init-variables,\
-cppcoreguidelines-macro-usage,\
 cppcoreguidelines-narrowing-conversions,\
 cppcoreguidelines-prefer-member-initializer,\
 cppcoreguidelines-pro-type-member-init,\

@@ -67,7 +67,8 @@ namespace current_thread {
         io::events_list active_events {};
     };
 
-    inline auto get_tds() -> TID&
+    HARE_INLINE
+    auto get_tds() -> TID&
     {
         static thread_local struct thread_io_data t;
         return t;

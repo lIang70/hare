@@ -13,42 +13,67 @@
 #ifndef _HARE_BASE_FWD_H_
 #define _HARE_BASE_FWD_H_
 
-#include <hare/base/util/system_check.h>
-
-// C header
-#include <cinttypes>
-#include <cstring>
-
-// C++ header
-#include <array>
-#include <functional>
-#include <memory>
-
-#ifdef H_OS_WIN32
-#ifndef HARE_STATIC
-// Windows platforms
-#if HARE_EXPORTS
-// From DLL side, we must export
-#define HARE_API __declspec(dllexport)
+#if defined(__clang__) && !defined(__ibmxl__)
+#define HARE_CLANG_VERSION (__clang_major__ * 100 + __clang_minor__)
 #else
-// From client application side, we must import
+#define HARE_CLANG_VERSION 0
+#endif
+
+#if defined(__GNUC__) && !defined(__clang__) && !defined(__INTEL_COMPILER) && !defined(__NVCOMPILER)
+#define HARE_GCC_VERSION (__GNUC__ * 100 + __GNUC_MINOR__)
+#else
+#define HARE_GCC_VERSION 0
+#endif
+
+#ifdef _MSC_VER
+#define HARE_MSC_VERSION _MSC_VER
+#define HARE_MSC_WARNING(...) __pragma(warning(__VA_ARGS__))
+#else
+#define HARE_MSC_VERSION 0
+#define HARE_MSC_WARNING(...)
+#endif
+
+#ifndef HARE_INLINE
+#if HARE_GCC_VERSION || HARE_CLANG_VERSION
+#define HARE_INLINE inline __attribute__((always_inline))
+#else
+#define HARE_INLINE inline
+#endif
+#endif
+
+#if defined(H_OS_WIN32)
+#define HARE_CLASS_API HARE_MSC_WARNING(suppress : 4275)
+#ifdef HARE_EXPORT
+#define HARE_API __declspec(dllexport)
+#elif defined(HARE_SHARED)
 #define HARE_API __declspec(dllimport)
 #endif
 #else
-// No specific directive needed for static build
-#define HARE_API
+#define HARE_CLASS_API
+#if defined(HARE_EXPORT) || defined(HARE_SHARED)
+#if defined(__GNUC__) || defined(__clang__)
+#define HARE_API __attribute__((visibility("default")))
 #endif
-#else
-// Other platforms don't need to define anything
+#endif
+#endif
+#ifndef HARE_API
 #define HARE_API
 #endif
 
-#define H_UNUSED(x) (void)(x)
-#define H_ALIGNAS(n) alignas(n)
+#define HARE_ALIGNAS(n) alignas(n)
 
 #define HARE_SMALL_FIXED_SIZE (32)
 #define HARE_SMALL_BUFFER (4 * 1024)
 #define HARE_LARGE_BUFFER (1024 * HARE_SMALL_BUFFER)
+
+#include <array>
+#include <cassert>
+#include <cinttypes>
+#include <cstring>
+#include <functional>
+#include <memory>
+
+#include <hare/base/util/system_check.h>
 
 namespace hare {
 
@@ -58,21 +83,34 @@ using util_socket_t = intptr_t;
 using util_socket_t = int;
 #endif
 
-template <class Ty>
-using ptr = std::shared_ptr<Ty>;
-
-template <class Ty>
-using wptr = std::weak_ptr<Ty>;
-
-template <class Ty>
-using uptr = std::unique_ptr<Ty>;
-
+template <typename T> using ptr = std::shared_ptr<T>;
+template <typename T> using wptr = std::weak_ptr<T>;
+template <typename T> using uptr = std::unique_ptr<T>;
 using task = std::function<void()>;
 
-inline void set_zero(void* _des, std::size_t _len)
-{
-    ::memset(_des, 0, _len);
-}
+// Suppresses "unused variable" warnings with the method described in
+// https://herbsutter.com/2009/10/18/mailbag-shutting-up-compiler-warnings/.
+// (void)var does not work on many Intel compilers.
+template <typename... T> HARE_INLINE void ignore_unused(const T&...) {}
+
+namespace detail {
+
+    template <typename Int>
+    auto to_unsigned(Int value) ->
+        typename std::make_unsigned<Int>::type
+    {
+        assert(std::is_unsigned<Int>::value || value >= 0);
+        return static_cast<typename std::make_unsigned<Int>::type>(value);
+    }
+
+    template <typename T, typename Size>
+    auto fill_n(T* out, Size count, char value) -> T*
+    {
+        std::memset(out, value, to_unsigned(count));
+        return out + count;
+    }
+
+} // namesapce detail
 
 // Taken from google-protobuf stubs/common.h
 //
@@ -129,7 +167,8 @@ inline void set_zero(void* _des, std::size_t _len)
 // but the proposal was submitted too late.  It will probably make
 // its way into the language in the future.
 template <typename To, typename From>
-inline auto implicit_cast(From const& _from) -> To
+HARE_INLINE
+auto implicit_cast(From const& _from) -> To
 {
     return _from;
 }

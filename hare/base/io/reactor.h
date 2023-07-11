@@ -24,7 +24,8 @@ namespace io {
 
         virtual ~reactor() = default;
 
-        inline auto type() -> cycle::REACTOR_TYPE { return type_; }
+        HARE_INLINE
+        auto type() -> cycle::REACTOR_TYPE { return type_; }
 
         /**
          * @brief Polls the I/O events.

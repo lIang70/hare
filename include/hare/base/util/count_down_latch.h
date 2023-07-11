@@ -20,6 +20,7 @@
 namespace hare {
 namespace util {
 
+    HARE_CLASS_API
     class HARE_API count_down_latch {
         mutable std::mutex mutex_ {};
         uint32_t count_ { 0 };

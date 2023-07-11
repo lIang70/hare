@@ -20,6 +20,7 @@
 
 namespace hare {
 
+HARE_CLASS_API
 class HARE_API timestamp {
     int64_t microseconds_since_epoch_ { -1 };
 
@@ -58,16 +59,22 @@ public:
     {
     }
 
-    inline void swap(timestamp& _another) { std::swap(microseconds_since_epoch_, _another.microseconds_since_epoch_); }
-    inline auto valid() const -> bool { return microseconds_since_epoch_ > 0; }
-    inline auto microseconds_since_epoch() const -> int64_t { return microseconds_since_epoch_; }
-    inline auto seconds_since_epoch() const -> time_t
+    HARE_INLINE
+    void swap(timestamp& _another) { std::swap(microseconds_since_epoch_, _another.microseconds_since_epoch_); }
+    HARE_INLINE
+    auto valid() const -> bool { return microseconds_since_epoch_ > 0; }
+    HARE_INLINE
+    auto microseconds_since_epoch() const -> int64_t { return microseconds_since_epoch_; }
+    HARE_INLINE
+    auto seconds_since_epoch() const -> time_t
     {
         return static_cast<time_t>(microseconds_since_epoch_ / static_cast<int64_t>(HARE_MICROSECONDS_PER_SECOND));
     }
 
-    inline auto operator==(const timestamp& _another) const -> bool { return microseconds_since_epoch_ == _another.microseconds_since_epoch_; }
-    inline auto operator<(const timestamp& _another) const -> bool { return microseconds_since_epoch_ < _another.microseconds_since_epoch_; }
+    HARE_INLINE
+    auto operator==(const timestamp& _another) const -> bool { return microseconds_since_epoch_ == _another.microseconds_since_epoch_; }
+    HARE_INLINE
+    auto operator<(const timestamp& _another) const -> bool { return microseconds_since_epoch_ < _another.microseconds_since_epoch_; }
 
     auto to_string() const -> std::string;
     auto to_fmt(bool show_microseconds = true) const -> std::string;

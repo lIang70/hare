@@ -1,7 +1,6 @@
 #include "hare/base/io/reactor.h"
 #include <hare/base/io/event.h>
 
-#include <cassert>
 #include <sstream>
 
 namespace hare {

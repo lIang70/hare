@@ -26,6 +26,7 @@ namespace time {
      * Local time in unspecified timezone.
      *   A minute is always 60 seconds, no leap seconds.
      **/
+    HARE_CLASS_API
     class HARE_API date_time {
         int32_t year_ { HARE_START_YEAR }; // [1900, 2500]
         int32_t month_ { 1 }; // [1, 12]
@@ -41,20 +42,33 @@ namespace time {
         // "yyyy-MM-dd HH:MM:SS"
         auto to_fmt() const -> std::string;
 
-        inline auto year() -> int32_t& { return year_; }
-        inline auto year() const -> int32_t { return year_; }
-        inline auto month() -> int32_t& { return month_; }
-        inline auto month() const -> int32_t { return month_; }
-        inline auto day() -> int32_t& { return day_; }
-        inline auto day() const -> int32_t { return day_; }
-        inline auto hour() -> int32_t& { return hour_; }
-        inline auto hour() const -> int32_t { return hour_; }
-        inline auto minute() -> int32_t& { return minute_; }
-        inline auto minute() const -> int32_t { return minute_; }
-        inline auto second() -> int32_t& { return second_; }
-        inline auto second() const -> int32_t { return second_; }
+        HARE_INLINE
+        auto year() -> int32_t& { return year_; }
+        HARE_INLINE
+        auto year() const -> int32_t { return year_; }
+        HARE_INLINE
+        auto month() -> int32_t& { return month_; }
+        HARE_INLINE
+        auto month() const -> int32_t { return month_; }
+        HARE_INLINE
+        auto day() -> int32_t& { return day_; }
+        HARE_INLINE
+        auto day() const -> int32_t { return day_; }
+        HARE_INLINE
+        auto hour() -> int32_t& { return hour_; }
+        HARE_INLINE
+        auto hour() const -> int32_t { return hour_; }
+        HARE_INLINE
+        auto minute() -> int32_t& { return minute_; }
+        HARE_INLINE
+        auto minute() const -> int32_t { return minute_; }
+        HARE_INLINE
+        auto second() -> int32_t& { return second_; }
+        HARE_INLINE
+        auto second() const -> int32_t { return second_; }
     };
 
+    HARE_CLASS_API
     class HARE_API date {
         int32_t julian_day_number_ { 0 };
 
@@ -126,12 +140,16 @@ namespace time {
         auto julian_day_number() const -> int32_t { return julian_day_number_; }
     };
 
-    HARE_API inline auto operator<(date _date_x, date _date_y) -> bool
+    HARE_API
+    HARE_INLINE
+    auto operator<(date _date_x, date _date_y) -> bool
     {
         return _date_x.julian_day_number() < _date_y.julian_day_number();
     }
 
-    HARE_API inline auto operator==(date _date_x, date _date_y) -> bool
+    HARE_API
+    HARE_INLINE
+    auto operator==(date _date_x, date _date_y) -> bool
     {
         return _date_x.julian_day_number() == _date_y.julian_day_number();
     }

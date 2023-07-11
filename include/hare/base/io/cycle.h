@@ -24,6 +24,7 @@ namespace io {
 
     class reactor;
     class event;
+    HARE_CLASS_API
     class HARE_API cycle : public util::non_copyable
                          , public std::enable_shared_from_this<cycle> {
         timestamp reactor_time_ {};
@@ -61,20 +62,25 @@ namespace io {
         /**
          * @brief Time when reactor returns, usually means data arrival.
          **/
-        inline auto reactor_return_time() const -> timestamp { return reactor_time_; }
-        inline auto event_handling() const -> bool { return event_handling_; }
-        inline auto is_running() const -> bool { return is_running_; }
+        HARE_INLINE
+        auto reactor_return_time() const -> timestamp { return reactor_time_; }
+        HARE_INLINE
+        auto event_handling() const -> bool { return event_handling_; }
+        HARE_INLINE
+        auto is_running() const -> bool { return is_running_; }
 
 #if HARE_DEBUG
 
-        inline auto cycle_index() const -> uint64_t
+        HARE_INLINE
+        auto cycle_index() const -> uint64_t
         {
             return cycle_index_;
         }
 
 #endif
 
-        inline void assert_in_cycle_thread()
+        HARE_INLINE
+        void assert_in_cycle_thread()
         {
             if (!in_cycle_thread()) {
                 abort_not_cycle_thread();

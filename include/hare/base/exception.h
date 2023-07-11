@@ -19,6 +19,7 @@
 
 namespace hare {
 
+HARE_CLASS_API
 class HARE_API exception : public std::exception {
     std::string what_ {};
     std::string stack_ {};
@@ -31,9 +32,11 @@ public:
     exception(exception&&) = default;
     exception& operator=(exception&&) = default;
 
-    inline auto what() const noexcept -> const char* override { return what_.c_str(); }
+    HARE_INLINE
+    auto what() const noexcept -> const char* override { return what_.c_str(); }
 
-    inline auto stack_trace() const noexcept -> const char* { return stack_.c_str(); }
+    HARE_INLINE
+    auto stack_trace() const noexcept -> const char* { return stack_.c_str(); }
 };
 
 } // namespace hare

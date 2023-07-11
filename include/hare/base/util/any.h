@@ -58,7 +58,8 @@ namespace util {
 
         auto operator=(const any& a) -> any&;
 
-        inline auto is_null() const -> bool { return !ptr_; }
+        HARE_INLINE
+        auto is_null() const -> bool { return !ptr_; }
 
         template <class T, class = typename std::enable_if<!std::is_same<typename std::decay<T>::type, any>::value, T>::type>
         explicit any(T&& t)

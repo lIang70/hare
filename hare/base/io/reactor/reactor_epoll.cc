@@ -1,7 +1,6 @@
 #include "hare/base/io/reactor/reactor_epoll.h"
 #include "hare/base/io/local.h"
 
-#include <cassert>
 #include <sstream>
 
 #if HARE__HAVE_EPOLL
@@ -188,7 +187,7 @@ namespace io {
     void reactor_epoll::update(std::int32_t _operation, const ptr<event>& _event) const
     {
         struct epoll_event ep_event { };
-        set_zero(&ep_event, sizeof(ep_event));
+        hare::detail::fill_n(&ep_event, sizeof(ep_event), 0);
         ep_event.events = detail::decode_epoll(_event->events());
         ep_event.data.ptr = _event.get();
         auto target_fd = _event->fd();

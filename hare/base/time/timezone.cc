@@ -1,9 +1,5 @@
 #include <hare/base/time/timezone.h>
 
-// c header
-#include <cassert>
-
-// c++ header
 #include <algorithm>
 #include <string>
 #include <vector>
@@ -16,7 +12,8 @@
 namespace hare {
 namespace detail {
 
-    static inline void fill_hms(std::uint32_t _seconds, struct time::date_time* _sdt)
+    HARE_INLINE
+    static void fill_hms(std::uint32_t _seconds, struct time::date_time* _sdt)
     {
         auto minutes = static_cast<std::int32_t>(_seconds) / SECONDS_PER_MINUTE;
         _sdt->hour() = minutes / MINUTES_PER_HOUR;

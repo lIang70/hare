@@ -19,6 +19,7 @@
 namespace hare {
 namespace io {
 
+    HARE_CLASS_API
     class HARE_API console {
         using default_handle = std::function<void(const std::string& command_line)>;
 

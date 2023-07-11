@@ -3,8 +3,6 @@
 #include <hare/base/util/count_down_latch.h>
 #include <hare/hare-config.h>
 
-#include <cassert>
-
 #if HARE__HAVE_UNISTD_H
 #include <unistd.h>
 #endif

@@ -3,7 +3,6 @@
 #include <hare/base/time/timestamp.h>
 #include <hare/hare-config.h>
 
-#include <cassert>
 #include <csignal>
 #include <algorithm>
 
@@ -58,8 +57,8 @@ namespace io {
 
             void event_callback(const event::ptr& _event, std::uint8_t _events, const timestamp& _receive_time)
             {
-                H_UNUSED(_event);
-                H_UNUSED(_receive_time);
+                ignore_unused(_event);
+                ignore_unused(_receive_time);
                 assert(_event == this->shared_from_this());
 
                 if (CHECK_EVENT(_events, EVENT_READ) != 0) {
@@ -79,7 +78,7 @@ namespace io {
             {
                 // LOG_TRACE() << "ignore signal[SIGPIPE]";
                 auto ret = ::signal(SIGPIPE, SIG_IGN);
-                H_UNUSED(ret);
+                ignore_unused(ret);
             }
         };
 

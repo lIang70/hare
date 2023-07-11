@@ -2,7 +2,6 @@
 #include "hare/base/io/local.h"
 
 #include <algorithm>
-#include <cassert>
 #include <sstream>
 
 #if HARE__HAVE_POLL
@@ -110,7 +109,7 @@ namespace io {
             assert(current_thread::get_tds().inverse_map.find(target_fd) == current_thread::get_tds().inverse_map.end());
             assert(inverse_iter == inverse_map_.end());
             struct pollfd poll_fd { };
-            set_zero(&poll_fd, sizeof(poll_fd));
+            hare::detail::fill_n(&poll_fd, sizeof(poll_fd), 0);
             poll_fd.fd = target_fd;
             poll_fd.events = detail::decode_poll(_event->events());
             poll_fd.revents = 0;

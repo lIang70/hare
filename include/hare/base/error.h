@@ -16,7 +16,7 @@
 
 namespace hare {
 
-using HARE_ERROR = enum : int {
+using HARE_ERROR = enum : int32_t {
     HARE_ERROR_ILLEGAL,
     HARE_ERROR_SUCCESS,
 
@@ -26,6 +26,7 @@ using HARE_ERROR = enum : int {
     HARE_ERRORS_NBR
 };
 
+HARE_CLASS_API
 class HARE_API error {
     std::int32_t error_code_ { HARE_ERROR_SUCCESS };
     std::int32_t system_code_ { 0 };
@@ -38,16 +39,20 @@ public:
      * @brief Get the error code of hare.
      *
      **/
-    inline auto code() const -> std::int32_t { return error_code_; }
+    HARE_INLINE
+    auto code() const -> std::int32_t { return error_code_; }
 
     /**
      * @brief Get the system code 'errno'.
      *
      **/
-    inline auto system_code() const -> std::int32_t { return system_code_; }
+    HARE_INLINE
+    auto system_code() const -> std::int32_t { return system_code_; }
 
-    inline explicit operator bool() const { return error_code_ == HARE_ERROR_SUCCESS; }
-    inline auto operator==(HARE_ERROR error) const -> bool { return error_code_ == error; }
+    HARE_INLINE
+    explicit operator bool() const { return error_code_ == HARE_ERROR_SUCCESS; }
+    HARE_INLINE
+    auto operator==(HARE_ERROR error) const -> bool { return error_code_ == error; }
 
     /**
      * @brief Get the description of the error code.
