@@ -18,7 +18,7 @@ namespace io {
     namespace detail {
         static void global_handle(const std::string& command_line)
         {
-            msg()(fmt::format("[ERROR] unregistered command[{}], you can register \"default handle\" to console for handling all command.", command_line));
+            MSG_ERROR("unregistered command[{}], you can register \"default handle\" to console for handling all command.", command_line);
         }
     }
 
@@ -45,7 +45,7 @@ namespace io {
         handlers_.emplace(_handle_mask, _handle);
     }
 
-    auto console::attach(const ptr<cycle>& _cycle) -> bool
+    auto console::attach(cycle* _cycle) -> bool
     {
         if (!_cycle) {
             return false;
@@ -66,7 +66,7 @@ namespace io {
             _cycle->event_update(console_event_);
         }
 
-        console_event_->tie(_cycle);
+        console_event_->tie(console_event_);
         attached_ = true;
         return true;
     }
@@ -84,7 +84,7 @@ namespace io {
     {
         assert(console_event_ == _event);
         if (!CHECK_EVENT(_events, EVENT_READ)) {
-            msg()(fmt::format("[ERROR] cannot check EVENT_READ."));
+            MSG_ERROR("cannot check EVENT_READ.");
             return;
         }
 
@@ -92,7 +92,7 @@ namespace io {
 
         auto len = ::read(_event->fd(), console_line.data(), static_cast<std::size_t>(HARE_SMALL_BUFFER));
         if (len < 0) {
-            msg()(fmt::format("[ERROR] cannot read from STDIN."));
+            MSG_ERROR("cannot read from STDIN.");
             return;
         }
         std::string line(console_line.data(), len);

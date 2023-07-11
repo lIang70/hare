@@ -92,7 +92,7 @@ namespace io {
         } else {
             if (saved_errno != EINTR) {
                 errno = saved_errno;
-                msg()(fmt::format("[ERROR] reactor_poll::poll() erre"));
+                MSG_ERROR("reactor_poll::poll() error.");
             }
         }
         return now;

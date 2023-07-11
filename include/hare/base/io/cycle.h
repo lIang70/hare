@@ -24,8 +24,7 @@ namespace io {
     class reactor;
     class event;
     HARE_CLASS_API
-    class HARE_API cycle : public util::non_copyable
-                         , public std::enable_shared_from_this<cycle> {
+    class HARE_API cycle : public util::non_copyable {
         timestamp reactor_time_ {};
         std::uint64_t tid_ { 0 };
         bool is_running_ { false };

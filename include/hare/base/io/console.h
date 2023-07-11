@@ -38,7 +38,7 @@ namespace io {
          **/
         void register_default_handle(default_handle _handle);
         void register_handle(std::string _handle_mask, task _handle);
-        auto attach(const ptr<cycle>& _cycle) -> bool;
+        auto attach(cycle* _cycle) -> bool;
 
         console(const console&) = delete;
         console(console&&) = delete;

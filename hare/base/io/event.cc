@@ -48,34 +48,32 @@ namespace io {
         if (CHECK_EVENT(events_, EVENT_TIMEOUT) != 0 && CHECK_EVENT(events_, EVENT_PERSIST) != 0) {
             CLEAR_EVENT(events_, EVENT_TIMEOUT);
             timeval_ = 0;
-            msg()(fmt::format("[ERROR] cannot be set EVENT_PERSIST and EVENT_TIMEOUT at the same time."));
+            MSG_ERROR("cannot be set EVENT_PERSIST and EVENT_TIMEOUT at the same time.");
         }
     }
 
     event::~event()
     {
-        assert(cycle_.expired());
+        assert(cycle_ == nullptr);
     }
 
     void event::enable_read()
     {
         SET_EVENT(events_, EVENT_READ);
-        auto cycle = cycle_.lock();
-        if (cycle) {
-            cycle->event_update(shared_from_this());
+        if (cycle_) {
+            cycle_->event_update(shared_from_this());
         } else {
-            msg()(fmt::format("[ERROR] event[{}] need to be added to cycle.", (void*)this));
+            MSG_ERROR("event[{}] need to be added to cycle.", (void*)this);
         }
     }
 
     void event::disable_read()
     {
         CLEAR_EVENT(events_, EVENT_READ);
-        auto cycle = cycle_.lock();
-        if (cycle) {
-            cycle->event_update(shared_from_this());
+        if (cycle_) {
+            cycle_->event_update(shared_from_this());
         } else {
-            msg()(fmt::format("[ERROR] event[{}] need to be added to cycle.", (void*)this));
+            MSG_ERROR("event[{}] need to be added to cycle.", (void*)this);
         }
     }
 
@@ -87,22 +85,20 @@ namespace io {
     void event::enable_write()
     {
         SET_EVENT(events_, EVENT_WRITE);
-        auto cycle = cycle_.lock();
-        if (cycle) {
-            cycle->event_update(shared_from_this());
+        if (cycle_) {
+            cycle_->event_update(shared_from_this());
         } else {
-            msg()(fmt::format("[ERROR] event[{}] need to be added to cycle.", (void*)this));
+            MSG_ERROR("event[{}] need to be added to cycle.", (void*)this);
         }
     }
 
     void event::disable_write()
     {
         CLEAR_EVENT(events_, EVENT_WRITE);
-        auto cycle = cycle_.lock();
-        if (cycle) {
-            cycle->event_update(shared_from_this());
+        if (cycle_) {
+            cycle_->event_update(shared_from_this());
         } else {
-            msg()(fmt::format("[ERROR] event[{}] need to be added to cycle.", (void*)this));
+            MSG_ERROR("event[{}] need to be added to cycle.", (void*)this);
         }
     }
 
@@ -113,9 +109,7 @@ namespace io {
 
     void event::deactivate()
     {
-        if (auto cycle = cycle_.lock()) {
-            cycle->event_remove(shared_from_this());
-        }
+        cycle_->event_remove(shared_from_this());
     }
 
     auto event::event_string() const -> std::string

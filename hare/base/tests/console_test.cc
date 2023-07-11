@@ -4,13 +4,13 @@
 
 TEST(ConsoleTest, test1)
 {
-    hare::ptr<hare::io::cycle> test_cycle = std::make_shared<hare::io::cycle>(hare::io::cycle::REACTOR_TYPE_EPOLL);
+    hare::io::cycle test_cycle(hare::io::cycle::REACTOR_TYPE_EPOLL);
 
     auto& console = hare::io::console::instance();
-    console.register_handle("quit", [=]{ test_cycle->exit(); });
-    console.attach(test_cycle);
+    console.register_handle("quit", [&]{ test_cycle.exit(); });
+    console.attach(&test_cycle);
 
-    test_cycle->loop();
+    test_cycle.loop();
 }
 
 auto main(int argc, char** argv) -> int

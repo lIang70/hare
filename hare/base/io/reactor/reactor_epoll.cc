@@ -130,7 +130,7 @@ namespace io {
             // error happens, log uncommon ones
             if (saved_errno != EINTR) {
                 errno = saved_errno;
-                msg()(fmt::format("[ERROR] there was an error in the reactor."));
+                MSG_ERROR("there was an error in the reactor.");
             }
         }
         return now;
@@ -196,9 +196,9 @@ namespace io {
 
         if (::epoll_ctl(epoll_fd_, _operation, target_fd, &ep_event) < 0) {
             if (_operation != EPOLL_CTL_DEL) {
-                throw exception(fmt::format("epoll_ctl error op = {} fd = {}", detail::operation_to_string(_operation), target_fd));
+                MSG_FATAL("epoll_ctl error op = {} fd = {}", detail::operation_to_string(_operation), target_fd);
             } else {
-                fmt::print(stderr, "epoll_ctl error op = {} fd = {}", detail::operation_to_string(_operation), target_fd);
+                MSG_ERROR("epoll_ctl error op = {} fd = {}", detail::operation_to_string(_operation), target_fd);
             }
         }
     }

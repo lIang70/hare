@@ -68,7 +68,7 @@ namespace io {
         callback callback_ {};
         int64_t timeval_ { 0 };
 
-        wptr<cycle> cycle_ {};
+        cycle* cycle_ {};
         id id_ { -1 };
         int64_t timeout_ { 0 };
 
@@ -86,7 +86,7 @@ namespace io {
         HARE_INLINE
         auto timeval() const -> int64_t { return timeval_; }
         HARE_INLINE
-        auto owner_cycle() const -> hare::ptr<cycle> { return cycle_.lock(); }
+        auto owner_cycle() const -> cycle* { return cycle_; }
         HARE_INLINE
         auto event_id() const -> id { return id_; }
 

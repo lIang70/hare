@@ -38,10 +38,14 @@ namespace io {
 #define MSG_TRACE(fromat, ...)                                \
     msg()(fmt::format("[TRACE] " fromat " [{:#x} {}:{}||{}]", \
         ##__VA_ARGS__,                                        \
-        current_thread::get_tds().tid, __FILE__, __LINE__, __func__));
+        current_thread::get_tds().tid, __FILE__, __LINE__, __func__))
 #else
 #define MSG_TRACE(fromat, ...)
 #endif
+#define MSG_ERROR(fromat, ...) \
+    msg()(fmt::format("[ERROR] " fromat, ##__VA_ARGS__))
+#define MSG_FATAL(fromat, ...) \
+    throw exception(fmt::format(fromat, ##__VA_ARGS__))
 
     class cycle;
 
