@@ -1,10 +1,12 @@
 #include "hare/base/io/local.h"
 #include "hare/base/io/reactor.h"
+#include <hare/base/exception.h>
 #include <hare/base/time/timestamp.h>
 #include <hare/hare-config.h>
 
-#include <csignal>
 #include <algorithm>
+#include <csignal>
+#include <utility>
 
 #if HARE__HAVE_EVENTFD
 #include <sys/eventfd.h>
@@ -24,10 +26,11 @@ namespace io {
 #if HARE__HAVE_EVENTFD
             auto evtfd = ::eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
             if (evtfd < 0) {
-                // SYS_FATAL() << "failed to get event fd in ::eventfd.";
-                std::abort();
+                throw exception("failed to get event fd in ::eventfd.");
             }
             return evtfd;
+#else
+#error "Do not have ::eventfd()."
 #endif
         }
 
@@ -51,7 +54,7 @@ namespace io {
                 std::uint64_t one = 1;
                 auto write_n = ::write(fd(), &one, sizeof(one));
                 if (write_n != sizeof(one)) {
-                    // SYS_ERROR() << "write[" << write_n << " B] instead of " << sizeof(one);
+                    msg()(fmt::format("[ERROR] write[{} B] instead of {} B", write_n, sizeof(one)));
                 }
             }
 
@@ -65,10 +68,12 @@ namespace io {
                     std::uint64_t one = 0;
                     auto read_n = ::read(fd(), &one, sizeof(one));
                     if (read_n != sizeof(one) && one != static_cast<std::uint64_t>(1)) {
-                        // SYS_ERROR() << "read notify[" << read_n << " B] instead of " << sizeof(one);
+                        msg()(fmt::format("[ERROR] read notify[{} B] instead of {} B", read_n, sizeof(one)));
                     }
                 } else {
-                    // SYS_FATAL() << "an error occurred while accepting notify in fd[" << fd() << "].";
+                    throw exception(
+                        fmt::format("an error occurred while accepting notify in fd[{}]",
+                            fd()));
                 }
             }
         };
@@ -76,7 +81,7 @@ namespace io {
         struct ignore_sigpipe {
             ignore_sigpipe()
             {
-                // LOG_TRACE() << "ignore signal[SIGPIPE]";
+                MSG_TRACE("ignore signal[SIGPIPE].");
                 auto ret = ::signal(SIGPIPE, SIG_IGN);
                 ignore_unused(ret);
             }
@@ -96,25 +101,26 @@ namespace io {
     void print_active_events()
     {
         for (const auto& event_elem : current_thread::get_tds().active_events) {
-            // LOG_TRACE() << "event[" << event_elem.event_->fd() << "] debug info: " << event_elem.event_->event_string() << ".";
+            MSG_TRACE("event[{}] debug info: {}.",
+                event_elem.event_->fd(), event_elem.event_->event_string());
         }
     }
 
     cycle::cycle(REACTOR_TYPE _type)
-        : tid_(std::this_thread::get_id())
+        : tid_(current_thread::get_tds().tid)
         , notify_event_(new detail::event_notify())
         , reactor_(reactor::create_by_type(_type, this))
     {
         // Ignore signal[pipe]
         static detail::ignore_sigpipe s_ignore_sigpipe {};
 
-        // LOG_TRACE() << "cycle[" << this << "] is being initialized in [" << current_thread::tid_str() << "]...";
         if (current_thread::get_tds().cycle != nullptr) {
-            // SYS_FATAL() << "another cycle[" << current_thread::get_tds().cycle
-            //             << "] exists in this thread[" << current_thread::tid_str() << "].";
-            std::abort();
+            throw exception(
+                fmt::format("another cycle[{}] exists in this thread[{:#x}]",
+                    (void*)current_thread::get_tds().cycle, current_thread::get_tds().tid));
         } else {
             current_thread::get_tds().cycle = this;
+            MSG_TRACE("cycle[{}] is being initialized in thread[{:#x}].", (void*)this, current_thread::get_tds().tid);
         }
     }
 
@@ -122,9 +128,6 @@ namespace io {
     {
         // clear thread local data.
         assert_in_cycle_thread();
-        current_thread::get_tds().active_events.clear();
-        current_thread::get_tds().events.clear();
-        priority_timer().swap(current_thread::get_tds().ptimer);
         pending_functions_.clear();
         notify_event_.reset();
         current_thread::get_tds().cycle = nullptr;
@@ -132,7 +135,7 @@ namespace io {
 
     auto cycle::in_cycle_thread() const -> bool
     {
-        return tid_ == std::this_thread::get_id();
+        return tid_ == current_thread::get_tds().tid;
     }
 
     auto cycle::type() const -> REACTOR_TYPE
@@ -148,7 +151,7 @@ namespace io {
         event_update(notify_event_);
         notify_event_->tie(shared_from_this());
 
-        // LOG_TRACE() << "cycle[" << this << "] start running...";
+        MSG_TRACE("cycle[{}] start running...", (void*)this);
 
         while (!quit_) {
             current_thread::get_tds().active_events.clear();
@@ -157,9 +160,9 @@ namespace io {
 
 #if HARE_DEBUG
             ++cycle_index_;
+#endif
 
             print_active_events();
-#endif
 
             /// TODO(l1ang): sort event by priority
             event_handling_ = true;
@@ -183,7 +186,11 @@ namespace io {
         notify_event_->tie(nullptr);
         is_running_ = false;
 
-        // LOG_TRACE() << "cycle[" << this << "] stop running.";
+        current_thread::get_tds().active_events.clear();
+        current_thread::get_tds().events.clear();
+        priority_timer().swap(current_thread::get_tds().ptimer);
+
+        MSG_TRACE("cycle[{}] stop running...", (void*)this);
     }
 
     void cycle::exit()
@@ -226,10 +233,10 @@ namespace io {
         return pending_functions_.size();
     }
 
-    void cycle::event_update(hare::ptr<event> _event)
+    void cycle::event_update(const hare::ptr<event>& _event)
     {
         if (_event->owner_cycle() != shared_from_this() && _event->id_ != -1) {
-            // SYS_ERROR() << "cannot add event from other cycle[" << _event->owner_cycle().get() << "]";
+            msg()(fmt::format("[ERROR] cannot add event from other cycle[{}]", (void*)_event->owner_cycle().get()));
             return;
         }
 
@@ -262,21 +269,21 @@ namespace io {
             _event));
     }
 
-    void cycle::event_remove(hare::ptr<event> _event)
+    void cycle::event_remove(const hare::ptr<event>& _event)
     {
         if (!_event) {
             return;
         }
 
         if (_event->owner_cycle() != this->shared_from_this() || _event->id_ == -1) {
-            // SYS_ERROR() << "the event is not part of the cycle[" << _event->owner_cycle().get() << "]";
+            msg()(fmt::format("[ERROR] the event is not part of the cycle[{}]", (void*)_event->owner_cycle().get()));
             return;
         }
 
         run_in_cycle(std::bind([=](const wptr<event>& wevent) {
             auto sevent = wevent.lock();
             if (!sevent) {
-                // SYS_ERROR() << "event is empty before it was released.";
+                msg()(fmt::format("[ERROR] event is empty before it was released."));
                 return;
             }
             auto event_id = sevent->id_;
@@ -284,7 +291,7 @@ namespace io {
 
             auto iter = current_thread::get_tds().events.find(event_id);
             if (iter == current_thread::get_tds().events.end()) {
-                // SYS_ERROR() << "cannot find event in cycle[" << this << "]";
+                msg()(fmt::format("[ERROR] cannot find event in cycle[{}]", (void*)this));
             } else {
                 assert(iter->second == sevent);
 
@@ -316,17 +323,16 @@ namespace io {
         if (auto notify = std::static_pointer_cast<detail::event_notify>(notify_event_)) {
             notify->send_notify();
         } else {
-            // SYS_FATAL() << "cannot get to event_notify.";
-            std::abort();
+            throw exception(
+                fmt::format("cannot get to event_notify."));
         }
     }
 
     void cycle::abort_not_cycle_thread()
     {
-        // SYS_FATAL() << "cycle[" << this
-        //             << "] was created in thread[" << tid_
-        //             << "], current thread is: " << current_thread::tid();
-        std::abort();
+        throw exception(
+            fmt::format("cycle[{}] was created in thread[{:#x}], current thread is: {:#x}",
+                (void*)this, tid_, current_thread::get_tds().tid));
     }
 
     void cycle::do_pending_functions()
@@ -362,7 +368,7 @@ namespace io {
             if (iter != events.end()) {
                 auto& event = iter->second;
                 if (event) {
-                    // LOG_TRACE() << "event[" << iter->second.get() << "] trigged.";
+                    MSG_TRACE("event[{}] trigged.", (void*)iter->second.get());
                     event->handle_event(revent, now);
                     if ((event->events_ & EVENT_PERSIST) != 0) {
                         priority_event.emplace(top.id_, timestamp(reactor_time_.microseconds_since_epoch() + event->timeval()));
@@ -373,10 +379,15 @@ namespace io {
                     events.erase(iter);
                 }
             } else {
-                // LOG_TRACE() << "event[" << top.id_ << "] deleted.";
+                MSG_TRACE("event[{}] deleted.", top.id_);
             }
             priority_event.pop();
         }
+    }
+
+    void register_msg_handler(msg_handler handle)
+    {
+        msg() = std::move(handle);
     }
 
 } // namespace io

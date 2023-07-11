@@ -17,7 +17,6 @@
 
 #include <list>
 #include <mutex>
-#include <thread>
 
 namespace hare {
 namespace io {
@@ -28,7 +27,7 @@ namespace io {
     class HARE_API cycle : public util::non_copyable
                          , public std::enable_shared_from_this<cycle> {
         timestamp reactor_time_ {};
-        std::thread::id tid_ { 0 };
+        std::uint64_t tid_ { 0 };
         bool is_running_ { false };
         bool quit_ { false };
         bool event_handling_ { false };
@@ -121,8 +120,8 @@ namespace io {
 
         auto queue_size() const -> std::size_t;
 
-        void event_update(hare::ptr<event> _event);
-        void event_remove(hare::ptr<event> _event);
+        void event_update(const hare::ptr<event>& _event);
+        void event_remove(const hare::ptr<event>& _event);
 
         /**
          * @brief Detects whether the event is in the reactor.
@@ -137,6 +136,10 @@ namespace io {
         void notify_timer();
         void do_pending_functions();
     };
+
+    using msg_handler = std::function<void(std::string)>;
+
+    HARE_API void register_msg_handler(msg_handler handle);
 
 } // namespace io
 } // namespace hare

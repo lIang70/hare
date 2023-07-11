@@ -1,3 +1,4 @@
+#include "hare/base/io/local.h"
 #include "hare/base/io/reactor.h"
 #include <hare/base/io/console.h>
 #include <hare/base/util/count_down_latch.h>
@@ -17,7 +18,7 @@ namespace io {
     namespace detail {
         static void global_handle(const std::string& command_line)
         {
-            // SYS_ERROR() << "unregistered command[" << command_line << "], you can register \"default handle\" to console for handling all command.";
+            msg()(fmt::format("[ERROR] unregistered command[{}], you can register \"default handle\" to console for handling all command.", command_line));
         }
     }
 
@@ -83,7 +84,7 @@ namespace io {
     {
         assert(console_event_ == _event);
         if (!CHECK_EVENT(_events, EVENT_READ)) {
-            // SYS_ERROR() << "cannot check EVENT_READ.";
+            msg()(fmt::format("[ERROR] cannot check EVENT_READ."));
             return;
         }
 
@@ -91,14 +92,15 @@ namespace io {
 
         auto len = ::read(_event->fd(), console_line.data(), static_cast<std::size_t>(HARE_SMALL_BUFFER));
         if (len < 0) {
-            // SYS_ERROR() << "cannot read from STDIN.";
+            msg()(fmt::format("[ERROR] cannot read from STDIN."));
             return;
         }
         std::string line(console_line.data(), len);
         while (line.back() == '\n') {
             line.pop_back();
         }
-        // LOG_TRACE() << "recv console input[" << line << "] in " << _receive_time.to_fmt(true);
+
+        MSG_TRACE("recv console input[{}] in {}.", line, _receive_time.to_fmt(true));
 
         auto iter = handlers_.find(line);
         if (iter != handlers_.end()) {

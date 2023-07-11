@@ -48,7 +48,7 @@ namespace time {
 
     auto date_time::to_fmt() const -> std::string
     {
-        return fmt::format("{:4d}-{:2d}-{:2d} {:2d}:{:2d}:{:2d}", year_, month_, day_, hour_, minute_, second_);
+        return fmt::format("{:04d}-{:02d}-{:02d} {:02d}:{:02d}:{:02d}", year_, month_, day_, hour_, minute_, second_);
     }
 
     const std::int32_t date::DAYS_PER_WEEK { 7 };
@@ -71,7 +71,7 @@ namespace time {
     auto date::to_fmt() const -> std::string
     {
         ymd year_month_day(detail());
-        return fmt::format("{:4d}-{:2d}-{:2d}", year_month_day.year, year_month_day.month, year_month_day.day);
+        return fmt::format("{:04d}-{:02d}-{:02d}", year_month_day.year, year_month_day.month, year_month_day.day);
     }
 
     auto date::detail() const -> date::ymd

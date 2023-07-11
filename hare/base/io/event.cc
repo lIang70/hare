@@ -1,3 +1,4 @@
+#include "hare/base/io/local.h"
 #include "hare/base/io/reactor.h"
 #include <hare/base/io/event.h>
 
@@ -47,7 +48,7 @@ namespace io {
         if (CHECK_EVENT(events_, EVENT_TIMEOUT) != 0 && CHECK_EVENT(events_, EVENT_PERSIST) != 0) {
             CLEAR_EVENT(events_, EVENT_TIMEOUT);
             timeval_ = 0;
-            // SYS_ERROR() << "cannot be set EVENT_PERSIST and EVENT_TIMEOUT at the same time.";
+            msg()(fmt::format("[ERROR] cannot be set EVENT_PERSIST and EVENT_TIMEOUT at the same time."));
         }
     }
 
@@ -63,7 +64,7 @@ namespace io {
         if (cycle) {
             cycle->event_update(shared_from_this());
         } else {
-            // SYS_ERROR() << "event[" << this << "] need to be added to cycle.";
+            msg()(fmt::format("[ERROR] event[{}] need to be added to cycle.", (void*)this));
         }
     }
 
@@ -74,7 +75,7 @@ namespace io {
         if (cycle) {
             cycle->event_update(shared_from_this());
         } else {
-            // SYS_ERROR() << "event[" << this << "] need to be added to cycle.";
+            msg()(fmt::format("[ERROR] event[{}] need to be added to cycle.", (void*)this));
         }
     }
 
@@ -90,7 +91,7 @@ namespace io {
         if (cycle) {
             cycle->event_update(shared_from_this());
         } else {
-            // SYS_ERROR() << "event[" << this << "] need to be added to cycle.";
+            msg()(fmt::format("[ERROR] event[{}] need to be added to cycle.", (void*)this));
         }
     }
 
@@ -101,7 +102,7 @@ namespace io {
         if (cycle) {
             cycle->event_update(shared_from_this());
         } else {
-            // SYS_ERROR() << "event[" << this << "] need to be added to cycle.";
+            msg()(fmt::format("[ERROR] event[{}] need to be added to cycle.", (void*)this));
         }
     }
 

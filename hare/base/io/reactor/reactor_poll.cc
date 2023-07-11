@@ -85,14 +85,14 @@ namespace io {
         auto now { timestamp::now() };
 
         if (event_num > 0) {
-            // LOG_TRACE() << event_num << " events happened";
+            MSG_TRACE("{} events happened.", event_num);
             fill_active_events(event_num);
         } else if (event_num == 0) {
-            // LOG_TRACE() << "nothing happened";
+            MSG_TRACE("nothing happened.");
         } else {
             if (saved_errno != EINTR) {
                 errno = saved_errno;
-                // SYS_ERROR() << "reactor_poll::poll()";
+                msg()(fmt::format("[ERROR] reactor_poll::poll() erre"));
             }
         }
         return now;
@@ -100,7 +100,8 @@ namespace io {
 
     void reactor_poll::event_update(ptr<event> _event)
     {
-        // LOG_TRACE() << "poll-update: fd=" << _event->fd() << ", events=" << _event->events();
+        MSG_TRACE("poll-update: fd={}, events={}.", _event->fd(), _event->events());
+
         auto target_fd = _event->fd();
         auto inverse_iter = inverse_map_.find(target_fd);
 
@@ -136,12 +137,13 @@ namespace io {
     void reactor_poll::event_remove(ptr<event> _event)
     {
         const auto target_fd = _event->fd();
-
         auto inverse_iter = inverse_map_.find(target_fd);
         assert(inverse_iter != inverse_map_.end());
         auto& index = inverse_iter->second;
-        // LOG_TRACE() << "poll-remove: fd=" << target_fd;
+
+        MSG_TRACE("poll-remove: fd={}, events={}.", target_fd, _event->events());
         assert(0 <= index && index < static_cast<std::int32_t>(poll_fds_.size()));
+        
         const auto& pfd = poll_fds_[index];
         assert(pfd.events == detail::decode_poll(_event->events()));
         if (implicit_cast<std::size_t>(index) == poll_fds_.size() - 1) {
