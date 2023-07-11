@@ -1,5 +1,8 @@
 #include <hare/base/time/datetime.h>
 
+#define FMT_HEADER_ONLY 1
+#include <fmt/format.h>
+
 namespace hare {
 namespace time {
 
@@ -45,11 +48,7 @@ namespace time {
 
     auto date_time::to_fmt() const -> std::string
     {
-        std::array<char, static_cast<std::size_t>(HARE_SMALL_FIXED_SIZE) * 2> buffer {};
-        auto ret = ::snprintf(buffer.data(), buffer.size(), "%04d-%02d-%02d %02d:%02d:%02d",
-            year_, month_, day_, hour_, minute_, second_);
-        ignore_unused(ret);
-        return buffer.data();
+        return fmt::format("{:4d}-{:2d}-{:2d} {:2d}:{:2d}:{:2d}", year_, month_, day_, hour_, minute_, second_);
     }
 
     const std::int32_t date::DAYS_PER_WEEK { 7 };
@@ -71,11 +70,8 @@ namespace time {
 
     auto date::to_fmt() const -> std::string
     {
-        std::array<char, HARE_SMALL_FIXED_SIZE> buffer {};
         ymd year_month_day(detail());
-        auto ret = ::snprintf(buffer.data(), buffer.size(), "%4d-%02d-%02d", year_month_day.year, year_month_day.month, year_month_day.day);
-        ignore_unused(ret);
-        return buffer.data();
+        return fmt::format("{:4d}-{:2d}-{:2d}", year_month_day.year, year_month_day.month, year_month_day.day);
     }
 
     auto date::detail() const -> date::ymd

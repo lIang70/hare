@@ -17,3 +17,7 @@ if(NOT TARGET openssl)
         COMMENT "Original openssl makefile target"
     )
 endif()
+
+if(NOT TARGET FMT)
+    add_subdirectory(fmt EXCLUDE_FROM_ALL)
+endif()

@@ -194,6 +194,7 @@ endif()
 
 # Add hare-config
 include_directories(${CMAKE_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR}/include)
+include_directories(${CMAKE_SOURCE_DIR}/3rdparty/fmt/include)
 
 # Add hare_base's src
 file(GLOB HARE_BASE_SOURCES
