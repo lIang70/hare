@@ -4,11 +4,9 @@
 
 #include <sstream>
 
-#if HARE__HAVE_EPOLL
+#if HARE__HAVE_EPOLL && HARE__HAVE_UNISTD_H
 
-#ifdef H_OS_LINUX
 #include <unistd.h>
-#endif
 
 namespace hare {
 namespace io {
