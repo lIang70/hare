@@ -136,10 +136,6 @@ namespace io {
         void do_pending_functions();
     };
 
-    using msg_handler = std::function<void(std::string)>;
-
-    HARE_API void register_msg_handler(msg_handler handle);
-
 } // namespace io
 } // namespace hare
 

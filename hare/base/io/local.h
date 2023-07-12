@@ -1,49 +1,15 @@
 #ifndef _HARE_BASE_IO_LOCAL_H_
 #define _HARE_BASE_IO_LOCAL_H_
 
+#include "hare/base/fwd-inl.h"
 #include <hare/base/io/event.h>
 #include <hare/hare-config.h>
-
-#define FMT_HEADER_ONLY 1
-#include <fmt/format.h>
 
 #include <sstream>
 #include <thread>
 
 namespace hare {
 namespace io {
-
-    namespace detail {
-        HARE_INLINE
-        void default_msg_handle(const std::string& msg)
-        {
-            fmt::println(stdout, msg);
-            ignore_unused(::fflush(stdout));
-        }
-    } // namespace detail
-
-    HARE_INLINE
-    auto msg() -> std::function<void(std::string)>&
-    {
-        static std::function<void(std::string)> s_io_msg {
-            detail::default_msg_handle
-        };
-        return s_io_msg;
-    }
-
-#ifdef HARE_DEBUG
-#define MSG_TRACE(fromat, ...)                                \
-    msg()(fmt::format("[TRACE] " fromat " [{:#x} {}:{}||{}]", \
-        ##__VA_ARGS__,                                        \
-        current_thread::get_tds().tid, __FILE__, __LINE__, __func__))
-#else
-#define MSG_TRACE(fromat, ...)
-#endif
-#define MSG_ERROR(fromat, ...) \
-    msg()(fmt::format("[ERROR] " fromat, ##__VA_ARGS__))
-#define MSG_FATAL(fromat, ...) \
-    throw exception(fmt::format(fromat, ##__VA_ARGS__))
-
     class cycle;
 
     namespace current_thread {

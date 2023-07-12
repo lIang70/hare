@@ -392,10 +392,5 @@ namespace io {
         }
     }
 
-    void register_msg_handler(msg_handler handle)
-    {
-        msg() = std::move(handle);
-    }
-
 } // namespace io
 } // namespace hare

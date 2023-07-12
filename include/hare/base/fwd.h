@@ -87,11 +87,12 @@ template <typename T> using ptr = std::shared_ptr<T>;
 template <typename T> using wptr = std::weak_ptr<T>;
 template <typename T> using uptr = std::unique_ptr<T>;
 using task = std::function<void()>;
+using log_handler = std::function<void(std::string)>;
 
 // Suppresses "unused variable" warnings with the method described in
 // https://herbsutter.com/2009/10/18/mailbag-shutting-up-compiler-warnings/.
 // (void)var does not work on many Intel compilers.
-template <typename... T> HARE_INLINE void ignore_unused(const T&...) {}
+template <typename... T> HARE_INLINE void ignore_unused(const T&...) { }
 
 namespace detail {
 
@@ -172,6 +173,8 @@ auto implicit_cast(From const& _from) -> To
 {
     return _from;
 }
+
+HARE_API void register_msg_handler(log_handler handle);
 
 } // namespace hare
 
