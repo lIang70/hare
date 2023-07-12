@@ -73,7 +73,7 @@ namespace io {
     console::console()
         : console_event_(new event(STDIN_FILENO,
             std::bind(&console::process, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
-            EVENT_READ | EVENT_PERSIST,
+            EVENT_READ | EVENT_PERSIST | EVENT_ET,
             0))
         , default_(detail::global_handle)
     {

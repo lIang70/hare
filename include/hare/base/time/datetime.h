@@ -37,7 +37,7 @@ namespace time {
 
     public:
         date_time() = default;
-        explicit date_time(const struct tm&);
+        explicit date_time(const std::tm&);
 
         // "yyyy-MM-dd HH:MM:SS"
         auto to_fmt() const -> std::string;
@@ -96,7 +96,7 @@ namespace time {
         {
         }
 
-        explicit date(const struct tm&);
+        explicit date(const std::tm&);
 
         // default copy/assignment/dtor are Okay
 

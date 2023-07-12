@@ -19,16 +19,16 @@ namespace io {
         ep_event_list epoll_events_ {};
 
     public:
-        explicit reactor_epoll(cycle* cycle, cycle::REACTOR_TYPE _type);
+        explicit reactor_epoll(cycle* cycle);
         ~reactor_epoll() override;
 
         auto poll(std::int32_t _timeout_microseconds) -> timestamp override;
-        void event_update(ptr<event> _event) override;
-        void event_remove(ptr<event> _event) override;
+        auto event_update(const ptr<event>& _event) -> bool override;
+        auto event_remove(const ptr<event>& _event) -> bool override;
 
     private:
         void fill_active_events(std::int32_t _num_of_events);
-        void update(std::int32_t _operation, const ptr<event>& _event) const;
+        auto update(std::int32_t _operation, const ptr<event>& _event) const -> bool ;
     };
 
 } // namespace io

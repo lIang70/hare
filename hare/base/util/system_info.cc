@@ -254,15 +254,15 @@ namespace util {
 #endif
     }
 
-    auto set_thread_name(const char* tname) -> error
+    auto set_thread_name(const char* tname) -> bool
     {
 #ifdef H_OS_LINUX
         auto ret = ::prctl(PR_SET_NAME, tname);
         if (ret == -1) {
-            return error(HARE_ERROR_SET_THREAD_NAME);
+            return false;
         }
 #endif
-        return error(HARE_ERROR_SUCCESS);
+        return true;
     }
 
     auto errnostr(int _errorno) -> const char*

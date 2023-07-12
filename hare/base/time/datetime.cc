@@ -36,7 +36,7 @@ namespace time {
 
     } // namespace detail
 
-    date_time::date_time(const struct tm& _tm)
+    date_time::date_time(const std::tm& _tm)
         : year_(_tm.tm_year + HARE_START_YEAR)
         , month_(_tm.tm_mon + 1)
         , day_(_tm.tm_mday)
@@ -59,7 +59,7 @@ namespace time {
     {
     }
 
-    date::date(const struct tm& _tm)
+    date::date(const std::tm& _tm)
         : julian_day_number_(
             detail::get_julian_day_number(
                 _tm.tm_year + HARE_START_YEAR,

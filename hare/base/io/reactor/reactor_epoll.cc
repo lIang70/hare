@@ -93,8 +93,8 @@ namespace io {
 
     } // namespace detail
 
-    reactor_epoll::reactor_epoll(cycle* cycle, cycle::REACTOR_TYPE _type)
-        : reactor(cycle, _type)
+    reactor_epoll::reactor_epoll(cycle* cycle)
+        : reactor(cycle, cycle::REACTOR_TYPE_EPOLL)
         , epoll_fd_(::epoll_create1(EPOLL_CLOEXEC))
         , epoll_events_(detail::INIT_EVENTS_CNT)
     {
@@ -110,11 +110,11 @@ namespace io {
 
     auto reactor_epoll::poll(std::int32_t _timeout_microseconds) -> timestamp
     {
-        MSG_TRACE("active events total count: {}.", current_thread::get_tds().active_events.size());
+        MSG_TRACE("active events total count: {}.", active_events_.size());
 
         auto event_num = ::epoll_wait(epoll_fd_,
             &*epoll_events_.begin(), static_cast<std::int32_t>(epoll_events_.size()),
-            _timeout_microseconds);
+            _timeout_microseconds / 1000);
 
         auto saved_errno = errno;
         auto now { timestamp::now() };
@@ -136,7 +136,7 @@ namespace io {
         return now;
     }
 
-    void reactor_epoll::event_update(ptr<event> _event)
+    auto reactor_epoll::event_update(const ptr<event>& _event) -> bool
     {
         auto event_id = _event->event_id();
         MSG_TRACE("epoll-update: fd={}, flags={}.", _event->fd(), _event->events());
@@ -144,29 +144,28 @@ namespace io {
         if (event_id == -1) {
             // a new one, add with EPOLL_CTL_ADD
             auto target_fd = _event->fd();
-            assert(current_thread::get_tds().inverse_map.find(target_fd) == current_thread::get_tds().inverse_map.end());
-            update(EPOLL_CTL_ADD, _event);
-            return;
+            assert(inverse_map_.find(target_fd) == inverse_map_.end());
+            return update(EPOLL_CTL_ADD, _event);
         }
 
         // update existing one with EPOLL_CTL_MOD/DEL
         auto target_fd = _event->fd();
-        assert(current_thread::get_tds().inverse_map.find(target_fd) != current_thread::get_tds().inverse_map.end());
-        assert(current_thread::get_tds().events.find(event_id) != current_thread::get_tds().events.end());
-        assert(current_thread::get_tds().events[event_id] == _event);
-        update(EPOLL_CTL_MOD, _event);
+        assert(inverse_map_.find(target_fd) != inverse_map_.end());
+        assert(events_.find(event_id) != events_.end());
+        assert(events_[event_id] == _event);
+        return update(EPOLL_CTL_MOD, _event);
     }
 
-    void reactor_epoll::event_remove(ptr<event> _event)
+    auto reactor_epoll::event_remove(const ptr<event>& _event) -> bool
     {
         const auto target_fd = _event->fd();
         const auto event_id = _event->event_id();
 
         MSG_TRACE("epoll-remove: fd={}, flags={}.", target_fd, _event->events());
-        assert(current_thread::get_tds().inverse_map.find(target_fd) != current_thread::get_tds().inverse_map.end());
+        assert(inverse_map_.find(target_fd) != inverse_map_.end());
         assert(event_id == -1);
 
-        update(EPOLL_CTL_DEL, _event);
+        return update(EPOLL_CTL_DEL, _event);
     }
 
     void reactor_epoll::fill_active_events(std::int32_t _num_of_events)
@@ -174,16 +173,16 @@ namespace io {
         assert(implicit_cast<std::size_t>(_num_of_events) <= epoll_events_.size());
         for (auto i = 0; i < _num_of_events; ++i) {
             auto* event = static_cast<io::event*>(epoll_events_[i].data.ptr);
-            assert(current_thread::get_tds().inverse_map.find(event->fd()) != current_thread::get_tds().inverse_map.end());
-            auto event_id = current_thread::get_tds().inverse_map[event->fd()];
-            assert(current_thread::get_tds().events.find(event_id) != current_thread::get_tds().events.end());
-            auto revent = current_thread::get_tds().events[event_id];
+            assert(inverse_map_.find(event->fd()) != inverse_map_.end());
+            auto event_id = inverse_map_[event->fd()];
+            assert(events_.find(event_id) != events_.end());
+            auto revent = events_[event_id];
             assert(event == revent.get());
-            current_thread::get_tds().active_events.emplace_back(revent, detail::encode_epoll(epoll_events_[i].events));
+            active_events_.emplace_back(revent, detail::encode_epoll(epoll_events_[i].events));
         }
     }
 
-    void reactor_epoll::update(std::int32_t _operation, const ptr<event>& _event) const
+    auto reactor_epoll::update(std::int32_t _operation, const ptr<event>& _event) const -> bool 
     {
         struct epoll_event ep_event { };
         hare::detail::fill_n(&ep_event, sizeof(ep_event), 0);
@@ -195,12 +194,10 @@ namespace io {
             detail::operation_to_string(_operation), target_fd, detail::epoll_to_string(detail::decode_epoll(_event->events())));
 
         if (::epoll_ctl(epoll_fd_, _operation, target_fd, &ep_event) < 0) {
-            if (_operation != EPOLL_CTL_DEL) {
-                MSG_FATAL("epoll_ctl error op = {} fd = {}", detail::operation_to_string(_operation), target_fd);
-            } else {
-                MSG_ERROR("epoll_ctl error op = {} fd = {}", detail::operation_to_string(_operation), target_fd);
-            }
+            MSG_ERROR("epoll_ctl error op = {} fd = {}", detail::operation_to_string(_operation), target_fd);
+            return false;
         }
+        return true;
     }
 
 } // namespace io

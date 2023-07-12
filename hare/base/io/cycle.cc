@@ -22,7 +22,7 @@ namespace io {
 
     namespace detail {
 
-        auto create_notify_fd() -> util_socket_t
+        static auto create_notify_fd() -> util_socket_t
         {
 #if HARE__HAVE_EVENTFD
             auto evtfd = ::eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
@@ -87,24 +87,23 @@ namespace io {
             }
         };
 
+        auto get_wait_time(const priority_timer& _ptimer) -> std::int32_t
+        {
+            if (_ptimer.empty()) {
+                return POLL_TIME_MICROSECONDS;
+            }
+            auto time = static_cast<std::int32_t>(_ptimer.top().stamp_.microseconds_since_epoch() - timestamp::now().microseconds_since_epoch());
+            return time <= 0 ? static_cast<std::int32_t>(1) : std::min(time, POLL_TIME_MICROSECONDS);
+        }
+
+        void print_active_events(const events_list& _active_events)
+        {
+            for (const auto& event_elem : _active_events) {
+                MSG_TRACE("event[{}] debug info: {}.",
+                    event_elem.event_->fd(), event_elem.event_->event_string());
+            }
+        }
     } // namespace detail
-
-    auto get_wait_time() -> std::int32_t
-    {
-        if (current_thread::get_tds().ptimer.empty()) {
-            return POLL_TIME_MICROSECONDS;
-        }
-        auto time = static_cast<std::int32_t>(current_thread::get_tds().ptimer.top().stamp_.microseconds_since_epoch() - timestamp::now().microseconds_since_epoch());
-        return time <= 0 ? static_cast<std::int32_t>(1) : std::min(time, POLL_TIME_MICROSECONDS);
-    }
-
-    void print_active_events()
-    {
-        for (const auto& event_elem : current_thread::get_tds().active_events) {
-            MSG_TRACE("event[{}] debug info: {}.",
-                event_elem.event_->fd(), event_elem.event_->event_string());
-        }
-    }
 
     cycle::cycle(REACTOR_TYPE _type)
         : tid_(current_thread::get_tds().tid)
@@ -116,7 +115,7 @@ namespace io {
 
         if (current_thread::get_tds().cycle != nullptr) {
             MSG_FATAL("another cycle[{}] exists in this thread[{:#x}]",
-                    (void*)current_thread::get_tds().cycle, current_thread::get_tds().tid);
+                (void*)current_thread::get_tds().cycle, current_thread::get_tds().tid);
         } else {
             current_thread::get_tds().cycle = this;
             MSG_TRACE("cycle[{}] is being initialized in thread[{:#x}].", (void*)this, current_thread::get_tds().tid);
@@ -153,20 +152,20 @@ namespace io {
         MSG_TRACE("cycle[{}] start running...", (void*)this);
 
         while (!quit_) {
-            current_thread::get_tds().active_events.clear();
+            reactor_->active_events_.clear();
 
-            reactor_time_ = reactor_->poll(get_wait_time());
+            reactor_time_ = reactor_->poll(get_wait_time(reactor_->ptimer_));
 
 #if HARE_DEBUG
             ++cycle_index_;
 #endif
 
-            print_active_events();
+            print_active_events(reactor_->active_events_);
 
             /// TODO(l1ang): sort event by priority
             event_handling_ = true;
 
-            for (auto& event_elem : current_thread::get_tds().active_events) {
+            for (auto& event_elem : reactor_->active_events_) {
                 current_active_event_ = event_elem.event_;
                 current_active_event_->handle_event(event_elem.revents_, reactor_time_);
                 if (CHECK_EVENT(current_active_event_->events(), EVENT_PERSIST) == 0) {
@@ -185,13 +184,13 @@ namespace io {
         notify_event_->tie(nullptr);
         is_running_ = false;
 
-        current_thread::get_tds().active_events.clear();
-        for (const auto& event : current_thread::get_tds().events) {
+        reactor_->active_events_.clear();
+        for (const auto& event : reactor_->events_) {
             event.second->cycle_ = nullptr;
             event.second->id_ = -1;
         }
-        current_thread::get_tds().events.clear();
-        priority_timer().swap(current_thread::get_tds().ptimer);
+        reactor_->events_.clear();
+        priority_timer().swap(reactor_->ptimer_);
 
         MSG_TRACE("cycle[{}] stop running...", (void*)this);
     }
@@ -243,30 +242,37 @@ namespace io {
             return;
         }
 
-        run_in_cycle(std::bind([&](const wptr<event>& wevent) {
+        run_in_cycle(std::bind([=](const wptr<event>& wevent) {
             auto sevent = wevent.lock();
             if (!sevent) {
                 return;
             }
 
+            bool ret = true;
+
             if (sevent->fd() >= 0) {
-                reactor_->event_update(sevent);
+                ret = reactor_->event_update(sevent);
+            }
+
+            if (!ret) {
+                return;
             }
 
             if (sevent->id_ == -1) {
                 sevent->cycle_ = this;
                 sevent->id_ = current_thread::get_tds().event_id++;
 
-                // HARE_ASSERT(current_thread::get_tds().events.find(sevent->id_) == current_thread::get_tds().events.end(), "an error occurred while creating the event id.");
-                current_thread::get_tds().events.insert(std::make_pair(sevent->id_, sevent));
+                assert(reactor_->events_.find(sevent->id_) == reactor_->events_.end());
+                reactor_->events_.insert(std::make_pair(sevent->id_, sevent));
 
                 if (sevent->fd() >= 0) {
-                    current_thread::get_tds().inverse_map.insert(std::make_pair(sevent->fd(), sevent->id_));
+                    reactor_->inverse_map_.insert(std::make_pair(sevent->fd(), sevent->id_));
                 }
             }
 
             if (CHECK_EVENT(sevent->events_, EVENT_TIMEOUT) != 0) {
-                current_thread::get_tds().ptimer.emplace(sevent->id_, timestamp(timestamp::now().microseconds_since_epoch() + sevent->timeval()));
+                reactor_->ptimer_.emplace(sevent->id_,
+                    timestamp(timestamp::now().microseconds_since_epoch() + sevent->timeval()));
             }
         },
             _event));
@@ -283,7 +289,7 @@ namespace io {
             return;
         }
 
-        run_in_cycle(std::bind([&](const wptr<event>& wevent) {
+        run_in_cycle(std::bind([=](const wptr<event>& wevent) {
             auto sevent = wevent.lock();
             if (!sevent) {
                 MSG_ERROR("event is empty before it was released.");
@@ -292,8 +298,8 @@ namespace io {
             auto event_id = sevent->id_;
             auto socket = sevent->fd();
 
-            auto iter = current_thread::get_tds().events.find(event_id);
-            if (iter == current_thread::get_tds().events.end()) {
+            auto iter = reactor_->events_.find(event_id);
+            if (iter == reactor_->events_.end()) {
                 MSG_ERROR("cannot find event in cycle[{}]", (void*)this);
             } else {
                 assert(iter->second == sevent);
@@ -303,10 +309,10 @@ namespace io {
 
                 if (socket >= 0) {
                     reactor_->event_remove(sevent);
-                    current_thread::get_tds().inverse_map.erase(socket);
+                    reactor_->inverse_map_.erase(socket);
                 }
 
-                current_thread::get_tds().events.erase(iter);
+                reactor_->events_.erase(iter);
             }
         },
             _event));
@@ -318,7 +324,7 @@ namespace io {
             return false;
         }
         assert_in_cycle_thread();
-        return current_thread::get_tds().events.find(_event->id_) != current_thread::get_tds().events.end();
+        return reactor_->events_.find(_event->id_) != reactor_->events_.end();
     }
 
     void cycle::notify()
@@ -333,7 +339,7 @@ namespace io {
     void cycle::abort_not_cycle_thread()
     {
         MSG_FATAL("cycle[{}] was created in thread[{:#x}], current thread is: {:#x}",
-                (void*)this, tid_, current_thread::get_tds().tid);
+            (void*)this, tid_, current_thread::get_tds().tid);
     }
 
     void cycle::do_pending_functions()
@@ -355,8 +361,8 @@ namespace io {
 
     void cycle::notify_timer()
     {
-        auto& priority_event = current_thread::get_tds().ptimer;
-        auto& events = current_thread::get_tds().events;
+        auto& priority_event = reactor_->ptimer_;
+        auto& events = reactor_->events_;
         const auto revent = EVENT_TIMEOUT;
         auto now = timestamp::now();
 

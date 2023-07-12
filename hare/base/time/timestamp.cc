@@ -24,7 +24,7 @@ auto timestamp::to_string() const -> std::string
 auto timestamp::to_fmt(bool show_microseconds) const -> std::string
 {
     auto seconds = seconds_since_epoch();
-    struct tm tm_time { };
+    std::tm tm_time { };
     ::gmtime_r(&seconds, &tm_time);
 
     if (show_microseconds) {

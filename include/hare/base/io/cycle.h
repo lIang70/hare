@@ -12,7 +12,6 @@
 #ifndef _HARE_BASE_IO_CYCLE_H_
 #define _HARE_BASE_IO_CYCLE_H_
 
-#include <hare/base/error.h>
 #include <hare/base/time/timestamp.h>
 #include <hare/base/util/non_copyable.h>
 
@@ -50,6 +49,7 @@ namespace io {
         using REACTOR_TYPE = enum {
             REACTOR_TYPE_EPOLL,
             REACTOR_TYPE_POLL,
+            REACTOR_TYPE_SELECT,
 
             REACTOR_TYPE_NBRS
         };
