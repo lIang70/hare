@@ -214,6 +214,18 @@ if(HARE__BUILD_TESTS)
     add_subdirectory(base/tests)
 endif(HARE__BUILD_TESTS)
 
+# Add hare_base's src
+file(GLOB HARE_LOG_SOURCES
+    "log/*.cc"
+    "log/backends/*.cc"
+    "log/details/*.cc"
+)
+# Add the source code to the project's executable。
+add_library(hare_log ${HARE__LIBRARY_TYPE} ${HARE_LOG_SOURCES})
+target_include_directories(hare_log PUBLIC ${CMAKE_SOURCE_DIR}/include)
+if(JEMALLOC_FOUND)
+    target_link_libraries(hare_log PkgConfig::Jemalloc)
+endif()
 
 if(EXISTS "${CMAKE_SOURCE_DIR}/lib/openssl/" AND IS_DIRECTORY "${CMAKE_SOURCE_DIR}/lib/openssl/")
     message(STATUS "OpenSSL is built")
