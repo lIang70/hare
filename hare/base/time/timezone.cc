@@ -55,14 +55,10 @@ struct timezone::zone_data {
         {
         }
 
-    private:
         std::int64_t utc_time;
         std::int64_t local_time; // Shifted Epoch
         std::int32_t local_time_idx;
 
-        friend struct compare_utc_time;
-        friend struct compare_local_time;
-        friend struct timezone::zone_data;
     };
 
     struct compare_utc_time {
@@ -87,13 +83,10 @@ struct timezone::zone_data {
         {
         }
 
-    private:
         std::int32_t utc_offset; // East of UTC
         std::int32_t desig_idx;
         bool is_dst;
 
-        friend class timezone;
-        friend struct timezone::zone_data;
     };
 
     void add_local_time(std::int32_t _utc_offset, bool _is_dst, std::int32_t _desig_idx)

@@ -24,9 +24,9 @@ class HARE_API timezone {
 public:
     timezone() = default; // an invalid timezone
     timezone(std::int32_t _east_of_utc, const char* _tz_name); // a fixed timezone
-    timezone(const timezone& _another);
     ~timezone() = default;;
 
+    timezone(const timezone& _another);
     auto operator=(const timezone& _another) -> timezone&;
 
     static auto utc() -> timezone;
