@@ -19,12 +19,12 @@ namespace util {
 
     HARE_API auto system_dir() -> std::string;
     HARE_API auto hostname() -> std::string;
-    HARE_API auto pid() -> int32_t;
+    HARE_API auto pid() -> std::int32_t;
     HARE_API auto page_size() -> std::size_t;
-    HARE_API auto cpu_usage(int32_t _pid) -> double;
+    HARE_API auto cpu_usage(std::int32_t _pid) -> double;
     HARE_API auto stack_trace(bool _demangle) -> std::string;
     HARE_API auto set_thread_name(const char* _tname) -> bool;
-    HARE_API auto errnostr(int _errorno) -> const char*;
+    HARE_API auto errnostr(std::int32_t _errorno) -> const char*;
 
     HARE_API auto open_s(std::FILE** _fp, const filename_t& _filename, const filename_t& _mode) -> bool;
     HARE_API auto fexists(const filename_t& _filepath) -> bool;

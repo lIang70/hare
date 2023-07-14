@@ -23,16 +23,16 @@ namespace util {
     HARE_CLASS_API
     class HARE_API count_down_latch {
         mutable std::mutex mutex_ {};
-        uint32_t count_ { 0 };
+        std::uint32_t count_ { 0 };
         std::condition_variable cv_ {};
 
     public:
-        explicit count_down_latch(uint32_t count);
+        explicit count_down_latch(std::uint32_t count);
         ~count_down_latch();
 
         void count_down();
-        void await(int32_t milliseconds = 0);
-        auto count() -> uint32_t;
+        void await(std::int32_t milliseconds = 0);
+        auto count() -> std::uint32_t;
     };
 
 } // namespace util

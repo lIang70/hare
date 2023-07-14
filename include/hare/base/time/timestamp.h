@@ -14,13 +14,13 @@
 
 #include <hare/base/fwd.h>
 
-#define HARE_MICROSECONDS_PER_SECOND (1000 * 1000)
+#define HARE_MICROSECONDS_PER_SECOND (1000000)
 
 namespace hare {
 
 HARE_CLASS_API
 class HARE_API timestamp {
-    int64_t microseconds_since_epoch_ { -1 };
+    std::int64_t microseconds_since_epoch_ { -1 };
 
 public:
     /**
@@ -38,21 +38,21 @@ public:
         return from_unix_time(_time, 0);
     }
 
-    static auto from_unix_time(time_t _time, int64_t _microseconds) -> timestamp
+    static auto from_unix_time(time_t _time, std::int64_t _microseconds) -> timestamp
     {
-        return timestamp(_time * static_cast<int64_t>(HARE_MICROSECONDS_PER_SECOND) + _microseconds);
+        return timestamp(_time * HARE_MICROSECONDS_PER_SECOND + _microseconds);
     }
 
     static auto difference(timestamp& _high, timestamp& _low) -> double
     {
-        int64_t diff = _high.microseconds_since_epoch() - _low.microseconds_since_epoch();
+        auto diff = _high.microseconds_since_epoch() - _low.microseconds_since_epoch();
         return static_cast<double>(diff) / HARE_MICROSECONDS_PER_SECOND;
     }
 
     timestamp() = default;
     ~timestamp() = default;
 
-    explicit timestamp(int64_t _micro_seconds_since_epoch)
+    explicit timestamp(std::int64_t _micro_seconds_since_epoch)
         : microseconds_since_epoch_(_micro_seconds_since_epoch)
     {
     }
@@ -62,11 +62,11 @@ public:
     HARE_INLINE
     auto valid() const -> bool { return microseconds_since_epoch_ > 0; }
     HARE_INLINE
-    auto microseconds_since_epoch() const -> int64_t { return microseconds_since_epoch_; }
+    auto microseconds_since_epoch() const -> std::int64_t { return microseconds_since_epoch_; }
     HARE_INLINE
     auto seconds_since_epoch() const -> time_t
     {
-        return static_cast<time_t>(microseconds_since_epoch_ / static_cast<int64_t>(HARE_MICROSECONDS_PER_SECOND));
+        return static_cast<time_t>(microseconds_since_epoch_ / HARE_MICROSECONDS_PER_SECOND);
     }
 
     HARE_INLINE

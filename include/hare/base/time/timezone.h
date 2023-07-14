@@ -23,7 +23,7 @@ class HARE_API timezone {
 
 public:
     timezone() = default; // an invalid timezone
-    timezone(int _east_of_utc, const char* _tz_name); // a fixed timezone
+    timezone(std::int32_t _east_of_utc, const char* _tz_name); // a fixed timezone
     timezone(const timezone& _another);
     ~timezone() = default;;
 
@@ -31,15 +31,15 @@ public:
 
     static auto utc() -> timezone;
     // gmtime(3)
-    static auto to_utc_time(int64_t _seconds_since_epoch) -> time::date_time;
+    static auto to_utc_time(std::int64_t _seconds_since_epoch) -> time::date_time;
     // timegm(3)
-    static auto from_utc_time(const time::date_time& _dt) -> int64_t;
+    static auto from_utc_time(const time::date_time& _dt) -> std::int64_t;
 
     HARE_INLINE
     explicit operator bool() const { return bool(data_); }
 
-    auto to_local(int64_t _seconds_since_epoch, int* _utc_offset = nullptr) const -> time::date_time;
-    auto from_local(const time::date_time& _dt, bool _post_transition = false) const -> int64_t;
+    auto to_local(std::int64_t _seconds_since_epoch, std::int32_t* _utc_offset = nullptr) const -> time::date_time;
+    auto from_local(const time::date_time& _dt, bool _post_transition = false) const -> std::int64_t;
 };
 
 } // namespace hare

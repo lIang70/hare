@@ -26,13 +26,13 @@ namespace time {
      *   A minute is always 60 seconds, no leap seconds.
      **/
     HARE_CLASS_API
-    class HARE_API date_time {
-        int32_t year_ { HARE_START_YEAR }; // [1900, 2500]
-        int32_t month_ { 1 }; // [1, 12]
-        int32_t day_ { 1 }; // [1, 31]
-        int32_t hour_ { 0 }; // [0, 23]
-        int32_t minute_ { 0 }; // [0, 59]
-        int32_t second_ { 0 }; // [0, 59]
+    struct HARE_API date_time {
+        std::int32_t year_ { HARE_START_YEAR }; // [1900, 2500]
+        std::int32_t month_ { 1 }; // [1, 12]
+        std::int32_t day_ { 1 }; // [1, 31]
+        std::int32_t hour_ { 0 }; // [0, 23]
+        std::int32_t minute_ { 0 }; // [0, 59]
+        std::int32_t second_ { 0 }; // [0, 59]
 
     public:
         date_time() = default;
@@ -42,44 +42,32 @@ namespace time {
         auto to_fmt() const -> std::string;
 
         HARE_INLINE
-        auto year() -> int32_t& { return year_; }
+        auto year() const -> std::int32_t { return year_; }
         HARE_INLINE
-        auto year() const -> int32_t { return year_; }
+        auto month() const -> std::int32_t { return month_; }
         HARE_INLINE
-        auto month() -> int32_t& { return month_; }
+        auto day() const -> std::int32_t { return day_; }
         HARE_INLINE
-        auto month() const -> int32_t { return month_; }
+        auto hour() const -> std::int32_t { return hour_; }
         HARE_INLINE
-        auto day() -> int32_t& { return day_; }
+        auto minute() const -> std::int32_t { return minute_; }
         HARE_INLINE
-        auto day() const -> int32_t { return day_; }
-        HARE_INLINE
-        auto hour() -> int32_t& { return hour_; }
-        HARE_INLINE
-        auto hour() const -> int32_t { return hour_; }
-        HARE_INLINE
-        auto minute() -> int32_t& { return minute_; }
-        HARE_INLINE
-        auto minute() const -> int32_t { return minute_; }
-        HARE_INLINE
-        auto second() -> int32_t& { return second_; }
-        HARE_INLINE
-        auto second() const -> int32_t { return second_; }
+        auto second() const -> std::int32_t { return second_; }
     };
 
     HARE_CLASS_API
     class HARE_API date {
-        int32_t julian_day_number_ { 0 };
+        std::int32_t julian_day_number_ { 0 };
 
     public:
         struct ymd {
-            int32_t year; // [1900..2500]
-            int32_t month; // [1..12]
-            int32_t day; // [1..31]
+            std::int32_t year; // [1900..2500]
+            std::int32_t month; // [1..12]
+            std::int32_t day; // [1..31]
         };
 
-        static const int32_t DAYS_PER_WEEK;
-        static const int32_t JULIAN_DAY_OF_19700101;
+        static const std::int32_t DAYS_PER_WEEK;
+        static const std::int32_t JULIAN_DAY_OF_19700101;
 
         date() = default;
 
@@ -88,9 +76,9 @@ namespace time {
          *
          *   1 <= month <= 12
          **/
-        date(int32_t _year, int32_t _month, int32_t _day);
+        date(std::int32_t _year, std::int32_t _month, std::int32_t _day);
 
-        explicit date(int32_t _julian_day_number)
+        explicit date(std::int32_t _julian_day_number)
             : julian_day_number_(_julian_day_number)
         {
         }
@@ -113,17 +101,17 @@ namespace time {
 
         auto detail() const -> struct ymd;
 
-        auto year() const -> int32_t
+        auto year() const -> std::int32_t
         {
             return detail().year;
         }
 
-        auto month() const -> int32_t
+        auto month() const -> std::int32_t
         {
             return detail().month;
         }
 
-        auto day() const -> int32_t
+        auto day() const -> std::int32_t
         {
             return detail().day;
         }
@@ -131,12 +119,12 @@ namespace time {
         /**
          * @brief [0, 1, ..., 6] => [Sunday, Monday, ..., Saturday ]
          **/
-        auto week_day() const -> int32_t
+        auto week_day() const -> std::int32_t
         {
             return (julian_day_number_ + 1) % DAYS_PER_WEEK;
         }
 
-        auto julian_day_number() const -> int32_t { return julian_day_number_; }
+        auto julian_day_number() const -> std::int32_t { return julian_day_number_; }
     };
 
     HARE_API

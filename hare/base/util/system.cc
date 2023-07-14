@@ -260,7 +260,7 @@ namespace util {
         return ret != -1;
     }
 
-    auto errnostr(int _errorno) -> const char*
+    auto errnostr(std::int32_t _errorno) -> const char*
     {
         static thread_local std::array<char, static_cast<std::size_t>(HARE_SMALL_FIXED_SIZE * HARE_SMALL_FIXED_SIZE) / 2> t_errno_buf;
         ::strerror_r(_errorno, t_errno_buf.data(), t_errno_buf.size());

@@ -15,12 +15,12 @@ namespace detail {
     static void fill_hms(std::uint32_t _seconds, struct time::date_time* _sdt)
     {
         auto minutes = static_cast<std::int32_t>(_seconds) / SECONDS_PER_MINUTE;
-        _sdt->hour() = minutes / MINUTES_PER_HOUR;
-        _sdt->minute() = minutes - _sdt->hour() * MINUTES_PER_HOUR;
-        _sdt->second() = static_cast<std::int32_t>(_seconds) - minutes * SECONDS_PER_MINUTE;
+        _sdt->hour_ = minutes / MINUTES_PER_HOUR;
+        _sdt->minute_ = minutes - _sdt->hour() * MINUTES_PER_HOUR;
+        _sdt->second_ = static_cast<std::int32_t>(_seconds) - minutes * SECONDS_PER_MINUTE;
     }
 
-    auto break_time(std::int64_t _time) -> time::date_time
+    auto break_time(std::int64_t _time) -> struct time::date_time
     {
         struct time::date_time sdt;
         auto seconds = static_cast<std::int32_t>(_time % static_cast<std::int64_t>(SECONDS_PER_DAY));
@@ -34,9 +34,9 @@ namespace detail {
         detail::fill_hms(seconds, &sdt);
         time::date date(days + time::date::JULIAN_DAY_OF_19700101);
         time::date::ymd ymd = date.detail();
-        sdt.year() = ymd.year;
-        sdt.month() = ymd.month;
-        sdt.day() = ymd.day;
+        sdt.year_ = ymd.year;
+        sdt.month_ = ymd.month;
+        sdt.day_ = ymd.day;
 
         return sdt;
     }
@@ -253,7 +253,8 @@ auto timezone::operator=(const timezone& another) -> timezone&
     return (*this);
 }
 
-auto timezone::to_local(std::int64_t _seconds, std::int32_t* _utc_offset) const -> struct time::date_time {
+auto timezone::to_local(std::int64_t _seconds, std::int32_t* _utc_offset) const -> struct time::date_time
+{
     struct time::date_time localTime;
     assert(data_ != nullptr);
 
@@ -281,12 +282,12 @@ auto timezone::from_local(const struct time::date_time& _dt, bool _post_transiti
     return local_seconds;
 }
 
-auto timezone::to_utc_time(std::int64_t _seconds_since_epoch) -> time::date_time
+auto timezone::to_utc_time(std::int64_t _seconds_since_epoch) -> struct time::date_time
 {
     return detail::break_time(_seconds_since_epoch);
 }
 
-auto timezone::from_utc_time(const time::date_time& _dt) -> std::int64_t
+auto timezone::from_utc_time(const struct time::date_time& _dt) -> std::int64_t
 {
     time::date date(_dt.year(), _dt.month(), _dt.day());
     auto seconds_in_day = _dt.hour() * (MINUTES_PER_HOUR * SECONDS_PER_MINUTE) + _dt.minute() * SECONDS_PER_MINUTE + _dt.second();
