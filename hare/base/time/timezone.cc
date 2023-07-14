@@ -1,7 +1,6 @@
 #include <hare/base/time/timezone.h>
 
 #include <algorithm>
-#include <string>
 #include <vector>
 
 #define HOURS_PER_DAY 24

@@ -14,8 +14,6 @@
 
 #include <hare/base/fwd.h>
 
-#include <string>
-
 #define HARE_MICROSECONDS_PER_SECOND (1000 * 1000)
 
 namespace hare {

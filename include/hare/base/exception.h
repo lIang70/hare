@@ -15,7 +15,6 @@
 #include <hare/base/fwd.h>
 
 #include <exception>
-#include <string>
 
 namespace hare {
 

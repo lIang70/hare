@@ -77,7 +77,30 @@ namespace log {
         return iter != name_to_level.end() ? iter->second : LEVEL_NBRS;
     }
 
+    HARE_CLASS_API
+    struct HARE_API source_loc {
+        const char* filename_ { nullptr };
+        const char* funcname_ { nullptr };
+        std::int32_t line_ { 0 };
+
+        constexpr source_loc() = default;
+        constexpr source_loc(const char* _filename, std::int32_t _line, const char* _funcname)
+            : filename_ { _filename }
+            , funcname_ { _funcname }
+            , line_ { _line }
+        {
+        }
+
+        HARE_INLINE
+        auto empty() const noexcept -> bool
+        {
+            return line_ == 0;
+        }
+    };
+
     namespace details {
+
+        using msg_buffer_t = fmt::basic_memory_buffer<char, 256>;
 
         HARE_CLASS_API
         struct HARE_API msg : public util::non_copyable {
@@ -86,9 +109,10 @@ namespace log {
             std::uint64_t tid_ { 0 };
             std::uint64_t id_ { 0 };
             timestamp stamp_ { timestamp::now() };
-            fmt::memory_buffer raw_ {};
+            msg_buffer_t raw_ {};
+            source_loc loc_;
 
-            msg(const std::string* _name, LEVEL _level);
+            msg(const std::string* _name, LEVEL _level, source_loc _loc);
         };
 
     } // namespace details

@@ -15,7 +15,6 @@
 #include <hare/base/fwd.h>
 
 #include <ctime>
-#include <string>
 
 #define HARE_START_YEAR 1900
 

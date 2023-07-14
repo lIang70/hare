@@ -21,9 +21,6 @@
 namespace hare {
 namespace log {
 
-    /**
-     * @brief The interface class of log.
-     **/
     HARE_CLASS_API
     class HARE_API logger : public util::non_copyable {
         using backend_list = std::vector<ptr<backend>>;
@@ -73,14 +70,14 @@ namespace log {
         }
 
         template <typename... Args>
-        HARE_INLINE void log(LEVEL _level, fmt::format_string<Args...> _fmt, const Args&... _args)
+        HARE_INLINE void log(source_loc _loc, LEVEL _level, fmt::format_string<Args...> _fmt, const Args&... _args)
         {
             if (!check(_level)) {
                 return;
             }
 
             try {
-                details::msg msg(&name_, _level);
+                details::msg msg(&name_, _level, _loc);
                 fmt::vformat_to(msg.raw_, _fmt, fmt::make_format_args(_args...));
                 sink_it(msg);
             } catch (const hare::exception& e) {
@@ -91,39 +88,39 @@ namespace log {
         }
 
         template <typename... Args>
-        HARE_INLINE void trace(fmt::format_string<Args...> _fmt, const Args&... _args)
+        HARE_INLINE void trace(source_loc _loc, fmt::format_string<Args...> _fmt, const Args&... _args)
         {
-            log(LEVEL_TRACE, _fmt, _args...);
+            log(_loc, LEVEL_TRACE, _fmt, _args...);
         }
 
         template <typename... Args>
-        HARE_INLINE void debug(fmt::format_string<Args...> _fmt, const Args&... _args)
+        HARE_INLINE void debug(source_loc _loc, fmt::format_string<Args...> _fmt, const Args&... _args)
         {
-            log(LEVEL_DEBUG, _fmt, _args...);
+            log(_loc, LEVEL_DEBUG, _fmt, _args...);
         }
 
         template <typename... Args>
-        HARE_INLINE void info(fmt::format_string<Args...> _fmt, const Args&... _args)
+        HARE_INLINE void info(source_loc _loc, fmt::format_string<Args...> _fmt, const Args&... _args)
         {
-            log(LEVEL_INFO, _fmt, _args...);
+            log(_loc, LEVEL_INFO, _fmt, _args...);
         }
 
         template <typename... Args>
-        HARE_INLINE void warning(fmt::format_string<Args...> _fmt, const Args&... _args)
+        HARE_INLINE void warning(source_loc _loc, fmt::format_string<Args...> _fmt, const Args&... _args)
         {
-            log(LEVEL_WARNING, _fmt, _args...);
+            log(_loc, LEVEL_WARNING, _fmt, _args...);
         }
 
         template <typename... Args>
-        HARE_INLINE void error(fmt::format_string<Args...> _fmt, const Args&... _args)
+        HARE_INLINE void error(source_loc _loc, fmt::format_string<Args...> _fmt, const Args&... _args)
         {
-            log(LEVEL_ERROR, _fmt, _args...);
+            log(_loc, LEVEL_ERROR, _fmt, _args...);
         }
 
         template <typename... Args>
-        HARE_INLINE void fatal(fmt::format_string<Args...> _fmt, const Args&... _args)
+        HARE_INLINE void fatal(source_loc _loc, fmt::format_string<Args...> _fmt, const Args&... _args)
         {
-            log(LEVEL_FATAL, _fmt, _args...);
+            log(_loc, LEVEL_FATAL, _fmt, _args...);
         }
 
         logger(std::string _unique_name, backend_list _backends);
@@ -153,11 +150,11 @@ namespace log {
 } // namespace log
 } // namespace hare
 
-#define LOG_TRACE(logger, format, ...) logger->trace(format, ##__VA_ARGS_)
-#define LOG_DEBUG(logger, format, ...) logger->debug(format, ##__VA_ARGS_)
-#define LOG_INFO(logger, format, ...) logger->info(format, ##__VA_ARGS_)
-#define LOG_WARNING(logger, format, ...) logger->warning(format, ##__VA_ARGS_)
-#define LOG_ERROR(logger, format, ...) logger->error(format, ##__VA_ARGS_)
-#define LOG_FATAL(logger, format, ...) logger->fatal(format, ##__VA_ARGS_)
+#define LOG_TRACE(logger, format, ...) logger->trace({ __FILE__, __LINE__, __func__ }, format, ##__VA_ARGS_)
+#define LOG_DEBUG(logger, format, ...) logger->debug({ __FILE__, __LINE__, __func__ }, format, ##__VA_ARGS_)
+#define LOG_INFO(logger, format, ...) logger->info({ __FILE__, __LINE__, __func__ }, format, ##__VA_ARGS_)
+#define LOG_WARNING(logger, format, ...) logger->warning({ __FILE__, __LINE__, __func__ }, format, ##__VA_ARGS_)
+#define LOG_ERROR(logger, format, ...) logger->error({ __FILE__, __LINE__, __func__ }, format, ##__VA_ARGS_)
+#define LOG_FATAL(logger, format, ...) logger->fatal({ __FILE__, __LINE__, __func__ }, format, ##__VA_ARGS_)
 
 #endif // !_HARE_LOG_LOGGING_H_

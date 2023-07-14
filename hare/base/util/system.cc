@@ -1,8 +1,5 @@
-#include <cstddef>
-#include <cstdint>
-#include <hare/base/util/system_info.h>
-
 #include <hare/base/exception.h>
+#include <hare/base/util/system.h>
 #include <hare/base/util/system_check.h>
 
 #include <array>
@@ -14,6 +11,7 @@
 #include <cxxabi.h>
 #include <execinfo.h>
 #include <sys/prctl.h>
+#include <sys/stat.h>
 #include <unistd.h>
 #endif
 
@@ -97,7 +95,6 @@ namespace util {
 
             return (user_time + nice_time + system_time + idle_time);
 #endif
-            return 0;
         }
 
         static auto get_cpu_proc_occupy(std::int32_t _pid) -> std::uint64_t
@@ -199,7 +196,7 @@ namespace util {
 #endif
     }
 
-    auto stack_trace(bool demangle) -> std::string
+    auto stack_trace(bool _demangle) -> std::string
     {
         static const auto MAX_STACK_FRAMES = 20;
 #ifdef H_OS_LINUX
@@ -213,10 +210,10 @@ namespace util {
             return stack;
         }
         std::size_t len = DEMANGLE_SIZE;
-        auto* demangled = demangle ? static_cast<char*>(::malloc(len)) : nullptr;
+        auto* demangled = _demangle ? static_cast<char*>(::malloc(len)) : nullptr;
         for (auto i = 1; i < nptrs; ++i) {
             // skipping the 0-th, which is this function.
-            if (demangle) {
+            if (_demangle) {
                 // https://panthema.net/2008/0901-stacktrace-demangled/
                 // bin/exception_test(_ZN3Bar4testEv+0x79) [0x401909]
                 char* left_par = nullptr;
@@ -254,22 +251,72 @@ namespace util {
 #endif
     }
 
-    auto set_thread_name(const char* tname) -> bool
+    auto set_thread_name(const char* _tname) -> bool
     {
+        auto ret = -1;
 #ifdef H_OS_LINUX
-        auto ret = ::prctl(PR_SET_NAME, tname);
-        if (ret == -1) {
-            return false;
-        }
+        ret = ::prctl(PR_SET_NAME, _tname);
 #endif
-        return true;
+        return ret != -1;
     }
 
     auto errnostr(int _errorno) -> const char*
     {
-        static thread_local std::array<char, static_cast<std::size_t>(HARE_SMALL_FIXED_SIZE* HARE_SMALL_FIXED_SIZE) / 2> t_errno_buf;
+        static thread_local std::array<char, static_cast<std::size_t>(HARE_SMALL_FIXED_SIZE * HARE_SMALL_FIXED_SIZE) / 2> t_errno_buf;
         ::strerror_r(_errorno, t_errno_buf.data(), t_errno_buf.size());
         return t_errno_buf.data();
+    }
+
+    auto open_s(std::FILE** _fp, const filename_t& _filename, const filename_t& _mode) -> bool
+    {
+#if defined(H_OS_WIN32) && HARE_WCHAR_FILENAME
+        *fp = ::_wfsopen((_filename.c_str()), _mode.c_str(), _SH_DENYWR);
+#elif defined(H_OS_WIN32)
+        *fp = ::_fsopen((_filename.c_str()), _mode.c_str(), _SH_DENYWR);
+#else // unix
+        *_fp = ::fopen((_filename.c_str()), _mode.c_str());
+#endif
+        return *_fp != nullptr;
+    }
+
+    auto fexists(const filename_t& _filepath) -> bool
+    {
+#if defined(H_OS_LINUX) // common linux/unix all have the stat system call
+        struct stat buffer { };
+        return (::stat(_filepath.c_str(), &buffer) == 0);
+#endif
+    }
+
+    auto fsize(std::FILE* _fp) -> std::size_t
+    {
+        if (_fp == nullptr) {
+            return 0;
+        }
+#if defined(H_OS_LINUX)
+        auto fd = ::fileno(_fp);
+#ifdef __USE_LARGEFILE64
+#define STAT struct stat64
+#define FSTAT fstat64
+#else
+#define STAT struct stat
+#define FSTAT fstat
+#endif
+        STAT st {};
+        if (FSTAT(fd, &st) == 0) {
+            return static_cast<std::size_t>(st.st_size);
+        } else {
+            return 0;
+        }
+#undef STAT
+#undef FSTAT
+#endif
+    }
+
+    auto fsync(std::FILE* _fp) -> bool
+    {
+#if defined(H_OS_LINUX)
+        return ::fsync(::fileno(_fp)) == 0;
+#endif
     }
 
 } // namespace util

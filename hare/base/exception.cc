@@ -1,6 +1,6 @@
 #include <hare/base/exception.h>
 
-#include <hare/base/util/system_info.h>
+#include <hare/base/util/system.h>
 
 namespace hare {
 

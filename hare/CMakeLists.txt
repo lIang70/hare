@@ -224,7 +224,9 @@ file(GLOB HARE_LOG_SOURCES
 add_library(hare_log ${HARE__LIBRARY_TYPE} ${HARE_LOG_SOURCES})
 target_include_directories(hare_log PUBLIC ${CMAKE_SOURCE_DIR}/include)
 if(JEMALLOC_FOUND)
-    target_link_libraries(hare_log PkgConfig::Jemalloc)
+    target_link_libraries(hare_log hare_base PkgConfig::Jemalloc)
+else()
+    target_link_libraries(hare_log hare_base)
 endif()
 
 if(EXISTS "${CMAKE_SOURCE_DIR}/lib/openssl/" AND IS_DIRECTORY "${CMAKE_SOURCE_DIR}/lib/openssl/")

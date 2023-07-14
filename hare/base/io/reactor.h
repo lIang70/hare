@@ -7,7 +7,6 @@
 #include <list>
 #include <map>
 #include <queue>
-#include <string>
 
 #define POLL_TIME_MICROSECONDS 1000000
 

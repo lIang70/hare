@@ -71,6 +71,7 @@
 #include <cinttypes>
 #include <cstring>
 #include <functional>
+#include <string>
 #include <memory>
 
 #include <hare/base/util/system_check.h>
@@ -83,11 +84,35 @@ using util_socket_t = intptr_t;
 using util_socket_t = int;
 #endif
 
-template <typename T> using ptr = std::shared_ptr<T>;
-template <typename T> using wptr = std::weak_ptr<T>;
-template <typename T> using uptr = std::unique_ptr<T>;
+template <typename T>
+using ptr = std::shared_ptr<T>;
+template <typename T>
+using wptr = std::weak_ptr<T>;
+template <typename T>
+using uptr = std::unique_ptr<T>;
 using task = std::function<void()>;
 using log_handler = std::function<void(std::string)>;
+#if defined(H_OS_WIN32) && defined(HARE_WCHAR_FILENAME)
+using filename_t = std::wstring;
+HARE_INLINE
+std::string filename_to_str(const filename_t& filename)
+{
+    std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t> c;
+    return c.to_bytes(filename);
+}
+
+#define HARE_FILENAME_T_INNER(s) L##s
+#define HARE_FILENAME_T(s) HARE_FILENAME_T_INNER(s)
+#else
+using filename_t = std::string;
+HARE_INLINE
+std::string filename_to_str(const filename_t& filename)
+{
+    return filename;
+}
+
+#define HARE_FILENAME_T(s) s
+#endif
 
 // Suppresses "unused variable" warnings with the method described in
 // https://herbsutter.com/2009/10/18/mailbag-shutting-up-compiler-warnings/.
