@@ -20,6 +20,39 @@
 namespace hare {
 namespace log {
 
+    namespace detail {
+
+        template <std::uint64_t MaxSize = details::inline_buffer_size>
+        struct rotate_file {
+            std::int32_t rotate_id_ { 0 };
+            std::int32_t max_files_ { 0 };
+
+            explicit rotate_file(std::int32_t _max_files)
+                : max_files_(_max_files)
+            {
+            }
+
+            HARE_INLINE
+            auto get_name(const filename_t& _basename) -> filename_t
+            {
+                auto tmp = rotate_id_++;
+                if (max_files_ > 0) {
+                    rotate_id_ %= max_files_;
+                }
+                return fmt::format("{}.{}.log", filename_to_str(_basename), rotate_id_);
+            }
+
+            template <bool WithLock>
+            HARE_INLINE
+            auto should_rotate(const details::msg& _msg, const details::file<WithLock>& _file) -> bool
+            {
+                ignore_unused(_msg);
+                return _file.size() >= MaxSize;
+            }
+        };
+
+    } // detail
+
     template <typename Mutex, typename FileNameGenerator>
     class file_backend final : public base_backend<Mutex> {
         FileNameGenerator generator_ {};
@@ -31,7 +64,7 @@ namespace log {
     public:
         explicit file_backend(filename_t _basename, std::int32_t _max_files = -1, bool _rotate = true)
             : basename_(std::move(_basename))
-            , generator_(_rotate)
+            , generator_(_max_files)
             , max_files_(_max_files)
             , filename_history_(_max_files > 0 ? _max_files : 0)
         {

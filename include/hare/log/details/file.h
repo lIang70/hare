@@ -23,7 +23,7 @@ namespace log {
 
     namespace details {
 
-        enum { inline_buffer_size = 128 * 1024 };
+        enum { inline_buffer_size = 64 * 1024 };
 
         template <bool WithLock = false, std::size_t Size = inline_buffer_size>
         class file : public util::non_copyable {
