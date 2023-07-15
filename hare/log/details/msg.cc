@@ -44,7 +44,7 @@ namespace log {
         {
             auto microseconds { 0 };
             const auto& stamp = log_time(_msg, microseconds);
-            const auto* level = to_str(static_cast<LEVEL>(_msg.level_.load()));
+            const auto* level = to_str(static_cast<LEVEL>(_msg.level_));
             _msg.raw_[_msg.raw_.size()] = '\0';
             
             // [LEVEL] (stamp) <tid> msg (loc)

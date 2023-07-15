@@ -31,11 +31,11 @@ namespace log {
     public:
         virtual ~backend() = default;
 
-        virtual void log(const details::msg& msg) = 0;
+        virtual void log(details::msg& msg) = 0;
         virtual void flush() = 0;
 
         HARE_INLINE
-        auto check(LEVEL _msg_level) const -> bool
+        auto check(std::int8_t _msg_level) const -> bool
         {
             return _msg_level < level_.load(std::memory_order_relaxed);
         }
@@ -57,12 +57,12 @@ namespace log {
     class base_backend : public backend
                        , public util::non_copyable {
     protected:
-        Mutex mutex_ {};
+        mutable Mutex mutex_ {};
 
     public:
         base_backend() = default;
 
-        void log(const details::msg& _msg) final
+        void log(details::msg& _msg) final
         {
             std::lock_guard<Mutex> lock(mutex_);
             inner_sink_it(_msg);
@@ -75,7 +75,7 @@ namespace log {
         }
 
     protected:
-        virtual void inner_sink_it(const details::msg& _msg) = 0;
+        virtual void inner_sink_it(details::msg& _msg) = 0;
         virtual void inner_flush() = 0;
     };
 

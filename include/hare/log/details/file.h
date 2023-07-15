@@ -27,18 +27,6 @@ namespace log {
 
         template <bool WithLock = false, std::size_t Size = inline_buffer_size>
         class file : public util::non_copyable {
-            std::FILE* fp_ {};
-            std::size_t written_bytes_ { 0 };
-            filename_t filename_ {};
-            fmt::basic_memory_buffer<char, Size> buffer_ {};
-
-        protected:
-            ~file()
-            {
-                close();
-            }
-
-        public:
             struct write_unlock {
                 HARE_INLINE
                 auto operator()(const void* _ptr, std::size_t _size,
@@ -57,8 +45,22 @@ namespace log {
                 }
             };
 
+            std::FILE* fp_ {};
+            std::size_t written_bytes_ { 0 };
+            filename_t filename_ {};
+            fmt::basic_memory_buffer<char, Size> buffer_ {};
+
+        public:
+            ~file()
+            {
+                close();
+            }
+
             HARE_INLINE
             auto written_bytes() const -> size_t { return written_bytes_; }
+
+            HARE_INLINE
+            auto name() const -> filename_t { return filename_; }
 
             HARE_INLINE
             void open(const filename_t& _file, bool truncate = false)
@@ -68,12 +70,13 @@ namespace log {
                 if (!util::open_s(&fp_, _file, mode)) {
                     throw exception("Failed opening file " + filename_to_str(_file) + " for writing");
                 } else {
+                    filename_ = _file;
                     ignore_unused(std::setvbuf(fp_, buffer_.data(), _IOFBF, Size));
                 }
             }
 
             HARE_INLINE
-            void reopen(bool truncate)
+            void reopen(bool truncate = false)
             {
                 if (filename_.empty()) {
                     throw exception("Failed re opening file - was not opened before");

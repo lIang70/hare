@@ -28,6 +28,7 @@ namespace util {
 
     HARE_API auto open_s(std::FILE** _fp, const filename_t& _filename, const filename_t& _mode) -> bool;
     HARE_API auto fexists(const filename_t& _filepath) -> bool;
+    HARE_API auto fremove(const filename_t& _filepath) -> bool;
     HARE_API auto fsize(std::FILE* _fp) -> std::size_t;
     HARE_API auto fsync(std::FILE* _fp) -> bool;
 

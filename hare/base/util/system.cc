@@ -286,6 +286,15 @@ namespace util {
         return (::stat(_filepath.c_str(), &buffer) == 0);
 #endif
     }
+    
+    auto fremove(const filename_t& _filepath) -> bool
+    {
+        if (!fexists(_filepath)) {
+            return false;
+        }
+
+        return std::remove(filename_to_str(_filepath).c_str()) == 0;
+    }
 
     auto fsize(std::FILE* _fp) -> std::size_t
     {

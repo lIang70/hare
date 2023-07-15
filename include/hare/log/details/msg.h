@@ -124,7 +124,7 @@ namespace log {
         struct HARE_API msg : public util::non_copyable {
             const std::string* name_ {};
             const timezone* timezone_ {};
-            level_t level_ { LEVEL_NBRS };
+            std::int8_t level_ { LEVEL_NBRS };
             std::uint64_t tid_ { 0 };
             std::uint64_t id_ { 0 };
             timestamp stamp_ { timestamp::now() };
