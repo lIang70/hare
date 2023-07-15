@@ -13,6 +13,7 @@
 #ifndef _HARE_LOG_BACKEND_BASE_H_
 #define _HARE_LOG_BACKEND_BASE_H_
 
+#include <hare/base/util/thread_pool.h>
 #include <hare/log/details/msg.h>
 
 #include <atomic>
@@ -21,14 +22,11 @@
 namespace hare {
 namespace log {
 
-    using POLICY = enum {
-        POLICY_BLOCK_RETRY, // Block / yield / sleep until message can be enqueued
-        POLICY_DISCARD // Discard the message it enqueue fails
-    };
+    using POLICY = hare::util::POLICY;
 
     HARE_CLASS_API
     class HARE_API backend {
-        std::atomic<std::int8_t> level_ {};
+        level_t level_ {};
 
     public:
         virtual ~backend() = default;

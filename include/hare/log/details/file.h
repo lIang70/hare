@@ -68,7 +68,7 @@ namespace log {
                 if (!util::open_s(&fp_, _file, mode)) {
                     throw exception("Failed opening file " + filename_to_str(_file) + " for writing");
                 } else {
-                    ::setbuffer(fp_, buffer_.data(), Size);
+                    ignore_unused(std::setvbuf(fp_, buffer_.data(), _IOFBF, Size));
                 }
             }
 
