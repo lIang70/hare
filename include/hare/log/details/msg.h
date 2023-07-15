@@ -14,6 +14,7 @@
 #define _HARE_LOG_DETAILS_MSG_H_
 
 #include <hare/base/time/timestamp.h>
+#include <hare/base/time/timezone.h>
 #include <hare/base/util/non_copyable.h>
 #include <hare/log/details/dummy.h>
 
@@ -21,6 +22,22 @@
 #include <fmt/format.h>
 
 #include <unordered_map>
+
+#if !defined(HARE_EOL)
+#ifdef H_OS_WIN32
+#define HARE_EOL "\r\n"
+#else
+#define HARE_EOL "\n"
+#endif
+#endif
+
+#if !defined(HARE_SLASH)
+#ifdef H_OS_WIN32
+#define HARE_SLASH '\\'
+#else
+#define HARE_SLASH '/'
+#endif
+#endif
 
 namespace hare {
 namespace log {
@@ -84,11 +101,12 @@ namespace log {
         std::int32_t line_ { 0 };
 
         constexpr source_loc() = default;
-        constexpr source_loc(const char* _filename, std::int32_t _line, const char* _funcname)
-            : filename_ { _filename }
-            , funcname_ { _funcname }
+        HARE_INLINE source_loc(const char* _filename, std::int32_t _line, const char* _funcname)
+            : funcname_ { _funcname }
             , line_ { _line }
         {
+            const auto* slash = std::strrchr(_filename, HARE_SLASH);
+            filename_ = slash != nullptr ? slash + 1 : _filename;
         }
 
         HARE_INLINE
@@ -105,6 +123,7 @@ namespace log {
         HARE_CLASS_API
         struct HARE_API msg : public util::non_copyable {
             const std::string* name_ {};
+            const timezone* timezone_ {};
             LEVEL level_ { LEVEL_NBRS };
             std::uint64_t tid_ { 0 };
             std::uint64_t id_ { 0 };
@@ -112,8 +131,10 @@ namespace log {
             msg_buffer_t raw_ {};
             source_loc loc_;
 
-            msg(const std::string* _name, LEVEL _level, source_loc _loc);
+            msg(const std::string* _name, const timezone* _timezone, LEVEL _level, source_loc _loc);
         };
+
+        HARE_API void format_msg(msg& _msg, msg_buffer_t& _fotmatted);
 
     } // namespace details
 } // namespace log

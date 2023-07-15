@@ -118,6 +118,7 @@ namespace log {
                 if (inner_write(_buffer.data(), 1, buffer_size, fp_) != buffer_size) {
                     throw exception("Failed writing to file " + filename_to_str(filename_));
                 }
+                written_bytes_ += buffer_size;
             }
         };
 

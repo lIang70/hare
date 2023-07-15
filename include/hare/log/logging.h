@@ -28,6 +28,7 @@ namespace log {
         level_t level_ { LEVEL_TRACE };
         level_t flush_level_ { LEVEL_WARNING };
         std::atomic<std::uint64_t> msg_id_ { 0 };
+        timezone timezone_ {};
         std::string name_ {};
         log_handler error_handle_ {};
         std::vector<ptr<backend>> backends_ {};
@@ -58,6 +59,12 @@ namespace log {
         }
 
         HARE_INLINE
+        void set_timezone(const timezone& _tz)
+        {
+            timezone_ = _tz;
+        }
+
+        HARE_INLINE
         auto name() const -> std::string
         {
             return name_;
@@ -77,7 +84,7 @@ namespace log {
             }
 
             try {
-                details::msg msg(&name_, _level, _loc);
+                details::msg msg(&name_, &timezone_, _level, _loc);
                 fmt::vformat_to(msg.raw_, _fmt, fmt::make_format_args(_args...));
                 sink_it(msg);
             } catch (const hare::exception& e) {
@@ -138,7 +145,7 @@ namespace log {
         }
 
         HARE_INLINE
-        auto should_flush_on(const details::msg& _msg) ->bool
+        auto should_flush_on(const details::msg& _msg) -> bool
         {
             const auto flush_level = flush_level_.load(std::memory_order_relaxed);
             return (_msg.level_ >= flush_level) && (_msg.level_ < LEVEL_NBRS);

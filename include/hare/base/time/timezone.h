@@ -19,7 +19,7 @@ namespace hare {
 HARE_CLASS_API
 class HARE_API timezone {
     struct zone_data;
-    uptr<zone_data> data_ {};
+    ptr<zone_data> data_ {};
 
 public:
     timezone() = default; // an invalid timezone

@@ -100,9 +100,9 @@ struct timezone::zone_data {
         transitions.emplace_back(_utc_time, _utc_time + local.utc_offset, _local_time_idx);
     }
 
-    auto clone() const -> uptr<zone_data>
+    auto clone() const -> ptr<zone_data>
     {
-        uptr<zone_data> clone_data(new zone_data);
+        ptr<zone_data> clone_data(new zone_data);
         clone_data->abbreviation.assign(abbreviation.begin(), abbreviation.end());
         clone_data->local_times.assign(local_times.begin(), local_times.end());
         clone_data->abbreviation = abbreviation;
@@ -248,19 +248,19 @@ auto timezone::operator=(const timezone& another) -> timezone&
 
 auto timezone::to_local(std::int64_t _seconds, std::int32_t* _utc_offset) const -> struct time::date_time
 {
-    struct time::date_time localTime;
     assert(data_ != nullptr);
 
+    struct time::date_time local_time {};
     const auto* local = data_->find_local_time(_seconds);
 
     if (local != nullptr) {
-        localTime = detail::break_time(_seconds + local->utc_offset);
+        local_time = detail::break_time(_seconds + local->utc_offset);
         if (_utc_offset != nullptr) {
             *_utc_offset = local->utc_offset;
         }
     }
 
-    return localTime;
+    return local_time;
 }
 
 auto timezone::from_local(const struct time::date_time& _dt, bool _post_transition) const -> std::int64_t
