@@ -1,7 +1,8 @@
 #include "hare/net/io_pool.h"
-
-#include <hare/base/logging.h>
+#include "hare/base/fwd-inl.h"
+#include "hare/base/io/local.h"
 #include <hare/base/util/count_down_latch.h>
+#include <hare/base/util/system.h>
 #include <hare/net/session.h>
 
 namespace hare {
@@ -20,16 +21,15 @@ namespace net {
 
         items_.resize(_thread_nbr);
 
-        LOG_TRACE() << "start io_pool.";
+        MSG_TRACE("start io_pool.");
         for (auto i = 0; i < _thread_nbr; ++i) {
             items_[i] = std::make_shared<pool_item>();
-            items_[i]->thread = std::make_shared<thread>([=] {
+            items_[i]->thread = std::make_shared<std::thread>([=] {
+                util::set_thread_name((name_ + std::to_string(i)).c_str());
                 items_[i]->cycle = std::make_shared<io::cycle>(_type);
                 items_[i]->cycle->loop();
                 items_[i]->cycle.reset();
-            },
-                name_ + std::to_string(i));
-            items_[i]->thread->start();
+            });
         }
 
         is_running_ = true;
@@ -39,7 +39,7 @@ namespace net {
 
     void io_pool::stop()
     {
-        LOG_TRACE() << "stop io_pool.";
+        MSG_TRACE("stop io_pool.");
         for (auto& item : items_) {
             item->cycle->run_in_cycle([=]() mutable {
                 for (const auto& session : item->sessions) {

@@ -119,10 +119,5 @@ namespace net {
         return ret;
     }
 
-    void acceptor::set_new_session(new_session _cb)
-    {
-        new_session_ = std::move(_cb);
-    }
-
 } // namespace net
 } // namespace hare

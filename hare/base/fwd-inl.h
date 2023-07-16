@@ -2,6 +2,7 @@
 #define _HARE_BASE_FWD_INL_H_
 
 #include <hare/base/time/timestamp.h>
+#include <hare/base/exception.h>
 
 #define FMT_HEADER_ONLY 1
 #include <fmt/format.h>
@@ -33,6 +34,19 @@ auto msg() -> std::function<void(std::string)>&
     msg()(fmt::format("[ERROR] " fromat, ##__VA_ARGS__))
 #define MSG_FATAL(fromat, ...) \
     throw exception(fmt::format(fromat, ##__VA_ARGS__))
+
+template <typename T>
+HARE_INLINE
+auto check_not_null(const char *_names, T* _ptr) -> T*
+{
+    if (_ptr == nullptr) {
+        MSG_FATAL(_names);
+    }
+    return _ptr;
+}
+
+#define CHECK_NULL(val) \
+  ::hare::check_not_null("'" #val "' must be non NULL.", (val))
 
 } // namespace hare
 

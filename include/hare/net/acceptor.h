@@ -1,14 +1,15 @@
 #ifndef _HARE_NET_ACCEPTOR_H_
 #define _HARE_NET_ACCEPTOR_H_
 
-#include <hare/base/time/timestamp.h>
 #include <hare/base/io/event.h>
+#include <hare/base/time/timestamp.h>
 #include <hare/net/host_address.h>
 #include <hare/net/socket.h>
 
 namespace hare {
 namespace net {
 
+    HARE_CLASS_API
     class HARE_API acceptor : public io::event {
         using new_session = std::function<void(util_socket_t, host_address&, const timestamp&, acceptor*)>;
 
@@ -30,16 +31,17 @@ namespace net {
         acceptor(int8_t _family, TYPE _type, int16_t _port, bool _reuse_port = true);
         ~acceptor() override;
 
-        inline auto socket() const -> util_socket_t { return socket_.fd(); };
-        inline auto type() const -> TYPE { return socket_.type(); };
-        inline auto port() const -> int16_t { return port_; };
+        HARE_INLINE auto socket() const -> util_socket_t { return socket_.fd(); };
+        HARE_INLINE auto type() const -> TYPE { return socket_.type(); };
+        HARE_INLINE auto port() const -> int16_t { return port_; };
 
     protected:
         void event_callback(const io::event::ptr& _event, uint8_t _events, const timestamp& _receive_time);
 
     private:
         auto listen() -> error;
-        void set_new_session(new_session _cb);
+
+        HARE_INLINE void set_new_session(new_session _cb) { new_session_ = std::move(_cb); }
 
         friend class hybrid_serve;
     };

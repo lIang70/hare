@@ -10,7 +10,8 @@ namespace net {
 
     class io_pool;
     class acceptor;
-    class HARE_API hybrid_serve : public non_copyable
+    HARE_CLASS_API
+    class HARE_API hybrid_serve : public util::non_copyable
                                 , public std::enable_shared_from_this<hybrid_serve> {
         using new_session_callback = std::function<void(const session::ptr&, const timestamp&, const hare::ptr<acceptor>&)>;
 
@@ -30,9 +31,9 @@ namespace net {
         explicit hybrid_serve(hare::ptr<io::cycle> _cycle, std::string _name = "HARE_SERVE");
         virtual ~hybrid_serve();
 
-        inline auto main_cycle() const -> hare::ptr<io::cycle> { return cycle_; }
-        inline auto is_running() const -> bool { return started_; }
-        inline void set_new_session(new_session_callback _new_session) { new_session_ = std::move(_new_session); }
+        HARE_INLINE auto main_cycle() const -> hare::ptr<io::cycle> { return cycle_; }
+        HARE_INLINE auto is_running() const -> bool { return started_; }
+        HARE_INLINE void set_new_session(new_session_callback _new_session) { new_session_ = std::move(_new_session); }
 
         auto add_acceptor(const hare::ptr<acceptor>& _acceptor) -> bool;
 
@@ -46,4 +47,4 @@ namespace net {
 } // namespace net
 } // namespace hare
 
-#endif // !_HARE_NET_TCP_SERVE_H_
+#endif // _HARE_NET_TCP_SERVE_H_

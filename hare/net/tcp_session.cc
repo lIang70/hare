@@ -1,21 +1,21 @@
-#include <hare/net/tcp_session.h>
-
+#include "hare/base/fwd-inl.h"
+#include "hare/base/io/local.h"
 #include "hare/base/io/reactor.h"
 #include "hare/net/socket_op.h"
 #include <hare/base/io/cycle.h>
-#include <hare/base/logging.h>
+#include <hare/net/tcp_session.h>
 
 namespace hare {
 namespace net {
 
     tcp_session::~tcp_session() = default;
 
-    auto tcp_session::append(io::buffer& _buffer) -> bool
+    auto tcp_session::append(buffer& _buffer) -> bool
     {
         if (state() == STATE_CONNECTED) {
-            auto tmp = std::make_shared<io::buffer>();
+            auto tmp = std::make_shared<buffer>();
             tmp->append(_buffer);
-            owner_cycle()->queue_in_cycle(std::bind([](const wptr<tcp_session>& session, io::buffer::ptr& buffer) {
+            owner_cycle()->queue_in_cycle(std::bind([](const wptr<tcp_session>& session, buffer::ptr& buffer) {
                 auto tcp = session.lock();
                 if (tcp) {
                     auto out_buffer_size = tcp->out_buffer_.size();
@@ -37,9 +37,9 @@ namespace net {
     auto tcp_session::send(const void* _bytes, size_t _length) -> bool
     {
         if (state() == STATE_CONNECTED) {
-            auto tmp = std::make_shared<io::buffer>();
+            auto tmp = std::make_shared<buffer>();
             tmp->add(_bytes, _length);
-            owner_cycle()->queue_in_cycle(std::bind([](const wptr<tcp_session>& session, io::buffer::ptr& buffer) {
+            owner_cycle()->queue_in_cycle(std::bind([](const wptr<tcp_session>& session, buffer::ptr& buffer) {
                 auto tcp = session.lock();
                 if (tcp) {
                     auto out_buffer_size = tcp->out_buffer_.size();
@@ -67,7 +67,7 @@ namespace net {
         host_address _local_addr,
         std::string _name, int8_t _family, util_socket_t _fd,
         host_address _peer_addr)
-        : session(HARE_CHECK_NULL(_cycle), TYPE_TCP,
+        : session(CHECK_NULL(_cycle), TYPE_TCP,
             std::move(_local_addr),
             std::move(_name), _family, _fd,
             std::move(_peer_addr))
@@ -100,7 +100,7 @@ namespace net {
                             if (write_) {
                                 write_(tcp);
                             } else {
-                                SYS_ERROR() << "not set write_callback to tcp session[" << name() << "].";
+                                MSG_ERROR("write_callback has not been set for tcp-session[{}].", name());
                             }
                         }
                     },
@@ -110,10 +110,10 @@ namespace net {
                     handle_close();
                 }
             } else {
-                SYS_ERROR() << "an error occurred while writing the socket, detail: " << socket_op::get_socket_error_info(fd());
+                MSG_ERROR("an error occurred while writing the socket, detail: {}.", socket_op::get_socket_error_info(fd()));
             }
         } else {
-            LOG_TRACE() << "tcp session[fd: " << fd() << ", name: " << name() << "] is down, no more writing";
+            MSG_TRACE("tcp-session[fd={}, name={}] is down, no more writing.", fd(), name());
         }
     }
 

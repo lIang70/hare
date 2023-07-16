@@ -1,11 +1,11 @@
-#include <hare/net/hybrid_serve.h>
-
+#include "hare/base/fwd-inl.h"
+#include "hare/base/io/local.h"
 #include "hare/net/io_pool.h"
 #include "hare/net/socket_op.h"
 #include <hare/base/io/cycle.h>
-#include <hare/base/logging.h>
 #include <hare/base/util/count_down_latch.h>
 #include <hare/net/acceptor.h>
+#include <hare/net/hybrid_serve.h>
 #include <hare/net/tcp_session.h>
 #include <hare/net/udp_session.h>
 
@@ -28,28 +28,28 @@ namespace net {
             auto reuse { 1 };
             auto ret = ::setsockopt(accept_fd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse));
             if (ret < 0) {
-                SYS_ERROR() << "cannot set address-reuse to socket.";
+                MSG_ERROR("cannot set address-reuse to socket.");
                 socket_op::close(accept_fd);
                 return -1;
             }
 
             ret = ::setsockopt(accept_fd, SOL_SOCKET, SO_REUSEPORT, &reuse, sizeof(reuse));
             if (ret < 0) {
-                SYS_ERROR() << "cannot set address-port to socket.";
+                MSG_ERROR("cannot set address-port to socket.");
                 socket_op::close(accept_fd);
                 return -1;
             }
 
             auto err = socket_op::bind(accept_fd, local_addr.get_sockaddr());
             if (!err) {
-                SYS_ERROR() << "socket[" << accept_fd << "] cannot bind address " << local_addr.to_ip_port() << ".";
+                MSG_ERROR("socket[{}] cannot bind address {}.", accept_fd, local_addr.to_ip_port());
                 socket_op::close(accept_fd);
                 return -1;
             }
 
             err = socket_op::connect(accept_fd, peer_addr.get_sockaddr());
             if (!err) {
-                SYS_ERROR() << "socket[" << accept_fd << "] cannot connect address " << peer_addr.to_ip_port() << ".";
+                MSG_ERROR("socket[{}] cannot connect address {}.", accept_fd, local_addr.to_ip_port());
                 socket_op::close(accept_fd);
                 return -1;
             }
@@ -67,7 +67,7 @@ namespace net {
 
     hybrid_serve::~hybrid_serve()
     {
-        HARE_ASSERT(!started_, "the hybrid serve is running.");
+        assert(!started_);
     }
 
     auto hybrid_serve::add_acceptor(const acceptor::ptr& _acceptor) -> bool
@@ -81,14 +81,13 @@ namespace net {
             _acceptor->set_new_session(std::bind(&hybrid_serve::new_session, shared_from_this(), std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
             auto ret = _acceptor->listen();
             if (!ret) {
-                SYS_ERROR() << "acceptor[" << _acceptor->socket() << "] cannot listen.";
+                MSG_ERROR("acceptor[{}] cannot listen.", _acceptor->socket());
                 cdl.count_down();
                 return;
             }
-            LOG_DEBUG() << "add acceptor[" << _acceptor->socket()
-                        << ", port=" << _acceptor->port_
-                        << ", type=" << socket::type_str(_acceptor->type())
-                        << "] to serve[" << this << "].";
+
+            MSG_TRACE("add acceptor[{}], port={}, type={}] to serve[{}].",
+                _acceptor->socket(), _acceptor->port_, socket::type_str(_acceptor->type()), (void*)this);
             added = true;
             cdl.count_down();
         });
@@ -102,25 +101,25 @@ namespace net {
 
     auto hybrid_serve::exec(int32_t _thread_nbr) -> error
     {
-        HARE_ASSERT(cycle_, "cannot create cycle.");
+        assert(cycle_);
 
         io_pool_ = std::make_shared<io_pool>("SERVER_WORKER");
         auto ret = io_pool_->start(cycle_->type(), _thread_nbr);
         if (!ret) {
-            return error(HARE_ERROR_INIT_IO_POOL);
+            return error(ERROR_INIT_IO_POOL);
         }
 
         started_ = true;
         cycle_->loop();
         started_ = false;
 
-        LOG_TRACE() << "clean io pool...";
+        MSG_TRACE("clean io pool...");
         io_pool_->stop();
 
         cycle_.reset();
         io_pool_.reset();
 
-        return error(HARE_ERROR_SUCCESS);
+        return error();
     }
 
     void hybrid_serve::exit()
@@ -130,11 +129,11 @@ namespace net {
 
     void hybrid_serve::new_session(util_socket_t _fd, host_address& _address, const timestamp& _time, acceptor* _acceptor)
     {
-        HARE_ASSERT(started_ == true, "serve already stop...");
+        assert(started_ == true);
         cycle_->assert_in_cycle_thread();
 
         if (!new_session_) {
-            SYS_ERROR() << "you need register new_session_callback to serve[" << name_ << "]";
+            MSG_TRACE("you need register new_session_callback to serve[{}].", name_);
             if (_fd != -1) {
                 socket_op::close(_fd);
             }
@@ -144,52 +143,46 @@ namespace net {
         auto next_item = io_pool_->get_next();
         session::ptr session { nullptr };
         auto type = _acceptor->type();
-        std::array<char, static_cast<size_t>(HARE_SMALL_FIXED_SIZE * 3)> cache {};
+        std::string name_cache {};
 
         switch (type) {
         case TYPE_TCP: {
-            HARE_ASSERT(_fd != -1, "socket error.");
+            assert(_fd != -1);
             auto local_addr = host_address::local_address(_fd);
 
-            auto ret = snprintf(cache.data(), cache.size(), "%s-%s#tcp%lu", name_.c_str(), local_addr.to_ip_port().c_str(), session_id_++);
-            H_UNUSED(ret);
+            name_cache = fmt::format("{}-{}#tcp{}", name_, local_addr.to_ip_port(), session_id_++);
 
-            LOG_DEBUG() << "new session[" << cache.data()
-                        << "] in serve[" << name_
-                        << "] from " << _address.to_ip_port()
-                        << " in " << _time.to_fmt();
+            MSG_TRACE("new session[{}] in serve[{}] from {} in {}.",
+                name_cache, name_, _address.to_ip_port(), _time.to_fmt());
 
             session.reset(new tcp_session(next_item->cycle.get(),
                 std::move(local_addr),
-                cache.data(), _acceptor->family_, _fd,
+                name_cache, _acceptor->family_, _fd,
                 std::move(_address)));
         } break;
         case TYPE_UDP: {
-            HARE_ASSERT(_fd == -1, "socket error.");
+            assert(_fd == -1);
 
             struct sockaddr_in6 addr { };
             size_t addr_len = socket_op::get_addr_len(_acceptor->family_);
             auto buffer_size = socket_op::get_bytes_readable_on_socket(_acceptor->socket());
             auto* buffer = new uint8_t[buffer_size];
             auto recv_size = socket_op::recvfrom(_acceptor->socket(), buffer, buffer_size, sockaddr_cast(&addr), addr_len);
-            HARE_ASSERT(recv_size == buffer_size, "error size from udp.");
+            assert(recv_size == buffer_size);
 
             host_address peer_addr {};
             peer_addr.set_sockaddr_in6(&addr);
 
             auto accept_fd = detail::create_udp_socket(_address, _acceptor->family_, peer_addr);
 
-            auto ret = ::snprintf(cache.data(), cache.size(), "%s-%s#udp%lu", name_.c_str(), peer_addr.to_ip_port().c_str(), session_id_++);
-            H_UNUSED(ret);
+            name_cache = fmt::format("{}-{}#udp{}", name_, peer_addr.to_ip_port(), session_id_++);
 
-            LOG_DEBUG() << "new session[" << cache.data()
-                        << "] in serve[" << name_
-                        << "] from " << peer_addr.to_ip_port()
-                        << " in " << _time.to_fmt();
+            MSG_TRACE("new session[{}] in serve[{}] from {} in {}.",
+                name_cache, name_, peer_addr.to_ip_port(), _time.to_fmt());
 
             session.reset(new udp_session(next_item->cycle.get(),
                 std::move(_address),
-                cache.data(), _acceptor->family_, accept_fd,
+                name_cache, _acceptor->family_, accept_fd,
                 std::move(peer_addr)));
 
             auto udp = std::static_pointer_cast<udp_session>(session);
@@ -197,7 +190,7 @@ namespace net {
 
         } break;
         default:
-            SYS_FATAL() << "invalid type[" << _acceptor->type() << "] of acceptor.";
+            MSG_FATAL("invalid type[{}] of acceptor.", _acceptor->type());
         }
 
         if (!session) {
@@ -206,13 +199,13 @@ namespace net {
 
         session->destroy_ = std::bind([=]() {
             next_item->cycle->run_in_cycle([=]() mutable {
-                HARE_ASSERT(next_item->sessions.find(_fd) != next_item->sessions.end(), "");
+                assert(next_item->sessions.find(_fd) != next_item->sessions.end());
                 next_item->sessions.erase(_fd);
             });
         });
 
         next_item->cycle->run_in_cycle(std::bind([=]() mutable {
-            HARE_ASSERT(next_item->sessions.find(_fd) == next_item->sessions.end(), "");
+            assert(next_item->sessions.find(_fd) == next_item->sessions.end());
             next_item->sessions.insert(std::make_pair(_fd, session));
             new_session_(session, _time, std::static_pointer_cast<acceptor>(_acceptor->shared_from_this()));
             session->connect_established();

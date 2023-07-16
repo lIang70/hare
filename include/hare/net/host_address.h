@@ -9,6 +9,7 @@
 namespace hare {
 namespace net {
 
+    HARE_CLASS_API
     class HARE_API host_address : public util::non_copyable {
         union {
             struct sockaddr_in* in_;
@@ -16,7 +17,7 @@ namespace net {
         } addr_ {};
 
     public:
-        using ptr = std::shared_ptr<host_address>;
+        using ptr = ptr<host_address>;
 
         /**
          * @brief resolve hostname to IP address, not changing port or sin_family.
@@ -45,12 +46,12 @@ namespace net {
         host_address(host_address&& _another) noexcept;
         auto operator=(host_address&& _another) noexcept -> host_address&;
 
-        inline auto get_sockaddr() const -> sockaddr* { return sockaddr_cast(addr_.in6_); }
+        HARE_INLINE auto get_sockaddr() const -> sockaddr* { return sockaddr_cast(addr_.in6_); }
         void set_sockaddr_in6(const struct sockaddr_in6* addr_in6) const;
 
         auto to_ip() const -> std::string;
         auto to_ip_port() const -> std::string;
-        inline auto port() const -> uint16_t { return network_to_host16(port_net_endian()); }
+        HARE_INLINE auto port() const -> uint16_t { return network_to_host16(port_net_endian()); }
 
         auto ipv4_net_endian() const -> uint32_t;
         auto port_net_endian() const -> uint16_t;

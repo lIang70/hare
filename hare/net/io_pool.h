@@ -2,10 +2,10 @@
 #define _HARE_NET_IO_POOL_H_
 
 #include <hare/base/io/cycle.h>
-#include <hare/base/thread/thread.h>
 
 #include <map>
 #include <vector>
+#include <thread>
 
 namespace hare {
 namespace net {
@@ -14,11 +14,11 @@ namespace net {
 
     struct pool_item {
         ptr<io::cycle> cycle {};
-        ptr<thread> thread {};
+        ptr<std::thread> thread {};
         std::map<util_socket_t, ptr<session>> sessions {};
     };
 
-    class io_pool : public non_copyable {
+    class io_pool : public util::non_copyable {
 
         using pool_items = std::vector<ptr<pool_item>>;
 
@@ -57,4 +57,4 @@ namespace net {
 } // namespace net
 } // namespace hare
 
-#endif // !_HARE_NET_IO_POOL_H_
+#endif // _HARE_NET_IO_POOL_H_

@@ -1,20 +1,20 @@
-#include <hare/net/udp_session.h>
-
+#include "hare/base/fwd-inl.h"
+#include "hare/base/io/local.h"
 #include "hare/net/socket_op.h"
 #include <hare/base/io/cycle.h>
-#include <hare/base/logging.h>
+#include <hare/net/udp_session.h>
 
 namespace hare {
 namespace net {
 
     udp_session::~udp_session() = default;
 
-    auto udp_session::append(io::buffer& _buffer) -> bool
+    auto udp_session::append(buffer& _buffer) -> bool
     {
         if (state() == STATE_CONNECTED) {
-            auto tmp = std::make_shared<io::buffer>();
+            auto tmp = std::make_shared<buffer>();
             tmp->append(_buffer);
-            owner_cycle()->queue_in_cycle(std::bind([](const wptr<udp_session>& session, io::buffer::ptr& buffer) {
+            owner_cycle()->queue_in_cycle(std::bind([](const wptr<udp_session>& session, buffer::ptr& buffer) {
                 auto udp = session.lock();
                 if (udp) {
                     auto out_buffer_size = udp->out_buffer_.size();
@@ -34,11 +34,11 @@ namespace net {
     auto udp_session::send(const void* _bytes, size_t _length) -> bool
     {
         if (state() == STATE_CONNECTED) {
-            auto tmp = std::make_shared<io::buffer>();
-            auto *tmp_buffer = new uint8_t[_length];
+            auto tmp = std::make_shared<buffer>();
+            auto* tmp_buffer = new uint8_t[_length];
             ::memcpy(tmp_buffer, _bytes, _length);
             tmp->add_block(tmp_buffer, _length);
-            owner_cycle()->queue_in_cycle(std::bind([](const wptr<udp_session>& session, io::buffer::ptr& buffer) {
+            owner_cycle()->queue_in_cycle(std::bind([](const wptr<udp_session>& session, buffer::ptr& buffer) {
                 auto udp = session.lock();
                 if (udp) {
                     auto out_buffer_size = udp->out_buffer_.size();
@@ -59,7 +59,7 @@ namespace net {
         host_address _local_addr,
         std::string _name, int8_t _family, util_socket_t _fd,
         host_address _peer_addr)
-        : session(HARE_CHECK_NULL(_cycle), TYPE_TCP,
+        : session(CHECK_NULL(_cycle), TYPE_TCP,
             std::move(_local_addr),
             std::move(_name), _family, _fd,
             std::move(_peer_addr))
@@ -85,7 +85,7 @@ namespace net {
     void udp_session::handle_write()
     {
         if (!event()->writing()) {
-            LOG_TRACE() << "udp session[fd: " << fd() << ", name: " << name() << "] is down, no more writing";
+            MSG_TRACE("udp-session[fd={}, name={}] is down, no more writing.", fd(), name());
             return;
         }
 
@@ -99,7 +99,7 @@ namespace net {
                 res = socket_op::sendto(fd(), static_cast<uint8_t*>(tmp_buffer) + res, buffer_size,
                     peer_address().get_sockaddr(), socket_op::get_addr_len(socket().family()));
                 if (res < 0) {
-                    SYS_ERROR() << "sendto error to " << peer_address().to_ip_port() << ", the session will shutdown.";
+                    MSG_ERROR("sendto error to {}, the session will shutdown.", peer_address().to_ip_port());
                     shutdown();
                     break;
                 }
@@ -117,7 +117,7 @@ namespace net {
                         if (write_) {
                             write_(udp);
                         } else {
-                            SYS_ERROR() << "not set write_callback to udp session[" << name() << "].";
+                            MSG_ERROR("write_callback has not been set for udp-session[{}].", name());
                         }
                     }
                 },
@@ -127,7 +127,7 @@ namespace net {
                 shutdown();
             }
         } else {
-            SYS_ERROR() << "an error occurred while writing the socket, detail: " << socket_op::get_socket_error_info(fd());
+            MSG_ERROR("an error occurred while writing the socket, detail: {}.", socket_op::get_socket_error_info(fd()));
         }
     }
 

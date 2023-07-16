@@ -14,6 +14,7 @@ namespace net {
         TYPE_UDP
     };
 
+    HARE_CLASS_API
     class HARE_API socket : public util::non_copyable {
         util_socket_t socket_ { -1 };
         int8_t family_ { 0 };
@@ -27,9 +28,9 @@ namespace net {
         socket(int8_t family, TYPE type, util_socket_t socket = -1);
         ~socket();
 
-        inline auto fd() const -> util_socket_t { return socket_; }
-        inline auto family() const -> int8_t { return family_; }
-        inline auto type() const -> TYPE { return type_; }
+        HARE_INLINE auto fd() const -> util_socket_t { return socket_; }
+        HARE_INLINE auto family() const -> int8_t { return family_; }
+        HARE_INLINE auto type() const -> TYPE { return type_; }
 
         auto bind_address(const host_address& local_addr) const -> error;
         auto listen() const -> error;

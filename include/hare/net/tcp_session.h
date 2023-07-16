@@ -11,10 +11,10 @@ namespace net {
     class HARE_API tcp_session : public session {
         using write_callback = std::function<void(const hare::ptr<tcp_session>&)>;
         using high_water_callback = std::function<void(const hare::ptr<tcp_session>&)>;
-        using read_callback = std::function<void(const hare::ptr<tcp_session>&, io::buffer&, const timestamp&)>;
+        using read_callback = std::function<void(const hare::ptr<tcp_session>&, buffer&, const timestamp&)>;
 
-        io::buffer out_buffer_ {};
-        io::buffer in_buffer_ {};
+        buffer out_buffer_ {};
+        buffer in_buffer_ {};
         size_t high_water_mark_ { static_cast<size_t>(HARE_DEFAULT_HIGH_WATER) };
         write_callback write_ {};
         high_water_callback high_water_ {};
@@ -28,7 +28,7 @@ namespace net {
         inline void set_write_callback(write_callback _write) { write_ = std::move(_write); }
         inline void set_high_water_callback(high_water_callback _high_water) { high_water_ = std::move(_high_water); }
 
-        auto append(io::buffer& _buffer) -> bool;
+        auto append(buffer& _buffer) -> bool;
         auto send(const void* _bytes, size_t _length) -> bool override;
 
         auto set_tcp_no_delay(bool _on) -> error;
@@ -48,4 +48,4 @@ namespace net {
 } // namespace net
 } // namespace hare
 
-#endif // !_HARE_NET_TCP_SESSION_H_
+#endif // _HARE_NET_TCP_SESSION_H_
