@@ -36,4 +36,4 @@ auto msg() -> std::function<void(std::string)>&
 
 } // namespace hare
 
-#endif // !_HARE_BASE_FWD_INL_H_
+#endif // _HARE_BASE_FWD_INL_H_

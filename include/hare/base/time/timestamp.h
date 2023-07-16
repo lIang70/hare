@@ -80,4 +80,4 @@ public:
 
 } // namespace hare
 
-#endif // !_HARE_BASE_TIMESTAMP_H_
+#endif // _HARE_BASE_TIMESTAMP_H_

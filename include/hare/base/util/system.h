@@ -35,4 +35,4 @@ namespace util {
 } // namespace util
 } // namespace hare
 
-#endif // !_HARE_BASE_UTIL_SYSTEM_H_
+#endif // _HARE_BASE_UTIL_SYSTEM_H_

@@ -7,7 +7,6 @@ namespace hare {
 namespace log {
 
     namespace detail {
-        HARE_INLINE
         void handle_logger_error(const std::string& error_msg)
         {
             MSG_ERROR("{}", error_msg);
@@ -15,16 +14,12 @@ namespace log {
     } // namespace deatil
 
     logger::logger(std::string _unique_name, backend_list _backends)
-        : name_(std::move(_unique_name))
-        , error_handle_(detail::handle_logger_error)
-        , backends_(std::move(_backends))
+        : logger(std::move(_unique_name), _backends.begin(), _backends.end())
     {
     }
 
     logger::logger(std::string _unique_name, ptr<backend> _backend)
-        : name_(std::move(_unique_name))
-        , error_handle_(detail::handle_logger_error)
-        , backends_({ std::move(_backend) })
+        : logger(std::move(_unique_name), backend_list { std::move(_backend) })
     {
     }
 

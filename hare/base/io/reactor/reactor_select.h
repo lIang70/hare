@@ -29,4 +29,4 @@ namespace io {
 
 #endif // HARE__HAVE_SELECT
 
-#endif // !_HARE_BASE_IO_REACTOR_SELECT_H_
+#endif // _HARE_BASE_IO_REACTOR_SELECT_H_

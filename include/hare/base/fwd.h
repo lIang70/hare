@@ -203,4 +203,4 @@ HARE_API void register_msg_handler(log_handler handle);
 
 } // namespace hare
 
-#endif // !_HARE_BASE_FWD_H_
+#endif // _HARE_BASE_FWD_H_

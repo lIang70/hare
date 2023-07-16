@@ -44,4 +44,4 @@ public:
 
 } // namespace hare
 
-#endif // !_HARE_BASE_TIMEZONE_H_
+#endif // _HARE_BASE_TIMEZONE_H_

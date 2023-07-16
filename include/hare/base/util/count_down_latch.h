@@ -38,4 +38,4 @@ namespace util {
 } // namespace util
 } // namespace hare
 
-#endif // !_HARE_BASE_COUNT_DOWN_LATCH_H_
+#endif // _HARE_BASE_COUNT_DOWN_LATCH_H_

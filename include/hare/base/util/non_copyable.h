@@ -31,4 +31,4 @@ namespace util {
 } // namespace util
 } // namespace hare
 
-#endif // !_HARE_BASE_UTIL_NON_COPYABLE_H_
+#endif // _HARE_BASE_UTIL_NON_COPYABLE_H_

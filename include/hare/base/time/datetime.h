@@ -144,4 +144,4 @@ namespace time {
 } // namespace time
 } // namespace hare
 
-#endif // !_HARE_BASE_TIME_DATETIME_H_
+#endif // _HARE_BASE_TIME_DATETIME_H_

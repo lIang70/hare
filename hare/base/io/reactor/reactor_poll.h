@@ -36,4 +36,4 @@ namespace io {
 
 #endif // HARE__HAVE_POLL
 
-#endif // !_HARE_BASE_IO_REACTOR_POLL_H_
+#endif // _HARE_BASE_IO_REACTOR_POLL_H_

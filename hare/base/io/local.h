@@ -48,4 +48,4 @@ namespace io {
 } // namespace io
 } // namespace hare
 
-#endif // !_HARE_BASE_IO_LOCAL_H_
+#endif // _HARE_BASE_IO_LOCAL_H_

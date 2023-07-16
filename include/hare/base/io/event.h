@@ -117,4 +117,4 @@ namespace io {
 } // namespace io
 } // namespace hare
 
-#endif // !_HARE_BASE_IO_EVENT_H_
+#endif // _HARE_BASE_IO_EVENT_H_

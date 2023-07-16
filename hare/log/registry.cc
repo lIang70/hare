@@ -1,4 +1,5 @@
 #include <hare/log/registry.h>
+#include <hare/base/exception.h>
 
 namespace hare {
 namespace log {
@@ -7,6 +8,13 @@ namespace log {
     {
         static registry s_registry {};
         return s_registry;
+    }
+
+    void registry::assert_if_exists(const std::string& logger_name)
+    {
+        if (loggers_.find(logger_name) != loggers_.end()) {
+            throw exception("logger with name '" + logger_name + "' already exists.");
+        }
     }
 
 } // namespace log

@@ -37,8 +37,7 @@ namespace util {
         task_handle handle_ {};
 
     public:
-        HARE_INLINE thread_pool(std::size_t _max_items, std::size_t _thr_n,
-            task_handle _thr_task, const task& _before_thr, const task& _after_thr = task())
+        HARE_INLINE thread_pool(std::size_t _max_items, std::size_t _thr_n, task_handle _thr_task)
             : queue_(_max_items)
             , threads_(_thr_n)
             , handle_(std::move(_thr_task))
@@ -46,37 +45,39 @@ namespace util {
             if (_thr_n == 0 || _thr_n >= 1024) {
                 throw exception("invalid _thr_n param (valid range 1-1024)");
             }
+        }
 
+        ~thread_pool()
+        {
+            join();
+        }
+
+        HARE_INLINE
+        void start(const task& _before_thr, const task& _after_thr)
+        {
             for (auto& thr : threads_) {
                 thr = std::move(std::thread([this, _before_thr, _after_thr] {
                     _before_thr();
-                    loop();
+                    this->loop();
                     _after_thr();
                 }));
             }
         }
 
-        HARE_INLINE thread_pool(std::size_t _max_items, std::size_t _thr_n,
-            task_handle _thr_task, const task& _after_thr)
-            : thread_pool(
-                _max_items, _thr_n, _thr_task, [] {}, _after_thr)
-        {
-        }
-
-        HARE_INLINE thread_pool(std::size_t _max_items, std::size_t _thr_n,
-            task_handle _thr_task)
-            : thread_pool(
-                _max_items, _thr_n, _thr_task, [] {}, [] {})
-        {
-        }
-
-        ~thread_pool()
+        HARE_INLINE
+        void join()
         {
             for (auto& thr : threads_) {
                 if (thr.joinable()) {
                     thr.join();
                 }
             }
+        }
+
+        HARE_INLINE
+        auto thr_num() const -> std::size_t
+        {
+            return threads_.size();
         }
 
         HARE_INLINE

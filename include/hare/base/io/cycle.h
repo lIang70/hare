@@ -139,4 +139,4 @@ namespace io {
 } // namespace io
 } // namespace hare
 
-#endif // !_HARE_BASE_IO_CYCLE_H_
+#endif // _HARE_BASE_IO_CYCLE_H_

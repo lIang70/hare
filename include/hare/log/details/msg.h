@@ -129,9 +129,22 @@ namespace log {
             std::uint64_t id_ { 0 };
             timestamp stamp_ { timestamp::now() };
             msg_buffer_t raw_ {};
-            source_loc loc_;
+            source_loc loc_ {};
+
+            msg() = default;
+            virtual ~msg() = default;
 
             msg(const std::string* _name, const timezone* _timezone, LEVEL _level, source_loc _loc);
+
+            HARE_INLINE
+            msg(msg&& _other) noexcept
+            { move(_other); }
+
+            HARE_INLINE
+            auto operator=(msg&& _other) noexcept -> msg&
+            { move(_other); return (*this); }
+
+            void move(msg& _other) noexcept;
         };
 
         HARE_API void format_msg(msg& _msg, msg_buffer_t& _fotmatted);

@@ -53,4 +53,4 @@
 #define H_OS_UNIX
 #endif
 
-#endif // !_HARE_BASE_UTIL_SYSTEM_CHECK_H_
+#endif // _HARE_BASE_UTIL_SYSTEM_CHECK_H_

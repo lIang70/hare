@@ -1,5 +1,5 @@
 /**
- * @file hare/base/logging.h
+ * @file hare/log/logging.h
  * @author l1ang70 (gog_017@outlook.com)
  * @brief Describe the macro, class and functions
  *   associated with logging.h
@@ -21,10 +21,13 @@
 namespace hare {
 namespace log {
 
+    namespace detail {
+        void handle_logger_error(const std::string& error_msg);
+    } // namespace detail
+
     HARE_CLASS_API
     class HARE_API logger : public util::non_copyable {
-        using backend_list = std::vector<ptr<backend>>;
-
+    protected:
         level_t level_ { LEVEL_TRACE };
         level_t flush_level_ { LEVEL_WARNING };
         std::atomic<std::uint64_t> msg_id_ { 0 };
@@ -34,6 +37,8 @@ namespace log {
         std::vector<ptr<backend>> backends_ {};
 
     public:
+        using backend_list = std::vector<ptr<backend>>;
+
         HARE_INLINE
         void set_level(LEVEL _level)
         {
@@ -130,6 +135,15 @@ namespace log {
             log(_loc, LEVEL_FATAL, _fmt, _args...);
         }
 
+        template <typename Iter>
+        HARE_INLINE
+        logger(std::string _unique_name, const Iter& begin, const Iter& end)
+            : name_(std::move(_unique_name))
+            , error_handle_(detail::handle_logger_error)
+            , backends_(begin, end) // message counter will start from 1. 0-message id will be reserved for controll messages
+        {
+        }
+
         logger(std::string _unique_name, backend_list _backends);
         logger(std::string _unique_name, ptr<backend> _backend);
 
@@ -164,4 +178,4 @@ namespace log {
 #define LOG_ERROR(logger, format, ...) logger->error({ __FILE__, __LINE__, __func__ }, format, ##__VA_ARGS_)
 #define LOG_FATAL(logger, format, ...) logger->fatal({ __FILE__, __LINE__, __func__ }, format, ##__VA_ARGS_)
 
-#endif // !_HARE_LOG_LOGGING_H_
+#endif // _HARE_LOG_LOGGING_H_

@@ -40,4 +40,4 @@ public:
 
 } // namespace hare
 
-#endif // !_HARE_BASE_EXCEPTION_H_
+#endif // _HARE_BASE_EXCEPTION_H_
