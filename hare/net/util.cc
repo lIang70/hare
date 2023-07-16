@@ -28,7 +28,7 @@ namespace net {
         auto ret = ::getifaddrs(&if_addrs);
 
         if (ret != 0) {
-            return error(HARE_ERROR_GET_LOCAL_ADDRESS);
+            return error(ERROR_GET_LOCAL_ADDRESS);
         }
 
         int32_t adress_buf_len {};
@@ -42,7 +42,7 @@ namespace net {
             adress_buf_len = INET_ADDRSTRLEN;
             break;
         default:
-            return error(HARE_ERROR_WRONG_FAMILY);
+            return error(ERROR_WRONG_FAMILY);
         }
 
         while (if_addrs != nullptr) {
@@ -55,14 +55,14 @@ namespace net {
             }
             if_addrs = if_addrs->ifa_next;
         }
-        return error(HARE_ERROR_SUCCESS);
+        return error(ERROR_SUCCESS);
     }
 
     auto get_socket_pair(int8_t _family, int32_t _type, int32_t _protocol, std::array<util_socket_t, 2>& _sockets) -> error
     {
 #ifndef M_OS_WIN32
         auto ret = ::socketpair(_family, _type, _protocol, _sockets.data());
-        return ret < 0 ? error(HARE_ERROR_GET_SOCKET_PAIR) : error(HARE_ERROR_SUCCESS);
+        return ret < 0 ? error(ERROR_GET_SOCKET_PAIR) : error(ERROR_SUCCESS);
 #endif
     }
 

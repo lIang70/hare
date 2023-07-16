@@ -25,7 +25,7 @@ auto msg() -> std::function<void(std::string)>&
 #define MSG_TRACE(fromat, ...)                                \
     msg()(fmt::format("[TRACE] " fromat " [{:#x} {}:{}||{}]", \
         ##__VA_ARGS__,                                        \
-        current_thread::get_tds().tid, __FILE__, __LINE__, __func__))
+        io::current_thread::get_tds().tid, __FILE__, __LINE__, __func__))
 #else
 #define MSG_TRACE(fromat, ...)
 #endif

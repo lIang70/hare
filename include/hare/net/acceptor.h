@@ -47,4 +47,4 @@ namespace net {
 } // namespace net
 } // namespace hare
 
-#endif // !_HARE_NET_ACCEPTOR_H_
+#endif // _HARE_NET_ACCEPTOR_H_

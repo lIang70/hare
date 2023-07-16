@@ -1,7 +1,7 @@
-#include <hare/net/socket.h>
-
+#include "hare/base/fwd-inl.h"
 #include "hare/net/socket_op.h"
-#include <hare/base/logging.h>
+#include <hare/base/exception.h>
+#include <hare/net/socket.h>
 
 #if HARE__HAVE_NETINET_IN_H
 #include <netinet/in.h>
@@ -41,7 +41,7 @@ namespace net {
                 break;
             case TYPE_INVALID:
             default:
-                SYS_FATAL() << "unrecognized type of socket.";
+                MSG_FATAL("unrecognized type of socket.");
             }
         }
     }
@@ -68,13 +68,13 @@ namespace net {
             socket_ = -1;
             return err;
         }
-        return error(HARE_ERROR_SUCCESS);
+        return error();
     }
 
     auto socket::accept(host_address& peer_addr) const -> util_socket_t
     {
         struct sockaddr_in6 addr { };
-        set_zero(&addr, sizeof(addr));
+        hare::detail::fill_n(&addr, sizeof(addr), 0);
         auto accept_fd = socket_op::accept(socket_, &addr);
         if (accept_fd >= 0) {
             peer_addr.set_sockaddr_in6(&addr);
@@ -91,14 +91,14 @@ namespace net {
     {
         auto opt_val = no_delay ? 1 : 0;
         auto ret = ::setsockopt(socket_, SOL_SOCKET, TCP_NODELAY, &opt_val, static_cast<socklen_t>(sizeof(opt_val)));
-        return ret != 0 ? error(HARE_ERROR_SOCKET_TCP_NO_DELAY) : error(HARE_ERROR_SUCCESS);
+        return ret != 0 ? error(ERROR_SOCKET_TCP_NO_DELAY) : error();
     }
 
     auto socket::set_reuse_addr(bool reuse) const -> error
     {
         auto optval = reuse ? 1 : 0;
         auto ret = ::setsockopt(socket_, SOL_SOCKET, SO_REUSEADDR, &optval, static_cast<socklen_t>(sizeof(optval)));
-        return ret != 0 ? error(HARE_ERROR_SOCKET_REUSE_ADDR) : error(HARE_ERROR_SUCCESS);
+        return ret != 0 ? error(ERROR_SOCKET_REUSE_ADDR) : error();
     }
 
     auto socket::set_reuse_port(bool reuse) const -> error
@@ -110,14 +110,14 @@ namespace net {
         SYS_ERROR() << "reuse-port is not supported.";
         auto ret = -1;
 #endif
-        return ret != 0 ? error(HARE_ERROR_SOCKET_REUSE_PORT) : error(HARE_ERROR_SUCCESS);
+        return ret != 0 ? error(ERROR_SOCKET_REUSE_PORT) : error();
     }
 
     auto socket::set_keep_alive(bool keep_alive) const -> error
     {
         auto optval = keep_alive ? 1 : 0;
         auto ret = ::setsockopt(socket_, SOL_SOCKET, SO_KEEPALIVE, &optval, static_cast<socklen_t>(sizeof(optval)));
-        return ret != 0 ? error(HARE_ERROR_SOCKET_KEEP_ALIVE) : error(HARE_ERROR_SUCCESS);
+        return ret != 0 ? error(ERROR_SOCKET_KEEP_ALIVE) : error();
     }
 
 } // namespace net

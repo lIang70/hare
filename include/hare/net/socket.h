@@ -1,8 +1,8 @@
 #ifndef _HARE_NET_SOCKET_H_
 #define _HARE_NET_SOCKET_H_
 
-#include <hare/base/error.h>
 #include <hare/base/util/non_copyable.h>
+#include <hare/net/error.h>
 #include <hare/net/host_address.h>
 
 namespace hare {
@@ -14,7 +14,7 @@ namespace net {
         TYPE_UDP
     };
 
-    class HARE_API socket : public non_copyable {
+    class HARE_API socket : public util::non_copyable {
         util_socket_t socket_ { -1 };
         int8_t family_ { 0 };
         TYPE type_ { TYPE_INVALID };
@@ -73,4 +73,4 @@ namespace net {
 } // namespace net
 } // namespace hare
 
-#endif // !_HARE_NET_SOCKET_H_
+#endif // _HARE_NET_SOCKET_H_

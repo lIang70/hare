@@ -1,9 +1,9 @@
-#include <hare/net/acceptor.h>
-
+#include "hare/base/fwd-inl.h"
+#include "hare/base/io/local.h"
 #include "hare/base/io/reactor.h"
 #include "hare/net/socket_op.h"
+#include <hare/net/acceptor.h>
 #include <hare/net/socket.h>
-#include <hare/base/logging.h>
 
 #if HARE__HAVE_FCNTL_H
 #include <fcntl.h>
@@ -17,19 +17,17 @@ namespace hare {
 namespace net {
 
     acceptor::acceptor(int8_t _family, TYPE _type, int16_t _port, bool _reuse_port)
-        : io::event(_type == TYPE_TCP ? 
-                         socket_op::create_nonblocking_or_die(_family) : (_type == TYPE_UDP ? 
-                                                                   socket_op::create_dgram_or_die(_family) : -1),
-                std::bind(&acceptor::event_callback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
-                io::EVENT_PERSIST,
-                0)
+        : io::event(_type == TYPE_TCP ? socket_op::create_nonblocking_or_die(_family) : (_type == TYPE_UDP ? socket_op::create_dgram_or_die(_family) : -1),
+            std::bind(&acceptor::event_callback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
+            io::EVENT_PERSIST,
+            0)
         , socket_(_family, _type, fd())
         , family_(_family)
         , port_(_port)
 #ifdef H_OS_LINUX
         , idle_fd_(::open("/dev/null", O_RDONLY | O_CLOEXEC))
     {
-        HARE_ASSERT(idle_fd_ > 0, "cannot open idel fd");
+        assert(idle_fd_ > 0);
 #else
     {
 #endif
@@ -48,23 +46,23 @@ namespace net {
 
     void acceptor::event_callback(const io::event::ptr& _event, uint8_t _events, const timestamp& _receive_time)
     {
-        HARE_ASSERT(this->shared_from_this() == _event, "error event callback");
-        if (CHECK_EVENT(_events, io::EVENT_READ) == 0){
-            SYS_ERROR() << "unexpected operation of acceptor.";
+        assert(this->shared_from_this() == _event);
+        if (CHECK_EVENT(_events, io::EVENT_READ) == 0) {
+            MSG_ERROR("unexpected operation of acceptor.");
             return;
         }
-        
+
         host_address peer_addr {};
         auto local_addr = host_address::local_address(socket());
-        
+
         // FIXME loop until no more ?
         auto accepted { false };
         util_socket_t conn_fd {};
-        
+
         switch (type()) {
-            case TYPE_TCP: 
-            if ((conn_fd = socket_.accept(peer_addr)) >= 0) {
-                LOG_TRACE() << "accepts of tcp[" << peer_addr.to_ip_port() << "].";
+        case TYPE_TCP:
+            while ((conn_fd = socket_.accept(peer_addr)) >= 0) {
+                MSG_TRACE("accepts of tcp[{}].", peer_addr.to_ip_port());
                 if (new_session_) {
                     new_session_(conn_fd, peer_addr, _receive_time, this);
                 } else {
@@ -72,19 +70,19 @@ namespace net {
                 }
                 accepted = true;
             }
-                break;
-            case TYPE_UDP:
-                if (new_session_) {
-                    new_session_(-1, local_addr, _receive_time, this);
-                }
-                accepted = true;
-                break;
-            default:
-                break;
+            break;
+        case TYPE_UDP:
+            if (new_session_) {
+                new_session_(-1, local_addr, _receive_time, this);
+            }
+            accepted = true;
+            break;
+        default:
+            break;
         }
-        
+
         if (!accepted) {
-            SYS_ERROR() << "cannot accept new connect";
+            MSG_ERROR("cannot accept new connect.");
 #ifdef H_OS_LINUX
             // Read the section named "The special problem of
             // accept()ing when you can't" in libev's doc.
@@ -102,8 +100,8 @@ namespace net {
     auto acceptor::listen() -> error
     {
         if (owner_cycle() == nullptr) {
-            SYS_ERROR() << "this acceptor[" << this << "] has not been added to any cycle.";
-            return error(HARE_ERROR_ACCEPTOR_ACTIVED);
+            MSG_ERROR("this acceptor[{}] has not been added to any cycle.", (void*)this);
+            return error(ERROR_ACCEPTOR_ACTIVED);
         }
         const host_address address(port_, false, family_ == AF_INET6);
         auto ret = socket_.bind_address(address);

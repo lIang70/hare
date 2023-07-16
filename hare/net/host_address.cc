@@ -1,8 +1,8 @@
+#include "hare/base/fwd-inl.h"
+#include "hare/net/socket_op.h"
 #include <hare/net/host_address.h>
 
-#include "hare/net/socket_op.h"
-#include <hare/base/logging.h>
-
+#include <cassert>
 #include <cstring>
 
 #if HARE__HAVE_NETINET_IN_H
@@ -29,22 +29,22 @@ namespace net {
 
     auto host_address::resolve(const std::string& _hostname, host_address* _result) -> bool
     {
-        HARE_ASSERT(_result != nullptr, "cannot set null host_address");
+        assert(_result != nullptr);
         struct hostent host_ent { };
         struct hostent* host_p { nullptr };
         auto herrno { 0 };
-        
-        set_zero(&host_ent, sizeof(host_ent));
+
+        hare::detail::fill_n(&host_ent, sizeof(host_ent), 0);
 
         auto ret = ::gethostbyname_r(_hostname.c_str(), &host_ent, detail::t_resolve_cache.data(), detail::t_resolve_cache.size(), &host_p, &herrno);
         if (ret == 0 && host_p != nullptr) {
-            HARE_ASSERT(host_p->h_addrtype == AF_INET && host_p->h_length == sizeof(uint32_t), "");
+            assert(host_p->h_addrtype == AF_INET && host_p->h_length == sizeof(uint32_t));
             _result->addr_.in_->sin_addr = *reinterpret_cast<struct in_addr*>(host_p->h_addr);
             return true;
         }
 
         if (ret != 0) {
-            SYS_ERROR() << "::gethostbyname_r error";
+            MSG_ERROR("::gethostbyname_r error.");
         }
         return false;
     }
@@ -56,7 +56,7 @@ namespace net {
 
         auto addr_len = static_cast<socklen_t>(sizeof(struct sockaddr_in6));
         if (::getsockname(_fd, sockaddr_cast(local_addr.addr_.in6_), &addr_len) < 0) {
-            SYS_ERROR() << "cannot get local addr.";
+            MSG_ERROR("cannot get local addr.");
         }
         return local_addr;
     }
@@ -68,7 +68,7 @@ namespace net {
 
         auto addr_len = static_cast<socklen_t>(sizeof(struct sockaddr_in6));
         if (::getpeername(_fd, sockaddr_cast(peer_addr.addr_.in6_), &addr_len) < 0) {
-            SYS_ERROR() << "cannot get peer addr.";
+            MSG_ERROR("cannot get peer addr.");
         }
         return peer_addr;
     }
@@ -81,13 +81,13 @@ namespace net {
         addr_.in6_ = static_cast<struct sockaddr_in6*>(malloc(sizeof(struct sockaddr_in6)));
 
         if (_ipv6) {
-            set_zero((addr_.in6_), sizeof(struct sockaddr_in6));
+            hare::detail::fill_n((addr_.in6_), sizeof(struct sockaddr_in6), 0);
             addr_.in6_->sin6_family = AF_INET6;
             auto addr = _loopback_only ? in6addr_loopback : in6addr_any;
             addr_.in6_->sin6_addr = addr;
             addr_.in6_->sin6_port = host_to_network16(_port);
         } else {
-            set_zero((addr_.in_), sizeof(struct sockaddr_in));
+            hare::detail::fill_n((addr_.in_), sizeof(struct sockaddr_in), 0);
             addr_.in_->sin_family = AF_INET;
             auto addr = _loopback_only ? INADDR_LOOPBACK : INADDR_ANY;
             addr_.in_->sin_addr.s_addr = addr;
@@ -100,10 +100,10 @@ namespace net {
         addr_.in6_ = static_cast<struct sockaddr_in6*>(malloc(sizeof(struct sockaddr_in6)));
 
         if (_ipv6 || (strchr(_ip.c_str(), ':') != nullptr)) {
-            set_zero(addr_.in6_, sizeof(struct sockaddr_in6));
+            hare::detail::fill_n(addr_.in6_, sizeof(struct sockaddr_in6), 0);
             socket_op::from_ip_port(_ip.c_str(), _port, addr_.in6_);
         } else {
-            set_zero(addr_.in_, sizeof(struct sockaddr_in));
+            hare::detail::fill_n(addr_.in_, sizeof(struct sockaddr_in), 0);
             socket_op::from_ip_port(_ip.c_str(), _port, addr_.in_);
         }
     }
@@ -115,20 +115,20 @@ namespace net {
 
     host_address::host_address(host_address&& _another) noexcept
     {
-        std::swap( addr_.in6_, _another.addr_.in6_);
+        std::swap(addr_.in6_, _another.addr_.in6_);
     }
 
     auto host_address::operator=(host_address&& _another) noexcept -> host_address&
     {
-        std::swap( addr_.in6_, _another.addr_.in6_);
+        std::swap(addr_.in6_, _another.addr_.in6_);
         return (*this);
     }
 
     void host_address::set_sockaddr_in6(const struct sockaddr_in6* _addr_in6) const
     {
-        HARE_ASSERT(_addr_in6 != nullptr, "");
-        HARE_ASSERT(addr_.in6_ != nullptr, "");
-        memcpy(addr_.in6_, _addr_in6, sizeof(struct sockaddr_in6));
+        assert(_addr_in6 != nullptr);
+        assert(addr_.in6_ != nullptr);
+        ::memcpy(addr_.in6_, _addr_in6, sizeof(struct sockaddr_in6));
     }
 
     auto host_address::to_ip() const -> std::string
@@ -147,7 +147,7 @@ namespace net {
 
     auto host_address::ipv4_net_endian() const -> uint32_t
     {
-        HARE_ASSERT(addr_.in_->sin_family == AF_INET, "");
+        assert(addr_.in_->sin_family == AF_INET);
         return addr_.in_->sin_addr.s_addr;
     }
 

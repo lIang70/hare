@@ -9,7 +9,7 @@
 namespace hare {
 namespace net {
 
-    class HARE_API host_address : public non_copyable {
+    class HARE_API host_address : public util::non_copyable {
         union {
             struct sockaddr_in* in_;
             struct sockaddr_in6* in6_;
@@ -62,4 +62,4 @@ namespace net {
 } // namespace net
 } // namespace hare
 
-#endif // !_HARE_NET_HOST_ADDRESS_H_
+#endif // _HARE_NET_HOST_ADDRESS_H_
