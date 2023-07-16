@@ -90,7 +90,7 @@ namespace log {
 
             try {
                 details::msg msg(&name_, &timezone_, _level, _loc);
-                fmt::vformat_to(msg.raw_, _fmt, fmt::make_format_args(_args...));
+                fmt::format_to(std::back_inserter(msg.raw_), _fmt, _args...);
                 sink_it(msg);
             } catch (const hare::exception& e) {
                 error_handle_(e.what());
@@ -171,11 +171,11 @@ namespace log {
 } // namespace log
 } // namespace hare
 
-#define LOG_TRACE(logger, format, ...) logger->trace({ __FILE__, __LINE__, __func__ }, format, ##__VA_ARGS_)
-#define LOG_DEBUG(logger, format, ...) logger->debug({ __FILE__, __LINE__, __func__ }, format, ##__VA_ARGS_)
-#define LOG_INFO(logger, format, ...) logger->info({ __FILE__, __LINE__, __func__ }, format, ##__VA_ARGS_)
-#define LOG_WARNING(logger, format, ...) logger->warning({ __FILE__, __LINE__, __func__ }, format, ##__VA_ARGS_)
-#define LOG_ERROR(logger, format, ...) logger->error({ __FILE__, __LINE__, __func__ }, format, ##__VA_ARGS_)
-#define LOG_FATAL(logger, format, ...) logger->fatal({ __FILE__, __LINE__, __func__ }, format, ##__VA_ARGS_)
+#define LOG_TRACE(logger, format, ...) logger->trace({ __FILE__, __LINE__, __func__ }, format, ##__VA_ARGS__)
+#define LOG_DEBUG(logger, format, ...) logger->debug({ __FILE__, __LINE__, __func__ }, format, ##__VA_ARGS__)
+#define LOG_INFO(logger, format, ...) logger->info({ __FILE__, __LINE__, __func__ }, format, ##__VA_ARGS__)
+#define LOG_WARNING(logger, format, ...) logger->warning({ __FILE__, __LINE__, __func__ }, format, ##__VA_ARGS__)
+#define LOG_ERROR(logger, format, ...) logger->error({ __FILE__, __LINE__, __func__ }, format, ##__VA_ARGS__)
+#define LOG_FATAL(logger, format, ...) logger->fatal({ __FILE__, __LINE__, __func__ }, format, ##__VA_ARGS__)
 
 #endif // _HARE_LOG_LOGGING_H_

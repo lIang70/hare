@@ -26,7 +26,7 @@ namespace log {
 
     HARE_CLASS_API
     class HARE_API backend {
-        level_t level_ {};
+        level_t level_ { LEVEL_INFO };
 
     public:
         virtual ~backend() = default;
@@ -37,7 +37,7 @@ namespace log {
         HARE_INLINE
         auto check(std::int8_t _msg_level) const -> bool
         {
-            return _msg_level < level_.load(std::memory_order_relaxed);
+            return _msg_level >= level_.load(std::memory_order_relaxed);
         }
 
         HARE_INLINE
