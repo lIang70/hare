@@ -33,6 +33,8 @@ namespace log {
             }
         } catch (const hare::exception& e) {
             error_handle_(e.what());
+        } catch (const std::exception& e) {
+            error_handle_(e.what());
         } catch (...) {
             error_handle_("Unknown exeption in logger");
         }
