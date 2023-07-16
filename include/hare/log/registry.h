@@ -41,7 +41,7 @@ namespace log {
 
         template <typename Iter>
         HARE_INLINE
-        static auto create(const std::string& _unique_name, const Iter& begin, const Iter& end, std::size_t _max_msg, std::size_t _thr_n) -> ptr<logger>
+        static auto create(const std::string& _unique_name, const Iter& begin, const Iter& end, std::size_t _max_msg, std::size_t _thr_n) -> ptr<async_logger>
         {
             auto tmp = std::make_shared<async_logger>(_unique_name, begin, end, _max_msg, _thr_n);
             instance().register_logger(tmp);

@@ -24,6 +24,8 @@ namespace log {
             enum type { log, flush, terminate };
             type type_ { log };
 
+            async_msg() = default;
+
             explicit async_msg(type _type)
                 : type_(_type)
             {

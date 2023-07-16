@@ -94,7 +94,7 @@ namespace log {
             }
 
             HARE_INLINE
-            auto size() -> std::size_t
+            auto size() const -> std::size_t
             {
                 return fp_ == nullptr ? 0 : util::fsize(fp_);
             }
@@ -118,7 +118,7 @@ namespace log {
                 typedef typename std::conditional<
                     WithLock, write, write_unlock>::type inner_write;
 
-                if (inner_write(_buffer.data(), 1, buffer_size, fp_) != buffer_size) {
+                if (inner_write()(_buffer.data(), 1, buffer_size, fp_) != buffer_size) {
                     throw exception("Failed writing to file " + filename_to_str(filename_));
                 }
                 written_bytes_ += buffer_size;

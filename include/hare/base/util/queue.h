@@ -156,7 +156,7 @@ namespace util {
         }
 
         // try to enqueue and block if no room left
-        void enqueue(T&& item)
+        void enqueue(T& item)
         {
             {
                 std::unique_lock<std::mutex> lock(mutex_);
@@ -167,7 +167,7 @@ namespace util {
         }
 
         // enqueue immediately. overrun oldest message in the queue if no room left.
-        void enqueue_nowait(T&& _item)
+        void enqueue_nowait(T& _item)
         {
             {
                 std::unique_lock<std::mutex> lock(mutex_);
