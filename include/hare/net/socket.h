@@ -14,10 +14,25 @@ namespace net {
         TYPE_UDP
     };
 
+#if !defined(HARE_NET_TYPE)
+#define HARE_NET_TYPE           \
+    {                           \
+        "invalid", "tcp", "udp" \
+    }
+#endif
+
+    static constexpr const char* type_name[] HARE_NET_TYPE;
+
+    HARE_INLINE
+    constexpr const char* type_to_str(TYPE _type)
+    {
+        return type_name[_type];
+    }
+
     HARE_CLASS_API
     class HARE_API socket : public util::non_copyable {
         util_socket_t socket_ { -1 };
-        int8_t family_ { 0 };
+        std::int8_t family_ { 0 };
         TYPE type_ { TYPE_INVALID };
 
     public:
@@ -25,11 +40,11 @@ namespace net {
 
         static auto type_str(TYPE _type) -> const char*;
 
-        socket(int8_t family, TYPE type, util_socket_t socket = -1);
+        socket(std::int8_t family, TYPE type, util_socket_t socket = -1);
         ~socket();
 
         HARE_INLINE auto fd() const -> util_socket_t { return socket_; }
-        HARE_INLINE auto family() const -> int8_t { return family_; }
+        HARE_INLINE auto family() const -> std::int8_t { return family_; }
         HARE_INLINE auto type() const -> TYPE { return type_; }
 
         auto bind_address(const host_address& local_addr) const -> error;

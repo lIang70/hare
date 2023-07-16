@@ -10,7 +10,7 @@
 namespace hare {
 namespace net {
 
-    using SESSION = enum : uint8_t {
+    using SESSION = enum : std::uint8_t {
         SESSION_DEFAULT = io::EVENT_DEFAULT,
         SESSION_READ = io::EVENT_READ,
         SESSION_WRITE = io::EVENT_WRITE,
@@ -19,7 +19,7 @@ namespace net {
         SESSION_CONNECTED = 0x80,
     };
 
-    using STATE = enum : int8_t {
+    using STATE = enum : std::int8_t {
         STATE_CONNECTING = 0x00,
         STATE_CONNECTED,
         STATE_DISCONNECTING,
@@ -29,7 +29,7 @@ namespace net {
     HARE_CLASS_API
     class HARE_API session : public util::non_copyable
                            , public std::enable_shared_from_this<session> {
-        using connect_callback = std::function<void(const ptr<session>&, uint8_t)>;
+        using connect_callback = std::function<void(const ptr<session>&, std::uint8_t)>;
         using destroy = std::function<void()>;
 
         const std::string name_ {};
@@ -76,14 +76,14 @@ namespace net {
     protected:
         session(io::cycle* _cycle, TYPE _type,
             host_address _local_addr,
-            std::string _name, int8_t _family, util_socket_t _fd,
+            std::string _name, std::int8_t _family, util_socket_t _fd,
             host_address _peer_addr);
 
         HARE_INLINE void set_state(STATE _state) { state_ = _state; }
         HARE_INLINE auto event() -> io::event::ptr& { return event_; }
         HARE_INLINE auto socket() -> socket& { return socket_; }
 
-        void handle_callback(const io::event::ptr& _event, uint8_t _events, const timestamp& _receive_time);
+        void handle_callback(const io::event::ptr& _event, std::uint8_t _events, const timestamp& _receive_time);
 
         virtual void handle_read(const timestamp&) = 0;
         virtual void handle_write() = 0;

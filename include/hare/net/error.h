@@ -17,7 +17,7 @@
 namespace hare {
 namespace net {
 
-    using ERROR = enum : int32_t {
+    using ERROR = enum : std::int32_t {
         ERROR_ILLEGAL = -1,
         ERROR_SUCCESS,
 

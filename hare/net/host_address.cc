@@ -133,25 +133,25 @@ namespace net {
 
     auto host_address::to_ip() const -> std::string
     {
-        std::array<char, static_cast<size_t>(HARE_SMALL_FIXED_SIZE) * 2> cache {};
+        std::array<char, static_cast<std::size_t>(HARE_SMALL_FIXED_SIZE) * 2> cache {};
         socket_op::to_ip(cache.data(), static_cast<size_t>(HARE_SMALL_FIXED_SIZE) * 2, sockaddr_cast(addr_.in6_));
         return cache.data();
     }
 
     auto host_address::to_ip_port() const -> std::string
     {
-        std::array<char, static_cast<size_t>(HARE_SMALL_FIXED_SIZE) * 2> cache {};
+        std::array<char, static_cast<std::size_t>(HARE_SMALL_FIXED_SIZE) * 2> cache {};
         socket_op::to_ip_port(cache.data(), static_cast<size_t>(HARE_SMALL_FIXED_SIZE) * 2, sockaddr_cast(addr_.in6_));
         return cache.data();
     }
 
-    auto host_address::ipv4_net_endian() const -> uint32_t
+    auto host_address::ipv4_net_endian() const -> std::uint32_t
     {
         assert(addr_.in_->sin_family == AF_INET);
         return addr_.in_->sin_addr.s_addr;
     }
 
-    auto host_address::port_net_endian() const -> uint16_t
+    auto host_address::port_net_endian() const -> std::uint16_t
     {
         return addr_.in_->sin_port;
     }

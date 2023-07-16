@@ -37,7 +37,7 @@ namespace net {
 
         auto add_acceptor(const hare::ptr<acceptor>& _acceptor) -> bool;
 
-        auto exec(int32_t _thread_nbr) -> error;
+        auto exec(std::int32_t _thread_nbr) -> error;
         void exit();
 
     private:

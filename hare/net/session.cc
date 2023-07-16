@@ -31,7 +31,7 @@ namespace net {
     session::~session()
     {
         assert(state_ == STATE_DISCONNECTED);
-        MSG_TRACE("session[{}] at {} fd={} free.", name_, this, fd());
+        MSG_TRACE("session[{}] at {} fd={} free.", name_, (void*)this, fd());
     }
 
     auto session::shutdown() -> error

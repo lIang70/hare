@@ -34,13 +34,13 @@ namespace net {
          * @brief Constructs an endpoint with given port number.
          *   Mostly used in server listening.
          */
-        explicit host_address(uint16_t _port = 0, bool _loopback_only = false, bool _ipv6 = false);
+        explicit host_address(std::uint16_t _port = 0, bool _loopback_only = false, bool _ipv6 = false);
 
         /**
          * @brief Constructs an endpoint with given ip and port.
          * @c ip should be "1.2.3.4"
          */
-        host_address(const std::string& _ip, uint16_t _port, bool _ipv6 = false);
+        host_address(const std::string& _ip, std::uint16_t _port, bool _ipv6 = false);
         ~host_address();
 
         host_address(host_address&& _another) noexcept;
@@ -51,13 +51,13 @@ namespace net {
 
         auto to_ip() const -> std::string;
         auto to_ip_port() const -> std::string;
-        HARE_INLINE auto port() const -> uint16_t { return network_to_host16(port_net_endian()); }
+        HARE_INLINE auto port() const -> std::uint16_t { return network_to_host16(port_net_endian()); }
 
-        auto ipv4_net_endian() const -> uint32_t;
-        auto port_net_endian() const -> uint16_t;
+        auto ipv4_net_endian() const -> std::uint32_t;
+        auto port_net_endian() const -> std::uint16_t;
 
         // set IPv6 ScopeID
-        void set_scope_id(uint32_t _id) const;
+        void set_scope_id(std::uint32_t _id) const;
     };
 
 } // namespace net

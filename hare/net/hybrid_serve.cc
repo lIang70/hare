@@ -190,7 +190,7 @@ namespace net {
 
         } break;
         default:
-            MSG_FATAL("invalid type[{}] of acceptor.", _acceptor->type());
+            MSG_FATAL("invalid type[{}] of acceptor.", type_to_str(_acceptor->type()));
         }
 
         if (!session) {

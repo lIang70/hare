@@ -29,7 +29,7 @@ namespace net {
     protected:
         udp_session(io::cycle* _cycle,
             host_address _local_addr,
-            std::string _name, int8_t _family, util_socket_t _fd,
+            std::string _name, std::int8_t _family, util_socket_t _fd,
             host_address _peer_addr);
 
         void handle_read(const timestamp& _time) override;

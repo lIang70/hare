@@ -15,8 +15,8 @@ namespace net {
 
         socket socket_;
         new_session new_session_ {};
-        int8_t family_ {};
-        int16_t port_ { -1 };
+        std::int8_t family_ {};
+        std::int16_t port_ { -1 };
 
 #ifdef H_OS_LINUX
         // Read the section named "The special problem of
@@ -28,15 +28,15 @@ namespace net {
     public:
         using ptr = std::shared_ptr<acceptor>;
 
-        acceptor(int8_t _family, TYPE _type, int16_t _port, bool _reuse_port = true);
+        acceptor(std::int8_t _family, TYPE _type, std::int16_t _port, bool _reuse_port = true);
         ~acceptor() override;
 
         HARE_INLINE auto socket() const -> util_socket_t { return socket_.fd(); };
         HARE_INLINE auto type() const -> TYPE { return socket_.type(); };
-        HARE_INLINE auto port() const -> int16_t { return port_; };
+        HARE_INLINE auto port() const -> std::int16_t { return port_; };
 
     protected:
-        void event_callback(const io::event::ptr& _event, uint8_t _events, const timestamp& _receive_time);
+        void event_callback(const io::event::ptr& _event, std::uint8_t _events, const timestamp& _receive_time);
 
     private:
         auto listen() -> error;
