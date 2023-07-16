@@ -76,25 +76,37 @@ static void new_session(const session::ptr& _ses, hare::timestamp _ts, const acc
     }
 }
 
+static void handle_msg(std::uint8_t _msg_type, const std::string& _msg) {
+    if (_msg_type == hare::trace_msg) {
+        LOG_TRACE(server_logger, _msg);
+    } else {
+        LOG_ERROR(server_logger, _msg);
+    }
+}
+
 auto main(std::int32_t argc, char** argv) -> std::int32_t
 {
     using hare::log::backend;
-    using hare::log::file_backend_st;
+    using hare::log::file_backend_mt;
     using hare::log::detail::rotate_file;
 
     if (argc < 4) {
         fmt::println(USAGE);
-        return (0); 
+        return (0);
     }
 
     constexpr std::uint64_t file_size = static_cast<std::uint64_t>(64) * 1024 * 1024;
 
     auto tmp = hare::util::system_dir();
     std::vector<hare::ptr<backend>> backends {
-        std::make_shared<file_backend_st<rotate_file<file_size>>>(tmp + "/echo_serve")
+        std::make_shared<file_backend_mt<rotate_file<file_size>>>(tmp + "/echo_serve")
     };
+    backends[0]->set_level(hare::log::LEVEL_TRACE);
 
     server_logger = hare::log::registry::create("echo_serve", backends.begin(), backends.end());
+    server_logger->set_level(hare::log::LEVEL_TRACE);
+
+    hare::register_msg_handler(handle_msg);
 
     hare::net::TYPE acceptor_type = hare::net::TYPE_INVALID;
     if (std::string(argv[3]) == "tcp") {
@@ -124,6 +136,8 @@ auto main(std::int32_t argc, char** argv) -> std::int32_t
     LOG_INFO(server_logger, "========= ECHO serve stop =========");
 
     acc.reset();
+
+    server_logger->flush();
 
     return (ret ? (0) : (-1));
 }

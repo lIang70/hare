@@ -91,7 +91,6 @@ using wptr = std::weak_ptr<T>;
 template <typename T>
 using uptr = std::unique_ptr<T>;
 using task = std::function<void()>;
-using log_handler = std::function<void(std::string)>;
 #if defined(H_OS_WIN32) && defined(HARE_WCHAR_FILENAME)
 using filename_t = std::wstring;
 HARE_INLINE
@@ -198,6 +197,9 @@ auto implicit_cast(From const& _from) -> To
 {
     return _from;
 }
+
+enum : std::uint8_t { trace_msg, error_msg };
+using log_handler = std::function<void(std::uint8_t, std::string)>;
 
 HARE_API void register_msg_handler(log_handler handle);
 

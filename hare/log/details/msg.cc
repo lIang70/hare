@@ -75,7 +75,7 @@ namespace log {
             // [LEVEL] (stamp) <tid> msg (loc)
             fmt::format_to(std::back_inserter(_fotmatted), 
                 "({:}.{:06d}) [{:8}] <{:#x}> {} [{}:{}||{}]" HARE_EOL, 
-                stamp, level, microseconds, io::current_thread::get_tds().tid, 
+                stamp, microseconds, level, io::current_thread::get_tds().tid, 
                 _msg.raw_.data(),
                 _msg.loc_.filename_, _msg.loc_.line_, _msg.loc_.funcname_);
         }

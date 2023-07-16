@@ -48,9 +48,11 @@ namespace log {
                     backend->flush();
                 }
             } catch (const hare::exception& e) {
-                error_handle_(e.what());
+                error_handle_(error_msg, e.what());
+            } catch (const std::exception& e) {
+                error_handle_(error_msg, e.what());
             } catch (...) {
-                error_handle_("Unknown exeption in logger");
+                error_handle_(error_msg, "Unknown exeption in logger");
             }
             return true;
             break;

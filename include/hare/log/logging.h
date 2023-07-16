@@ -22,7 +22,7 @@ namespace hare {
 namespace log {
 
     namespace detail {
-        void handle_logger_error(const std::string& error_msg);
+        void handle_logger_error(std::uint8_t, const std::string& error_msg);
     } // namespace detail
 
     HARE_CLASS_API
@@ -93,11 +93,11 @@ namespace log {
                 fmt::format_to(std::back_inserter(msg.raw_), _fmt, _args...);
                 sink_it(msg);
             } catch (const hare::exception& e) {
-                error_handle_(e.what());
+                error_handle_(error_msg, e.what());
             } catch (const std::exception& e) {
-                error_handle_(e.what());
+                error_handle_(error_msg, e.what());
             } catch (...) {
-                error_handle_("Unknown exeption in logger");
+                error_handle_(error_msg, "Unknown exeption in logger");
             }
         }
 
