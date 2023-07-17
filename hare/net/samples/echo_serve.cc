@@ -77,7 +77,7 @@ static void new_session(const session::ptr& _ses, hare::timestamp _ts, const acc
 }
 
 static void handle_msg(std::uint8_t _msg_type, const std::string& _msg) {
-    if (_msg_type == hare::trace_msg) {
+    if (_msg_type == hare::TRACE_MSG) {
         LOG_TRACE(server_logger, _msg);
     } else {
         LOG_ERROR(server_logger, _msg);

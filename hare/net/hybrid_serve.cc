@@ -77,7 +77,7 @@ namespace net {
 
         cycle_->run_in_cycle([&] {
             cycle_->event_update(_acceptor);
-            _acceptor->set_new_session(std::bind(&hybrid_serve::new_session, shared_from_this(), std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
+            _acceptor->set_new_session(std::bind(&hybrid_serve::new_session, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
             auto ret = _acceptor->listen();
             if (!ret) {
                 MSG_ERROR("acceptor[{}] cannot listen.", _acceptor->socket());

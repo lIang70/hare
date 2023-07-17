@@ -93,11 +93,11 @@ namespace log {
                 fmt::format_to(std::back_inserter(msg.raw_), _fmt, _args...);
                 sink_it(msg);
             } catch (const hare::exception& e) {
-                error_handle_(error_msg, e.what());
+                error_handle_(ERROR_MSG, e.what());
             } catch (const std::exception& e) {
-                error_handle_(error_msg, e.what());
+                error_handle_(ERROR_MSG, e.what());
             } catch (...) {
-                error_handle_(error_msg, "Unknown exeption in logger");
+                error_handle_(ERROR_MSG, "Unknown exeption in logger");
             }
         }
 

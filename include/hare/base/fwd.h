@@ -198,7 +198,7 @@ auto implicit_cast(From const& _from) -> To
     return _from;
 }
 
-enum : std::uint8_t { trace_msg, error_msg };
+enum : std::uint8_t { TRACE_MSG, ERROR_MSG };
 using log_handler = std::function<void(std::uint8_t, std::string)>;
 
 HARE_API void register_msg_handler(log_handler handle);

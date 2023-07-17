@@ -24,12 +24,12 @@ auto msg() -> std::function<void(std::uint8_t, std::string)>&
 
 #ifdef HARE_DEBUG
 #define MSG_TRACE(fromat, ...) \
-    msg()(trace_msg, fmt::format(fromat, ##__VA_ARGS__))
+    msg()(TRACE_MSG, fmt::format(fromat, ##__VA_ARGS__))
 #else
 #define MSG_TRACE(fromat, ...)
 #endif
 #define MSG_ERROR(fromat, ...) \
-    msg()(error_msg, fmt::format(fromat, ##__VA_ARGS__))
+    msg()(ERROR_MSG, fmt::format(fromat, ##__VA_ARGS__))
 #define MSG_FATAL(fromat, ...) \
     throw exception(fmt::format(fromat, ##__VA_ARGS__))
 

@@ -1,3 +1,14 @@
+/**
+ * @file hare/net/host_address.h
+ * @author l1ang70 (gog_017@outlook.com)
+ * @brief Describe the class associated with host_address.h
+ * @version 0.1-beta
+ * @date 2023-04-16
+ *
+ * @copyright Copyright (c) 2023
+ *
+ **/
+
 #ifndef _HARE_NET_HOST_ADDRESS_H_
 #define _HARE_NET_HOST_ADDRESS_H_
 

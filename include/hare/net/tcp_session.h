@@ -1,3 +1,14 @@
+/**
+ * @file hare/net/tcp_session.h
+ * @author l1ang70 (gog_017@outlook.com)
+ * @brief Describe the class associated with tcp_session.h
+ * @version 0.1-beta
+ * @date 2023-04-16
+ *
+ * @copyright Copyright (c) 2023
+ *
+ **/
+
 #ifndef _HARE_NET_TCP_SESSION_H_
 #define _HARE_NET_TCP_SESSION_H_
 
@@ -8,6 +19,7 @@
 namespace hare {
 namespace net {
 
+    HARE_CLASS_API
     class HARE_API tcp_session : public session {
         using write_callback = std::function<void(const hare::ptr<tcp_session>&)>;
         using high_water_callback = std::function<void(const hare::ptr<tcp_session>&)>;

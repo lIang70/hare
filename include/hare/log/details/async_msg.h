@@ -21,8 +21,8 @@ namespace log {
 
         HARE_CLASS_API
         struct HARE_API async_msg : public msg {
-            enum type { log, flush, terminate };
-            type type_ { log };
+            enum type { LOG, FLUSH, TERMINATE };
+            type type_ { LOG };
 
             async_msg() = default;
 

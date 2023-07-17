@@ -1,3 +1,14 @@
+/**
+ * @file hare/net/hybrid_serve.h
+ * @author l1ang70 (gog_017@outlook.com)
+ * @brief Describe the class associated with hybrid_serve.h
+ * @version 0.1-beta
+ * @date 2023-04-16
+ *
+ * @copyright Copyright (c) 2023
+ *
+ **/
+
 #ifndef _HARE_NET_HYBRID_SERVE_H_
 #define _HARE_NET_HYBRID_SERVE_H_
 
@@ -11,8 +22,7 @@ namespace net {
     class io_pool;
     class acceptor;
     HARE_CLASS_API
-    class HARE_API hybrid_serve : public util::non_copyable
-                                , public std::enable_shared_from_this<hybrid_serve> {
+    class HARE_API hybrid_serve : public util::non_copyable {
         using new_session_callback = std::function<void(const session::ptr&, const timestamp&, const hare::ptr<acceptor>&)>;
 
         std::string name_ {};
