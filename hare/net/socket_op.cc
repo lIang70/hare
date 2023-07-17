@@ -35,7 +35,7 @@ namespace net {
 
         namespace detail {
 #if defined(NO_ACCEPT4)
-            void set_nonblock_closeonexec(int _fd)
+            void set_nonblock_closeonexec(util_socket_t _fd)
             {
                 // non-block
                 auto flags = ::fcntl(_fd, F_GETFL, 0);
@@ -54,7 +54,7 @@ namespace net {
 #endif
         } // namespace detail
 
-        auto create_nonblocking_or_die(int8_t _family) -> util_socket_t
+        auto create_nonblocking_or_die(std::uint8_t _family) -> util_socket_t
         {
 #ifdef H_OS_LINUX
             auto _fd = ::socket(_family, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0);
@@ -65,7 +65,7 @@ namespace net {
             return _fd;
         }
 
-        auto create_dgram_or_die(int8_t _family) -> util_socket_t
+        auto create_dgram_or_die(std::uint8_t _family) -> util_socket_t
         {
 #ifdef H_OS_LINUX
             auto _fd = ::socket(_family, SOCK_DGRAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0);
@@ -76,12 +76,12 @@ namespace net {
             return _fd;
         }
 
-        auto bind(int _fd, const struct sockaddr* _addr) -> error
+        auto bind(util_socket_t _fd, const struct sockaddr* _addr) -> error
         {
             return ::bind(_fd, _addr, sizeof(struct sockaddr_in6)) != 0 ? error(ERROR_SOCKET_BIND) : error();
         }
 
-        auto listen(int _fd) -> error
+        auto listen(util_socket_t _fd) -> error
         {
             return ::listen(_fd, SOMAXCONN) < 0 ? error(ERROR_SOCKET_LISTEN) : error();
         }
@@ -146,27 +146,27 @@ namespace net {
             return ::shutdown(_fd, SHUT_WR) < 0 ? error(ERROR_SOCKET_SHUTDOWN_WRITE) : error();
         }
 
-        auto write(util_socket_t _fd, const void* _buf, size_t size) -> int64_t
+        auto write(util_socket_t _fd, const void* _buf, std::size_t size) -> std::int64_t
         {
             return ::write(_fd, _buf, size);
         }
 
-        auto read(util_socket_t _fd, void* _buf, size_t size) -> int64_t
+        auto read(util_socket_t _fd, void* _buf, std::size_t size) -> std::int64_t
         {
             return ::read(_fd, _buf, size);
         }
 
-        auto recvfrom(util_socket_t _fd, void* _buf, size_t size, struct sockaddr* _addr, size_t addr_len) -> int64_t
+        auto recvfrom(util_socket_t _fd, void* _buf, std::size_t size, struct sockaddr* _addr, std::size_t addr_len) -> std::int64_t
         {
             return ::recvfrom(_fd, _buf, size, 0, _addr, reinterpret_cast<socklen_t*>(&addr_len));
         }
 
-        auto sendto(util_socket_t _fd, void* _buf, size_t _size, struct sockaddr* _addr, size_t _addr_len) -> int64_t
+        auto sendto(util_socket_t _fd, void* _buf, std::size_t _size, struct sockaddr* _addr, std::size_t _addr_len) -> std::int64_t
         {
             return ::sendto(_fd, _buf, _size, 0, _addr, _addr_len);
         }
 
-        auto get_addr_len(int32_t _family) -> size_t
+        auto get_addr_len(std::uint8_t _family) -> std::size_t
         {
             return _family == PF_INET ? sizeof(struct sockaddr_in) : sizeof(struct sockaddr_in6);
         }
@@ -192,7 +192,7 @@ namespace net {
 
         auto get_socket_error_info(util_socket_t _fd) -> std::string
         {
-            std::array<char, static_cast<size_t>(HARE_SMALL_BUFFER)> error_str {};
+            std::array<char, static_cast<std::size_t>(HARE_SMALL_BUFFER)> error_str {};
             auto error_len = error_str.size();
             if (::getsockopt(_fd, SOL_SOCKET, SO_ERROR, error_str.data(), reinterpret_cast<socklen_t*>(&error_len)) != -1) {
                 return error_str.data();
@@ -200,7 +200,7 @@ namespace net {
             return {};
         }
 
-        void to_ip_port(char* _buf, size_t size, const struct sockaddr* _addr)
+        void to_ip_port(char* _buf, std::size_t size, const struct sockaddr* _addr)
         {
             if (_addr->sa_family == AF_INET6) {
                 _buf[0] = '[';
@@ -220,7 +220,7 @@ namespace net {
             ignore_unused(::snprintf(_buf + end, size - end, ":%u", port));
         }
 
-        void to_ip(char* _buf, size_t size, const struct sockaddr* _addr)
+        void to_ip(char* _buf, std::size_t size, const struct sockaddr* _addr)
         {
             if (_addr->sa_family == AF_INET) {
                 assert(size >= INET_ADDRSTRLEN);

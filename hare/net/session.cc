@@ -72,7 +72,7 @@ namespace net {
 
     session::session(io::cycle* _cycle, TYPE _type,
         host_address _local_addr,
-        std::string _name, int8_t _family, util_socket_t _fd,
+        std::string _name, std::uint8_t _family, util_socket_t _fd,
         host_address _peer_addr)
         : cycle_(CHECK_NULL(_cycle))
         , event_(new io::event(_fd,

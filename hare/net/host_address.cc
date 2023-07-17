@@ -52,7 +52,7 @@ namespace net {
     auto host_address::local_address(util_socket_t _fd) -> host_address
     {
         host_address local_addr {};
-        local_addr.addr_.in6_ = static_cast<struct sockaddr_in6*>(malloc(sizeof(struct sockaddr_in6)));
+        local_addr.addr_.in6_ = static_cast<struct sockaddr_in6*>(std::malloc(sizeof(struct sockaddr_in6)));
 
         auto addr_len = static_cast<socklen_t>(sizeof(struct sockaddr_in6));
         if (::getsockname(_fd, sockaddr_cast(local_addr.addr_.in6_), &addr_len) < 0) {
@@ -64,7 +64,7 @@ namespace net {
     auto host_address::peer_address(util_socket_t _fd) -> host_address
     {
         host_address peer_addr {};
-        peer_addr.addr_.in6_ = static_cast<struct sockaddr_in6*>(malloc(sizeof(struct sockaddr_in6)));
+        peer_addr.addr_.in6_ = static_cast<struct sockaddr_in6*>(std::malloc(sizeof(struct sockaddr_in6)));
 
         auto addr_len = static_cast<socklen_t>(sizeof(struct sockaddr_in6));
         if (::getpeername(_fd, sockaddr_cast(peer_addr.addr_.in6_), &addr_len) < 0) {
@@ -78,7 +78,7 @@ namespace net {
         static_assert(offsetof(host_address, addr_.in6_) == 0, "addr_in6_ offset 0");
         static_assert(offsetof(host_address, addr_.in_) == 0, "addr_in_ offset 0");
 
-        addr_.in6_ = static_cast<struct sockaddr_in6*>(malloc(sizeof(struct sockaddr_in6)));
+        addr_.in6_ = static_cast<struct sockaddr_in6*>(std::malloc(sizeof(struct sockaddr_in6)));
 
         if (_ipv6) {
             hare::detail::fill_n((addr_.in6_), sizeof(struct sockaddr_in6), 0);
@@ -97,7 +97,7 @@ namespace net {
 
     host_address::host_address(const std::string& _ip, uint16_t _port, bool _ipv6)
     {
-        addr_.in6_ = static_cast<struct sockaddr_in6*>(malloc(sizeof(struct sockaddr_in6)));
+        addr_.in6_ = static_cast<struct sockaddr_in6*>(std::malloc(sizeof(struct sockaddr_in6)));
 
         if (_ipv6 || (strchr(_ip.c_str(), ':') != nullptr)) {
             hare::detail::fill_n(addr_.in6_, sizeof(struct sockaddr_in6), 0);
@@ -110,7 +110,7 @@ namespace net {
 
     host_address::~host_address()
     {
-        free(addr_.in6_);
+        std::free(addr_.in6_);
     }
 
     host_address::host_address(host_address&& _another) noexcept
@@ -124,11 +124,16 @@ namespace net {
         return (*this);
     }
 
+    auto host_address::family() const -> std::uint8_t
+    {
+        return addr_.in_->sin_family;
+    }
+
     void host_address::set_sockaddr_in6(const struct sockaddr_in6* _addr_in6) const
     {
         assert(_addr_in6 != nullptr);
         assert(addr_.in6_ != nullptr);
-        ::memcpy(addr_.in6_, _addr_in6, sizeof(struct sockaddr_in6));
+        std::memcpy(addr_.in6_, _addr_in6, sizeof(struct sockaddr_in6));
     }
 
     auto host_address::to_ip() const -> std::string

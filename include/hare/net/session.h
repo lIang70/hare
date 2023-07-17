@@ -71,6 +71,8 @@ namespace net {
         HARE_INLINE auto state() const -> STATE { return state_; }
         HARE_INLINE auto fd() const -> util_socket_t { return socket_.fd(); }
 
+        HARE_INLINE auto connected() const -> bool { return state_ == STATE_CONNECTED; }
+
         HARE_INLINE void set_connect_callback(connect_callback _connect) { connect_ = std::move(_connect); }
 
         HARE_INLINE void set_context(const util::any& context) { any_ctx_ = context; }
@@ -87,7 +89,7 @@ namespace net {
     protected:
         session(io::cycle* _cycle, TYPE _type,
             host_address _local_addr,
-            std::string _name, std::int8_t _family, util_socket_t _fd,
+            std::string _name, std::uint8_t _family, util_socket_t _fd,
             host_address _peer_addr);
 
         HARE_INLINE void set_state(STATE _state) { state_ = _state; }

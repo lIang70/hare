@@ -15,7 +15,7 @@
 namespace hare {
 namespace net {
 
-    acceptor::acceptor(int8_t _family, TYPE _type, int16_t _port, bool _reuse_port)
+    acceptor::acceptor(std::uint8_t _family, TYPE _type, std::uint16_t _port, bool _reuse_port)
         : io::event(_type == TYPE_TCP ? socket_op::create_nonblocking_or_die(_family) : (_type == TYPE_UDP ? socket_op::create_dgram_or_die(_family) : -1),
             std::bind(&acceptor::event_callback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
             io::EVENT_PERSIST,

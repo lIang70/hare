@@ -528,5 +528,13 @@ namespace net {
         return true;
     }
 
+    void buffer::move(buffer& _other) noexcept
+    {
+        block_chain_ = std::move(_other.block_chain_);
+        write_iter_ = _other.write_iter_;
+        total_len_ = _other.total_len_;
+        max_read_ = _other.max_read_;
+    }
+
 } // namespace net
 } // namespace hare

@@ -38,8 +38,8 @@ namespace net {
     HARE_API auto network_to_host32(std::uint32_t _net32) -> std::uint32_t;
     HARE_API auto network_to_host16(std::uint16_t _net16) -> std::uint16_t;
 
-    HARE_API auto get_local_address(std::int32_t _type, std::list<std::string>& _addr_list) -> error;
-    HARE_API auto get_socket_pair(std::int8_t _family, std::int32_t _type, std::int32_t _protocol, std::array<util_socket_t, 2>& _sockets) -> error;
+    HARE_API auto get_local_address(std::uint8_t _family, std::list<std::string>& _addr_list) -> error;
+    HARE_API auto get_socket_pair(std::uint8_t _family, std::int32_t _type, std::int32_t _protocol, std::array<util_socket_t, 2>& _sockets) -> error;
 
 } // namespace net
 } // namespace hare

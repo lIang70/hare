@@ -26,7 +26,7 @@ namespace net {
         }
     }
 
-    socket::socket(int8_t family, TYPE type, util_socket_t socket)
+    socket::socket(std::uint8_t family, TYPE type, util_socket_t socket)
         : socket_(socket)
         , family_(family)
         , type_(type)

@@ -69,13 +69,13 @@ namespace util {
         }
 
         template <class T>
-        auto is() -> bool
+        auto is() const -> bool
         {
             return type_index_ == std::type_index(typeid(T));
         }
 
         template <class T>
-        auto cast() -> T&
+        auto cast() const -> T&
         {
             return ptr_ ? nullptr : is<T>() ? &static_cast<detail::derived<T>*>(ptr_.get())->value_
                                             : nullptr;

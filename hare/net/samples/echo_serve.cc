@@ -135,6 +135,7 @@ auto main(std::int32_t argc, char** argv) -> std::int32_t
 
     LOG_INFO(server_logger, "========= ECHO serve stop =========");
 
+    acc->deactivate();
     acc.reset();
 
     server_logger->flush();

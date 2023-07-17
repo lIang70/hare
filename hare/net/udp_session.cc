@@ -56,7 +56,7 @@ namespace net {
 
     udp_session::udp_session(io::cycle* _cycle,
         host_address _local_addr,
-        std::string _name, int8_t _family, util_socket_t _fd,
+        std::string _name, std::uint8_t _family, util_socket_t _fd,
         host_address _peer_addr)
         : session(CHECK_NULL(_cycle), TYPE_TCP,
             std::move(_local_addr),

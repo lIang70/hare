@@ -11,8 +11,8 @@ namespace hare {
 namespace net {
     namespace socket_op {
 
-        extern auto create_nonblocking_or_die(std::int8_t _family) -> util_socket_t;
-        extern auto create_dgram_or_die(std::int8_t _family) -> util_socket_t;
+        extern auto create_nonblocking_or_die(std::uint8_t _family) -> util_socket_t;
+        extern auto create_dgram_or_die(std::uint8_t _family) -> util_socket_t;
 
         extern auto bind(util_socket_t _fd, const struct sockaddr* _addr) -> error;
         extern auto listen(util_socket_t _fd) -> error;
@@ -26,7 +26,7 @@ namespace net {
         extern auto recvfrom(util_socket_t _fd, void* _buf, std::size_t _size, struct sockaddr* _addr, std::size_t _addr_len) -> std::int64_t;
         extern auto sendto(util_socket_t _fd, void* _buf, std::size_t _size, struct sockaddr* _addr, std::size_t _addr_len) -> std::int64_t;
 
-        extern auto get_addr_len(std::int32_t _family) -> std::size_t;
+        extern auto get_addr_len(std::uint8_t _family) -> std::size_t;
         extern auto get_bytes_readable_on_socket(util_socket_t _fd) -> std::int64_t;
         extern auto get_socket_error_info(util_socket_t _fd) -> std::string;
 

@@ -50,6 +50,14 @@ namespace net {
         explicit buffer(std::size_t _max_read = HARE_MAX_READ_DEFAULT);
         ~buffer();
 
+        HARE_INLINE
+        buffer(buffer&& _other) noexcept
+        { move(_other); }
+
+        HARE_INLINE
+        auto operator=(buffer&& _other) noexcept -> buffer&
+        { move(_other); return (*this); }
+
         HARE_INLINE auto size() const -> std::size_t { return total_len_; }
         HARE_INLINE void set_max_read(std::size_t _max_read) { max_read_ = _max_read; }
 
@@ -70,6 +78,10 @@ namespace net {
 
         auto add_block(void* _bytes, std::size_t _size) -> bool;
         auto get_block(void** _bytes, std::size_t& _size) -> bool;
+
+    private:
+        void move(buffer& _other) noexcept;
+
     };
 
 } // namespace net

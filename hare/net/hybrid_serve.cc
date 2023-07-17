@@ -17,7 +17,7 @@ namespace net {
 
     namespace detail {
 
-        auto create_udp_socket(host_address& local_addr, int8_t _family, host_address& peer_addr) -> util_socket_t
+        auto create_udp_socket(host_address& local_addr, std::uint8_t _family, host_address& peer_addr) -> util_socket_t
         {
             auto accept_fd = socket_op::create_dgram_or_die(_family);
             if (accept_fd <= 0) {
@@ -98,7 +98,7 @@ namespace net {
         return added;
     }
 
-    auto hybrid_serve::exec(int32_t _thread_nbr) -> error
+    auto hybrid_serve::exec(std::int32_t _thread_nbr) -> error
     {
         assert(cycle_);
 

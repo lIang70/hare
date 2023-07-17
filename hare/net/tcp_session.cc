@@ -11,13 +11,13 @@ namespace net {
     auto tcp_session::append(buffer& _buffer) -> bool
     {
         if (state() == STATE_CONNECTED) {
-            auto tmp = std::make_shared<buffer>();
-            tmp->append(_buffer);
-            owner_cycle()->queue_in_cycle(std::bind([](const wptr<tcp_session>& session, buffer::ptr& buffer) {
+            buffer tmp {};
+            tmp.append(_buffer);
+            owner_cycle()->queue_in_cycle(std::bind([](const wptr<tcp_session>& session, buffer& buffer) {
                 auto tcp = session.lock();
                 if (tcp) {
                     auto out_buffer_size = tcp->out_buffer_.size();
-                    tcp->out_buffer_.append(*buffer);
+                    tcp->out_buffer_.append(buffer);
                     if (out_buffer_size == 0) {
                         tcp->event()->enable_write();
                         tcp->handle_write();
@@ -35,13 +35,13 @@ namespace net {
     auto tcp_session::send(const void* _bytes, size_t _length) -> bool
     {
         if (state() == STATE_CONNECTED) {
-            auto tmp = std::make_shared<buffer>();
-            tmp->add(_bytes, _length);
-            owner_cycle()->queue_in_cycle(std::bind([](const wptr<tcp_session>& session, buffer::ptr& buffer) {
+            buffer tmp {};
+            tmp.add(_bytes, _length);
+            owner_cycle()->queue_in_cycle(std::bind([](const wptr<tcp_session>& session, buffer& buffer) {
                 auto tcp = session.lock();
                 if (tcp) {
                     auto out_buffer_size = tcp->out_buffer_.size();
-                    tcp->out_buffer_.append(*buffer);
+                    tcp->out_buffer_.append(buffer);
                     if (out_buffer_size == 0) {
                         tcp->event()->enable_write();
                         tcp->handle_write();
@@ -63,7 +63,7 @@ namespace net {
 
     tcp_session::tcp_session(io::cycle* _cycle,
         host_address _local_addr,
-        std::string _name, int8_t _family, util_socket_t _fd,
+        std::string _name, std::uint8_t _family, util_socket_t _fd,
         host_address _peer_addr)
         : session(CHECK_NULL(_cycle), TYPE_TCP,
             std::move(_local_addr),

@@ -57,6 +57,8 @@ namespace net {
         host_address(host_address&& _another) noexcept;
         auto operator=(host_address&& _another) noexcept -> host_address&;
 
+        auto family() const -> std::uint8_t;
+
         HARE_INLINE auto get_sockaddr() const -> sockaddr* { return sockaddr_cast(addr_.in6_); }
         void set_sockaddr_in6(const struct sockaddr_in6* addr_in6) const;
 

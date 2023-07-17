@@ -43,7 +43,7 @@ namespace net {
     HARE_CLASS_API
     class HARE_API socket : public util::non_copyable {
         util_socket_t socket_ { -1 };
-        std::int8_t family_ { 0 };
+        std::uint8_t family_ { 0 };
         TYPE type_ { TYPE_INVALID };
 
     public:
@@ -51,11 +51,11 @@ namespace net {
 
         static auto type_str(TYPE _type) -> const char*;
 
-        socket(std::int8_t family, TYPE type, util_socket_t socket = -1);
+        socket(std::uint8_t family, TYPE type, util_socket_t socket = -1);
         ~socket();
 
         HARE_INLINE auto fd() const -> util_socket_t { return socket_; }
-        HARE_INLINE auto family() const -> std::int8_t { return family_; }
+        HARE_INLINE auto family() const -> std::uint8_t { return family_; }
         HARE_INLINE auto type() const -> TYPE { return type_; }
 
         auto bind_address(const host_address& local_addr) const -> error;
