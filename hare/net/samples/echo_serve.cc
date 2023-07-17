@@ -117,17 +117,17 @@ auto main(std::int32_t argc, char** argv) -> std::int32_t
 
     acceptor::ptr acc { new acceptor(AF_INET, acceptor_type, int16_t(std::stoi(std::string(argv[2])))) };
 
-    hare::io::cycle::ptr main_cycle = std::make_shared<hare::io::cycle>(hare::io::cycle::REACTOR_TYPE_EPOLL);
-    hare::net::hybrid_serve::ptr main_serve = std::make_shared<hare::net::hybrid_serve>(main_cycle, "ECHO");
+    hare::io::cycle main_cycle(hare::io::cycle::REACTOR_TYPE_EPOLL);
+    hare::net::hybrid_serve::ptr main_serve = std::make_shared<hare::net::hybrid_serve>(&main_cycle, "ECHO");
 
     main_serve->set_new_session(new_session);
     main_serve->add_acceptor(acc);
 
     auto& console = hare::io::console::instance();
-    console.register_handle("quit", [=] {
-        main_cycle->exit();
+    console.register_handle("quit", [&] {
+        main_cycle.exit();
     });
-    console.attach(main_cycle.get());
+    console.attach(&main_cycle);
 
     LOG_INFO(server_logger, "========= ECHO serve start =========");
 

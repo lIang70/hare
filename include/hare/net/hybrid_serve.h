@@ -28,7 +28,7 @@ namespace net {
         std::string name_ {};
 
         // the acceptor loop
-        ptr<io::cycle> cycle_ {};
+        io::cycle* cycle_ {};
         ptr<io_pool> io_pool_ {};
         uint64_t session_id_ { 0 };
         bool started_ { false };
@@ -38,10 +38,10 @@ namespace net {
     public:
         using ptr = ptr<hybrid_serve>;
 
-        explicit hybrid_serve(hare::ptr<io::cycle> _cycle, std::string _name = "HARE_SERVE");
+        explicit hybrid_serve(io::cycle* _cycle, std::string _name = "HARE_SERVE");
         virtual ~hybrid_serve();
 
-        HARE_INLINE auto main_cycle() const -> hare::ptr<io::cycle> { return cycle_; }
+        HARE_INLINE auto main_cycle() const -> io::cycle* { return cycle_; }
         HARE_INLINE auto is_running() const -> bool { return started_; }
         HARE_INLINE void set_new_session(new_session_callback _new_session) { new_session_ = std::move(_new_session); }
 

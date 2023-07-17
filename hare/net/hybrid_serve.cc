@@ -58,9 +58,9 @@ namespace net {
 
     } // namespace detail
 
-    hybrid_serve::hybrid_serve(hare::ptr<io::cycle> _cycle, std::string _name)
+    hybrid_serve::hybrid_serve(io::cycle* _cycle, std::string _name)
         : name_(std::move(_name))
-        , cycle_(std::move(_cycle))
+        , cycle_(_cycle)
     {
     }
 
@@ -114,8 +114,6 @@ namespace net {
 
         MSG_TRACE("clean io pool...");
         io_pool_->stop();
-
-        cycle_.reset();
         io_pool_.reset();
 
         return error();
