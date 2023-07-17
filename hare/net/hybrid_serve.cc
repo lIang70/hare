@@ -1,5 +1,4 @@
 #include "hare/base/fwd-inl.h"
-#include "hare/base/io/local.h"
 #include "hare/net/io_pool.h"
 #include "hare/net/socket_op.h"
 #include <hare/base/io/cycle.h>

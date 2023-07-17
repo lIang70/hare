@@ -1,6 +1,5 @@
 #include "hare/net/io_pool.h"
 #include "hare/base/fwd-inl.h"
-#include "hare/base/io/local.h"
 #include <hare/base/util/count_down_latch.h>
 #include <hare/base/util/system.h>
 #include <hare/net/session.h>
