@@ -31,7 +31,7 @@ namespace log {
     public:
         virtual ~backend() = default;
 
-        virtual void log(details::msg& msg) = 0;
+        virtual void log(details::msg_buffer_t& _msg, LEVEL _log_level) = 0;
         virtual void flush() = 0;
 
         HARE_INLINE
@@ -41,9 +41,9 @@ namespace log {
         }
 
         HARE_INLINE
-        void set_level(LEVEL log_level)
+        void set_level(LEVEL _log_level)
         {
-            level_.store(log_level);
+            level_.store(_log_level);
         }
 
         HARE_INLINE
@@ -62,10 +62,10 @@ namespace log {
     public:
         base_backend() = default;
 
-        void log(details::msg& _msg) final
+        void log(details::msg_buffer_t& _msg, LEVEL _log_level) final
         {
             std::lock_guard<Mutex> lock(mutex_);
-            inner_sink_it(_msg);
+            inner_sink_it(_msg, _log_level);
         }
 
         void flush() final
@@ -75,7 +75,7 @@ namespace log {
         }
 
     protected:
-        virtual void inner_sink_it(details::msg& _msg) = 0;
+        virtual void inner_sink_it(details::msg_buffer_t& _msg, LEVEL _log_level) = 0;
         virtual void inner_flush() = 0;
     };
 

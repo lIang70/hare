@@ -44,9 +44,9 @@ namespace log {
 
             template <bool WithLock>
             HARE_INLINE
-            auto should_rotate(const details::msg& _msg, const details::file<WithLock>& _file) -> bool
+            auto should_rotate(LEVEL _log_level, const details::file<WithLock>& _file) -> bool
             {
-                ignore_unused(_msg);
+                ignore_unused(_log_level);
                 return _file.size() >= MaxSize;
             }
         };
@@ -82,13 +82,11 @@ namespace log {
         }
 
     private:
-        void inner_sink_it(details::msg& _msg) final
+        void inner_sink_it(details::msg_buffer_t& _msg, LEVEL _log_level) final
         {
-            details::msg_buffer_t formatted {};
-            details::format_msg(_msg, formatted);
-            file_.append(formatted);
+            file_.append(_msg);
 
-            auto should_rotation = generator_.should_rotate(_msg, file_);
+            auto should_rotation = generator_.should_rotate(_log_level, file_);
             if (should_rotation) {
                 auto filename = generator_.get_name(basename_);
                 file_.open(filename);

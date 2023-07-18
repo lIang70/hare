@@ -29,12 +29,15 @@ namespace log {
     auto async_logger::handle_msg(details::async_msg& _msg) -> bool
     {
         switch (_msg.type_) {
-        case details::async_msg::LOG:
+        case details::async_msg::LOG: {
             incr_msg_id(_msg);
+
+            details::msg_buffer_t formatted {};
+            details::format_msg(_msg, formatted);
 
             for (auto& backend : backends_) {
                 if (backend->check(_msg.level_)) {
-                    backend->log(_msg);
+                    backend->log(formatted, static_cast<LEVEL>(_msg.level_));
                 }
             }
 
@@ -42,6 +45,7 @@ namespace log {
                 flush();
             }
             return true;
+        }
         case details::async_msg::FLUSH:
             try {
                 for (auto& backend : backends_) {

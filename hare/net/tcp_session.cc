@@ -11,13 +11,13 @@ namespace net {
     auto tcp_session::append(buffer& _buffer) -> bool
     {
         if (state() == STATE_CONNECTED) {
-            buffer tmp {};
-            tmp.append(_buffer);
-            owner_cycle()->queue_in_cycle(std::bind([](const wptr<tcp_session>& session, buffer& buffer) {
+            auto tmp = std::make_shared<buffer>();
+            tmp->append(_buffer);
+            owner_cycle()->queue_in_cycle(std::bind([](const wptr<tcp_session>& session, hare::ptr<buffer>& buffer) {
                 auto tcp = session.lock();
                 if (tcp) {
                     auto out_buffer_size = tcp->out_buffer_.size();
-                    tcp->out_buffer_.append(buffer);
+                    tcp->out_buffer_.append(*buffer);
                     if (out_buffer_size == 0) {
                         tcp->event()->enable_write();
                         tcp->handle_write();
@@ -35,13 +35,13 @@ namespace net {
     auto tcp_session::send(const void* _bytes, size_t _length) -> bool
     {
         if (state() == STATE_CONNECTED) {
-            buffer tmp {};
-            tmp.add(_bytes, _length);
-            owner_cycle()->queue_in_cycle(std::bind([](const wptr<tcp_session>& session, buffer& buffer) {
+            auto tmp = std::make_shared<buffer>();
+            tmp->add(_bytes, _length);
+            owner_cycle()->queue_in_cycle(std::bind([](const wptr<tcp_session>& session, hare::ptr<buffer>& buffer) {
                 auto tcp = session.lock();
                 if (tcp) {
                     auto out_buffer_size = tcp->out_buffer_.size();
-                    tcp->out_buffer_.append(buffer);
+                    tcp->out_buffer_.append(*buffer);
                     if (out_buffer_size == 0) {
                         tcp->event()->enable_write();
                         tcp->handle_write();

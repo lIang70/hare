@@ -2,6 +2,7 @@
 #include <hare/base/io/cycle.h>
 #include <hare/base/util/system.h>
 #include <hare/log/backends/file_backend.h>
+#include <hare/log/backends/std_backend.h>
 #include <hare/log/registry.h>
 #include <hare/net/acceptor.h>
 #include <hare/net/hybrid_serve.h>
@@ -88,6 +89,7 @@ auto main(std::int32_t argc, char** argv) -> std::int32_t
 {
     using hare::log::backend;
     using hare::log::file_backend_mt;
+    using hare::log::std_backend_mt;
     using hare::log::detail::rotate_file;
 
     if (argc < 4) {
@@ -99,9 +101,11 @@ auto main(std::int32_t argc, char** argv) -> std::int32_t
 
     auto tmp = hare::util::system_dir();
     std::vector<hare::ptr<backend>> backends {
-        std::make_shared<file_backend_mt<rotate_file<file_size>>>(tmp + "/echo_serve")
+        std::make_shared<file_backend_mt<rotate_file<file_size>>>(tmp + "/echo_serve"),
+        std_backend_mt::instance()
     };
     backends[0]->set_level(hare::log::LEVEL_TRACE);
+    backends[1]->set_level(hare::log::LEVEL_INFO);
 
     server_logger = hare::log::registry::create("echo_serve", backends.begin(), backends.end());
     server_logger->set_level(hare::log::LEVEL_TRACE);
@@ -135,7 +139,6 @@ auto main(std::int32_t argc, char** argv) -> std::int32_t
 
     LOG_INFO(server_logger, "========= ECHO serve stop =========");
 
-    acc->deactivate();
     acc.reset();
 
     server_logger->flush();

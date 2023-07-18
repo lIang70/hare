@@ -49,9 +49,12 @@ namespace log {
     {
         incr_msg_id(_msg);
 
+        details::msg_buffer_t formatted {};
+        details::format_msg(_msg, formatted);
+
         for (auto& backend : backends_) {
             if (backend->check(_msg.level_)) {
-                backend->log(_msg);
+                backend->log(formatted, static_cast<LEVEL>(_msg.level_));
             }
         }
 
