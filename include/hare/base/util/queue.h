@@ -46,15 +46,11 @@ namespace util {
 
         HARE_INLINE
         circular_queue(circular_queue&& _other) noexcept
-        {
-            move(_other);
-        }
+        { move(_other); }
+
         HARE_INLINE
         circular_queue& operator=(circular_queue&& _other) noexcept
-        {
-            move(_other);
-            return (*this);
-        }
+        { move(_other); return (*this); }
 
         void push_back(T&& _item)
         {
@@ -78,6 +74,8 @@ namespace util {
             return tail_ >= head_ ? tail_ - head_ : max_capacity_ - head_ + tail_;
         }
 
+        HARE_INLINE auto capacity() const -> size_type { return max_capacity_; }
+
         HARE_INLINE
         auto at(size_type i) const -> const T&
         {
@@ -91,6 +89,15 @@ namespace util {
             auto tmp = std::move(sequence_[head_]);
             head_ = (head_ + 1) % max_capacity_;
             return tmp;
+        }
+
+        HARE_INLINE
+        void get_all(_Sequence& _seq)
+        {
+            auto i { 0 };
+            while (!empty()) {
+                _seq[i] = std::move(pop_front());
+            }
         }
 
         HARE_INLINE auto empty() const -> bool { return tail_ == head_; }
@@ -113,6 +120,7 @@ namespace util {
             _other.head_ = _other.tail_ = 0;
             _other.over_counter_ = 0;
         }
+
     };
 
     template <typename T>
@@ -197,6 +205,20 @@ namespace util {
                 _item = std::move(circular_.pop_front());
             }
             pop_cv_.notify_one();
+        }
+
+        auto dequeues() -> std::vector<T>
+        {
+            std::vector<T> ret {};
+            {
+                std::unique_lock<std::mutex> lock(mutex_);
+                push_cv_.wait(lock, [this] { return !this->circular_.empty(); });
+                ret.resize(circular_.size());
+                circular_.get_all(ret);
+            }
+            pop_cv_.notify_one();
+
+            return ret;
         }
     };
 
