@@ -31,11 +31,8 @@ public:
     exception(exception&&) = default;
     exception& operator=(exception&&) = default;
 
-    HARE_INLINE
-    auto what() const noexcept -> const char* override { return what_.c_str(); }
-
-    HARE_INLINE
-    auto stack_trace() const noexcept -> const char* { return stack_.c_str(); }
+    HARE_INLINE auto what() const noexcept -> const char* override { return what_.c_str(); }
+    HARE_INLINE auto stack_trace() const noexcept -> const char* { return stack_.c_str(); }
 };
 
 } // namespace hare

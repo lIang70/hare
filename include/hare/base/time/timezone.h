@@ -24,7 +24,7 @@ class HARE_API timezone {
 public:
     timezone() = default; // an invalid timezone
     timezone(std::int32_t _east_of_utc, const char* _tz_name); // a fixed timezone
-    ~timezone() = default;;
+    ~timezone() = default;
 
     timezone(const timezone& _another);
     auto operator=(const timezone& _another) -> timezone&;
@@ -35,8 +35,7 @@ public:
     // timegm(3)
     static auto from_utc_time(const time::date_time& _dt) -> std::int64_t;
 
-    HARE_INLINE
-    explicit operator bool() const { return bool(data_); }
+    HARE_INLINE explicit operator bool() const { return bool(data_); }
 
     auto to_local(std::int64_t _seconds_since_epoch, std::int32_t* _utc_offset = nullptr) const -> time::date_time;
     auto from_local(const time::date_time& _dt, bool _post_transition = false) const -> std::int64_t;
