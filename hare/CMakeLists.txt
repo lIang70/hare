@@ -180,10 +180,10 @@ configure_file(
 
 find_package(PkgConfig CONFIG)
 
-if(EXISTS "${CMAKE_SOURCE_DIR}/lib/jemalloc/" AND IS_DIRECTORY "${CMAKE_SOURCE_DIR}/lib/jemalloc/")
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../lib/jemalloc/" AND IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../lib/jemalloc/")
     message(STATUS "Jemalloc is built")
     if(PKG_CONFIG_FOUND)
-        set(ENV{PKG_CONFIG_PATH} ${CMAKE_SOURCE_DIR}/lib/jemalloc/lib/pkgconfig:$ENV{PKG_CONFIG_PATH})
+        set(ENV{PKG_CONFIG_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/../lib/jemalloc/lib/pkgconfig:$ENV{PKG_CONFIG_PATH})
         pkg_search_module(Jemalloc REQUIRED IMPORTED_TARGET jemalloc>=5.3)
         option(JEMALLOC_FOUND ON)
     endif(PKG_CONFIG_FOUND)
@@ -193,8 +193,8 @@ else()
 endif()
 
 # Add hare-config
-include_directories(${CMAKE_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR}/include)
-include_directories(${CMAKE_SOURCE_DIR}/3rdparty/fmt/include)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../include ${CMAKE_CURRENT_SOURCE_DIR}/../ ${CMAKE_CURRENT_BINARY_DIR}/include)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../3rdparty/fmt/include)
 
 # Add hare_base's src
 file(GLOB HARE_BASE_SOURCES
@@ -206,7 +206,7 @@ file(GLOB HARE_BASE_SOURCES
 )
 # Add the source code to the project's executable。
 add_library(hare_base ${HARE__LIBRARY_TYPE} ${HARE_BASE_SOURCES})
-target_include_directories(hare_base PUBLIC ${CMAKE_SOURCE_DIR}/include)
+target_include_directories(hare_base PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../include/hare/base/)
 if(JEMALLOC_FOUND)
     target_link_libraries(hare_base PkgConfig::Jemalloc)
 endif()
@@ -222,7 +222,7 @@ file(GLOB HARE_LOG_SOURCES
 )
 # Add the source code to the project's executable。
 add_library(hare_log ${HARE__LIBRARY_TYPE} ${HARE_LOG_SOURCES})
-target_include_directories(hare_log PUBLIC ${CMAKE_SOURCE_DIR}/include)
+target_include_directories(hare_log PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../include/hare/log/)
 if(JEMALLOC_FOUND)
     target_link_libraries(hare_log hare_base PkgConfig::Jemalloc)
 else()
@@ -232,9 +232,9 @@ if(HARE__BUILD_TESTS)
     add_subdirectory(log/tests)
 endif(HARE__BUILD_TESTS)
 
-if(EXISTS "${CMAKE_SOURCE_DIR}/lib/openssl/" AND IS_DIRECTORY "${CMAKE_SOURCE_DIR}/lib/openssl/")
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../lib/openssl/" AND IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../lib/openssl/")
     message(STATUS "OpenSSL is built")
-    set(ENV{PKG_CONFIG_PATH} ${CMAKE_SOURCE_DIR}/lib/openssl/lib64/pkgconfig:$ENV{PKG_CONFIG_PATH})
+    set(ENV{PKG_CONFIG_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/../lib/openssl/lib64/pkgconfig:$ENV{PKG_CONFIG_PATH})
     find_package(OpenSSL REQUIRED SSL Crypto)
     include_directories(${OPENSSL_INCLUDE_DIR})
 else()
@@ -254,7 +254,7 @@ file(GLOB HARE_NET_SOURCES
 )
 # Add the source code to the project's executable。
 add_library(hare_net ${HARE__LIBRARY_TYPE} ${HARE_NET_SOURCES})
-target_include_directories(hare_net PUBLIC ${CMAKE_SOURCE_DIR}/include)
+target_include_directories(hare_net PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../include/hare/net/)
 if(JEMALLOC_FOUND)
     target_link_libraries(hare_net hare_base PkgConfig::Jemalloc ${OPENSSL_LIBRARIES})
 else()
