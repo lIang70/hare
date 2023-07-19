@@ -32,7 +32,11 @@ namespace log {
                 auto operator()(const void* _ptr, std::size_t _size,
                     std::size_t _n, std::FILE* _s) -> std::size_t
                 {
+#if defined(H_OS_WIN32)
+                    return ::_fwrite_nolock(_ptr, _size, _n, _s);
+#else
                     return ::fwrite_unlocked(_ptr, _size, _n, _s);
+#endif
                 }
             };
 

@@ -12,6 +12,10 @@
 #include <sys/socket.h>
 #endif
 
+#if defined(H_OS_WIN32)
+#define STDIN_FILENO 0
+#endif
+
 namespace hare {
 namespace io {
 

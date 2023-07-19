@@ -11,6 +11,8 @@
 namespace hare {
 namespace detail {
 
+    static const std::int32_t JULIAN_DAY_OF_19700101 { time::detail::get_julian_day_number(1970, 1, 1) };
+
     HARE_INLINE
     static void fill_hms(std::uint32_t _seconds, struct time::date_time* _sdt)
     {
@@ -32,7 +34,7 @@ namespace detail {
         }
 
         detail::fill_hms(seconds, &sdt);
-        time::date date(days + time::date::JULIAN_DAY_OF_19700101);
+        time::date date(days + JULIAN_DAY_OF_19700101);
         time::date::ymd ymd = date.detail();
         sdt.year_ = ymd.year;
         sdt.month_ = ymd.month;
@@ -284,7 +286,7 @@ auto timezone::from_utc_time(const struct time::date_time& _dt) -> std::int64_t
 {
     time::date date(_dt.year(), _dt.month(), _dt.day());
     auto seconds_in_day = _dt.hour() * (MINUTES_PER_HOUR * SECONDS_PER_MINUTE) + _dt.minute() * SECONDS_PER_MINUTE + _dt.second();
-    auto days = date.julian_day_number() - time::date::JULIAN_DAY_OF_19700101;
+    auto days = date.julian_day_number() - detail::JULIAN_DAY_OF_19700101;
     return days * SECONDS_PER_DAY + seconds_in_day;
 }
 

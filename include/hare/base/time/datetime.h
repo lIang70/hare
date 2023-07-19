@@ -4,9 +4,9 @@
  * @brief Describe the class associated with datetime.h
  * @version 0.1-beta
  * @date 2023-02-09
- * 
+ *
  * @copyright Copyright (c) 2023
- * 
+ *
  **/
 
 #ifndef _HARE_BASE_TIME_DATETIME_H_
@@ -20,6 +20,12 @@
 
 namespace hare {
 namespace time {
+
+    namespace detail {
+
+        auto get_julian_day_number(std::int32_t _year, std::int32_t _month, std::int32_t _day) noexcept -> std::int32_t;
+
+    } // namespace detail
 
     /**
      * Local time in unspecified timezone.
@@ -66,8 +72,7 @@ namespace time {
             std::int32_t day; // [1..31]
         };
 
-        static const std::int32_t DAYS_PER_WEEK;
-        static const std::int32_t JULIAN_DAY_OF_19700101;
+        static const std::int32_t DAYS_PER_WEEK { 7 };
 
         date() = default;
 
@@ -76,14 +81,24 @@ namespace time {
          *
          *   1 <= month <= 12
          **/
-        date(std::int32_t _year, std::int32_t _month, std::int32_t _day);
+        HARE_INLINE
+        date(std::int32_t _year, std::int32_t _month, std::int32_t _day)
+            : julian_day_number_(detail::get_julian_day_number(_year, _month, _day))
+        { }
 
+        HARE_INLINE
         explicit date(std::int32_t _julian_day_number)
             : julian_day_number_(_julian_day_number)
-        {
-        }
+        { }
 
-        explicit date(const std::tm&);
+        HARE_INLINE
+        explicit date(const std::tm& _tm)
+            : julian_day_number_(
+                detail::get_julian_day_number(
+                    _tm.tm_year + HARE_START_YEAR,
+                    _tm.tm_mon + 1,
+                    _tm.tm_mday))
+        { }
 
         // default copy/assignment/dtor are Okay
 

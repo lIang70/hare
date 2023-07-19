@@ -10,7 +10,7 @@ namespace time {
 
         // algorithm and explanation see:
         //   http://www.faqs.org/faqs/calendars/faq/part2/
-        static auto get_julian_day_number(std::int32_t _year, std::int32_t _month, std::int32_t _day) noexcept -> std::int32_t
+        auto get_julian_day_number(std::int32_t _year, std::int32_t _month, std::int32_t _day) noexcept -> std::int32_t
         {
             static_assert(sizeof(int) >= sizeof(std::int32_t), "request 32 bit integer at least.");
             auto a = (14 - _month) / 12;
@@ -49,23 +49,6 @@ namespace time {
     auto date_time::to_fmt() const -> std::string
     {
         return fmt::format("{:04d}-{:02d}-{:02d} {:02d}:{:02d}:{:02d}", year_, month_, day_, hour_, minute_, second_);
-    }
-
-    const std::int32_t date::DAYS_PER_WEEK { 7 };
-    const std::int32_t date::JULIAN_DAY_OF_19700101 { detail::get_julian_day_number(1970, 1, 1) };
-
-    date::date(std::int32_t year, std::int32_t month, std::int32_t day)
-        : julian_day_number_(detail::get_julian_day_number(year, month, day))
-    {
-    }
-
-    date::date(const std::tm& _tm)
-        : julian_day_number_(
-            detail::get_julian_day_number(
-                _tm.tm_year + HARE_START_YEAR,
-                _tm.tm_mon + 1,
-                _tm.tm_mday))
-    {
     }
 
     auto date::to_fmt() const -> std::string
