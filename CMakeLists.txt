@@ -17,6 +17,11 @@ if(NOT HARE__LIBRARY_TYPE)
     set(HARE__LIBRARY_TYPE SHARED CACHE STRING "Set library type to SHARED/STATIC")
 endif()
 
+if(${HARE__LIBRARY_TYPE} MATCHES "SHARED")
+    add_definitions(-DHARE_SHARED)
+else()
+    add_definitions(-DHARE_EXPORT)
+endif()
 message(STATUS "HARE__LIBRARY_TYPE: ${HARE__LIBRARY_TYPE}")
 
 if(NOT HARE__BUILD_TESTS)

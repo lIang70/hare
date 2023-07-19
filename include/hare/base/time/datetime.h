@@ -99,7 +99,7 @@ namespace time {
          **/
         auto to_fmt() const -> std::string;
 
-        auto detail() const -> struct ymd;
+        auto detail() const -> date::ymd;
 
         auto year() const -> std::int32_t
         {
