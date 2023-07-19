@@ -1,4 +1,4 @@
-#include "hare/base/io/local.h"
+#include "hare/base/fwd-inl.h"
 #include "hare/base/io/reactor.h"
 #include <hare/base/io/console.h>
 #include <hare/base/util/count_down_latch.h>
@@ -89,7 +89,12 @@ namespace io {
 
         std::array<char, static_cast<std::size_t>(HARE_SMALL_BUFFER)> console_line {};
 
+#if defined(H_OS_WIN32)
+        auto len = ::_read(_event->fd(), console_line.data(), static_cast<std::size_t>(HARE_SMALL_BUFFER));
+#else
         auto len = ::read(_event->fd(), console_line.data(), static_cast<std::size_t>(HARE_SMALL_BUFFER));
+#endif
+
         if (len < 0) {
             MSG_ERROR("cannot read from STDIN.");
             return;

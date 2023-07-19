@@ -178,7 +178,7 @@ configure_file(
     ${CMAKE_CURRENT_BINARY_DIR}/include/hare/hare-config.h
     NEWLINE_STYLE UNIX)
 
-find_package(PkgConfig REQUIRED)
+find_package(PkgConfig CONFIG)
 
 if(EXISTS "${CMAKE_SOURCE_DIR}/lib/jemalloc/" AND IS_DIRECTORY "${CMAKE_SOURCE_DIR}/lib/jemalloc/")
     message(STATUS "Jemalloc is built")

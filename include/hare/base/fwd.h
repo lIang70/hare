@@ -13,6 +13,16 @@
 #ifndef _HARE_BASE_FWD_H_
 #define _HARE_BASE_FWD_H_
 
+#include <array>
+#include <cassert>
+#include <cinttypes>
+#include <cstring>
+#include <functional>
+#include <string>
+#include <memory>
+
+#include <hare/base/util/system_check.h>
+
 #if defined(__clang__) && !defined(__ibmxl__)
 #define HARE_CLANG_VERSION (__clang_major__ * 100 + __clang_minor__)
 #else
@@ -65,16 +75,6 @@
 #define HARE_SMALL_FIXED_SIZE (32)
 #define HARE_SMALL_BUFFER (4 * 1024)
 #define HARE_LARGE_BUFFER (1024 * HARE_SMALL_BUFFER)
-
-#include <array>
-#include <cassert>
-#include <cinttypes>
-#include <cstring>
-#include <functional>
-#include <string>
-#include <memory>
-
-#include <hare/base/util/system_check.h>
 
 namespace hare {
 

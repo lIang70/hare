@@ -47,7 +47,7 @@
 #error "not support this OS"
 #endif
 
-#if defined(H_OS_WIN)
+#if defined(H_OS_WIN32)
 #undef H_OS_UNIX
 #elif !defined(H_OS_UNIX)
 #define H_OS_UNIX

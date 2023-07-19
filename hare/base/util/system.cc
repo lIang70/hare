@@ -263,16 +263,20 @@ namespace util {
     auto errnostr(std::int32_t _errorno) -> const char*
     {
         static thread_local std::array<char, static_cast<std::size_t>(HARE_SMALL_FIXED_SIZE * HARE_SMALL_FIXED_SIZE) / 2> t_errno_buf;
+#ifdef H_OS_WIN32
+        ::strerror_s(t_errno_buf.data(), t_errno_buf.size(), _errorno);
+#else
         ::strerror_r(_errorno, t_errno_buf.data(), t_errno_buf.size());
+#endif
         return t_errno_buf.data();
     }
 
     auto open_s(std::FILE** _fp, const filename_t& _filename, const filename_t& _mode) -> bool
     {
 #if defined(H_OS_WIN32) && HARE_WCHAR_FILENAME
-        *fp = ::_wfsopen((_filename.c_str()), _mode.c_str(), _SH_DENYWR);
+        *_fp = ::_wfsopen((_filename.c_str()), _mode.c_str(), _SH_DENYWR);
 #elif defined(H_OS_WIN32)
-        *fp = ::_fsopen((_filename.c_str()), _mode.c_str(), _SH_DENYWR);
+        *_fp = ::_fsopen((_filename.c_str()), _mode.c_str(), _SH_DENYWR);
 #else // unix
         *_fp = ::fopen((_filename.c_str()), _mode.c_str());
 #endif

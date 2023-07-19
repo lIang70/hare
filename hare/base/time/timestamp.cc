@@ -25,7 +25,11 @@ auto timestamp::to_fmt(bool show_microseconds) const -> std::string
 {
     auto seconds = seconds_since_epoch();
     std::tm tm_time { };
+#ifdef H_OS_WIN32
+    ::gmtime_s(&tm_time, &seconds);
+#else
     ::gmtime_r(&seconds, &tm_time);
+#endif
 
     if (show_microseconds) {
         auto microseconds = static_cast<std::int32_t>(microseconds_since_epoch_ - seconds * static_cast<std::int64_t>(HARE_MICROSECONDS_PER_SECOND));
