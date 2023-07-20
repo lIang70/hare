@@ -155,7 +155,6 @@ namespace log {
                 stamp_ = _other.stamp_;
                 raw_ = std::move(_other.raw_);
                 loc_ = _other.loc_;
-                type_ = _other.type_;
             }
         };
 
