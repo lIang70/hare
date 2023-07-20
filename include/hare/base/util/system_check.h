@@ -4,9 +4,9 @@
  * @brief Describe the macro associated with system_check.h
  * @version 0.1-beta
  * @date 2023-02-09
- * 
+ *
  * @copyright Copyright (c) 2023
- * 
+ *
  **/
 
 #ifndef _HARE_BASE_UTIL_SYSTEM_CHECK_H_
@@ -47,7 +47,12 @@
 #error "not support this OS"
 #endif
 
-#if defined(H_OS_WIN32)
+#if defined(H_OS_WIN32) || defined(H_OS_WIN64) || defined(H_OS_WINRT)
+#define H_OS_WINDOWS
+#define H_OS_WIN
+#endif
+
+#if defined(H_OS_WIN)
 #undef H_OS_UNIX
 #elif !defined(H_OS_UNIX)
 #define H_OS_UNIX
