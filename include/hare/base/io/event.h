@@ -53,6 +53,11 @@ namespace io {
         EVENT_CLOSED = 0x20,
     };
 
+#ifdef HARE_SHARED
+    class event;
+    template class __declspec(dllexport) std::weak_ptr<event>;
+#endif
+
     class cycle;
     HARE_CLASS_API
     class HARE_API event : public util::non_copyable

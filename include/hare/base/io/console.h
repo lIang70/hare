@@ -14,21 +14,16 @@
 
 #include <hare/base/io/event.h>
 
-#include <map>
-
 namespace hare {
 namespace io {
 
     HARE_CLASS_API
-    class HARE_API console {
-        using default_handle = std::function<void(const std::string& command_line)>;
-
-        ptr<event> console_event_ { nullptr };
-        std::map<std::string, task> handlers_ {};
-        default_handle default_ {};
-        bool attached_ { false };
+    class HARE_API console : public util::non_copyable {
+        hare::detail::impl* impl_ {};
 
     public:
+        using default_handle = std::function<void(const std::string& command_line)>;
+
         static auto instance() -> console&;
 
         ~console();
@@ -40,9 +35,7 @@ namespace io {
         void register_handle(std::string _handle_mask, task _handle);
         auto attach(cycle* _cycle) -> bool;
 
-        console(const console&) = delete;
         console(console&&) = delete;
-        auto operator=(const console&) -> console = delete;
         auto operator=(console&&) -> console = delete;
 
     private:

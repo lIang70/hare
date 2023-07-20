@@ -121,7 +121,7 @@ template <typename... T> HARE_INLINE void ignore_unused(const T&...) { }
 namespace detail {
 
     HARE_CLASS_API
-        struct HARE_API impl { virtual ~impl() = default; };
+    struct HARE_API impl { virtual ~impl() = default; };
 
 
 #define HARE_IMPL_DEFAULT(Class, ...)                   \

@@ -26,6 +26,7 @@ namespace util {
         HARE_CLASS_API
         struct HARE_API base {
             using uptr = uptr<base>;
+
             virtual ~base() = default;
             virtual auto clone() const -> uptr = 0;
         };
@@ -55,16 +56,37 @@ namespace util {
         std::type_index type_index_;
 
     public:
-        any();
-        any(const any& other);
-        any(any&& other) noexcept;
-
-        auto operator=(const any& a) -> any&;
+        HARE_INLINE
+        any() : type_index_(std::type_index(typeid(void)))
+        {}
 
         HARE_INLINE
-        auto is_null() const -> bool { return !ptr_; }
+        any::any(const any& other)
+            : ptr_(other.clone())
+            , type_index_(other.type_index_)
+        {}
+
+        HARE_INLINE
+        any(any&& other) noexcept
+            : ptr_(std::move(other.ptr_))
+            , type_index_(other.type_index_)
+        { }
+
+        HARE_INLINE
+        auto operator=(const any& a) -> any&
+        {
+            if (ptr_ == a.ptr_) {
+                return *this;
+            }
+            ptr_ = a.clone();
+            type_index_ = a.type_index_;
+            return *this;
+        }
+
+        HARE_INLINE auto is_null() const -> bool { return !ptr_; }
 
         template <class T, class = typename std::enable_if<!std::is_same<typename std::decay<T>::type, any>::value, T>::type>
+        HARE_INLINE
         explicit any(T&& t)
             : ptr_(new detail::derived<typename std::decay<T>::type>(std::forward<T>(t)))
             , type_index_(typeid(std::decay<T>::type))
@@ -72,12 +94,14 @@ namespace util {
         }
 
         template <class T>
+        HARE_INLINE
         auto is() const -> bool
         {
             return type_index_ == std::type_index(typeid(T));
         }
 
         template <class T>
+        HARE_INLINE
         auto cast() const -> T&
         {
             return ptr_ ? nullptr : is<T>() ? &static_cast<detail::derived<T>*>(ptr_.get())->value_
@@ -85,7 +109,14 @@ namespace util {
         }
 
     private:
-        auto clone() const -> uptr<detail::base>;
+        HARE_INLINE
+        auto clone() const -> uptr<detail::base>
+        {
+            if (ptr_) {
+                return ptr_->clone();
+            }
+            return nullptr;
+        }
     };
 
 } // namespace util
