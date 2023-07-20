@@ -82,7 +82,7 @@ namespace log {
         }
 
         template <typename... Args>
-        HARE_INLINE void log(source_loc _loc, LEVEL _level, fmt::format_string<Args...> _fmt, const Args&... _args)
+        HARE_INLINE void log(source_loc& _loc, LEVEL _level, fmt::format_string<Args...> _fmt, const Args&... _args)
         {
             if (!check(_level)) {
                 return;
@@ -102,37 +102,37 @@ namespace log {
         }
 
         template <typename... Args>
-        HARE_INLINE void trace(source_loc _loc, fmt::format_string<Args...> _fmt, const Args&... _args)
+        HARE_INLINE void trace(source_loc&& _loc, fmt::format_string<Args...> _fmt, const Args&... _args)
         {
             log(_loc, LEVEL_TRACE, _fmt, _args...);
         }
 
         template <typename... Args>
-        HARE_INLINE void debug(source_loc _loc, fmt::format_string<Args...> _fmt, const Args&... _args)
+        HARE_INLINE void debug(source_loc&& _loc, fmt::format_string<Args...> _fmt, const Args&... _args)
         {
             log(_loc, LEVEL_DEBUG, _fmt, _args...);
         }
 
         template <typename... Args>
-        HARE_INLINE void info(source_loc _loc, fmt::format_string<Args...> _fmt, const Args&... _args)
+        HARE_INLINE void info(source_loc&& _loc, fmt::format_string<Args...> _fmt, const Args&... _args)
         {
             log(_loc, LEVEL_INFO, _fmt, _args...);
         }
 
         template <typename... Args>
-        HARE_INLINE void warning(source_loc _loc, fmt::format_string<Args...> _fmt, const Args&... _args)
+        HARE_INLINE void warning(source_loc&& _loc, fmt::format_string<Args...> _fmt, const Args&... _args)
         {
             log(_loc, LEVEL_WARNING, _fmt, _args...);
         }
 
         template <typename... Args>
-        HARE_INLINE void error(source_loc _loc, fmt::format_string<Args...> _fmt, const Args&... _args)
+        HARE_INLINE void error(source_loc&& _loc, fmt::format_string<Args...> _fmt, const Args&... _args)
         {
             log(_loc, LEVEL_ERROR, _fmt, _args...);
         }
 
         template <typename... Args>
-        HARE_INLINE void fatal(source_loc _loc, fmt::format_string<Args...> _fmt, const Args&... _args)
+        HARE_INLINE void fatal(source_loc&& _loc, fmt::format_string<Args...> _fmt, const Args&... _args)
         {
             log(_loc, LEVEL_FATAL, _fmt, _args...);
         }
