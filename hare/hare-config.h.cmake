@@ -356,7 +356,7 @@
 #cmakedefine HARE__HAVE_SYS_EVENTFD_H 1
 
 /* Define to 1 if you have the <sys/event.h> header file. */
-#cmakedefine HARE__HAVE_SYS_HARE_H 1
+#cmakedefine HARE__HAVE_SYS_EVENT_H 1
 
 /* Define to 1 if you have the <sys/ioctl.h> header file. */
 #cmakedefine HARE__HAVE_SYS_IOCTL_H 1

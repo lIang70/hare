@@ -53,14 +53,14 @@
 
 #if defined(H_OS_WIN32)
 #define HARE_CLASS_API HARE_MSC_WARNING(suppress : 4275)
-#ifdef HARE_EXPORT
-#define HARE_API __declspec(dllexport)
-#elif defined(HARE_SHARED)
+#ifdef HARE_STATIC
 #define HARE_API __declspec(dllimport)
+#elif defined(HARE_SHARED)
+#define HARE_API __declspec(dllexport)
 #endif
 #else
 #define HARE_CLASS_API
-#if defined(HARE_EXPORT) || defined(HARE_SHARED)
+#if defined(HARE_STATIC) || defined(HARE_SHARED)
 #if defined(__GNUC__) || defined(__clang__)
 #define HARE_API __attribute__((visibility("default")))
 #endif
@@ -119,6 +119,27 @@ std::string filename_to_str(const filename_t& filename)
 template <typename... T> HARE_INLINE void ignore_unused(const T&...) { }
 
 namespace detail {
+
+    HARE_CLASS_API
+        struct HARE_API impl { virtual ~impl() = default; };
+
+
+#define HARE_IMPL_DEFAULT(Class, ...)                   \
+    struct Class##_impl : public hare::detail::impl {   \
+        __VA_ARGS__                                     \
+        ~Class##_impl() override = default;             \
+    };                                                  \
+    HARE_INLINE auto d_ptr(hare::detail::impl* _impl)   \
+    -> Class##_impl* { return down_cast<Class##_impl*>(_impl); }
+
+#define HARE_IMPL(Class, ...)                           \
+    struct Class##_impl : public hare::detail::impl {   \
+        __VA_ARGS__                                     \
+        ~Class##_impl() override;                       \
+    };                                                  \
+    HARE_INLINE auto d_ptr(hare::detail::impl* _impl)   \
+        -> Class##_impl* { return down_cast<Class##_impl*>(_impl); }
+
 
     template <typename Int>
     auto to_unsigned(Int value) ->
@@ -196,6 +217,24 @@ HARE_INLINE
 auto implicit_cast(From const& _from) -> To
 {
     return _from;
+}
+
+template<typename To, typename From>
+HARE_INLINE
+auto down_cast(From* f) -> To
+{
+    // Ensures that To is a sub-type of From *.  This test is here only
+    // for compile-time type checking, and has no overhead in an
+    // optimized build at run-time, as it will be optimized away
+    // completely.
+    if (false) {
+        implicit_cast<From*, To>(0);
+    }
+
+#if !defined(NDEBUG) && !defined(GOOGLE_PROTOBUF_NO_RTTI)
+    assert(f == NULL || dynamic_cast<To>(f) != NULL);  // RTTI: debug mode only!
+#endif
+    return static_cast<To>(f);
 }
 
 enum : std::uint8_t { TRACE_MSG, ERROR_MSG };

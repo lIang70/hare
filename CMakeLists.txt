@@ -1,6 +1,6 @@
 ﻿cmake_minimum_required(VERSION 3.8 FATAL_ERROR)
 
-project(hare VERSION 0.1)
+project(hare VERSION 0.2 LANGUAGES CXX)
 
 message(STATUS "CMAKE_C_COMPILER_ID = ${CMAKE_C_COMPILER_ID}")
 message(STATUS "CMAKE_CXX_COMPILER_ID = ${CMAKE_CXX_COMPILER_ID}")
@@ -20,7 +20,7 @@ endif()
 if(${HARE__LIBRARY_TYPE} MATCHES "SHARED")
     add_definitions(-DHARE_SHARED)
 else()
-    add_definitions(-DHARE_EXPORT)
+    add_definitions(-DHARE_STATIC)
 endif()
 message(STATUS "HARE__LIBRARY_TYPE: ${HARE__LIBRARY_TYPE}")
 

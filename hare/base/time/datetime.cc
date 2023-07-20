@@ -36,6 +36,8 @@ namespace time {
 
     } // namespace detail
 
+    date_time::date_time() = default;
+
     date_time::date_time(const std::tm& _tm)
         : year_(_tm.tm_year + HARE_START_YEAR)
         , month_(_tm.tm_mon + 1)

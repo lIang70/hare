@@ -2,7 +2,7 @@
 #include "hare/base/io/local.h"
 #include <hare/base/exception.h>
 
-#if HARE__HAVE_SELECT
+#if HARE__HAVE_SELECT || defined(H_OS_WIN)
 
 namespace hare {
 namespace io {

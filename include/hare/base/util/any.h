@@ -23,14 +23,16 @@ namespace util {
 
     namespace detail {
 
-        struct base {
+        HARE_CLASS_API
+        struct HARE_API base {
             using uptr = uptr<base>;
             virtual ~base() = default;
             virtual auto clone() const -> uptr = 0;
         };
 
+        HARE_CLASS_API
         template <typename T>
-        struct derived : public base {
+        struct HARE_API derived : public base {
             T value_;
 
             template <typename... Args>
@@ -47,7 +49,8 @@ namespace util {
 
     } // namespace detail
 
-    class any {
+    HARE_CLASS_API
+    class HARE_API any {
         detail::base::uptr ptr_ {};
         std::type_index type_index_;
 

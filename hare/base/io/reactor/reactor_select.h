@@ -4,8 +4,12 @@
 #include "hare/base/io/reactor.h"
 #include <hare/hare-config.h>
 
-#if HARE__HAVE_SELECT
+#if HARE__HAVE_SELECT || defined(H_OS_WIN)
+#ifdef H_OS_WIN
+#include <WinSock2.h>
+#else
 #include <sys/select.h>
+#endif
 
 namespace hare {
 namespace io {

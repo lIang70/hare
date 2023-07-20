@@ -41,7 +41,7 @@ namespace time {
         std::int32_t second_ { 0 }; // [0, 59]
 
     public:
-        date_time() = default;
+        date_time();
         explicit date_time(const std::tm&);
 
         // "yyyy-MM-dd HH:MM:SS"

@@ -15,9 +15,6 @@
 #include <hare/base/time/timestamp.h>
 #include <hare/base/util/non_copyable.h>
 
-#include <list>
-#include <mutex>
-
 namespace hare {
 namespace io {
 
@@ -25,23 +22,7 @@ namespace io {
     class event;
     HARE_CLASS_API
     class HARE_API cycle : public util::non_copyable {
-        timestamp reactor_time_ {};
-        std::uint64_t tid_ { 0 };
-        bool is_running_ { false };
-        bool quit_ { false };
-        bool event_handling_ { false };
-        bool calling_pending_functions_ { false };
-
-        ptr<event> notify_event_ { nullptr };
-        ptr<reactor> reactor_ { nullptr };
-        ptr<event> current_active_event_ { nullptr };
-
-        mutable std::mutex functions_mutex_ {};
-        std::list<task> pending_functions_ {};
-
-#if HARE_DEBUG
-        uint64_t cycle_index_ { 0 };
-#endif
+        detail::impl* impl_ {};
 
     public:
         using ptr = ptr<cycle>;
@@ -60,20 +41,13 @@ namespace io {
         /**
          * @brief Time when reactor returns, usually means data arrival.
          **/
-        HARE_INLINE
-        auto reactor_return_time() const -> timestamp { return reactor_time_; }
-        HARE_INLINE
-        auto event_handling() const -> bool { return event_handling_; }
-        HARE_INLINE
-        auto is_running() const -> bool { return is_running_; }
+        auto reactor_return_time() const -> timestamp;
+        auto event_handling() const -> bool;
+        auto is_running() const -> bool;
 
 #if HARE_DEBUG
 
-        HARE_INLINE
-        auto cycle_index() const -> uint64_t
-        {
-            return cycle_index_;
-        }
+        auto cycle_index() const -> std::uint64_t;
 
 #endif
 

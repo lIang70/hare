@@ -7,12 +7,45 @@
 #include <cstring>
 #include <thread>
 
-#ifdef H_OS_LINUX
+#ifndef H_OS_WIN
 #include <cxxabi.h>
 #include <execinfo.h>
 #include <sys/prctl.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#else
+#include <Windows.h>
+#include <direct.h>
+#include <io.h>
+
+#define getcwd _getcwd
+#define getpid _getpid
+#define fileno _fileno
+
+const DWORD MS_VC_EXCEPTION = 0x406D1388;
+#pragma pack(push,8)
+typedef struct tagTHREADNAME_INFO {
+    DWORD dwType; // Must be 0x1000.
+    LPCSTR szName; // Pointer to name (in user addr space).
+    DWORD dwThreadID; // Thread ID (-1=caller thread).
+    DWORD dwFlags; // Reserved for future use, must be zero.
+} THREADNAME_INFO;
+#pragma pack(pop)
+void SetThreadName(DWORD dwThreadID, const char* threadName) {
+    THREADNAME_INFO info;
+    info.dwType = 0x1000;
+    info.szName = threadName;
+    info.dwThreadID = dwThreadID;
+    info.dwFlags = 0;
+#pragma warning(push)
+#pragma warning(disable: 6320 6322)
+    __try{
+        RaiseException(MS_VC_EXCEPTION, 0, sizeof(info) / sizeof(ULONG_PTR), (ULONG_PTR*)&info);
+    }
+    __except (EXCEPTION_EXECUTE_HANDLER){
+    }
+#pragma warning(pop)
+}
 #endif
 
 #define NAME_LENGTH 256
@@ -41,29 +74,23 @@ namespace util {
 
             system_info()
             {
-#ifdef H_OS_LINUX
                 // Get the host name
-                if (::gethostname(host_name_.data(), host_name_.size()) == 0) {
+                if (::gethostname(host_name_.data(), NAME_LENGTH) == 0) {
                     host_name_[host_name_.size() - 1] = '\0';
                 }
-
-                // Get application dir from "/proc/self/exe"
-                auto size = ::readlink("/proc/self/exe", system_dir_.data(), NAME_LENGTH);
-                if (size == -1) {
-                    throw exception("Cannot read exe[/proc/self/exe] file.");
+                // Get application dir
+                if (::getcwd(system_dir_.data(), NAME_LENGTH) == 0) {
+                    throw exception("Cannot call ::getcwd.");
                 }
-
-                auto npos = size - 1;
-                for (; npos >= 0; --npos) {
-                    if (system_dir_[npos] == '/') {
-                        break;
-                    }
-                }
-                system_dir_[npos + 1] = '\0';
 
                 pid_ = ::getpid();
 
+#ifndef H_OS_WIN
                 page_size_ = ::sysconf(_SC_PAGESIZE);
+#else
+                SYSTEM_INFO system_info;
+                ::GetSystemInfo(&system_info);
+                page_size_ = system_info.dwPageSize;
 #endif
             }
 
@@ -75,7 +102,7 @@ namespace util {
 
         static auto get_cpu_total_occupy() -> std::uint64_t
         {
-#ifdef H_OS_LINUX
+#ifndef H_OS_WIN
             // different mode cpu occupy time
             std::uint64_t user_time {};
             std::uint64_t nice_time {};
@@ -94,12 +121,15 @@ namespace util {
             ret = ::fclose(stat_fd);
 
             return (user_time + nice_time + system_time + idle_time);
+#else
+            /// TODO(l1ang70)
+            return 0;
 #endif
         }
 
         static auto get_cpu_proc_occupy(std::int32_t _pid) -> std::uint64_t
         {
-#ifdef H_OS_LINUX
+#ifndef H_OS_WIN
             static const auto PROCESS_ITEM = 14;
             // get specific pid cpu use time
             std::uint32_t tmp_pid {};
@@ -140,14 +170,20 @@ namespace util {
 
             return (user_time + system_time + cutime + cstime);
 #undef PROCESS_ITEM
-#endif
+#else
+            /// TODO(l1ang70)
             return 0;
+#endif
         }
 
-        static auto get_nprocs() -> int64_t
+        static auto get_nprocs() -> std::int64_t
         {
-#ifdef H_OS_LINUX
+#ifndef H_OS_WIN
             return ::sysconf(_SC_NPROCESSORS_ONLN);
+#else
+            SYSTEM_INFO system_info;
+            ::GetSystemInfo(&system_info);
+            return system_info.dwNumberOfProcessors;
 #endif
         }
     } // namespace detail
@@ -174,7 +210,6 @@ namespace util {
 
     auto cpu_usage(std::int32_t _pid) -> double
     {
-#ifdef H_OS_LINUX
         auto total_cputime1 = detail::get_cpu_total_occupy();
         auto pro_cputime1 = detail::get_cpu_proc_occupy(_pid);
 
@@ -193,16 +228,16 @@ namespace util {
         pcpu *= static_cast<double>(cpu_num); // should multiply cpu num in multiple cpu machine
 
         return pcpu;
-#endif
     }
 
     auto stack_trace(bool _demangle) -> std::string
     {
         static const auto MAX_STACK_FRAMES = 20;
-#ifdef H_OS_LINUX
+        std::string stack {};
+
+#ifndef H_OS_WIN
         static const auto DEMANGLE_SIZE = 256;
 
-        std::string stack;
         std::array<void*, MAX_STACK_FRAMES> frames {};
         auto nptrs = ::backtrace(frames.data(), MAX_STACK_FRAMES);
         auto* strings = ::backtrace_symbols(frames.data(), nptrs);
@@ -248,14 +283,19 @@ namespace util {
         ::free(demangled);
         ::free(strings);
         return stack;
+#else
+        /// TODO(l1ang70)
+        return stack;
 #endif
     }
 
     auto set_thread_name(const char* _tname) -> bool
     {
         auto ret = -1;
-#ifdef H_OS_LINUX
+#ifndef H_OS_WIN
         ret = ::prctl(PR_SET_NAME, _tname);
+#else
+        ::SetThreadName(::GetCurrentThreadId(), _tname);
 #endif
         return ret != -1;
     }
@@ -288,6 +328,12 @@ namespace util {
 #if defined(H_OS_LINUX) // common linux/unix all have the stat system call
         struct stat buffer { };
         return (::stat(_filepath.c_str(), &buffer) == 0);
+#elif defined(H_OS_WIN32)
+        WIN32_FIND_DATA wfd {};
+        auto hFind = ::FindFirstFile(_filepath.data(), &wfd);
+        auto ret = hFind != INVALID_HANDLE_VALUE;
+        ::CloseHandle(hFind);
+        return ret;
 #endif
     }
     
@@ -305,7 +351,6 @@ namespace util {
         if (_fp == nullptr) {
             return 0;
         }
-#if defined(H_OS_LINUX)
         auto fd = ::fileno(_fp);
 #ifdef __USE_LARGEFILE64
 #define STAT struct stat64
@@ -322,13 +367,14 @@ namespace util {
         }
 #undef STAT
 #undef FSTAT
-#endif
     }
 
     auto fsync(std::FILE* _fp) -> bool
     {
 #if defined(H_OS_LINUX)
         return ::fsync(::fileno(_fp)) == 0;
+#elif defined(H_OS_WIN32)
+        return ::FlushFileBuffers((HANDLE)::_get_osfhandle(::fileno(_fp)));
 #endif
     }
 

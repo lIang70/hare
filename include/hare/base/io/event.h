@@ -57,38 +57,21 @@ namespace io {
     HARE_CLASS_API
     class HARE_API event : public util::non_copyable
                          , public std::enable_shared_from_this<event> {
+        detail::impl* impl_ {};
+
     public:
         using id = int32_t;
         using ptr = ptr<event>;
         using callback = std::function<void(const event::ptr&, uint8_t, const timestamp&)>;
 
-    private:
-        util_socket_t fd_ { -1 };
-        uint8_t events_ { EVENT_DEFAULT };
-        callback callback_ {};
-        int64_t timeval_ { 0 };
-
-        cycle* cycle_ {};
-        id id_ { -1 };
-        int64_t timeout_ { 0 };
-
-        bool tied_ { false };
-        wptr<void> tie_object_ {};
-
-    public:
-        event(util_socket_t _fd, callback _cb, uint8_t _flag, int64_t _timeval);
+        event(util_socket_t _fd, callback _cb, uint8_t _events, int64_t _timeval);
         virtual ~event();
 
-        HARE_INLINE
-        auto fd() const -> util_socket_t { return fd_; }
-        HARE_INLINE
-        auto events() const -> uint8_t { return events_; }
-        HARE_INLINE
-        auto timeval() const -> int64_t { return timeval_; }
-        HARE_INLINE
-        auto owner_cycle() const -> cycle* { return cycle_; }
-        HARE_INLINE
-        auto event_id() const -> id { return id_; }
+        auto fd() const -> util_socket_t;
+        auto events() const -> std::uint8_t;
+        auto timeval() const -> std::int64_t;
+        auto owner_cycle() const -> cycle*;
+        auto event_id() const -> id;
 
         // None of the following interfaces are thread-safe.
         void enable_read();
@@ -106,10 +89,12 @@ namespace io {
          *   prevent the owner object being destroyed in handle_event.
          */
         void tie(const hare::ptr<void>& _obj);
-        auto tied_object() -> wptr<void> { return tie_object_; }
+        auto tied_object() -> wptr<void>;
 
     private:
         void handle_event(uint8_t _flag, timestamp& _receive_time);
+        void active(cycle* _cycle, event::id _id);
+        void reset();
 
         friend class cycle;
     };

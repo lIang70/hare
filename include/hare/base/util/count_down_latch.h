@@ -14,17 +14,12 @@
 
 #include <hare/base/fwd.h>
 
-#include <condition_variable>
-#include <mutex>
-
 namespace hare {
 namespace util {
 
     HARE_CLASS_API
     class HARE_API count_down_latch {
-        mutable std::mutex mutex_ {};
-        std::uint32_t count_ { 0 };
-        std::condition_variable cv_ {};
+        detail::impl* impl_ {};
 
     public:
         explicit count_down_latch(std::uint32_t count);
