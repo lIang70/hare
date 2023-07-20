@@ -150,7 +150,7 @@ namespace io {
 
     void event::deactivate()
     {
-        if (d_ptr(impl_)->cycle_) {
+        if (d_ptr(impl_)->cycle_ != nullptr) {
             d_ptr(impl_)->cycle_->event_remove(shared_from_this());
         } else {
             MSG_ERROR("event[{}] need to be added to cycle.", (void*)this);

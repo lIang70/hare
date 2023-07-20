@@ -18,50 +18,5 @@ namespace log {
         }
     } // namespace deatil
 
-    logger::logger(std::string _unique_name, backend_list _backends)
-        : logger(std::move(_unique_name), _backends.begin(), _backends.end())
-    {
-    }
-
-    logger::logger(std::string _unique_name, ptr<backend> _backend)
-        : logger(std::move(_unique_name), backend_list { std::move(_backend) })
-    {
-    }
-
-    logger::~logger() = default;
-
-    void logger::flush()
-    {
-        try {
-            for (auto& backend : backends_) {
-                backend->flush();
-            }
-        } catch (const hare::exception& e) {
-            error_handle_(ERROR_MSG, e.what());
-        } catch (const std::exception& e) {
-            error_handle_(ERROR_MSG, e.what());
-        } catch (...) {
-            error_handle_(ERROR_MSG, "Unknown exeption in logger");
-        }
-    }
-
-    void logger::sink_it(details::msg& _msg)
-    {
-        incr_msg_id(_msg);
-
-        details::msg_buffer_t formatted {};
-        details::format_msg(_msg, formatted);
-
-        for (auto& backend : backends_) {
-            if (backend->check(_msg.level_)) {
-                backend->log(formatted, static_cast<LEVEL>(_msg.level_));
-            }
-        }
-
-        if (should_flush_on(_msg)) {
-            flush();
-        }
-    }
-
 } // namespace log
 } // namespace hare

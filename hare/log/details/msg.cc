@@ -52,19 +52,6 @@ namespace log {
             loc_ = _other.loc_;
         }
 
-        void async_msg::move(async_msg& _other) noexcept
-        {
-            name_ = _other.name_;
-            timezone_ = _other.timezone_;
-            level_ = _other.level_;
-            tid_ = _other.tid_;
-            id_ = _other.id_;
-            stamp_ = _other.stamp_;
-            raw_ = std::move(_other.raw_);
-            loc_ = _other.loc_;
-            type_ = _other.type_;
-        }
-
         void format_msg(msg& _msg, msg_buffer_t& _fotmatted)
         {
             auto microseconds { 0 };

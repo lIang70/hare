@@ -23,7 +23,7 @@ namespace time {
 
     namespace detail {
 
-        auto get_julian_day_number(std::int32_t _year, std::int32_t _month, std::int32_t _day) noexcept -> std::int32_t;
+        HARE_API auto get_julian_day_number(std::int32_t _year, std::int32_t _month, std::int32_t _day) noexcept -> std::int32_t;
 
     } // namespace detail
 

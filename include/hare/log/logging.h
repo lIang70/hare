@@ -143,15 +143,34 @@ namespace log {
             : name_(std::move(_unique_name))
             , error_handle_(detail::handle_logger_error)
             , backends_(begin, end) // message counter will start from 1. 0-message id will be reserved for controll messages
+        {}
+
+        HARE_INLINE
+        logger(std::string _unique_name, backend_list _backends)
+            : logger(std::move(_unique_name), _backends.begin(), _backends.end())
+        {}
+
+        HARE_INLINE
+        logger(std::string _unique_name, ptr<backend> _backend)
+            : logger(std::move(_unique_name), backend_list { std::move(_backend) })
+        {}
+
+        virtual ~logger() = default;
+
+        virtual void flush()
         {
+            try {
+                for (auto& backend : backends_) {
+                    backend->flush();
+                }
+            } catch (const hare::exception& e) {
+                error_handle_(ERROR_MSG, e.what());
+            } catch (const std::exception& e) {
+                error_handle_(ERROR_MSG, e.what());
+            } catch (...) {
+                error_handle_(ERROR_MSG, "Unknown exeption in logger");
+            }
         }
-
-        logger(std::string _unique_name, backend_list _backends);
-        logger(std::string _unique_name, ptr<backend> _backend);
-
-        virtual ~logger();
-
-        virtual void flush();
 
     protected:
         HARE_INLINE
@@ -167,7 +186,23 @@ namespace log {
             return (_msg.level_ >= flush_level) && (_msg.level_ < LEVEL_NBRS);
         }
 
-        virtual void sink_it(details::msg& _msg);
+        virtual void sink_it(details::msg& _msg)
+        {
+            incr_msg_id(_msg);
+
+            details::msg_buffer_t formatted {};
+            details::format_msg(_msg, formatted);
+
+            for (auto& backend : backends_) {
+                if (backend->check(_msg.level_)) {
+                    backend->log(formatted, static_cast<LEVEL>(_msg.level_));
+                }
+            }
+
+            if (should_flush_on(_msg)) {
+                flush();
+            }
+        }
     };
 
 } // namespace log

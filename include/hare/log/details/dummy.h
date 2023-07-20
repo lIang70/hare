@@ -29,8 +29,9 @@ namespace log {
             }
         };
 
+        HARE_CLASS_API
         template <typename T>
-        struct dummy_atomic_t {
+        struct HARE_API dummy_atomic_t {
             using value = T;
 
             T value_ {};
