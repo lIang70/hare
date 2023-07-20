@@ -182,6 +182,7 @@ find_package(PkgConfig CONFIG)
 
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../lib/jemalloc/" AND IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../lib/jemalloc/")
     message(STATUS "Jemalloc is built")
+
     if(PKG_CONFIG_FOUND)
         set(ENV{PKG_CONFIG_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/../lib/jemalloc/lib/pkgconfig:$ENV{PKG_CONFIG_PATH})
         pkg_search_module(Jemalloc REQUIRED IMPORTED_TARGET jemalloc>=5.3)
@@ -204,12 +205,15 @@ file(GLOB HARE_BASE_SOURCES
     "base/io/*.cc"
     "base/io/reactor/*.cc"
 )
+
 # Add the source code to the project's executable。
 add_library(hare_base ${HARE__LIBRARY_TYPE} ${HARE_BASE_SOURCES})
 target_include_directories(hare_base PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../include/hare/base/)
+
 if(JEMALLOC_FOUND)
     target_link_libraries(hare_base PkgConfig::Jemalloc)
 endif()
+
 if(HARE__BUILD_TESTS)
     add_subdirectory(base/tests)
 endif(HARE__BUILD_TESTS)
@@ -220,14 +224,19 @@ file(GLOB HARE_LOG_SOURCES
     "log/backends/*.cc"
     "log/details/*.cc"
 )
+
 # Add the source code to the project's executable。
 add_library(hare_log ${HARE__LIBRARY_TYPE} ${HARE_LOG_SOURCES})
-target_include_directories(hare_log PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../include/hare/log/)
+target_include_directories(hare_log PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include/hare/log/
+    ${CMAKE_CURRENT_SOURCE_DIR}/../3rdparty/fmt/include/)
+
 if(JEMALLOC_FOUND)
     target_link_libraries(hare_log hare_base PkgConfig::Jemalloc)
 else()
     target_link_libraries(hare_log hare_base)
 endif()
+
 if(HARE__BUILD_TESTS)
     add_subdirectory(log/tests)
 endif(HARE__BUILD_TESTS)
@@ -247,19 +256,21 @@ if(OPENSSL_FOUND)
     message(STATUS "OPENSSL_LIBRARIES = ${OPENSSL_LIBRARIES}")
 endif(OPENSSL_FOUND)
 
-
 # Add hare_net's src
 file(GLOB HARE_NET_SOURCES
     "net/*.cc"
 )
+
 # Add the source code to the project's executable。
 add_library(hare_net ${HARE__LIBRARY_TYPE} ${HARE_NET_SOURCES})
 target_include_directories(hare_net PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../include/hare/net/)
+
 if(JEMALLOC_FOUND)
     target_link_libraries(hare_net hare_base PkgConfig::Jemalloc ${OPENSSL_LIBRARIES})
 else()
     target_link_libraries(hare_net hare_base ${OPENSSL_LIBRARIES})
 endif()
+
 if(HARE__BUILD_TESTS)
     add_subdirectory(net/samples)
 endif(HARE__BUILD_TESTS)
