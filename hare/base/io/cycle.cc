@@ -195,6 +195,7 @@ tidy_up_and_fail:
                 MSG_TRACE("ignore signal[SIGPIPE].");
                 auto ret = ::signal(SIGPIPE, SIG_IGN);
                 ignore_unused(ret);
+            }
 #else
                 WSADATA wsa_data {};
                 if (::WSAStartup(MAKEWORD(2, 2), &wsa_data) == SOCKET_ERROR) {

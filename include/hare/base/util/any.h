@@ -61,7 +61,7 @@ namespace util {
         {}
 
         HARE_INLINE
-        any::any(const any& other)
+        any(const any& other)
             : ptr_(other.clone())
             , type_index_(other.type_index_)
         {}

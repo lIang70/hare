@@ -53,7 +53,7 @@ namespace io {
         EVENT_CLOSED = 0x20,
     };
 
-#ifdef HARE_SHARED
+#if defined(HARE_SHARED) && defined(H_OS_WIN)
     class event;
     template class __declspec(dllexport) std::weak_ptr<event>;
 #endif
