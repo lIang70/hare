@@ -134,7 +134,7 @@ namespace log {
             msg() = default;
             virtual ~msg() = default;
 
-            msg(const std::string* _name, const timezone* _timezone, LEVEL _level, source_loc& _loc);
+            msg(const std::string* _name, const hare::timezone* _tz, LEVEL _level, source_loc& _loc);
 
             HARE_INLINE
             msg(msg&& _other) noexcept

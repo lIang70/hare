@@ -22,7 +22,7 @@ namespace hare {
 namespace log {
 
     namespace detail {
-        void handle_logger_error(std::uint8_t, const std::string& error_msg);
+        HARE_API void handle_logger_error(std::uint8_t, const std::string& error_msg);
     } // namespace detail
 
     HARE_CLASS_API

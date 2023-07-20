@@ -31,9 +31,9 @@ namespace log {
             return t_time;
         }
 
-        msg::msg(const std::string* _name, const timezone* _timezone, LEVEL _level, source_loc& _loc)
+        msg::msg(const std::string* _name, const hare::timezone* _tz, LEVEL _level, source_loc& _loc)
             : name_(_name)
-            , timezone_(_timezone)
+            , timezone_(_tz)
             , level_(_level)
             , tid_(io::current_thread::get_tds().tid)
             , loc_(_loc)
