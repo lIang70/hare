@@ -125,21 +125,21 @@ namespace net {
             virtual ~cache() { delete[] begin(); }
 
             // write to data_ directly
-            inline auto writeable() -> base::value_type* { return begin() + size(); }
-            inline auto writeable() const -> const base::value_type* { return begin() + size(); }
-            inline auto writeable_size() const -> std::size_t { return capacity() - size(); }
+            HARE_INLINE auto writeable() -> base::value_type* { return begin() + size(); }
+            HARE_INLINE auto writeable() const -> const base::value_type* { return begin() + size(); }
+            HARE_INLINE auto writeable_size() const -> std::size_t { return capacity() - size(); }
 
-            inline auto readable() -> base::value_type* { return data() + misalign_; }
-            inline auto readable_size() const -> std::size_t { return size() - misalign_; }
-            inline auto full() const -> bool { return readable_size() + misalign_ == capacity(); }
-            inline auto empty() const -> bool { return readable_size() == 0; }
-            inline void clear()
+            HARE_INLINE auto readable() -> base::value_type* { return data() + misalign_; }
+            HARE_INLINE auto readable_size() const -> std::size_t { return size() - misalign_; }
+            HARE_INLINE auto full() const -> bool { return readable_size() + misalign_ == capacity(); }
+            HARE_INLINE auto empty() const -> bool { return readable_size() == 0; }
+            HARE_INLINE void clear()
             {
                 base::clear();
                 misalign_ = 0;
             }
 
-            inline void drain(std::size_t _size)
+            HARE_INLINE void drain(std::size_t _size)
             {
                 misalign_ += _size;
             }
@@ -156,7 +156,7 @@ namespace net {
                 return false;
             }
 
-            inline void bzero() { hare::detail::fill_n(data(), capacity(), 0); }
+            HARE_INLINE void bzero() { hare::detail::fill_n(data(), capacity(), 0); }
 
         private:
             auto end() const -> const base::value_type* { return data() + capacity(); }
@@ -181,7 +181,7 @@ namespace net {
 
         auto iter = block_chain_.begin();
 
-        while (_index > (*iter)->size()) {
+        while (_index >= (*iter)->size()) {
             _index -= (*iter)->size();
             ++iter;
         }

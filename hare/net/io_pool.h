@@ -36,8 +36,8 @@ namespace net {
         }
         ~io_pool();
 
-        inline auto name() const -> const std::string& { return name_; }
-        inline auto is_running() const -> bool { return is_running_; }
+        HARE_INLINE auto name() const -> const std::string& { return name_; }
+        HARE_INLINE auto is_running() const -> bool { return is_running_; }
 
         auto start(io::cycle::REACTOR_TYPE _type, int32_t _thread_nbr) -> bool;
         void stop();
