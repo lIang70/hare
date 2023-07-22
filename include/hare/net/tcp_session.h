@@ -16,6 +16,8 @@
 
 #include <mutex>
 
+#define HARE_DEFAULT_HIGH_WATER (64UL * 1024 * 1024)
+
 namespace hare {
 namespace net {
 
@@ -35,10 +37,10 @@ namespace net {
     public:
         ~tcp_session() override;
 
-        inline void set_high_water_mark(size_t _hwm) { high_water_mark_ = _hwm; }
-        inline void set_read_callback(read_callback _read) { read_ = std::move(_read); }
-        inline void set_write_callback(write_callback _write) { write_ = std::move(_write); }
-        inline void set_high_water_callback(high_water_callback _high_water) { high_water_ = std::move(_high_water); }
+        HARE_INLINE void set_high_water_mark(size_t _hwm) { high_water_mark_ = _hwm; }
+        HARE_INLINE void set_read_callback(read_callback _read) { read_ = std::move(_read); }
+        HARE_INLINE void set_write_callback(write_callback _write) { write_ = std::move(_write); }
+        HARE_INLINE void set_high_water_callback(high_water_callback _high_water) { high_water_ = std::move(_high_water); }
 
         auto append(buffer& _buffer) -> bool;
         auto send(const void* _bytes, size_t _length) -> bool override;

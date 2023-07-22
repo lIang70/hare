@@ -72,7 +72,7 @@
 
 #define HARE_ALIGNAS(n) alignas(n)
 
-#define HARE_SMALL_FIXED_SIZE (32)
+#define HARE_SMALL_FIXED_SIZE (32UL)
 #define HARE_SMALL_BUFFER (4 * 1024)
 #define HARE_LARGE_BUFFER (1024 * HARE_SMALL_BUFFER)
 
@@ -135,7 +135,6 @@ namespace detail {
 #define HARE_IMPL(Class, ...)                           \
     struct Class##_impl : public hare::detail::impl {   \
         __VA_ARGS__                                     \
-        ~Class##_impl() override;                       \
     };                                                  \
     HARE_INLINE auto d_ptr(hare::detail::impl* _impl)   \
         -> Class##_impl* { return down_cast<Class##_impl*>(_impl); }

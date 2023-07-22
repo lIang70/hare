@@ -23,27 +23,18 @@ namespace net {
     class acceptor;
     HARE_CLASS_API
     class HARE_API hybrid_serve : public util::non_copyable {
-        using new_session_callback = std::function<void(const session::ptr&, const timestamp&, const hare::ptr<acceptor>&)>;
-
-        std::string name_ {};
-
-        // the acceptor loop
-        io::cycle* cycle_ {};
-        ptr<io_pool> io_pool_ {};
-        uint64_t session_id_ { 0 };
-        bool started_ { false };
-
-        new_session_callback new_session_ {};
+        hare::detail::impl* impl_ {};
 
     public:
+        using new_session_callback = std::function<void(const session::ptr&, const timestamp&, const hare::ptr<acceptor>&)>;
         using ptr = ptr<hybrid_serve>;
 
         explicit hybrid_serve(io::cycle* _cycle, std::string _name = "HARE_SERVE");
         virtual ~hybrid_serve();
 
-        HARE_INLINE auto main_cycle() const -> io::cycle* { return cycle_; }
-        HARE_INLINE auto is_running() const -> bool { return started_; }
-        HARE_INLINE void set_new_session(new_session_callback _new_session) { new_session_ = std::move(_new_session); }
+        auto main_cycle() const -> io::cycle*;
+        auto is_running() const -> bool;
+        void set_new_session(new_session_callback _new_session);
 
         auto add_acceptor(const hare::ptr<acceptor>& _acceptor) -> bool;
 

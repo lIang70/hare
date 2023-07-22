@@ -14,6 +14,8 @@
 
 #include <hare/base/fwd.h>
 
+#include <list>
+
 namespace hare {
 namespace util {
 
@@ -31,6 +33,8 @@ namespace util {
     HARE_API auto fremove(const filename_t& _filepath) -> bool;
     HARE_API auto fsize(std::FILE* _fp) -> std::size_t;
     HARE_API auto fsync(std::FILE* _fp) -> bool;
+
+    HARE_API auto get_local_address(std::uint8_t _family, std::list<std::string>& _addr_list) -> std::int32_t;
 
 } // namespace util
 } // namespace hare

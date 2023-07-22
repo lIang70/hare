@@ -1,5 +1,5 @@
+#include "hare/base/fwd-inl.h"
 #include "hare/base/io/reactor/reactor_select.h"
-#include "hare/base/io/local.h"
 #include <hare/base/exception.h>
 
 #if HARE__HAVE_SELECT || defined(H_OS_WIN)

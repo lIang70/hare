@@ -8,8 +8,11 @@
 #include <thread>
 
 #ifndef H_OS_WIN
+#include <arpa/inet.h>
 #include <cxxabi.h>
 #include <execinfo.h>
+#include <ifaddrs.h>
+#include <netinet/in.h>
 #include <sys/prctl.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -23,7 +26,7 @@
 #define fileno _fileno
 
 const DWORD MS_VC_EXCEPTION = 0x406D1388;
-#pragma pack(push,8)
+#pragma pack(push, 8)
 typedef struct tagTHREADNAME_INFO {
     DWORD dwType; // Must be 0x1000.
     LPCSTR szName; // Pointer to name (in user addr space).
@@ -31,18 +34,18 @@ typedef struct tagTHREADNAME_INFO {
     DWORD dwFlags; // Reserved for future use, must be zero.
 } THREADNAME_INFO;
 #pragma pack(pop)
-void SetThreadName(DWORD dwThreadID, const char* threadName) {
+void SetThreadName(DWORD dwThreadID, const char* threadName)
+{
     THREADNAME_INFO info;
     info.dwType = 0x1000;
     info.szName = threadName;
     info.dwThreadID = dwThreadID;
     info.dwFlags = 0;
 #pragma warning(push)
-#pragma warning(disable: 6320 6322)
-    __try{
+#pragma warning(disable : 6320 6322)
+    __try {
         RaiseException(MS_VC_EXCEPTION, 0, sizeof(info) / sizeof(ULONG_PTR), (ULONG_PTR*)&info);
-    }
-    __except (EXCEPTION_EXECUTE_HANDLER){
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
     }
 #pragma warning(pop)
 }
@@ -79,7 +82,7 @@ namespace util {
                     host_name_[host_name_.size() - 1] = '\0';
                 }
                 // Get application dir
-                if (::getcwd(system_dir_.data(), NAME_LENGTH) == 0) {
+                if (::getcwd(system_dir_.data(), NAME_LENGTH) == nullptr) {
                     throw exception("Cannot call ::getcwd.");
                 }
 
@@ -108,7 +111,7 @@ namespace util {
             std::uint64_t nice_time {};
             std::uint64_t system_time {};
             std::uint64_t idle_time {};
-            std::array<char, static_cast<std::size_t>(HARE_SMALL_FIXED_SIZE) * 2> name {};
+            std::array<char, HARE_SMALL_FIXED_SIZE * 2> name {};
             std::array<char, FILE_LENGTH> buffer {};
 
             auto* stat_fd = ::fopen("/proc/stat", "r");
@@ -137,7 +140,7 @@ namespace util {
             std::uint64_t system_time {};
             std::uint64_t cutime {}; // all user time
             std::uint64_t cstime {}; // all dead time
-            std::array<char, static_cast<std::size_t>(HARE_SMALL_FIXED_SIZE) * 2> name {};
+            std::array<char, HARE_SMALL_FIXED_SIZE * 2> name {};
             std::array<char, FILE_LENGTH> buffer {};
 
             auto ret = ::sprintf(name.data(), "/proc/%d/stat", _pid);
@@ -302,7 +305,7 @@ namespace util {
 
     auto errnostr(std::int32_t _errorno) -> const char*
     {
-        static thread_local std::array<char, static_cast<std::size_t>(HARE_SMALL_FIXED_SIZE * HARE_SMALL_FIXED_SIZE) / 2> t_errno_buf;
+        static thread_local std::array<char, HARE_SMALL_FIXED_SIZE * HARE_SMALL_FIXED_SIZE / 2> t_errno_buf;
 #ifdef H_OS_WIN32
         ::strerror_s(t_errno_buf.data(), t_errno_buf.size(), _errorno);
 #else
@@ -336,7 +339,7 @@ namespace util {
         return ret;
 #endif
     }
-    
+
     auto fremove(const filename_t& _filepath) -> bool
     {
         if (!fexists(_filepath)) {
@@ -376,6 +379,43 @@ namespace util {
 #elif defined(H_OS_WIN32)
         return ::FlushFileBuffers((HANDLE)::_get_osfhandle(::fileno(_fp)));
 #endif
+    }
+
+    auto get_local_address(std::uint8_t _family, std::list<std::string>& _addr_list) -> std::int32_t
+    {
+        // Get the list of ip addresses of machine
+        ::ifaddrs* if_addrs { nullptr };
+        auto ret = ::getifaddrs(&if_addrs);
+
+        if (ret != 0) {
+            return -1;
+        }
+
+        auto adress_buf_len { 0 };
+        std::array<char, INET6_ADDRSTRLEN> address_buffer {};
+
+        switch (_family) {
+        case AF_INET6:
+            adress_buf_len = INET6_ADDRSTRLEN;
+            break;
+        case AF_INET:
+            adress_buf_len = INET_ADDRSTRLEN;
+            break;
+        default:
+            return -1;
+        }
+
+        while (if_addrs != nullptr) {
+            if (_family == if_addrs->ifa_addr->sa_family) {
+                // Is a valid IPv4 Address
+                auto* tmp = &(reinterpret_cast<struct sockaddr_in*>(if_addrs->ifa_addr))->sin_addr;
+                ::inet_ntop(_family, tmp, address_buffer.data(), adress_buf_len);
+                _addr_list.emplace_back(address_buffer.data(), adress_buf_len);
+                address_buffer.fill('\0');
+            }
+            if_addrs = if_addrs->ifa_next;
+        }
+        return 0;
     }
 
 } // namespace util

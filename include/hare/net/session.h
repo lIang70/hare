@@ -38,45 +38,29 @@ namespace net {
     };
 
     HARE_CLASS_API
-    class HARE_API session : public util::non_copyable
-                           , public std::enable_shared_from_this<session> {
-        using connect_callback = std::function<void(const ptr<session>&, std::uint8_t)>;
-        using destroy = std::function<void()>;
-
-        const std::string name_ {};
-        io::cycle* cycle_ { nullptr };
-        io::event::ptr event_ { nullptr };
-        socket socket_;
-
-        const host_address local_addr_ {};
-        const host_address peer_addr_ {};
-
-        bool reading_ { false };
-        STATE state_ { STATE_CONNECTING };
-
-        connect_callback connect_ {};
-        destroy destroy_ {};
-
-        util::any any_ctx_ {};
+    class HARE_API session : public util::non_copyable, public std::enable_shared_from_this<session> {
+        hare::detail::impl* impl_ {};
 
     public:
+        using connect_callback = std::function<void(const ptr<session>&, std::uint8_t)>;
+        using destroy = std::function<void()>;
         using ptr = ptr<session>;
 
         virtual ~session();
 
-        HARE_INLINE auto name() const -> std::string { return name_; }
-        HARE_INLINE auto owner_cycle() const -> io::cycle* { return cycle_; }
-        HARE_INLINE auto local_address() const -> const host_address& { return local_addr_; }
-        HARE_INLINE auto peer_address() const -> const host_address& { return peer_addr_; }
-        HARE_INLINE auto state() const -> STATE { return state_; }
-        HARE_INLINE auto fd() const -> util_socket_t { return socket_.fd(); }
+        auto name() const -> std::string;
+        auto owner_cycle() const -> io::cycle*;
+        auto local_address() const -> const host_address&;
+        auto peer_address() const -> const host_address&;
+        auto state() const -> STATE;
+        auto fd() const -> util_socket_t;
 
-        HARE_INLINE auto connected() const -> bool { return state_ == STATE_CONNECTED; }
+        auto connected() const -> bool;
 
-        HARE_INLINE void set_connect_callback(connect_callback _connect) { connect_ = std::move(_connect); }
+        void set_connect_callback(connect_callback _connect);
 
-        HARE_INLINE void set_context(const util::any& context) { any_ctx_ = context; }
-        HARE_INLINE auto get_context() const -> const util::any& { return any_ctx_; }
+        void set_context(const util::any& context);
+        auto get_context() const -> const util::any&;
 
         auto shutdown() -> error;
         auto force_close() -> error;
@@ -92,9 +76,10 @@ namespace net {
             std::string _name, std::uint8_t _family, util_socket_t _fd,
             host_address _peer_addr);
 
-        HARE_INLINE void set_state(STATE _state) { state_ = _state; }
-        HARE_INLINE auto event() -> io::event::ptr& { return event_; }
-        HARE_INLINE auto socket() -> socket& { return socket_; }
+        void set_state(STATE _state);
+        auto event() -> io::event::ptr&;
+        auto socket() -> net::socket&;
+        void set_destroy(destroy _destroy);
 
         void handle_callback(const io::event::ptr& _event, std::uint8_t _events, const timestamp& _receive_time);
 

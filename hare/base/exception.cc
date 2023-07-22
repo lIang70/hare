@@ -15,7 +15,7 @@ exception::exception(std::string what) noexcept
     d_ptr(impl_)->stack_ = util::stack_trace(false);
 }
 
-exception::~exception()
+exception::~exception() noexcept
 {
     delete impl_;
 }

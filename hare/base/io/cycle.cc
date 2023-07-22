@@ -1,6 +1,8 @@
+#include "hare/base/fwd-inl.h"
 #include "hare/base/io/local.h"
 #include "hare/base/io/reactor.h"
 #include <hare/base/exception.h>
+#include <hare/base/io/socket_op.h>
 #include <hare/base/time/timestamp.h>
 #include <hare/base/util/count_down_latch.h>
 #include <hare/hare-config.h>
@@ -41,94 +43,16 @@ namespace io {
             }
             return evtfd;
         }
-#elif defined(H_OS_WIN)
-        static auto create_pair(util_socket_t& _write_fd) -> util_socket_t
+#else
+        static auto create_notify_fd(util_socket_t& _write_fd) -> util_socket_t
         {
-            util_socket_t listener = ::socket(AF_INET, SOCK_STREAM, 0);
-            if (listener < 0) {
-                MSG_FATAL("cannot create socket in ::socket");
+            util_socket_t fd[2];
+            auto ret = socket_op::socketpair(AF_INET, SOCK_STREAM, 0, fd);
+            if (ret < 0) {
+                MSG_FATAL("fail to create socketpair for notify_fd.");
             }
-            util_socket_t connector = -1;
-            util_socket_t acceptor = -1;
-            struct sockaddr_in listen_addr {};
-            struct sockaddr_in connect_addr {};
-            std::int32_t size {};
-            std::int32_t saved_errno = -1;
-
-            hare::detail::fill_n(&listen_addr, sizeof(listen_addr), 0);
-            listen_addr.sin_family = AF_INET;
-            listen_addr.sin_addr.s_addr = ::htonl(INADDR_LOOPBACK);
-            listen_addr.sin_port = 0;
-
-            if (::bind(listener, (struct sockaddr *) &listen_addr, sizeof (listen_addr)) == -1) {
-                goto tidy_up_and_fail;
-            }
-            if (::listen(listener, 1) == -1) {
-                goto tidy_up_and_fail;
-            }
-
-            connector = ::socket(AF_INET, SOCK_STREAM, 0);
-            if (connector < 0) {
-                goto tidy_up_and_fail;
-            }
-
-            hare::detail::fill_n(&connect_addr, sizeof(connect_addr), 0);
-
-            /* We want to find out the port number to connect to.  */
-            size = sizeof(connect_addr);
-            if (::getsockname(listener, (struct sockaddr *) &connect_addr, &size) == -1) {
-                goto tidy_up_and_fail;
-            }
-            if (size != sizeof(connect_addr)) {
-                goto abort_tidy_up_and_fail;
-            }
-            if (::connect(connector, (struct sockaddr *) &connect_addr, sizeof(connect_addr)) == -1) {
-                goto tidy_up_and_fail;
-            }
-
-            size = sizeof(listen_addr);
-            acceptor = ::accept(listener, (struct sockaddr *) &listen_addr, &size);
-            if (acceptor < 0) {
-                goto tidy_up_and_fail;
-            }
-            if (size != sizeof(listen_addr)) {
-                goto abort_tidy_up_and_fail;
-            }
-            /* Now check we are talking to ourself by matching port and host on the
-               two sockets.	 */
-            if (::getsockname(connector, (struct sockaddr *) &connect_addr, &size) == -1) {
-                goto tidy_up_and_fail;
-            }
-            if (size != sizeof (connect_addr)
-                || listen_addr.sin_family != connect_addr.sin_family
-                || listen_addr.sin_addr.s_addr != connect_addr.sin_addr.s_addr
-                || listen_addr.sin_port != connect_addr.sin_port) {
-                goto abort_tidy_up_and_fail;
-            }
-            ::closesocket(listener);
-
-            _write_fd = connector;
-
-            return acceptor;
-
-abort_tidy_up_and_fail:
-            saved_errno = WSAECONNABORTED;
-tidy_up_and_fail:
-            if (saved_errno < 0) {
-                saved_errno = errno;
-            }
-            if (listener != -1) {
-                ::closesocket(listener);
-            }
-            if (connector != -1) {
-                ::closesocket(connector);
-            }
-            if (acceptor != -1) {
-                ::closesocket(acceptor);
-            }
-
-            errno = saved_errno;
-            return -1;
+            _write_fd = fd[0];
+            return fd[1];
         }
 #endif
 
@@ -137,24 +61,18 @@ tidy_up_and_fail:
         public:
             event_notify()
                 : event(create_notify_fd(),
-                    std::bind(&event_notify::event_callback,
-                        this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
-                    EVENT_READ | EVENT_PERSIST,
-                    0)
-            {
-            }
-#elif defined(H_OS_WIN)
+#else
             util_socket_t write_fd_ {};
+
         public:
             event_notify()
-                : event(create_pair(write_fd_),
+                : event(create_notify_fd(write_fd_),
+#endif
                     std::bind(&event_notify::event_callback,
                         this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
                     EVENT_READ | EVENT_PERSIST,
                     0)
-            {
-            }
-#endif
+            { }
 
             ~event_notify() override
             {
@@ -210,7 +128,6 @@ tidy_up_and_fail:
                 MSG_TRACE("::WSACleanup success.");
             }
 #endif
-
         };
 
         auto get_wait_time(const priority_timer& _ptimer) -> std::int32_t
@@ -225,7 +142,6 @@ tidy_up_and_fail:
 #else
             return time <= 0 ? static_cast<std::int32_t>(1) : std::min(time, POLL_TIME_MICROSECONDS);
 #endif
-
         }
 
         void print_active_events(const events_list& _active_events)
@@ -238,7 +154,6 @@ tidy_up_and_fail:
         }
     } // namespace detail
 
-
     HARE_IMPL_DEFAULT(cycle,
         timestamp reactor_time_ {};
         std::uint64_t tid_ { 0 };
@@ -250,6 +165,7 @@ tidy_up_and_fail:
         ptr<detail::event_notify> notify_event_ { nullptr };
         ptr<reactor> reactor_ { nullptr };
         ptr<event> current_active_event_ { nullptr };
+        event::id event_id_ { 0 };
 
         mutable std::mutex functions_mutex_ {};
         std::list<task> pending_functions_ {};
@@ -436,7 +352,7 @@ tidy_up_and_fail:
             }
 
             if (sevent->event_id() == -1) {
-                sevent->active(this, current_thread::get_tds().event_id++);
+                sevent->active(this, d_ptr(impl_)->event_id_++);
 
                 assert(reactor_->events_.find(sevent->id_) == reactor_->events_.end());
                 d_ptr(impl_)->reactor_->events_.insert(std::make_pair(sevent->event_id(), sevent));

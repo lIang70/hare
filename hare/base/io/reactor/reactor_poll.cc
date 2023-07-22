@@ -1,5 +1,5 @@
+#include "hare/base/fwd-inl.h"
 #include "hare/base/io/reactor/reactor_poll.h"
-#include "hare/base/io/local.h"
 
 #include <algorithm>
 #include <sstream>

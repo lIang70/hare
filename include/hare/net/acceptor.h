@@ -22,13 +22,7 @@ namespace net {
 
     HARE_CLASS_API
     class HARE_API acceptor : public io::event {
-        using new_session = std::function<void(util_socket_t, host_address&, const timestamp&, acceptor*)>;
-
-        socket socket_;
-        new_session new_session_ {};
-        std::uint8_t family_ {};
-        std::uint16_t port_ {};
-
+        detail::impl* impl_ {};
 #ifdef H_OS_LINUX
         // Read the section named "The special problem of
         // accept()ing when you can't" in libev's doc.
@@ -37,14 +31,16 @@ namespace net {
 #endif
 
     public:
+        using new_session = std::function<void(util_socket_t, host_address&, const timestamp&, acceptor*)>;
         using ptr = std::shared_ptr<acceptor>;
 
         acceptor(std::uint8_t _family, TYPE _type, std::uint16_t _port, bool _reuse_port = true);
         ~acceptor() override;
 
-        HARE_INLINE auto socket() const -> util_socket_t { return socket_.fd(); };
-        HARE_INLINE auto type() const -> TYPE { return socket_.type(); };
-        HARE_INLINE auto port() const -> std::uint16_t { return port_; };
+        auto socket() const -> util_socket_t;
+        auto type() const -> TYPE;
+        auto port() const -> std::uint16_t;
+        auto family() const -> std::uint8_t;
 
     protected:
         void event_callback(const io::event::ptr& _event, std::uint8_t _events, const timestamp& _receive_time);
@@ -52,7 +48,7 @@ namespace net {
     private:
         auto listen() -> error;
 
-        HARE_INLINE void set_new_session(new_session _cb) { new_session_ = std::move(_cb); }
+        void set_new_session(new_session _cb);
 
         friend class hybrid_serve;
     };

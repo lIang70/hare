@@ -1,8 +1,9 @@
 #include "hare/base/fwd-inl.h"
 #include "hare/net/io_pool.h"
-#include "hare/net/socket_op.h"
 #include <hare/base/io/cycle.h>
+#include <hare/base/io/socket_op.h>
 #include <hare/base/util/count_down_latch.h>
+#include <hare/hare-config.h>
 #include <hare/net/acceptor.h>
 #include <hare/net/hybrid_serve.h>
 #include <hare/net/tcp_session.h>
@@ -39,14 +40,14 @@ namespace net {
                 return -1;
             }
 
-            auto err = socket_op::bind(accept_fd, local_addr.get_sockaddr());
+            auto err = socket_op::bind(accept_fd, local_addr.get_sockaddr(), socket_op::get_addr_len(local_addr.family()));
             if (!err) {
                 MSG_ERROR("socket[{}] cannot bind address {}.", accept_fd, local_addr.to_ip_port());
                 socket_op::close(accept_fd);
                 return -1;
             }
 
-            err = socket_op::connect(accept_fd, peer_addr.get_sockaddr());
+            err = socket_op::connect(accept_fd, peer_addr.get_sockaddr(), socket_op::get_addr_len(peer_addr.family()));
             if (!err) {
                 MSG_ERROR("socket[{}] cannot connect address {}.", accept_fd, local_addr.to_ip_port());
                 socket_op::close(accept_fd);
@@ -58,25 +59,55 @@ namespace net {
 
     } // namespace detail
 
+    HARE_IMPL_DEFAULT(hybrid_serve,
+                      std::string name_ {};
+
+                      // the acceptor loop
+                      io::cycle * cycle_ {};
+                      ptr<io_pool> io_pool_ {};
+                      uint64_t session_id_ { 0 };
+                      bool started_ { false };
+
+                      hybrid_serve::new_session_callback new_session_ {};
+
+    )
+
     hybrid_serve::hybrid_serve(io::cycle* _cycle, std::string _name)
-        : name_(std::move(_name))
-        , cycle_(_cycle)
+        : impl_(new hybrid_serve_impl)
     {
+        d_ptr(impl_)->name_ = std::move(_name);
+        d_ptr(impl_)->cycle_ = _cycle;
     }
 
     hybrid_serve::~hybrid_serve()
     {
         assert(!started_);
+        delete impl_;
+    }
+
+    auto hybrid_serve::main_cycle() const -> io::cycle*
+    {
+        return d_ptr(impl_)->cycle_;
+    }
+
+    auto hybrid_serve::is_running() const -> bool
+    {
+        return d_ptr(impl_)->started_;
+    }
+
+    void hybrid_serve::set_new_session(new_session_callback _new_session)
+    {
+        d_ptr(impl_)->new_session_ = std::move(_new_session);
     }
 
     auto hybrid_serve::add_acceptor(const acceptor::ptr& _acceptor) -> bool
     {
         util::count_down_latch cdl(1);
-        auto in_cycle = cycle_->in_cycle_thread();
+        auto in_cycle = d_ptr(impl_)->cycle_->in_cycle_thread();
         auto added { false };
 
-        cycle_->run_in_cycle([&] {
-            cycle_->event_update(_acceptor);
+        d_ptr(impl_)->cycle_->run_in_cycle([&] {
+            d_ptr(impl_)->cycle_->event_update(_acceptor);
             _acceptor->set_new_session(std::bind(&hybrid_serve::new_session, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
             auto ret = _acceptor->listen();
             if (!ret) {
@@ -102,34 +133,34 @@ namespace net {
     {
         assert(cycle_);
 
-        io_pool_ = std::make_shared<io_pool>("SERVER_WORKER");
-        auto ret = io_pool_->start(cycle_->type(), _thread_nbr);
+        d_ptr(impl_)->io_pool_ = std::make_shared<io_pool>("SERVER_WORKER");
+        auto ret = d_ptr(impl_)->io_pool_->start(d_ptr(impl_)->cycle_->type(), _thread_nbr);
         if (!ret) {
             return error(ERROR_INIT_IO_POOL);
         }
 
-        started_ = true;
-        cycle_->loop();
-        started_ = false;
+        d_ptr(impl_)->started_ = true;
+        d_ptr(impl_)->cycle_->loop();
+        d_ptr(impl_)->started_ = false;
 
         MSG_TRACE("clean io pool...");
-        io_pool_->stop();
-        io_pool_.reset();
+        d_ptr(impl_)->io_pool_->stop();
+        d_ptr(impl_)->io_pool_.reset();
 
         return error();
     }
 
     void hybrid_serve::exit()
     {
-        cycle_->exit();
+        d_ptr(impl_)->cycle_->exit();
     }
 
     void hybrid_serve::new_session(util_socket_t _fd, host_address& _address, const timestamp& _time, acceptor* _acceptor)
     {
         assert(started_ == true);
-        cycle_->assert_in_cycle_thread();
+        d_ptr(impl_)->cycle_->assert_in_cycle_thread();
 
-        if (!new_session_) {
+        if (!d_ptr(impl_)->new_session_) {
             MSG_TRACE("you need register new_session_callback to serve[{}].", name_);
             if (_fd != -1) {
                 socket_op::close(_fd);
@@ -137,7 +168,7 @@ namespace net {
             return;
         }
 
-        auto next_item = io_pool_->get_next();
+        auto next_item = d_ptr(impl_)->io_pool_->get_next();
         session::ptr session { nullptr };
         auto type = _acceptor->type();
         std::string name_cache {};
@@ -147,39 +178,39 @@ namespace net {
             assert(_fd != -1);
             auto local_addr = host_address::local_address(_fd);
 
-            name_cache = fmt::format("{}-{}#tcp{}", name_, local_addr.to_ip_port(), session_id_++);
+            name_cache = fmt::format("{}-{}#tcp{}", d_ptr(impl_)->name_, local_addr.to_ip_port(), d_ptr(impl_)->session_id_++);
 
             MSG_TRACE("new session[{}] in serve[{}] from {} in {}.",
                 name_cache, name_, _address.to_ip_port(), _time.to_fmt());
 
             session.reset(new tcp_session(next_item->cycle.get(),
                 std::move(local_addr),
-                name_cache, _acceptor->family_, _fd,
+                name_cache, _acceptor->family(), _fd,
                 std::move(_address)));
         } break;
         case TYPE_UDP: {
             assert(_fd == -1);
 
             struct sockaddr_in6 addr { };
-            size_t addr_len = socket_op::get_addr_len(_acceptor->family_);
+            size_t addr_len = socket_op::get_addr_len(_acceptor->family());
             auto buffer_size = socket_op::get_bytes_readable_on_socket(_acceptor->socket());
             auto* buffer = new uint8_t[buffer_size];
-            auto recv_size = socket_op::recvfrom(_acceptor->socket(), buffer, buffer_size, sockaddr_cast(&addr), addr_len);
+            auto recv_size = socket_op::recvfrom(_acceptor->socket(), buffer, buffer_size, socket_op::sockaddr_cast(&addr), addr_len);
             assert(recv_size == buffer_size);
 
             host_address peer_addr {};
             peer_addr.set_sockaddr_in6(&addr);
 
-            auto accept_fd = detail::create_udp_socket(_address, _acceptor->family_, peer_addr);
+            auto accept_fd = detail::create_udp_socket(_address, _acceptor->family(), peer_addr);
 
-            name_cache = fmt::format("{}-{}#udp{}", name_, peer_addr.to_ip_port(), session_id_++);
+            name_cache = fmt::format("{}-{}#udp{}", d_ptr(impl_)->name_, peer_addr.to_ip_port(), d_ptr(impl_)->session_id_++);
 
             MSG_TRACE("new session[{}] in serve[{}] from {} in {}.",
                 name_cache, name_, peer_addr.to_ip_port(), _time.to_fmt());
 
             session.reset(new udp_session(next_item->cycle.get(),
                 std::move(_address),
-                name_cache, _acceptor->family_, accept_fd,
+                name_cache, _acceptor->family(), accept_fd,
                 std::move(peer_addr)));
 
             auto udp = std::static_pointer_cast<udp_session>(session);
@@ -194,17 +225,17 @@ namespace net {
             return;
         }
 
-        session->destroy_ = std::bind([=]() {
+        session->set_destroy(std::bind([=]() {
             next_item->cycle->run_in_cycle([=]() mutable {
                 assert(next_item->sessions.find(_fd) != next_item->sessions.end());
                 next_item->sessions.erase(_fd);
             });
-        });
+        }));
 
         next_item->cycle->run_in_cycle(std::bind([=]() mutable {
             assert(next_item->sessions.find(_fd) == next_item->sessions.end());
             next_item->sessions.insert(std::make_pair(_fd, session));
-            new_session_(session, _time, std::static_pointer_cast<acceptor>(_acceptor->shared_from_this()));
+            d_ptr(impl_)->new_session_(session, _time, std::static_pointer_cast<acceptor>(_acceptor->shared_from_this()));
             session->connect_established();
 
             if (type == TYPE_UDP) {

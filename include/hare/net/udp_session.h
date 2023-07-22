@@ -32,8 +32,8 @@ namespace net {
 
         ~udp_session() override;
 
-        inline void set_read_callback(read_callback _read) { read_ = std::move(_read); }
-        inline void set_write_callback(write_callback _write) { write_ = std::move(_write); }
+        HARE_INLINE void set_read_callback(read_callback _read) { read_ = std::move(_read); }
+        HARE_INLINE void set_write_callback(write_callback _write) { write_ = std::move(_write); }
 
         auto append(buffer& _buffer) -> bool;
         auto send(const void* _bytes, size_t _length) -> bool override;

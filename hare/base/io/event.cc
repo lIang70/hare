@@ -1,4 +1,4 @@
-#include "hare/base/io/local.h"
+#include "hare/base/fwd-inl.h"
 #include "hare/base/io/reactor.h"
 #include <hare/base/io/event.h>
 

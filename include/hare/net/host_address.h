@@ -12,8 +12,8 @@
 #ifndef _HARE_NET_HOST_ADDRESS_H_
 #define _HARE_NET_HOST_ADDRESS_H_
 
+#include <hare/base/io/socket_op.h>
 #include <hare/base/util/non_copyable.h>
-#include <hare/net/util.h>
 
 #include <string>
 
@@ -59,12 +59,12 @@ namespace net {
 
         auto family() const -> std::uint8_t;
 
-        HARE_INLINE auto get_sockaddr() const -> sockaddr* { return sockaddr_cast(addr_.in6_); }
+        HARE_INLINE auto get_sockaddr() const -> sockaddr* { return socket_op::sockaddr_cast(addr_.in6_); }
         void set_sockaddr_in6(const struct sockaddr_in6* addr_in6) const;
 
         auto to_ip() const -> std::string;
         auto to_ip_port() const -> std::string;
-        HARE_INLINE auto port() const -> std::uint16_t { return network_to_host16(port_net_endian()); }
+        HARE_INLINE auto port() const -> std::uint16_t { return socket_op::network_to_host16(port_net_endian()); }
 
         auto ipv4_net_endian() const -> std::uint32_t;
         auto port_net_endian() const -> std::uint16_t;

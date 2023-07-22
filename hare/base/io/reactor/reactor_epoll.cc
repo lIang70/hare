@@ -1,5 +1,5 @@
+#include "hare/base/fwd-inl.h"
 #include "hare/base/io/reactor/reactor_epoll.h"
-#include "hare/base/io/local.h"
 #include <hare/base/exception.h>
 
 #include <sstream>

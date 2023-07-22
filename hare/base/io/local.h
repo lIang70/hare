@@ -1,7 +1,6 @@
 #ifndef _HARE_BASE_IO_LOCAL_H_
 #define _HARE_BASE_IO_LOCAL_H_
 
-#include "hare/base/fwd-inl.h"
 #include <hare/base/io/event.h>
 #include <hare/hare-config.h>
 
@@ -17,7 +16,6 @@ namespace io {
         using TID = struct thread_io_data {
             // io
             io::cycle* cycle { nullptr };
-            io::event::id event_id { 0 };
 
             // thread
             std::uint64_t tid {};
