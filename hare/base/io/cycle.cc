@@ -22,7 +22,6 @@
 #include <sys/socket.h>
 #elif defined(H_OS_WIN)
 #include <WinSock2.h>
-#pragma comment(lib, "WS2_32.lib")
 
 #define close closesocket
 #define read _read

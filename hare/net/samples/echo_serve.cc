@@ -12,6 +12,7 @@
 #include <map>
 
 #if defined(H_OS_WIN32)
+#include <WinSock2.h>
 #else
 #include <sys/socket.h>
 #endif
@@ -121,7 +122,11 @@ auto main(std::int32_t argc, char** argv) -> std::int32_t
 
     acceptor::ptr acc { new acceptor(AF_INET, acceptor_type, int16_t(std::stoi(std::string(argv[2])))) };
 
+#if defined(H_OS_WIN32)
+    hare::io::cycle main_cycle(hare::io::cycle::REACTOR_TYPE_SELECT);
+#else
     hare::io::cycle main_cycle(hare::io::cycle::REACTOR_TYPE_EPOLL);
+#endif
     hare::net::hybrid_serve::ptr main_serve = std::make_shared<hare::net::hybrid_serve>(&main_cycle, "ECHO");
 
     main_serve->set_new_session(new_session);

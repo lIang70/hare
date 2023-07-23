@@ -12,6 +12,12 @@
 #include <sys/ioctl.h>
 #endif
 
+#define MIN_TO_ALLOC 512
+#define MAX_TO_COPY_IN_EXPAND 4096
+#define MAX_TO_REALIGN 2048
+#define MAX_SIZE (0xffffffff)
+#define MAX_CHINA_SIZE (16)
+
 #if defined(HARE__HAVE_SYS_UIO_H) || defined(H_OS_WIN32)
 #define USE_IOVEC_IMPL
 #else
@@ -35,6 +41,7 @@
 #define IOV_LEN_FIELD iov_len
 #define IOV_LEN_TYPE std::size_t
 #else
+#include <WinSock2.h>
 #define NUM_WRITE_IOVEC 16
 #define IOV_TYPE WSABUF
 #define IOV_PTR_FIELD buf
@@ -42,12 +49,6 @@
 #define IOV_LEN_TYPE unsigned long
 #endif
 #endif
-
-#define MIN_TO_ALLOC 512
-#define MAX_TO_COPY_IN_EXPAND 4096
-#define MAX_TO_REALIGN 2048
-#define MAX_SIZE (std::numeric_limits<std::size_t>::max())
-#define MAX_CHINA_SIZE (16)
 
 #ifndef MAX
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
@@ -78,7 +79,7 @@ namespace net {
         {
             std::vector<int> next(_size, 0);
             int k = -1;
-            for (int j = 0; j < _size;) {
+            for (std::size_t j = 0; j < _size;) {
                 if (k == -1 || _begin[j] == _begin[k]) {
                     ++j, ++k;
                     if (_begin[j] != _begin[k]) {
@@ -207,7 +208,7 @@ namespace net {
     auto buffer::find(const char* _begin, std::size_t _size) -> int64_t
     {
         auto next_val = detail::get_next(_begin, _size);
-        auto i = 0, j = 0;
+        std::size_t i = 0, j = 0;
         while (i < total_len_ && j < _size) {
             if (j == -1 || (*this)[i] == _begin[j]) {
                 ++i, ++j;
@@ -346,7 +347,7 @@ namespace net {
                 vecs.emplace_back();
             }
             if (iter == block_chain_.end()) {
-                block_chain_.emplace(iter, new detail::cache(detail::round_up(remain)));
+                block_chain_.emplace(iter, new detail::cache(detail::round_up((std::size_t)remain)));
                 --iter;
                 if (write_iter_ == block_chain_.end()) {
                     write_iter_ = block_chain_.begin();
@@ -361,7 +362,25 @@ namespace net {
             ++iter;
         }
 
+#ifdef H_OS_WIN
+		{
+			DWORD bytes_read;
+			DWORD flags { 0 };
+			if (::WSARecv(_fd, vecs.data(), vec_nbr, &bytes_read, &flags, nullptr, nullptr)) {
+				/* The read failed. It might be a close,
+				 * or it might be an error. */
+				if (::WSAGetLastError() == WSAECONNABORTED) {
+					readable = 0;
+                } else {
+					readable = -1;
+                }
+			} else {
+				readable = bytes_read;
+            }
+		}
+#else
         readable = ::readv(_fd, vecs.data(), vec_nbr);
+#endif
 
         if (readable > 0) {
             remain = readable;
@@ -390,9 +409,9 @@ namespace net {
         return readable;
     }
 
-    auto buffer::write(util_socket_t _fd, int64_t _howmuch) -> int64_t
+    auto buffer::write(util_socket_t _fd, int64_t _howmuch) -> std::int64_t
     {
-        std::size_t write_n {};
+        std::int64_t write_n {};
 
         if (_howmuch < 0 || _howmuch > total_len_) {
             _howmuch = static_cast<int64_t>(total_len_);
@@ -426,7 +445,23 @@ namespace net {
                 return (0);
             }
 
+#ifdef H_OS_WIN
+            {
+                DWORD bytes_sent;
+                if (::WSASend(_fd, iov.data(), write_i, &bytes_sent, 0, nullptr, nullptr)) {
+                    write_n = -1;
+                } else {
+                    write_n = bytes_sent;
+                }
+            }
+#else
             write_n = ::writev(_fd, iov.data(), write_i);
+#endif
+
+            if (write_n < 0) {
+                return write_n;
+            }
+            
             total_len_ -= write_n;
 
             /**
@@ -453,7 +488,7 @@ namespace net {
             }
 #endif
         }
-        return static_cast<int64_t>(write_n);
+        return write_n;
     }
 
     auto buffer::remove(void* _buffer, std::size_t _length) -> std::size_t

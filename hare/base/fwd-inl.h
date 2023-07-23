@@ -10,7 +10,7 @@
 namespace hare {
 
 namespace detail {
-    extern void default_msg_handle(std::uint8_t, const std::string& msg);
+    HARE_API void default_msg_handle(std::uint8_t, const std::string& msg);
 } // namespace detail
 
 HARE_INLINE

@@ -7,6 +7,9 @@
 
 #ifdef H_OS_WIN32
 #include <WinSock2.h>
+#include <Ws2tcpip.h>
+#define socklen_t int
+#define NO_ACCEPT4
 
 #if BYTE_ORDER == LITTLE_ENDIAN
 
@@ -43,8 +46,6 @@
 #define le64toh(x) __builtin_bswap64(x)
 
 #endif
-
-#define socklen_t std::uint32_t
 
 #else
 #include <endian.h>
@@ -88,6 +89,7 @@ namespace socket_op {
 #if defined(NO_ACCEPT4)
         static void set_nonblock_closeonexec(util_socket_t _fd)
         {
+#ifndef H_OS_WIN
             // non-block
             auto flags = ::fcntl(_fd, F_GETFL, 0);
             flags |= O_NONBLOCK;
@@ -101,6 +103,12 @@ namespace socket_op {
             // FIXME check
 
             ignore_unused(ret);
+#else
+            u_long noblock = 1;
+            auto ret = ::ioctlsocket(_fd, FIONBIO, &noblock);
+            // no need close-on-exec
+            ignore_unused(ret);
+#endif
         }
 #endif
 
@@ -111,7 +119,7 @@ namespace socket_op {
              * for now, and really, when localhost is down sometimes, we
              * have other problems too.
              */
-#ifdef _WIN32
+#ifdef H_OS_WIN
 #define ERR(e) WSA##e
 #else
 #define ERR(e) e
@@ -237,6 +245,11 @@ namespace socket_op {
             throw exception("cannot create non-blocking socket");
         }
 #else
+        auto _fd = ::socket(_family, SOCK_STREAM, 0);
+        if (_fd < 0) {
+            throw exception("cannot create non-blocking socket");
+        }
+        detail::set_nonblock_closeonexec(_fd);
 #endif
         return _fd;
     }
@@ -249,6 +262,11 @@ namespace socket_op {
             throw exception("cannot create dgram socket");
         }
 #else
+        auto _fd = ::socket(_family, SOCK_DGRAM, 0);
+        if (_fd < 0) {
+            throw exception("cannot create dgram socket");
+        }
+        detail::set_nonblock_closeonexec(_fd);
 #endif
         return _fd;
     }
@@ -261,6 +279,10 @@ namespace socket_op {
             MSG_ERROR("close fd[{}], detail:{}.", _fd, get_socket_error_info(_fd));
         }
 #else
+        auto ret = ::closesocket(_fd);
+        if (ret < 0) {
+            MSG_ERROR("close fd[{}], detail:{}.", _fd, get_socket_error_info(_fd));
+        }
 #endif
         return ret;
     }
@@ -270,6 +292,7 @@ namespace socket_op {
 #ifndef H_OS_WIN
         return ::write(_fd, _buf, size);
 #else
+        return ::_write(_fd, _buf, size);
 #endif
     }
 
@@ -278,6 +301,7 @@ namespace socket_op {
 #ifndef H_OS_WIN
         return ::read(_fd, _buf, size);
 #else
+        return ::_read(_fd, _buf, size);
 #endif
     }
 
@@ -286,6 +310,7 @@ namespace socket_op {
 #ifndef H_OS_WIN
         return ::sendto(_fd, _buf, _size, 0, _addr, _addr_len);
 #else
+        return ::sendto(_fd, static_cast<const char*>(_buf), _size, 0, _addr, _addr_len);
 #endif
     }
 
@@ -294,6 +319,7 @@ namespace socket_op {
 #ifndef H_OS_WIN
         return ::recvfrom(_fd, _buf, size, 0, _addr, reinterpret_cast<socklen_t*>(&addr_len));
 #else
+        return ::recvfrom(_fd, static_cast<char*>(_buf), size, 0, _addr, reinterpret_cast<socklen_t*>(&addr_len));
 #endif
     }
 
@@ -302,6 +328,7 @@ namespace socket_op {
 #ifndef H_OS_WIN
         return ::bind(_fd, _addr, _addr_len) != 0;
 #else
+        return ::bind(_fd, _addr, _addr_len) != 0;
 #endif
     }
 
@@ -310,6 +337,7 @@ namespace socket_op {
 #ifndef H_OS_WIN
         return ::listen(_fd, SOMAXCONN) < 0;
 #else
+        return ::listen(_fd, SOMAXCONN) < 0;
 #endif
     }
 
@@ -318,6 +346,7 @@ namespace socket_op {
 #ifndef H_OS_WIN
         return ::connect(_fd, _addr, _addr_len) < 0;
 #else
+        return ::connect(_fd, _addr, (socklen_t)_addr_len) < 0;
 #endif
     }
 
@@ -369,8 +398,8 @@ namespace socket_op {
     auto get_bytes_readable_on_socket(util_socket_t _fd) -> std::int64_t
     {
 #if defined(FIONREAD) && defined(H_OS_WIN32)
-        auto lng = MAX_READ_DEFAULT;
-        if (::ioctlsocket(target_fd, FIONREAD, &lng) < 0) {
+        u_long lng = MAX_READ_DEFAULT;
+        if (::ioctlsocket(_fd, FIONREAD, &lng) < 0) {
             return (-1);
         }
         /* Can overflow, but mostly harmlessly. XXXX */
@@ -445,7 +474,7 @@ namespace socket_op {
 
     auto socketpair(std::uint8_t _family, std::int32_t _type, std::int32_t _protocol, util_socket_t _sockets[2]) -> std::int32_t
     {
-#ifndef M_OS_WIN32
+#ifndef H_OS_WIN32
         return ::socketpair(_family, _type, _protocol, _sockets);
 #else
         return detail::create_pair(_family, _type, _protocol, _sockets);

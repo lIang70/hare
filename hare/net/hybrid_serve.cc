@@ -13,6 +13,11 @@
 #include <netinet/in.h>
 #endif
 
+#if defined(H_OS_WIN)
+#include <WinSock2.h>
+#include <Ws2tcpip.h>
+#endif
+
 namespace hare {
 namespace net {
 
@@ -26,19 +31,22 @@ namespace net {
             }
 
             auto reuse { 1 };
-            auto ret = ::setsockopt(accept_fd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse));
+            auto ret = ::setsockopt(accept_fd, SOL_SOCKET, SO_REUSEADDR, (const char*)&reuse, sizeof(reuse));
             if (ret < 0) {
                 MSG_ERROR("cannot set address-reuse to socket.");
                 socket_op::close(accept_fd);
                 return -1;
             }
 
+#ifndef H_OS_WIN
+            // no need on windows
             ret = ::setsockopt(accept_fd, SOL_SOCKET, SO_REUSEPORT, &reuse, sizeof(reuse));
             if (ret < 0) {
                 MSG_ERROR("cannot set address-port to socket.");
                 socket_op::close(accept_fd);
                 return -1;
             }
+#endif
 
             auto err = socket_op::bind(accept_fd, local_addr.get_sockaddr(), socket_op::get_addr_len(local_addr.family()));
             if (!err) {
@@ -60,16 +68,15 @@ namespace net {
     } // namespace detail
 
     HARE_IMPL_DEFAULT(hybrid_serve,
-                      std::string name_ {};
+        std::string name_ {};
 
-                      // the acceptor loop
-                      io::cycle * cycle_ {};
-                      ptr<io_pool> io_pool_ {};
-                      uint64_t session_id_ { 0 };
-                      bool started_ { false };
+        // the acceptor loop
+        io::cycle * cycle_ {};
+        ptr<io_pool> io_pool_ {};
+        uint64_t session_id_ { 0 };
+        bool started_ { false };
 
-                      hybrid_serve::new_session_callback new_session_ {};
-
+        hybrid_serve::new_session_callback new_session_ {};
     )
 
     hybrid_serve::hybrid_serve(io::cycle* _cycle, std::string _name)
@@ -117,7 +124,7 @@ namespace net {
             }
 
             MSG_TRACE("add acceptor[{}], port={}, type={}] to serve[{}].",
-                _acceptor->socket(), _acceptor->port_, socket::type_str(_acceptor->type()), (void*)this);
+                _acceptor->socket(), _acceptor->port(), socket::type_str(_acceptor->type()), (void*)this);
             added = true;
             cdl.count_down();
         });
@@ -161,7 +168,7 @@ namespace net {
         d_ptr(impl_)->cycle_->assert_in_cycle_thread();
 
         if (!d_ptr(impl_)->new_session_) {
-            MSG_TRACE("you need register new_session_callback to serve[{}].", name_);
+            MSG_TRACE("you need register new_session_callback to serve[{}].", d_ptr(impl_)->name_);
             if (_fd != -1) {
                 socket_op::close(_fd);
             }
@@ -181,7 +188,7 @@ namespace net {
             name_cache = fmt::format("{}-{}#tcp{}", d_ptr(impl_)->name_, local_addr.to_ip_port(), d_ptr(impl_)->session_id_++);
 
             MSG_TRACE("new session[{}] in serve[{}] from {} in {}.",
-                name_cache, name_, _address.to_ip_port(), _time.to_fmt());
+                name_cache, d_ptr(impl_)->name_, _address.to_ip_port(), _time.to_fmt());
 
             session.reset(new tcp_session(next_item->cycle.get(),
                 std::move(local_addr),
@@ -194,9 +201,13 @@ namespace net {
             struct sockaddr_in6 addr { };
             size_t addr_len = socket_op::get_addr_len(_acceptor->family());
             auto buffer_size = socket_op::get_bytes_readable_on_socket(_acceptor->socket());
-            auto* buffer = new uint8_t[buffer_size];
-            auto recv_size = socket_op::recvfrom(_acceptor->socket(), buffer, buffer_size, socket_op::sockaddr_cast(&addr), addr_len);
-            assert(recv_size == buffer_size);
+            uint8_t* buffer {};
+            if (buffer_size > 0) {
+                auto total_size = static_cast<std::size_t>(buffer_size);
+                buffer = new uint8_t[total_size];
+                auto recv_size = socket_op::recvfrom(_acceptor->socket(), buffer, total_size, socket_op::sockaddr_cast(&addr), addr_len);
+                assert(recv_size == buffer_size);
+            }
 
             host_address peer_addr {};
             peer_addr.set_sockaddr_in6(&addr);
@@ -206,15 +217,18 @@ namespace net {
             name_cache = fmt::format("{}-{}#udp{}", d_ptr(impl_)->name_, peer_addr.to_ip_port(), d_ptr(impl_)->session_id_++);
 
             MSG_TRACE("new session[{}] in serve[{}] from {} in {}.",
-                name_cache, name_, peer_addr.to_ip_port(), _time.to_fmt());
+                name_cache, d_ptr(impl_)->name_, peer_addr.to_ip_port(), _time.to_fmt());
 
             session.reset(new udp_session(next_item->cycle.get(),
                 std::move(_address),
                 name_cache, _acceptor->family(), accept_fd,
                 std::move(peer_addr)));
 
-            auto udp = std::static_pointer_cast<udp_session>(session);
-            udp->in_buffer_.add_block(buffer, buffer_size);
+            if (buffer_size > 0) {
+                auto udp = std::static_pointer_cast<udp_session>(session);
+                auto total_size = static_cast<std::size_t>(buffer_size);
+                udp->in_buffer_.add_block(buffer, total_size);
+            }
 
         } break;
         default:

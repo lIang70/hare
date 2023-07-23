@@ -20,6 +20,10 @@
 #include <Windows.h>
 #include <direct.h>
 #include <io.h>
+#include <sys/stat.h>
+#include <iphlpapi.h>
+#pragma comment(lib, "Iphlpapi.lib")
+#pragma comment(lib, "WS2_32.lib")
 
 #define getcwd _getcwd
 #define getpid _getpid
@@ -355,12 +359,13 @@ namespace util {
             return 0;
         }
         auto fd = ::fileno(_fp);
+#ifndef H_OS_WIN
 #ifdef __USE_LARGEFILE64
 #define STAT struct stat64
-#define FSTAT fstat64
+#define FSTAT ::fstat64
 #else
 #define STAT struct stat
-#define FSTAT fstat
+#define FSTAT ::fstat
 #endif
         STAT st {};
         if (FSTAT(fd, &st) == 0) {
@@ -370,6 +375,10 @@ namespace util {
         }
 #undef STAT
 #undef FSTAT
+#else
+        auto size = ::_filelengthi64(fd);
+        return size < 0 ? 0 : static_cast<std::size_t>(size);
+#endif
     }
 
     auto fsync(std::FILE* _fp) -> bool
@@ -383,6 +392,7 @@ namespace util {
 
     auto get_local_address(std::uint8_t _family, std::list<std::string>& _addr_list) -> std::int32_t
     {
+#ifndef H_OS_WIN
         // Get the list of ip addresses of machine
         ::ifaddrs* if_addrs { nullptr };
         auto ret = ::getifaddrs(&if_addrs);
@@ -416,6 +426,24 @@ namespace util {
             if_addrs = if_addrs->ifa_next;
         }
         return 0;
+#else
+        PIP_ADAPTER_INFO ip_adapter_info {};
+        ULONG size {};
+	    if (::GetAdaptersInfo(nullptr, &size) != ERROR_SUCCESS) {
+            return -1;
+        }
+
+	    ip_adapter_info = (PIP_ADAPTER_INFO)::GlobalAlloc(GPTR, size);
+        if (::GetAdaptersInfo(ip_adapter_info, &size) ==  ERROR_SUCCESS) {
+            while (ip_adapter_info != nullptr) {
+                _addr_list.push_back(ip_adapter_info->IpAddressList.IpAddress.String);
+                ip_adapter_info = ip_adapter_info->Next;
+            }
+        }	
+        ::GlobalFree(ip_adapter_info);
+
+        return 0;
+#endif
     }
 
 } // namespace util

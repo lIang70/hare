@@ -1,5 +1,9 @@
 ﻿cmake_minimum_required(VERSION 3.8 FATAL_ERROR)
 
+if (POLICY CMP0091)
+  cmake_policy(SET CMP0091 NEW)
+endif (POLICY CMP0091)
+
 project(hare VERSION 0.2 LANGUAGES CXX)
 
 message(STATUS "CMAKE_C_COMPILER_ID = ${CMAKE_C_COMPILER_ID}")

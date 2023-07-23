@@ -15,6 +15,7 @@
 #if defined(H_OS_WIN)
 #include <WinSock2.h>
 #include <Ws2tcpip.h>
+#pragma comment(lib, "WS2_32.lib")
 #define socklen_t int
 #endif
 
@@ -97,6 +98,7 @@ namespace net {
 #ifndef H_OS_WIN
         return ::shutdown(socket_, SHUT_WR) < 0 ? error(ERROR_SOCKET_SHUTDOWN_WRITE) : error();
 #else
+        return ::shutdown(socket_, SD_SEND) < 0 ? error(ERROR_SOCKET_SHUTDOWN_WRITE) : error();
 #endif
     }
 
@@ -119,6 +121,12 @@ namespace net {
 #ifdef SO_REUSEPORT
         auto opt_val = reuse ? 1 : 0;
         auto ret = ::setsockopt(socket_, SOL_SOCKET, SO_REUSEPORT, &opt_val, static_cast<socklen_t>(sizeof(opt_val)));
+#elif defined(H_OS_WIN)
+        auto ret = 0;
+        if (!reuse) {
+            auto opt_val { 1 };
+            ret = ::setsockopt(socket_, SOL_SOCKET, SO_EXCLUSIVEADDRUSE, (const char*)&opt_val, static_cast<socklen_t>(sizeof(opt_val)));
+        }
 #else
         MSG_ERROR("reuse-port is not supported.");
         auto ret = -1;
