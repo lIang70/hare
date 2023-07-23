@@ -14,6 +14,10 @@
 
 #include <hare/base/fwd.h>
 
+#if defined(_SECURE_SCL) && _SECURE_SCL
+#include <iterator>
+#endif
+
 namespace hare {
 namespace util {
 

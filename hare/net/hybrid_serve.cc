@@ -88,7 +88,7 @@ namespace net {
 
     hybrid_serve::~hybrid_serve()
     {
-        assert(!started_);
+        assert(!d_ptr(impl_)->started_);
         delete impl_;
     }
 
@@ -138,7 +138,7 @@ namespace net {
 
     auto hybrid_serve::exec(std::int32_t _thread_nbr) -> error
     {
-        assert(cycle_);
+        assert(d_ptr(impl_)->cycle_ != nullptr);
 
         d_ptr(impl_)->io_pool_ = std::make_shared<io_pool>("SERVER_WORKER");
         auto ret = d_ptr(impl_)->io_pool_->start(d_ptr(impl_)->cycle_->type(), _thread_nbr);
@@ -164,7 +164,7 @@ namespace net {
 
     void hybrid_serve::new_session(util_socket_t _fd, host_address& _address, const timestamp& _time, acceptor* _acceptor)
     {
-        assert(started_ == true);
+        assert(d_ptr(impl_)->started_);
         d_ptr(impl_)->cycle_->assert_in_cycle_thread();
 
         if (!d_ptr(impl_)->new_session_) {

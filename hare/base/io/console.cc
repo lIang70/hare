@@ -54,7 +54,7 @@ namespace io {
 
     void console::register_handle(std::string _handle_mask, task _handle)
     {
-        assert(!attached_);
+        assert(!d_ptr(impl_)->attached_);
         d_ptr(impl_)->handlers_.emplace(_handle_mask, _handle);
     }
 
@@ -96,7 +96,7 @@ namespace io {
 
     void console::process(const event::ptr& _event, std::uint8_t _events, const timestamp& _receive_time)
     {
-        assert(console_event_ == _event);
+        assert(d_ptr(impl_)->console_event_ == _event);
         if (!CHECK_EVENT(_events, EVENT_READ)) {
             MSG_ERROR("cannot check EVENT_READ.");
             return;

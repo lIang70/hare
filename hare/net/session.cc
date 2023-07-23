@@ -55,7 +55,7 @@ namespace net {
 
     session::~session()
     {
-        assert(state_ == STATE_DISCONNECTED);
+        assert(d_ptr(impl_)->state_ == STATE_DISCONNECTED);
         MSG_TRACE("session[{}] at {} fd={} free.", d_ptr(impl_)->name_, (void*)this, fd());
         delete impl_;
     }
@@ -158,7 +158,7 @@ namespace net {
     void session::handle_callback(const io::event::ptr& _event, uint8_t _events, const timestamp& _receive_time)
     {
         owner_cycle()->assert_in_cycle_thread();
-        assert(_event == event_);
+        assert(_event == d_ptr(impl_)->event_);
         MSG_TRACE("session[{}] revents: {}.", d_ptr(impl_)->event_->fd(), _events);
         if (CHECK_EVENT(_events, SESSION_READ)) {
             handle_read(_receive_time);
@@ -174,7 +174,7 @@ namespace net {
     void session::handle_close()
     {
         MSG_TRACE("fd={} state={}.", fd(), detail::state_to_string(d_ptr(impl_)->state_));
-        assert(state_ == STATE_CONNECTED || state_ == STATE_DISCONNECTING);
+        assert(d_ptr(impl_)->state_ == STATE_CONNECTED || d_ptr(impl_)->state_ == STATE_DISCONNECTING);
         // we don't close fd, leave it to dtor, so we can find leaks easily.
         set_state(STATE_DISCONNECTED);
         d_ptr(impl_)->event_->disable_read();
@@ -200,7 +200,7 @@ namespace net {
 
     void session::connect_established()
     {
-        assert(state_ == STATE_CONNECTING);
+        assert(d_ptr(impl_)->state_ == STATE_CONNECTING);
         set_state(STATE_CONNECTED);
         if (d_ptr(impl_)->connect_) {
             d_ptr(impl_)->connect_(shared_from_this(), SESSION_CONNECTED);

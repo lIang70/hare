@@ -279,7 +279,7 @@ timezone::operator bool() const
 
 auto timezone::to_local(std::int64_t _seconds, std::int32_t* _utc_offset) const -> struct time::date_time
 {
-    assert(data_ != nullptr);
+    assert(d_ptr(impl_)->valid);
 
     struct time::date_time local_time {};
     const auto* local = d_ptr(impl_)->find_local_time(_seconds);
@@ -296,7 +296,7 @@ auto timezone::to_local(std::int64_t _seconds, std::int32_t* _utc_offset) const 
 
 auto timezone::from_local(const struct time::date_time& _dt, bool _post_transition) const -> std::int64_t
 {
-    assert(data_ != nullptr);
+    assert(d_ptr(impl_)->valid);
     const auto* local = d_ptr(impl_)->find_local_time(_dt, _post_transition);
     const auto local_seconds = from_utc_time(_dt);
     if (local != nullptr) {

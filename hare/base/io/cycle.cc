@@ -236,7 +236,7 @@ namespace io {
 
     void cycle::loop()
     {
-        assert(!is_running_);
+        assert(!d_ptr(impl_)->is_running_);
         d_ptr(impl_)->is_running_ = true;
         d_ptr(impl_)->quit_ = false;
         event_update(d_ptr(impl_)->notify_event_);
@@ -353,7 +353,7 @@ namespace io {
             if (sevent->event_id() == -1) {
                 sevent->active(this, d_ptr(impl_)->event_id_++);
 
-                assert(reactor_->events_.find(sevent->id_) == reactor_->events_.end());
+                assert(d_ptr(impl_)->reactor_->events_.find(sevent->event_id()) == d_ptr(impl_)->reactor_->events_.end());
                 d_ptr(impl_)->reactor_->events_.insert(std::make_pair(sevent->event_id(), sevent));
 
                 if (sevent->fd() >= 0) {

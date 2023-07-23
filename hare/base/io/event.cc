@@ -69,7 +69,7 @@ namespace io {
 
     event::~event()
     {
-        assert(cycle_ == nullptr);
+        assert(d_ptr(impl_)->cycle_ == nullptr);
         delete impl_;
     }
 

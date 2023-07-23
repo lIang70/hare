@@ -156,7 +156,7 @@ namespace socket_op {
             listen_addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
             listen_addr.sin_port = 0;
 
-            if (!socket_op::bind(listener, (struct sockaddr*)&listen_addr, sizeof(listen_addr))) {
+            if (!socket_op::bind(listener, socket_op::sockaddr_cast(&listen_addr), sizeof(listen_addr))) {
                 goto tidy_up_and_fail;
             }
             if (::listen(listener, 1) == -1) {
@@ -172,18 +172,18 @@ namespace socket_op {
 
             /* We want to find out the port number to connect to.  */
             size = sizeof(connect_addr);
-            if (::getsockname(listener, (struct sockaddr*)&connect_addr, &size) == -1) {
+            if (::getsockname(listener, socket_op::sockaddr_cast(&connect_addr), &size) == -1) {
                 goto tidy_up_and_fail;
             }
             if (size != sizeof(connect_addr)) {
                 goto abort_tidy_up_and_fail;
             }
-            if (::connect(connector, (struct sockaddr*)&connect_addr, sizeof(connect_addr)) == -1) {
+            if (!socket_op::connect(connector, socket_op::sockaddr_cast(&connect_addr), sizeof(connect_addr))) {
                 goto tidy_up_and_fail;
             }
 
             size = sizeof(listen_addr);
-            acceptor = ::accept(listener, (struct sockaddr*)&listen_addr, &size);
+            acceptor = socket_op::accept(listener, socket_op::sockaddr_cast(&listen_addr), size);
             if (acceptor < 0) {
                 goto tidy_up_and_fail;
             }
@@ -192,7 +192,7 @@ namespace socket_op {
             }
             /* Now check we are talking to ourself by matching port and host on the
                two sockets.	 */
-            if (::getsockname(connector, (struct sockaddr*)&connect_addr, &size) == -1) {
+            if (::getsockname(connector, socket_op::sockaddr_cast(&connect_addr), &size) == -1) {
                 goto tidy_up_and_fail;
             }
             if (size != sizeof(connect_addr)
@@ -326,27 +326,27 @@ namespace socket_op {
     auto bind(util_socket_t _fd, const struct sockaddr* _addr, std::size_t _addr_len) -> bool
     {
 #ifndef H_OS_WIN
-        return ::bind(_fd, _addr, _addr_len) != 0;
+        return ::bind(_fd, _addr, _addr_len) != -1;
 #else
-        return ::bind(_fd, _addr, _addr_len) != 0;
+        return ::bind(_fd, _addr, _addr_len) != -1;
 #endif
     }
 
     auto listen(util_socket_t _fd) -> bool
     {
 #ifndef H_OS_WIN
-        return ::listen(_fd, SOMAXCONN) < 0;
+        return ::listen(_fd, SOMAXCONN) >= 0;
 #else
-        return ::listen(_fd, SOMAXCONN) < 0;
+        return ::listen(_fd, SOMAXCONN) >= 0;
 #endif
     }
 
     auto connect(util_socket_t _fd, const struct sockaddr* _addr, std::size_t _addr_len) -> bool
     {
 #ifndef H_OS_WIN
-        return ::connect(_fd, _addr, _addr_len) < 0;
+        return ::connect(_fd, _addr, _addr_len) >= 0;
 #else
-        return ::connect(_fd, _addr, (socklen_t)_addr_len) < 0;
+        return ::connect(_fd, _addr, (socklen_t)_addr_len) >= 0;
 #endif
     }
 
