@@ -108,7 +108,7 @@ namespace net {
             std::size_t misalign_ { 0 };
 
         private:
-            void grow(std::size_t capacity) override { }
+            void grow(std::size_t _capacity) override { ignore_unused(_capacity); }
 
         public:
             using base = util::buffer<char>;
@@ -391,7 +391,7 @@ namespace net {
                     (*iter)->skip(space);
                     remain -= static_cast<int64_t>(space);
                 } else {
-                    (*iter)->skip(remain);
+                    (*iter)->skip(static_cast<std::size_t>(remain));
                     write_iter_ = iter;
                     break;
                 }
