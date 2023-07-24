@@ -66,7 +66,7 @@ namespace net {
         auto chain_size() const -> std::size_t;
         void clear_all();
 
-        auto find(const char* _begin, std::size_t _size) -> std::int64_t;
+        auto find(const char* _begin, std::int32_t _size) -> std::int64_t;
         void skip(std::size_t _size);
 
         void append(buffer& _another);

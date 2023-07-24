@@ -107,7 +107,7 @@ namespace log {
             if (filename_history_.full()) {
                 auto tmp = filename_history_.pop_front();
                 if (!util::fremove(tmp)) {
-                    fmt::println(stderr, "failed removing hourly file[{}].", tmp);
+                    fmt::print(stderr, "failed removing hourly file[{}]." HARE_EOL, tmp);
                 }
             }
             filename_history_.push_back(file_.name());

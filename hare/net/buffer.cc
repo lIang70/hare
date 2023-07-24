@@ -75,10 +75,10 @@ namespace net {
             return size;
         }
 
-        static auto get_next(const char* _begin, std::size_t _size) -> std::vector<int>
+        static auto get_next(const char* _begin, std::size_t _size) -> std::vector<std::int32_t>
         {
-            std::vector<int> next(_size, 0);
-            int k = -1;
+            std::vector<std::int32_t> next(_size, 0);
+            std::int32_t k = -1;
             for (std::size_t j = 0; j < _size;) {
                 if (k == -1 || _begin[j] == _begin[k]) {
                     ++j, ++k;
@@ -205,10 +205,14 @@ namespace net {
         total_len_ = 0;
     }
 
-    auto buffer::find(const char* _begin, std::size_t _size) -> int64_t
+    auto buffer::find(const char* _begin, std::int32_t _size) -> int64_t
     {
+        if (_size < 0) {
+            return -1;
+        }
         auto next_val = detail::get_next(_begin, _size);
-        std::size_t i = 0, j = 0;
+        std::size_t i = 0;
+        std::int32_t j = 0;
         while (i < total_len_ && j < _size) {
             if (j == -1 || (*this)[i] == _begin[j]) {
                 ++i, ++j;
@@ -326,14 +330,16 @@ namespace net {
         return true;
     }
 
-    auto buffer::read(util_socket_t _fd, int64_t _howmuch) -> int64_t
+    auto buffer::read(util_socket_t _fd, std::int64_t _howmuch) -> std::int64_t
     {
         std::int64_t readable = socket_op::get_bytes_readable_on_socket(_fd);
-        if (readable <= 0 || readable > max_read_) {
+        if (readable <= 0 || readable > static_cast<std::int64_t>(max_read_)) {
             readable = static_cast<int64_t>(max_read_);
         }
         if (_howmuch < 0 || _howmuch > readable) {
             _howmuch = readable;
+        } else {
+            readable = _howmuch;
         }
 
 #ifdef USE_IOVEC_IMPL
@@ -386,7 +392,7 @@ namespace net {
             remain = readable;
             iter = write_iter_;
             for (auto i = 0; i < vec_nbr; ++i) {
-                auto space = (*iter)->writeable_size();
+                auto space = static_cast<std::int64_t>((*iter)->writeable_size());
                 if (space < remain) {
                     (*iter)->skip(space);
                     remain -= static_cast<int64_t>(space);
@@ -409,32 +415,33 @@ namespace net {
         return readable;
     }
 
-    auto buffer::write(util_socket_t _fd, int64_t _howmuch) -> std::int64_t
+    auto buffer::write(util_socket_t _fd, std::int64_t _howmuch) -> std::int64_t
     {
         std::int64_t write_n {};
+        auto total = _howmuch < 0 ? total_len_ : static_cast<std::size_t>(_howmuch);
 
-        if (_howmuch < 0 || _howmuch > total_len_) {
-            _howmuch = static_cast<int64_t>(total_len_);
+        if (total > total_len_) {
+            total = total_len_;
         }
 
-        if (_howmuch > 0) {
+        if (total > 0) {
             assert(!block_chain_.empty());
 #ifdef USE_IOVEC_IMPL
             std::array<IOV_TYPE, NUM_WRITE_IOVEC> iov {};
             auto curr { block_chain_.begin() };
             auto write_i { 0 };
 
-            while (write_i < NUM_WRITE_IOVEC && _howmuch > 0) {
+            while (write_i < NUM_WRITE_IOVEC && total > 0) {
                 assert(curr != block_chain_.end());
                 iov[write_i].IOV_PTR_FIELD = (*curr)->readable();
-                if (_howmuch > (*curr)->readable_size()) {
+                if (total > (*curr)->readable_size()) {
                     /* XXXcould be problematic when windows supports mmap*/
                     iov[write_i++].IOV_LEN_FIELD = static_cast<IOV_LEN_TYPE>((*curr)->readable_size());
-                    _howmuch -= static_cast<int64_t>((*curr)->readable_size());
+                    total -= static_cast<int64_t>((*curr)->readable_size());
                 } else {
                     /* XXXcould be problematic when windows supports mmap*/
-                    iov[write_i++].IOV_LEN_FIELD = static_cast<IOV_LEN_TYPE>(_howmuch);
-                    _howmuch -= static_cast<int64_t>((*curr)->readable_size());
+                    iov[write_i++].IOV_LEN_FIELD = static_cast<IOV_LEN_TYPE>(total);
+                    total -= static_cast<int64_t>((*curr)->readable_size());
                     break;
                 }
                 ++curr;
@@ -469,12 +476,12 @@ namespace net {
              *   cleaning will begin.
              **/
             auto clean = chain_size() > MAX_CHINA_SIZE;
-            auto remain = write_n;
+            total = write_n;
             curr = block_chain_.begin();
-            while (remain != 0U && remain > (*curr)->readable_size()) {
+            while (total != 0U && total > (*curr)->readable_size()) {
                 assert(curr != block_chain_.end());
                 auto& curr_block = *curr;
-                remain = remain < curr_block->readable_size() ? 0 : remain - curr_block->readable_size();
+                total = total < curr_block->readable_size() ? 0 : total - curr_block->readable_size();
                 if (!clean) {
                     curr_block->clear();
                     block_chain_.emplace_back(std::move(*curr));
@@ -482,9 +489,9 @@ namespace net {
                 block_chain_.erase(curr++);
             }
 
-            if (remain != 0U) {
-                assert(remain <= (*curr)->readable_size());
-                (*curr)->drain(remain);
+            if (total != 0U) {
+                assert(total <= (*curr)->readable_size());
+                (*curr)->drain(total);
             }
 #endif
         }

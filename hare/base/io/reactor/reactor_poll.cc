@@ -164,8 +164,8 @@ namespace io {
 
     void reactor_poll::fill_active_events(std::int32_t _num_of_events)
     {
-        const auto size = poll_fds_.size();
-        for (auto event_id = 0; event_id < size && _num_of_events > 0; ++event_id) {
+        const event::id size = static_cast<std::uint32_t>(poll_fds_.size());
+        for (event::id event_id = 0; event_id < size && _num_of_events > 0; ++event_id) {
             const auto& pfd = poll_fds_[event_id];
             if (pfd.revents > 0) {
                 --_num_of_events;

@@ -17,7 +17,7 @@
 #include <sys/socket.h>
 #endif
 
-#define USAGE "echo_serve -p [port] [udp/tcp]"
+#define USAGE "echo_serve -p [port] [udp/tcp]" HARE_EOL
 
 using hare::net::acceptor;
 using hare::net::session;
@@ -94,7 +94,7 @@ auto main(std::int32_t argc, char** argv) -> std::int32_t
     using hare::log::detail::rotate_file;
 
     if (argc < 4) {
-        fmt::println(USAGE);
+        fmt::print(USAGE);
         return (0);
     }
 

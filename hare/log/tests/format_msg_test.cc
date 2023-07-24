@@ -5,10 +5,11 @@ TEST(FormatMsgTest, test1)
 {
     std::string logger = "default";
     hare::timezone tz { 8 * 3600, "Z" };
+    hare::log::source_loc loc { __FILE__, __LINE__, __func__ };
 
     hare::log::details::msg test_msg
     {
-        &logger, &tz, hare::log::LEVEL_TRACE, { __FILE__, __LINE__, __func__ }
+        &logger, &tz, hare::log::LEVEL_TRACE, loc
     };
 
     hare::log::details::msg_buffer_t fotmatted {};

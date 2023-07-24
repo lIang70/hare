@@ -1,8 +1,8 @@
 ﻿cmake_minimum_required(VERSION 3.8 FATAL_ERROR)
 
-if (POLICY CMP0091)
-  cmake_policy(SET CMP0091 NEW)
-endif (POLICY CMP0091)
+if(POLICY CMP0091)
+    cmake_policy(SET CMP0091 NEW)
+endif(POLICY CMP0091)
 
 project(hare VERSION 0.2 LANGUAGES CXX)
 
@@ -26,6 +26,7 @@ if(${HARE__LIBRARY_TYPE} MATCHES "SHARED")
 else()
     add_definitions(-DHARE_STATIC)
 endif()
+
 message(STATUS "HARE__LIBRARY_TYPE: ${HARE__LIBRARY_TYPE}")
 
 if(NOT HARE__BUILD_TESTS)
@@ -54,6 +55,14 @@ else()
     elseif(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /O2 /EHa")
     endif()
+endif()
+
+if(CMAKE_SYSTEM_NAME MATCHES "Windows")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /we4013 /we4431 /we4133 /we4716 /we6244 /we6246 /we4457 /we4456 /we4172 /we4700 /we4477 /we4018 /we4047")
+    set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} /we4013 /we4431 /we4133 /we4716 /we6244 /we6246 /we4457 /we4456 /we4172 /we4700 /we4477 /we4018 /we4047")
+elseif(CMAKE_SYSTEM_NAME MATCHES "Linux" OR CMAKE_SYSTEM_NAME MATCHES "Darwin")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror=implicit-function-declaration -Werror=implicit-int -Werror=incompatible-pointer-types -Werror=return-type -Werror=shadow -Werror=return-stack-address -Werror=uninitialized -Werror=format -Werror=sign-compare -Werror=int-conversion")
+    set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -Werror=implicit-function-declaration -Werror=implicit-int -Werror=incompatible-pointer-types -Werror=return-type -Werror=shadow -Werror=return-stack-address -Werror=uninitialized -Werror=format -Werror=sign-compare -Werror=int-conversion")
 endif()
 
 message(STATUS "CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")

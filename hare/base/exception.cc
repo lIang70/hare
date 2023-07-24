@@ -3,13 +3,22 @@
 
 namespace hare {
 
-HARE_IMPL_DEFAULT(exception,
-    std::string what_ {};
-    std::string stack_ {};
-)
+namespace detail {
+
+    HARE_IMPL_DEFAULT(exception,
+        std::string what_ {};
+        std::string stack_ {};
+    )
+
+    static auto thread_exception() -> exception_impl* {
+        static thread_local exception_impl t_impl {};
+        return &t_impl;
+    }
+
+} // namespace detail
 
 exception::exception(std::string what) noexcept
-    : impl_(new exception_impl)
+    : impl_(detail::thread_exception())
 {
     d_ptr(impl_)->what_ = std::move(what);
     d_ptr(impl_)->stack_ = util::stack_trace(false);

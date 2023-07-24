@@ -1,10 +1,12 @@
 #include <hare/base/exception.h>
+#include <hare/base/fwd-inl.h>
 #include <hare/base/util/system.h>
 #include <hare/base/util/system_check.h>
 
 #include <array>
 #include <chrono>
 #include <cstring>
+#include <fstream>
 #include <thread>
 
 #ifndef H_OS_WIN
@@ -20,8 +22,8 @@
 #include <Windows.h>
 #include <direct.h>
 #include <io.h>
-#include <sys/stat.h>
 #include <iphlpapi.h>
+#include <sys/stat.h>
 #pragma comment(lib, "Iphlpapi.lib")
 #pragma comment(lib, "WS2_32.lib")
 
@@ -85,6 +87,7 @@ namespace util {
                 if (::gethostname(host_name_.data(), NAME_LENGTH) == 0) {
                     host_name_[host_name_.size() - 1] = '\0';
                 }
+
                 // Get application dir
                 if (::getcwd(system_dir_.data(), NAME_LENGTH) == nullptr) {
                     throw exception("Cannot call ::getcwd.");
@@ -115,17 +118,51 @@ namespace util {
             std::uint64_t nice_time {};
             std::uint64_t system_time {};
             std::uint64_t idle_time {};
-            std::array<char, HARE_SMALL_FIXED_SIZE * 2> name {};
-            std::array<char, FILE_LENGTH> buffer {};
+            std::ifstream file_stream {};
+            std::string file_line {};
+            std::string::size_type index {};
 
-            auto* stat_fd = ::fopen("/proc/stat", "r");
-            if (stat_fd == nullptr) {
+            file_stream.open("/proc/stat");
+            if (file_stream.fail()) {
                 return 0;
             }
 
-            auto* ret_c = ::fgets(buffer.data(), FILE_LENGTH, stat_fd);
-            auto ret = ::sscanf(buffer.data(), "%s %ld %ld %ld %ld", name.data(), &user_time, &nice_time, &system_time, &idle_time);
-            ret = ::fclose(stat_fd);
+            std::getline(file_stream, file_line, '\n');
+            file_stream.close();
+
+            index = file_line.find(' ');
+
+            file_line = file_line.substr(index);
+            while (file_line[index++] == ' ') { }
+            index = file_line.find(' ', index);
+            if (index == std::string::npos) {
+                return 0;
+            }
+            user_time = std::stoull(file_line);
+
+            file_line = file_line.substr(index);
+            while (file_line[index++] == ' ') { }
+            index = file_line.find(' ', index);
+            if (index == std::string::npos) {
+                return 0;
+            }
+            nice_time = std::stoull(file_line);
+
+            file_line = file_line.substr(index);
+            while (file_line[index++] == ' ') { }
+            index = file_line.find(' ', index);
+            if (index == std::string::npos) {
+                return 0;
+            }
+            system_time = std::stoull(file_line);
+
+            file_line = file_line.substr(index);
+            while (file_line[index++] == ' ') { }
+            index = file_line.find(' ', index);
+            if (index == std::string::npos) {
+                return 0;
+            }
+            idle_time = std::stoull(file_line);
 
             return (user_time + nice_time + system_time + idle_time);
 #else
@@ -137,43 +174,68 @@ namespace util {
         static auto get_cpu_proc_occupy(std::int32_t _pid) -> std::uint64_t
         {
 #ifndef H_OS_WIN
-            static const auto PROCESS_ITEM = 14;
+#define PROCESS_ITEM 14
             // get specific pid cpu use time
             std::uint32_t tmp_pid {};
             std::uint64_t user_time {};
             std::uint64_t system_time {};
             std::uint64_t cutime {}; // all user time
             std::uint64_t cstime {}; // all dead time
-            std::array<char, HARE_SMALL_FIXED_SIZE * 2> name {};
-            std::array<char, FILE_LENGTH> buffer {};
+            std::ifstream file_stream {};
+            std::string file_line {};
+            std::string::size_type index {};
 
-            auto ret = ::sprintf(name.data(), "/proc/%d/stat", _pid);
-            auto* stat_fd = ::fopen(name.data(), "r");
-            if (stat_fd == nullptr) {
+            file_stream.open(fmt::format("/proc/{}/stat", _pid));
+            if (file_stream.fail()) {
                 return 0;
             }
 
-            auto* ret_c = ::fgets(buffer.data(), FILE_LENGTH, stat_fd);
-            ret = ::sscanf(buffer.data(), "%u", &tmp_pid);
-            auto* item = buffer.data();
-            {
-                auto len = ::strlen(item);
-                auto count { 0 };
+            std::getline(file_stream, file_line, '\n');
+            file_stream.close();
 
-                for (auto i = 0; i < len; i++) {
-                    if (' ' == *item) {
-                        count++;
-                        if (count == PROCESS_ITEM - 1) {
-                            item++;
-                            break;
-                        }
+            auto len = file_line.size();
+            auto count { 0 };
+
+            for (decltype(len) i = 0; i < len; ++i) {
+                if (' ' == file_line[i]) {
+                    count++;
+                    if (count == PROCESS_ITEM - 1) {
+                        ++i;
+                        file_line = file_line.substr(i);
+                        break;
                     }
-                    item++;
                 }
             }
 
-            ret = ::sscanf(item, "%ld %ld %ld %ld", &user_time, &system_time, &cutime, &cstime);
-            ret = ::fclose(stat_fd);
+            index = file_line.find(' ');
+            if (index == std::string::npos) {
+                return 0;
+            }
+            user_time = std::stoull(file_line);
+
+            file_line = file_line.substr(index);
+            while (file_line[index++] == ' ') { }
+            index = file_line.find(' ', index);
+            if (index == std::string::npos) {
+                return 0;
+            }
+            system_time = std::stoull(file_line);
+
+            file_line = file_line.substr(index);
+            while (file_line[index++] == ' ') { }
+            index = file_line.find(' ', index);
+            if (index == std::string::npos) {
+                return 0;
+            }
+            cutime = std::stoull(file_line);
+
+            file_line = file_line.substr(index);
+            while (file_line[index++] == ' ') { }
+            index = file_line.find(' ', index);
+            if (index == std::string::npos) {
+                return 0;
+            }
+            cstime = std::stoull(file_line);
 
             return (user_time + system_time + cutime + cstime);
 #undef PROCESS_ITEM
@@ -217,6 +279,10 @@ namespace util {
 
     auto cpu_usage(std::int32_t _pid) -> double
     {
+#ifdef H_OS_WIN
+        MSG_TRACE("cpu usage calculation is not supported under windows.");
+        return (0.0);
+#endif
         auto total_cputime1 = detail::get_cpu_total_occupy();
         auto pro_cputime1 = detail::get_cpu_proc_occupy(_pid);
 
@@ -429,17 +495,17 @@ namespace util {
 #else
         PIP_ADAPTER_INFO ip_adapter_info {};
         ULONG size {};
-	    if (::GetAdaptersInfo(nullptr, &size) != ERROR_SUCCESS) {
+        if (::GetAdaptersInfo(nullptr, &size) != ERROR_SUCCESS) {
             return -1;
         }
 
-	    ip_adapter_info = (PIP_ADAPTER_INFO)::GlobalAlloc(GPTR, size);
-        if (::GetAdaptersInfo(ip_adapter_info, &size) ==  ERROR_SUCCESS) {
+        ip_adapter_info = (PIP_ADAPTER_INFO)::GlobalAlloc(GPTR, size);
+        if (::GetAdaptersInfo(ip_adapter_info, &size) == ERROR_SUCCESS) {
             while (ip_adapter_info != nullptr) {
                 _addr_list.push_back(ip_adapter_info->IpAddressList.IpAddress.String);
                 ip_adapter_info = ip_adapter_info->Next;
             }
-        }	
+        }
         ::GlobalFree(ip_adapter_info);
 
         return 0;

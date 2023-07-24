@@ -18,7 +18,7 @@
 namespace hare {
 namespace io {
 
-    using EVENT = enum Event : uint8_t {
+    using EVENT = enum : std::uint8_t {
         EVENT_DEFAULT = 0x00,
         /**
          * @brief Indicates that a timeout has occurred.
@@ -55,7 +55,7 @@ namespace io {
 
 #if defined(HARE_SHARED) && defined(H_OS_WIN)
     class event;
-    template class __declspec(dllexport) std::weak_ptr<event>;
+    template class HARE_API std::weak_ptr<event>;
 #endif
 
     class cycle;
@@ -65,11 +65,11 @@ namespace io {
         detail::impl* impl_ {};
 
     public:
-        using id = int32_t;
+        using id = std::int64_t;
         using ptr = ptr<event>;
-        using callback = std::function<void(const event::ptr&, uint8_t, const timestamp&)>;
+        using callback = std::function<void(const event::ptr&, std::uint8_t, const timestamp&)>;
 
-        event(util_socket_t _fd, callback _cb, uint8_t _events, int64_t _timeval);
+        event(util_socket_t _fd, callback _cb, uint8_t _events, std::int64_t _timeval);
         virtual ~event();
 
         auto fd() const -> util_socket_t;
@@ -97,7 +97,7 @@ namespace io {
         auto tied_object() -> wptr<void>;
 
     private:
-        void handle_event(uint8_t _flag, timestamp& _receive_time);
+        void handle_event(std::uint8_t _flag, timestamp& _receive_time);
         void active(cycle* _cycle, event::id _id);
         void reset();
 

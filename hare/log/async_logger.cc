@@ -6,7 +6,7 @@ namespace log {
     async_logger::~async_logger()
     {
         auto thr_cnt = thread_pool_.thr_num();
-        for (auto i = 0; i < thr_cnt; ++i) {
+        for (decltype(thr_cnt) i = 0; i < thr_cnt; ++i) {
             thread_pool_.post(
                 details::async_msg(details::async_msg::TERMINATE),
                 POLICY::BLOCK_RETRY);

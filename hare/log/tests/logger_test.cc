@@ -31,7 +31,7 @@ TEST(LoggerTest, bench)
     test_logger->flush();
     auto end { hare::timestamp::now() };
     auto gap = hare::timestamp::difference(end, start);
-    fmt::println("test logger speed: {} s/{}p", gap, log_size * 4);
+    fmt::print("test logger speed: {} s/{}p" HARE_EOL, gap, log_size * 4);
 }
 
 auto main(int argc, char** argv) -> int
