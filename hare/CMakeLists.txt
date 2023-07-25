@@ -214,6 +214,10 @@ if(JEMALLOC_FOUND)
     target_link_libraries(hare_base PkgConfig::Jemalloc)
 endif()
 
+if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+    set_target_properties(hare_base PROPERTIES COMPILE_FLAGS "/EHsc")
+endif()
+
 if(HARE__BUILD_TESTS)
     add_subdirectory(base/tests)
 endif(HARE__BUILD_TESTS)
@@ -235,6 +239,10 @@ if(JEMALLOC_FOUND)
     target_link_libraries(hare_log hare_base PkgConfig::Jemalloc)
 else()
     target_link_libraries(hare_log hare_base)
+endif()
+
+if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+    set_target_properties(hare_log PROPERTIES COMPILE_FLAGS "/EHsc")
 endif()
 
 if(HARE__BUILD_TESTS)
@@ -269,6 +277,10 @@ if(JEMALLOC_FOUND)
     target_link_libraries(hare_net hare_base PkgConfig::Jemalloc ${OPENSSL_LIBRARIES})
 else()
     target_link_libraries(hare_net hare_base ${OPENSSL_LIBRARIES})
+endif()
+
+if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+    set_target_properties(hare_net PROPERTIES COMPILE_FLAGS "/EHsc")
 endif()
 
 if(HARE__BUILD_TESTS)
