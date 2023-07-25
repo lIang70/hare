@@ -210,10 +210,6 @@ file(GLOB HARE_BASE_SOURCES
 add_library(hare_base ${HARE__LIBRARY_TYPE} ${HARE_BASE_SOURCES})
 target_include_directories(hare_base PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../include/hare/base/)
 
-if(JEMALLOC_FOUND)
-    target_link_libraries(hare_base PkgConfig::Jemalloc)
-endif()
-
 if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
     set_target_properties(hare_base PROPERTIES COMPILE_FLAGS "/EHsc")
 endif()
@@ -235,11 +231,7 @@ target_include_directories(hare_log PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/../include/hare/log/
     ${CMAKE_CURRENT_SOURCE_DIR}/../3rdparty/fmt/include/)
 
-if(JEMALLOC_FOUND)
-    target_link_libraries(hare_log hare_base PkgConfig::Jemalloc)
-else()
-    target_link_libraries(hare_log hare_base)
-endif()
+target_link_libraries(hare_log hare_base)
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
     set_target_properties(hare_log PROPERTIES COMPILE_FLAGS "/EHsc")
@@ -272,12 +264,7 @@ file(GLOB HARE_NET_SOURCES
 # Add the source code to the project's executable。
 add_library(hare_net ${HARE__LIBRARY_TYPE} ${HARE_NET_SOURCES})
 target_include_directories(hare_net PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../include/hare/net/)
-
-if(JEMALLOC_FOUND)
-    target_link_libraries(hare_net hare_base PkgConfig::Jemalloc ${OPENSSL_LIBRARIES})
-else()
-    target_link_libraries(hare_net hare_base ${OPENSSL_LIBRARIES})
-endif()
+target_link_libraries(hare_net hare_base ${OPENSSL_LIBRARIES})
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
     set_target_properties(hare_net PROPERTIES COMPILE_FLAGS "/EHsc")
