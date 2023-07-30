@@ -1,3 +1,4 @@
+#include "hare/base/fwd-inl.h"
 #include "hare/net/buffer-inl.h"
 #include <hare/base/exception.h>
 #include <hare/base/io/socket_op.h>
@@ -125,9 +126,9 @@ namespace net {
             }
 
             do {
-                _size -= (*index)->writeable_size();
+                _size -= MIN((*index)->writeable_size(), _size);
                 ++cnt;
-                if (index->next != read) {
+                if (index->next == read) {
                     break;
                 }
                 index = index->next;
@@ -296,7 +297,8 @@ namespace net {
             return;
         }
 
-        d_ptr(impl_)->total_len_ += d_ptr(_another.impl_)->total_len_;
+        MSG_TRACE("this buffer[{}] size: {}, another buffer[{}] size: {}.", 
+            (void*)this, d_ptr(impl_)->total_len_, (void*)&_another, d_ptr(_another.impl_)->total_len_);
 
         if (d_ptr(impl_)->total_len_ == 0) {
             d_ptr(impl_)->cache_chain_.swap(d_ptr(_another.impl_)->cache_chain_);
@@ -352,6 +354,7 @@ namespace net {
                 }
             }
         }
+        d_ptr(impl_)->total_len_ += d_ptr(_another.impl_)->total_len_;
         d_ptr(_another.impl_)->total_len_ = 0;
     }
 
@@ -387,7 +390,7 @@ namespace net {
         std::vector<IOV_TYPE> vecs(block_size);
         auto* block = d_ptr(impl_)->cache_chain_.end();
 
-        for (auto i = 0; i > block_size; ++i, block = block->next) {
+        for (auto i = 0; i < block_size; ++i, block = block->next) {
             vecs[i].IOV_PTR_FIELD = (*block)->writeable();
             vecs[i].IOV_LEN_FIELD = (*block)->writeable_size();
         }

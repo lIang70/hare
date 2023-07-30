@@ -92,6 +92,7 @@ namespace net {
             std::move(_local_addr),
             std::move(_name), _family, _fd,
             std::move(_peer_addr))
+        , impl_(new tcp_session_impl)
     {
         socket().set_keep_alive(true);
     }
