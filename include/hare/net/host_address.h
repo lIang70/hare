@@ -15,8 +15,6 @@
 #include <hare/base/io/socket_op.h>
 #include <hare/base/util/non_copyable.h>
 
-#include <string>
-
 namespace hare {
 namespace net {
 
@@ -56,6 +54,8 @@ namespace net {
 
         host_address(host_address&& _another) noexcept;
         auto operator=(host_address&& _another) noexcept -> host_address&;
+
+        auto clone() const -> hare::ptr<host_address>;
 
         auto family() const -> std::uint8_t;
 

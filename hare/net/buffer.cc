@@ -1,22 +1,14 @@
+#include "hare/net/buffer-inl.h"
 #include <hare/base/exception.h>
 #include <hare/base/io/socket_op.h>
-#include <hare/base/util/buffer.h>
 #include <hare/hare-config.h>
-#include <hare/net/buffer.h>
 
 #include <cassert>
-#include <limits>
 #include <vector>
 
 #if HARE__HAVE_SYS_IOCTL_H
 #include <sys/ioctl.h>
 #endif
-
-#define MIN_TO_ALLOC 512
-#define MAX_TO_COPY_IN_EXPAND 4096
-#define MAX_TO_REALIGN 2048
-#define MAX_SIZE (0xffffffff)
-#define MAX_CHINA_SIZE (16)
 
 #if defined(HARE__HAVE_SYS_UIO_H) || defined(H_OS_WIN32)
 #define USE_IOVEC_IMPL
@@ -36,12 +28,14 @@
 #else
 #define NUM_WRITE_IOVEC DEFAULT_WRITE_IOVEC
 #endif
+#define MAX_TO_ALLOC (4096UL * 16)
 #define IOV_TYPE struct iovec
 #define IOV_PTR_FIELD iov_base
 #define IOV_LEN_FIELD iov_len
 #define IOV_LEN_TYPE std::size_t
 #else
 #include <WinSock2.h>
+#define MAX_TO_ALLOC (4096U * 16)
 #define NUM_WRITE_IOVEC 16
 #define IOV_TYPE WSABUF
 #define IOV_PTR_FIELD buf
@@ -75,9 +69,10 @@ namespace net {
             return size;
         }
 
+        // kmp
         static auto get_next(const char* _begin, std::size_t _size) -> std::vector<std::int32_t>
         {
-            std::vector<std::int32_t> next(_size, 0);
+            std::vector<std::int32_t> next(_size, -1);
             std::int32_t k = -1;
             for (std::size_t j = 0; j < _size;) {
                 if (k == -1 || _begin[j] == _begin[k]) {
@@ -94,247 +89,292 @@ namespace net {
             return next;
         }
 
-        /**
-         * @brief The block of buffer.
-         * @code
-         * +----------------+-------------+------------------+
-         * | misalign bytes |  off bytes  |  residual bytes  |
-         * |                |  (CONTENT)  |                  |
-         * +----------------+-------------+------------------+
-         * |                |             |                  |
-         * @endcode
-         **/
-        class cache : public util::buffer<char> {
-            std::size_t misalign_ { 0 };
-
-        private:
-            void grow(std::size_t _capacity) override { ignore_unused(_capacity); }
-
-        public:
-            using base = util::buffer<char>;
-
-            explicit cache(std::size_t _max_size)
-                : base(new base::value_type[_max_size], 0, _max_size)
-            {
-            }
-
-            cache(base::value_type* _data, std::size_t _max_size)
-                : base(_data, _max_size, _max_size)
-            {
-            }
-
-            virtual ~cache() { delete[] begin(); }
-
-            // write to data_ directly
-            HARE_INLINE auto writeable() -> base::value_type* { return begin() + size(); }
-            HARE_INLINE auto writeable() const -> const base::value_type* { return begin() + size(); }
-            HARE_INLINE auto writeable_size() const -> std::size_t { return capacity() - size(); }
-
-            HARE_INLINE auto readable() -> base::value_type* { return data() + misalign_; }
-            HARE_INLINE auto readable_size() const -> std::size_t { return size() - misalign_; }
-            HARE_INLINE auto full() const -> bool { return readable_size() + misalign_ == capacity(); }
-            HARE_INLINE auto empty() const -> bool { return readable_size() == 0; }
-            HARE_INLINE void clear()
-            {
-                base::clear();
+        auto cache::realign(std::size_t _size) -> bool
+        {
+            auto offset = readable_size();
+            if (writeable_size() > _size) {
+                return true;
+            } else if (writeable_size() + misalign_ > _size && offset <= MAX_TO_REALIGN) {
+                ::memmove(begin(), readable(), offset);
+                set(begin(), offset);
                 misalign_ = 0;
+                return true;
             }
+            return false;
+        }
 
-            HARE_INLINE void drain(std::size_t _size)
-            {
-                misalign_ += _size;
-            }
-
-            auto realign(std::size_t _size) -> bool
-            {
-                auto offset = readable_size();
-                if (writeable_size() + misalign_ > _size && offset <= MAX_TO_REALIGN) {
-                    ::memmove(begin(), readable(), offset);
-                    set(begin(), offset);
-                    misalign_ = 0;
-                    return true;
+        void cache_list::check_size(std::size_t _size)
+        {
+            if (!write->cache) {
+                write->cache.reset(new cache(round_up(_size)));
+            } else if (!(*write)->realign(_size)) {
+                get_next_write();
+                if (!write->cache || (*write)->size() < _size) {
+                    write->cache.reset(new cache(round_up(_size)));
                 }
-                return false;
+            }
+        }
+
+        auto cache_list::fast_expand(std::size_t _size) -> std::int32_t
+        {
+            auto cnt { 0 };
+            get_next_write();
+            auto* index = end();
+            if (!index->cache) {
+                index->cache.reset(new cache(MIN(round_up(_size), MAX_TO_ALLOC)));
             }
 
-            HARE_INLINE void bzero() { hare::detail::fill_n(data(), capacity(), 0); }
+            do {
+                _size -= (*index)->writeable_size();
+                ++cnt;
+                if (index->next != read) {
+                    break;
+                }
+                index = index->next;
+            } while (true);
 
-        private:
-            auto end() const -> const base::value_type* { return data() + capacity(); }
+            while (_size > 0) {
+                auto alloc_size = MIN(round_up(_size), MAX_TO_ALLOC);
+                auto* tmp = new node;
+                tmp->cache.reset(new cache(alloc_size));
+                tmp->prev = index;
+                tmp->next = index->next;
+                index->next->prev = tmp;
+                index->next = tmp;
+                index = index->next;
+                ++node_size_;
+                ++cnt;
+            }
+            return cnt;
+        }
 
-            friend class net::buffer;
-        };
+        // The legality of size is checked before use
+        void cache_list::add(std::size_t _size)
+        {
+            auto* index = end();
+            while (_size > 0) {
+                auto write_size = MIN(_size, (*index)->writeable_size());
+                (*index)->grow(write_size);
+                _size -= write_size;
+                if ((*index)->full() && index->next != read) {
+                    index = index->next;
+                } else {
+                    assert(_size == 0);
+                }
+            }
+            write = index;
+        }
+
+        // The legality of size is checked before use
+        void cache_list::drain(std::size_t _size)
+        {
+            auto* index = begin();
+            auto need_drain { false };
+            do {
+                auto drain_size = MIN(_size, (*index)->readable_size());
+                _size -= drain_size;
+                (*index)->drain(drain_size);
+                if ((*index)->empty() && index != end()) {
+                    need_drain = true;
+                    index = index->next;
+                }
+            } while (_size != 0 && index != end());
+
+            if (_size > 0) {
+                assert(_size <= (*index)->readable_size());
+                (*index)->drain(_size);
+                _size = 0;
+            }
+
+            /**
+             * @brief If the length of chain bigger than MAX_CHINA_SIZE,
+             *   cleaning will begin.
+             **/
+            if (need_drain && node_size_ > MAX_CHINA_SIZE) {
+                while (begin()->next != index) {
+                    auto* tmp = begin()->next;
+                    tmp->next->prev = begin();
+                    begin()->next = tmp->next;
+                    delete tmp;
+                    --node_size_;
+                }
+            }
+        }
+
+        void cache_list::reset()
+        {
+            while (head->next != head) {
+                auto* tmp = head->next;
+                tmp->next->prev = head;
+                head->next = tmp->next;
+                delete tmp;
+            }
+            if (head->cache) {
+                (*head)->clear();
+            }
+            node_size_ = 1;
+            read = head;
+            write = head;
+        }
 
     } // namespace detail
 
+    HARE_IMPL_DEFAULT(buffer,
+        detail::cache_list cache_chain_ {};
+        std::size_t total_len_ { 0 };
+        std::size_t max_read_ { HARE_MAX_READ_DEFAULT };
+    )
+
     buffer::buffer(std::size_t _max_read)
-        : max_read_(_max_read)
-    {
-    }
-
-    buffer::~buffer() = default;
-
-    auto buffer::operator[](std::size_t _index) -> char
-    {
-        if (_index > total_len_) {
-            throw exception("over buffer size.");
-        }
-
-        auto iter = block_chain_.begin();
-
-        while (_index >= (*iter)->size()) {
-            _index -= (*iter)->size();
-            ++iter;
-        }
-
-        assert(iter != block_chain_.end());
-        assert(_index <= (*iter)->size());
-
-        return (*iter)->readable()[_index];
-    }
+        : impl_(new buffer_impl)
+    { d_ptr(impl_)->max_read_ = _max_read; }
+    buffer::~buffer()
+    { delete impl_; }
+    
+    auto buffer::size() const -> std::size_t
+    { return d_ptr(impl_)->total_len_; }
+    void buffer::set_max_read(std::size_t _max_read)
+    { d_ptr(impl_)->max_read_ = _max_read; }
 
     auto buffer::chain_size() const -> std::size_t
-    {
-        return block_chain_.size();
-    }
+    { return d_ptr(impl_)->cache_chain_.size(); }
 
     void buffer::clear_all()
     {
-        block_chain_.clear();
-        write_iter_ = block_chain_.begin();
-        total_len_ = 0;
+        d_ptr(impl_)->cache_chain_.reset();
+        d_ptr(impl_)->total_len_ = 0;
     }
 
-    auto buffer::find(const char* _begin, std::int32_t _size) -> int64_t
+    void buffer::skip(std::size_t _size)
     {
-        if (_size < 0) {
-            return -1;
+        if (_size >= d_ptr(impl_)->total_len_) {
+            clear_all();
+        } else {
+            d_ptr(impl_)->total_len_ -= _size;
+            d_ptr(impl_)->cache_chain_.drain(_size);
+        }
+    }
+
+    auto buffer::begin() -> iterator
+    { 
+        return iterator(
+            new buffer_iterator_impl(&d_ptr(impl_)->cache_chain_)); 
+    }
+
+    auto buffer::end() -> iterator
+    { 
+        return iterator(
+            new buffer_iterator_impl(
+                &d_ptr(impl_)->cache_chain_, d_ptr(impl_)->cache_chain_.end())); 
+    }
+
+    auto buffer::find(const char* _begin, std::size_t _size) -> iterator
+    {
+        if (_size > d_ptr(impl_)->total_len_ ) {
+            return end();
         }
         auto next_val = detail::get_next(_begin, _size);
-        std::size_t i = 0;
-        std::int32_t j = 0;
-        while (i < total_len_ && j < _size) {
-            if (j == -1 || (*this)[i] == _begin[j]) {
+        auto i { begin() };
+        auto j { 0 };
+        while (i != end() && (j == -1 || (std::size_t)j < _size)) {
+            if (j == -1 || (*i) == _begin[j]) {
                 ++i, ++j;
             } else {
                 j = next_val[j];
             }
         }
 
-        if (j >= _size) {
-            return static_cast<int64_t>(static_cast<std::size_t>(i) - _size);
+        if (j >= 0 && (std::size_t)j >= _size) {
+            return i;
         }
-        return -1;
-    }
-
-    void buffer::skip(std::size_t _size)
-    {
-        if (_size >= total_len_) {
-            total_len_ = 0;
-            block_chain_.clear();
-            goto done;
-        }
-
-        while (block_chain_.front()->readable_size() <= _size) {
-            assert(!block_chain_.empty());
-            _size -= block_chain_.front()->readable_size();
-            block_chain_.pop_front();
-        }
-
-        assert(_size < 0);
-
-        if (_size > 0) {
-            assert(!block_chain_.empty());
-            assert(block_chain_.front()->readable_size() > _size);
-            block_chain_.front()->drain(_size);
-        }
-
-    done:
-        write_iter_ = block_chain_.begin();
+        return end();
     }
 
     void buffer::append(buffer& _another)
     {
-        if (_another.total_len_ == 0) {
+        if (d_ptr(_another.impl_)->total_len_ == 0) {
             return;
         }
 
-        total_len_ += _another.total_len_;
+        d_ptr(impl_)->total_len_ += d_ptr(_another.impl_)->total_len_;
 
-        if (block_chain_.empty() || (write_iter_ == block_chain_.begin() && (*write_iter_)->empty())) {
-            block_chain_.swap(_another.block_chain_);
-            _another.write_iter_ = _another.block_chain_.begin();
-            _another.total_len_ = 0;
-            write_iter_ = block_chain_.end();
-            --write_iter_;
-            return;
+        if (d_ptr(impl_)->total_len_ == 0) {
+            d_ptr(impl_)->cache_chain_.swap(d_ptr(_another.impl_)->cache_chain_);
+        } else {
+            auto& other_chain = d_ptr(_another.impl_)->cache_chain_;
+            auto* other_end = other_chain.end();
+            auto* other_begin = other_chain.begin();
+
+            if (other_begin->prev == other_end) {
+                //   ---+---++---+---
+                // .... |   ||   | ....
+                //   ---+---++---+---
+                //        ^    ^
+                //      write read
+                d_ptr(impl_)->cache_chain_.end()->next = other_begin;
+                other_begin->prev = d_ptr(impl_)->cache_chain_.end();
+                d_ptr(impl_)->cache_chain_.begin()->prev = other_end;
+                other_end->next = d_ptr(impl_)->cache_chain_.begin();
+                d_ptr(impl_)->cache_chain_.write = other_end;
+
+                // reset other
+                other_chain.node_size_ = 1;
+                other_chain.head = new detail::cache_list::node;
+                other_chain.head->next = other_chain.head;
+                other_chain.head->prev = other_chain.head;
+                other_chain.read = other_chain.head;
+                other_chain.write = other_chain.head;
+            } else {
+                //   ---+---++-   --++---+---
+                // .... |   || ...  ||   | ....
+                //   ---+---++-   --++---+---
+                //        ^            ^
+                //      write         read
+                auto* before_begin = other_begin->prev;
+                auto* after_end = other_end->next;
+                d_ptr(impl_)->cache_chain_.end()->next = other_begin;
+                other_begin->prev = d_ptr(impl_)->cache_chain_.end();
+                d_ptr(impl_)->cache_chain_.begin()->prev = other_end;
+                other_end->next = d_ptr(impl_)->cache_chain_.begin();
+                d_ptr(impl_)->cache_chain_.write = other_end;
+
+                // chained lists are re-formed into rings
+                before_begin->next = after_end;
+                after_end->prev = before_begin;
+                other_chain.node_size_ = 1;
+                other_chain.head = after_end;
+                other_chain.read = other_chain.head;
+                other_chain.write = other_chain.head;
+
+                while (after_end != before_begin) {
+                    ++other_chain.node_size_;
+                    after_end = after_end->next;
+                }
+            }
         }
-
-        if (!(*write_iter_)->empty()) {
-            ++write_iter_;
-        }
-
-        ++_another.write_iter_;
-        auto cur = _another.block_chain_.begin();
-        while (cur != _another.write_iter_) {
-            block_chain_.insert(write_iter_, std::move(*cur));
-            ++cur;
-        }
-
-        --write_iter_;
-        _another.block_chain_.clear();
-        _another.write_iter_ = _another.block_chain_.begin();
-        _another.total_len_ = 0;
+        d_ptr(_another.impl_)->total_len_ = 0;
     }
 
     auto buffer::add(const void* _bytes, std::size_t _size) -> bool
     {
-        if (total_len_ + _size > MAX_SIZE) {
+        if (d_ptr(impl_)->total_len_ + _size > MAX_SIZE) {
             return false;
         }
 
-        total_len_ += _size;
-
-        auto cur { write_iter_ };
-        if (block_chain_.empty()) {
-            assert(write_iter_ == block_chain_.end());
-            block_chain_.emplace_back(new detail::cache(detail::round_up(_size)));
-            write_iter_ = block_chain_.begin();
-            cur = write_iter_;
-        }
-
-        if ((*cur)->writeable_size() < _size && !(*cur)->realign(_size)) {
-            ++cur;
-            while (cur != block_chain_.end()) {
-                assert((*cur)->empty());
-                if ((*cur)->capacity() > _size) {
-                    break;
-                }
-                block_chain_.erase(cur++);
-            }
-            if (cur == block_chain_.end()) {
-                block_chain_.emplace(cur, new detail::cache(detail::round_up(_size)));
-            }
-            --cur;
-        }
-
-        /**
-         * @brief there's enough space to hold all the data
-         *   in thecurrent last chain.
-         **/
-        assert((*cur)->writeable_size() > _size);
-        (*cur)->append(static_cast<const char*>(_bytes),
-            static_cast<const char*>(_bytes) + _size);
-        write_iter_ = cur;
-
+        d_ptr(impl_)->total_len_ += _size;
+        d_ptr(impl_)->cache_chain_.check_size(_size);
+        d_ptr(impl_)->cache_chain_.end()->cache->append(
+            static_cast<const char*>(_bytes),
+            static_cast<const char*>(_bytes) + _size
+        );
         return true;
     }
 
     auto buffer::read(util_socket_t _fd, std::int64_t _howmuch) -> std::int64_t
     {
         std::int64_t readable = socket_op::get_bytes_readable_on_socket(_fd);
-        if (readable <= 0 || readable > static_cast<std::int64_t>(max_read_)) {
-            readable = static_cast<int64_t>(max_read_);
+        if (readable <= 0) {
+            readable = static_cast<std::int64_t>(d_ptr(impl_)->max_read_);
         }
         if (_howmuch < 0 || _howmuch > readable) {
             _howmuch = readable;
@@ -343,36 +383,20 @@ namespace net {
         }
 
 #ifdef USE_IOVEC_IMPL
-        std::vector<IOV_TYPE> vecs(2);
+        auto block_size = d_ptr(impl_)->cache_chain_.fast_expand(readable);
+        std::vector<IOV_TYPE> vecs(block_size);
+        auto* block = d_ptr(impl_)->cache_chain_.end();
 
-        auto iter = write_iter_;
-        auto vec_nbr = 0;
-        auto remain = readable;
-        for (; remain > 0; ++vec_nbr) {
-            if (vec_nbr >= 2) {
-                vecs.emplace_back();
-            }
-            if (iter == block_chain_.end()) {
-                block_chain_.emplace(iter, new detail::cache(detail::round_up((std::size_t)remain)));
-                --iter;
-                if (write_iter_ == block_chain_.end()) {
-                    write_iter_ = block_chain_.begin();
-                }
-            }
-            auto& block = (*iter);
-            if (!block->full()) {
-                remain -= static_cast<int64_t>(block->writeable_size());
-                vecs[vec_nbr].IOV_PTR_FIELD = block->writeable();
-                vecs[vec_nbr].IOV_LEN_FIELD = block->writeable_size();
-            }
-            ++iter;
+        for (auto i = 0; i > block_size; ++i, block = block->next) {
+            vecs[i].IOV_PTR_FIELD = (*block)->writeable();
+            vecs[i].IOV_LEN_FIELD = (*block)->writeable_size();
         }
 
 #ifdef H_OS_WIN
 		{
 			DWORD bytes_read;
 			DWORD flags { 0 };
-			if (::WSARecv(_fd, vecs.data(), vec_nbr, &bytes_read, &flags, nullptr, nullptr)) {
+			if (::WSARecv(_fd, vecs.data(), block_size, &bytes_read, &flags, nullptr, nullptr)) {
 				/* The read failed. It might be a close,
 				 * or it might be an error. */
 				if (::WSAGetLastError() == WSAECONNABORTED) {
@@ -385,197 +409,155 @@ namespace net {
             }
 		}
 #else
-        readable = ::readv(_fd, vecs.data(), vec_nbr);
+        readable = ::readv(_fd, vecs.data(), block_size);
 #endif
-
-        if (readable > 0) {
-            remain = readable;
-            iter = write_iter_;
-            for (auto i = 0; i < vec_nbr; ++i) {
-                auto space = static_cast<std::int64_t>((*iter)->writeable_size());
-                if (space < remain) {
-                    (*iter)->skip(space);
-                    remain -= static_cast<int64_t>(space);
-                } else {
-                    (*iter)->skip(static_cast<std::size_t>(remain));
-                    write_iter_ = iter;
-                    break;
-                }
-                ++iter;
-            }
-        }
-#else
-#error "cannot use IOVEC."
-#endif
-
         if (readable <= 0) {
             return readable;
         }
-        total_len_ += static_cast<std::size_t>(readable);
+
+        d_ptr(impl_)->cache_chain_.add(readable);
+        d_ptr(impl_)->total_len_ += readable;
+        
+#else
+#error "cannot use IOVEC."
+#endif
         return readable;
     }
 
     auto buffer::write(util_socket_t _fd, std::int64_t _howmuch) -> std::int64_t
     {
         std::int64_t write_n {};
-        auto total = _howmuch < 0 ? total_len_ : static_cast<std::size_t>(_howmuch);
+        auto total = _howmuch <= 0 ? d_ptr(impl_)->total_len_ : static_cast<std::size_t>(_howmuch);
 
-        if (total > total_len_) {
-            total = total_len_;
+        if (total > d_ptr(impl_)->total_len_) {
+            total = d_ptr(impl_)->total_len_;
         }
 
-        if (total > 0) {
-            assert(!block_chain_.empty());
 #ifdef USE_IOVEC_IMPL
-            std::array<IOV_TYPE, NUM_WRITE_IOVEC> iov {};
-            auto curr { block_chain_.begin() };
-            auto write_i { 0 };
+        std::array<IOV_TYPE, NUM_WRITE_IOVEC> iov {};
+        auto* curr { d_ptr(impl_)->cache_chain_.begin() };
+        auto write_i { 0 };
 
-            while (write_i < NUM_WRITE_IOVEC && total > 0) {
-                assert(curr != block_chain_.end());
-                iov[write_i].IOV_PTR_FIELD = (*curr)->readable();
-                if (total > (*curr)->readable_size()) {
-                    /* XXXcould be problematic when windows supports mmap*/
-                    iov[write_i++].IOV_LEN_FIELD = static_cast<IOV_LEN_TYPE>((*curr)->readable_size());
-                    total -= static_cast<int64_t>((*curr)->readable_size());
-                } else {
-                    /* XXXcould be problematic when windows supports mmap*/
-                    iov[write_i++].IOV_LEN_FIELD = static_cast<IOV_LEN_TYPE>(total);
-                    total -= static_cast<int64_t>((*curr)->readable_size());
-                    break;
-                }
-                ++curr;
+        while (write_i < NUM_WRITE_IOVEC && total > 0) {
+            iov[write_i].IOV_PTR_FIELD = (*curr)->readable();
+            if (total > (*curr)->readable_size()) {
+                /* XXXcould be problematic when windows supports mmap*/
+                iov[write_i++].IOV_LEN_FIELD = static_cast<IOV_LEN_TYPE>((*curr)->readable_size());
+                total -= (*curr)->readable_size();
+                curr = curr->next;
+            } else {
+                /* XXXcould be problematic when windows supports mmap*/
+                iov[write_i++].IOV_LEN_FIELD = static_cast<IOV_LEN_TYPE>(total);
+                total = 0;
             }
+        }
 
-            if (write_i == 0) {
-                write_n = 0;
-                return (0);
-            }
+        if (write_i == 0) {
+            return (0);
+        }
 
 #ifdef H_OS_WIN
-            {
-                DWORD bytes_sent;
-                if (::WSASend(_fd, iov.data(), write_i, &bytes_sent, 0, nullptr, nullptr)) {
-                    write_n = -1;
-                } else {
-                    write_n = bytes_sent;
-                }
+        {
+            DWORD bytes_sent;
+            if (::WSASend(_fd, iov.data(), write_i, &bytes_sent, 0, nullptr, nullptr)) {
+                write_n = -1;
+            } else {
+                write_n = bytes_sent;
             }
-#else
-            write_n = ::writev(_fd, iov.data(), write_i);
-#endif
-
-            if (write_n < 0) {
-                return write_n;
-            }
-            
-            total_len_ -= write_n;
-
-            /**
-             * @brief If the length of chain bigger than MAX_CHINA_SIZE,
-             *   cleaning will begin.
-             **/
-            auto clean = chain_size() > MAX_CHINA_SIZE;
-            total = write_n;
-            curr = block_chain_.begin();
-            while (total != 0U && total > (*curr)->readable_size()) {
-                assert(curr != block_chain_.end());
-                auto& curr_block = *curr;
-                total = total < curr_block->readable_size() ? 0 : total - curr_block->readable_size();
-                if (!clean) {
-                    curr_block->clear();
-                    block_chain_.emplace_back(std::move(*curr));
-                }
-                block_chain_.erase(curr++);
-            }
-
-            if (total != 0U) {
-                assert(total <= (*curr)->readable_size());
-                (*curr)->drain(total);
-            }
-#endif
         }
+#else
+        write_n = ::writev(_fd, iov.data(), write_i);
+#endif
+
+        if (write_n <= 0) {
+            return write_n;
+        }
+        
+        d_ptr(impl_)->total_len_ -= write_n;
+        d_ptr(impl_)->cache_chain_.drain(write_n);
+        
+#else
+#error "cannot use IOVEC."
+#endif
         return write_n;
     }
 
     auto buffer::remove(void* _buffer, std::size_t _length) -> std::size_t
     {
+        using hare::util::detail::make_checked;
+
         if (_length == 0) {
             return _length;
         }
 
-        if (_length > total_len_) {
-            _length = total_len_;
+        if (_length > d_ptr(impl_)->total_len_) {
+            _length = d_ptr(impl_)->total_len_;
         }
 
-        /**
-         * @brief If the length of chain bigger than MAX_CHINA_SIZE,
-         *  cleaning will begin.
-         **/
-        auto clean = chain_size() > MAX_CHINA_SIZE;
-        auto curr = block_chain_.begin();
-        auto* buffer = static_cast<uint8_t*>(_buffer);
-        size_t nread { 0 };
-
-        while (_length != 0U && _length > (*curr)->readable_size()) {
-            assert(curr != block_chain_.end());
-            auto& curr_block = *curr;
-            auto copy_len = curr_block->readable_size();
-            ::memcpy(buffer, curr_block->readable(), copy_len);
-            buffer += copy_len;
-            _length -= copy_len;
-            nread += copy_len;
-
-            if (!clean) {
-                curr_block->clear();
-                block_chain_.emplace_back(std::move(*curr));
-            }
-            block_chain_.erase(curr++);
+        auto* curr { d_ptr(impl_)->cache_chain_.begin() };
+        std::size_t total { 0 };
+        auto* dest = static_cast<char*>(_buffer);
+        while (total < _length) {
+            auto copy_len = MIN(_length - total, (*curr)->readable_size());
+            std::uninitialized_copy_n(dest + total, copy_len, 
+                make_checked((*curr)->readable(), copy_len));
+            total += copy_len;
+            curr = curr->next;
         }
 
-        if (_length != 0U) {
-            assert(_length <= (*curr)->readable_size());
-            ::memcpy(buffer, (*curr)->readable(), _length);
-            (*curr)->drain(_length);
-            nread += _length;
-        }
-
-        total_len_ -= nread;
-        return nread;
+        d_ptr(impl_)->total_len_ -= _length;
+        d_ptr(impl_)->cache_chain_.drain(_length);
+        
+        return _length;
     }
 
     auto buffer::add_block(void* _bytes, size_t _size) -> bool
     {
-        block_chain_.emplace_back(new detail::cache(static_cast<char*>(_bytes), _size));
-        total_len_ += _size;
+        auto& chain = d_ptr(impl_)->cache_chain_;
+        chain.write->cache.reset(new detail::cache(static_cast<char*>(_bytes), _size));
+        if (chain.write->next == chain.begin()) {
+            auto* tmp = new detail::cache_list::node;
+            tmp->next = chain.write->next;
+            tmp->prev = chain.write;
+            chain.write->next->prev = tmp;
+            chain.write->next = tmp;
+            ++chain.node_size_;
+        }
+        chain.write = chain.write->next;
+        d_ptr(impl_)->total_len_ += _size;
         return true;
     }
 
     auto buffer::get_block(void** _bytes, size_t& _size) -> bool
     {
-        if (block_chain_.empty()) {
+        if (d_ptr(impl_)->total_len_ == 0) {
             *_bytes = nullptr;
             _size = 0;
             return false;
         }
+        auto& chain = d_ptr(impl_)->cache_chain_;
+        auto* node = chain.begin();
 
-        auto bolck = std::move(block_chain_.front());
-        block_chain_.pop_front();
+        _size = (*node)->readable_size();
+        *_bytes = (*node)->data();
+        (*node)->set(nullptr, 0);
+        chain.read = chain.read->next;
 
-        *_bytes = bolck->begin();
-        _size = bolck->capacity();
-        bolck->set(nullptr, 0);
+        if (chain.size() > MAX_CHINA_SIZE) {
+            chain.read->prev = node->prev;
+            node->prev->next = chain.read;
+            --chain.node_size_;
+        }
 
-        total_len_ -= _size;
+        d_ptr(impl_)->total_len_ -= _size;
         return true;
     }
 
     void buffer::move(buffer& _other) noexcept
     {
-        block_chain_ = std::move(_other.block_chain_);
-        write_iter_ = _other.write_iter_;
-        total_len_ = _other.total_len_;
-        max_read_ = _other.max_read_;
+        d_ptr(impl_)->cache_chain_.swap(d_ptr(_other.impl_)->cache_chain_);
+        std::swap(d_ptr(impl_)->total_len_, d_ptr(_other.impl_)->total_len_);
+        std::swap(d_ptr(impl_)->max_read_, d_ptr(_other.impl_)->max_read_);
     }
 
 } // namespace net

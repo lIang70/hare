@@ -38,7 +38,8 @@ namespace net {
     };
 
     HARE_CLASS_API
-    class HARE_API session : public util::non_copyable, public std::enable_shared_from_this<session> {
+    class HARE_API session : public util::non_copyable
+                           , public std::enable_shared_from_this<session> {
         hare::detail::impl* impl_ {};
 
     public:
@@ -52,13 +53,10 @@ namespace net {
         auto owner_cycle() const -> io::cycle*;
         auto local_address() const -> const host_address&;
         auto peer_address() const -> const host_address&;
+        auto type() const -> TYPE;
         auto state() const -> STATE;
         auto fd() const -> util_socket_t;
-
-        auto connected() const -> bool;
-
         void set_connect_callback(connect_callback _connect);
-
         void set_context(const util::any& context);
         auto get_context() const -> const util::any&;
 
@@ -67,6 +65,9 @@ namespace net {
 
         void start_read();
         void stop_read();
+
+        HARE_INLINE auto connected() const -> bool
+        { return state() == STATE_CONNECTED; }
 
         virtual auto send(const void*, std::size_t) -> bool = 0;
 

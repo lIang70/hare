@@ -68,17 +68,14 @@ namespace net {
     { return d_ptr(impl_)->local_addr_; }
     auto session::peer_address() const -> const host_address& 
     { return d_ptr(impl_)->peer_addr_; }
+    auto session::type() const -> TYPE
+    { return d_ptr(impl_)->socket_.type(); }
     auto session::state() const -> STATE 
     { return d_ptr(impl_)->state_; }
     auto session::fd() const -> util_socket_t 
     { return d_ptr(impl_)->socket_.fd(); }
-
-    auto session::connected() const -> bool 
-    { return d_ptr(impl_)->state_ == STATE_CONNECTED; }
-
     void session::set_connect_callback(connect_callback _connect) 
     { d_ptr(impl_)->connect_ = std::move(_connect); }
-
     void session::set_context(const util::any& context) 
     { d_ptr(impl_)->any_ctx_ = context; }
     auto session::get_context() const -> const util::any& 
@@ -136,24 +133,13 @@ namespace net {
     }
 
     void session::set_state(STATE _state)
-    {
-        d_ptr(impl_)->state_ = _state;
-    }
-
+    { d_ptr(impl_)->state_ = _state; }
     auto session::event() -> io::event::ptr&
-    {
-        return d_ptr(impl_)->event_;
-    }
-
+    { return d_ptr(impl_)->event_; }
     auto session::socket() -> net::socket&
-    {
-        return d_ptr(impl_)->socket_;
-    }
-
+    { return d_ptr(impl_)->socket_; }
     void session::set_destroy(destroy _destroy)
-    {
-        d_ptr(impl_)->destroy_ = std::move(_destroy);
-    }
+    { d_ptr(impl_)->destroy_ = std::move(_destroy); }
 
     void session::handle_callback(const io::event::ptr& _event, uint8_t _events, const timestamp& _receive_time)
     {

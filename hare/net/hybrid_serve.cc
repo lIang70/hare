@@ -167,14 +167,6 @@ namespace net {
         assert(d_ptr(impl_)->started_);
         d_ptr(impl_)->cycle_->assert_in_cycle_thread();
 
-        if (!d_ptr(impl_)->new_session_) {
-            MSG_TRACE("you need register new_session_callback to serve[{}].", d_ptr(impl_)->name_);
-            if (_fd != -1) {
-                socket_op::close(_fd);
-            }
-            return;
-        }
-
         auto next_item = d_ptr(impl_)->io_pool_->get_next();
         session::ptr session { nullptr };
         auto type = _acceptor->type();
@@ -194,6 +186,12 @@ namespace net {
                 std::move(local_addr),
                 name_cache, _acceptor->family(), _fd,
                 std::move(_address)));
+
+            if (!session) {
+                MSG_ERROR("fail to create session[{}].", name_cache);
+                socket_op::close(_fd);
+                return;
+            }
         } break;
         case TYPE_UDP: {
             assert(_fd == -1);
@@ -224,10 +222,16 @@ namespace net {
                 name_cache, _acceptor->family(), accept_fd,
                 std::move(peer_addr)));
 
+            if (!session) {
+                MSG_ERROR("fail to create udp session[{}].", name_cache);
+                socket_op::close(accept_fd);
+                return;
+            }
+
             if (buffer_size > 0) {
                 auto udp = std::static_pointer_cast<udp_session>(session);
                 auto total_size = static_cast<std::size_t>(buffer_size);
-                udp->in_buffer_.add_block(buffer, total_size);
+                udp->in_buffer().add_block(buffer, total_size);
             }
 
         } break;
@@ -235,27 +239,32 @@ namespace net {
             MSG_FATAL("invalid type[{}] of acceptor.", type_to_str(_acceptor->type()));
         }
 
-        if (!session) {
-            return;
-        }
+        auto sfd = session->fd();
 
         session->set_destroy(std::bind([=]() {
             next_item->cycle->run_in_cycle([=]() mutable {
-                assert(next_item->sessions.find(_fd) != next_item->sessions.end());
-                next_item->sessions.erase(_fd);
+                assert(next_item->sessions.find(sfd) != next_item->sessions.end());
+                next_item->sessions.erase(sfd);
             });
         }));
 
         next_item->cycle->run_in_cycle(std::bind([=]() mutable {
-            assert(next_item->sessions.find(_fd) == next_item->sessions.end());
-            next_item->sessions.insert(std::make_pair(_fd, session));
+            assert(next_item->sessions.find(sfd) == next_item->sessions.end());
+            if (!d_ptr(impl_)->new_session_) {
+                MSG_ERROR("you need register new_session_callback to serve[{}].", d_ptr(impl_)->name_);
+                if (sfd != -1) {
+                    socket_op::close(sfd);
+                }
+                return;
+            }
+            next_item->sessions.insert(std::make_pair(sfd, session));
             d_ptr(impl_)->new_session_(session, _time, std::static_pointer_cast<acceptor>(_acceptor->shared_from_this()));
             session->connect_established();
 
             if (type == TYPE_UDP) {
                 auto udp = std::static_pointer_cast<udp_session>(session);
-                if (udp->read_) {
-                    udp->read_(udp, udp->in_buffer_, _time);
+                if (udp->read_handle()) {
+                    udp->read_handle()(udp, udp->in_buffer(), _time);
                 }
             }
         }));

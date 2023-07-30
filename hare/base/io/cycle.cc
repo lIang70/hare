@@ -22,8 +22,6 @@
 #include <sys/socket.h>
 #elif defined(H_OS_WIN)
 #include <WinSock2.h>
-
-#define close closesocket
 #define read _read
 #define write _write
 #endif
@@ -75,7 +73,7 @@ namespace io {
 
             ~event_notify() override
             {
-                ::close(fd());
+                socket_op::close(fd());
             }
 
             void send_notify()

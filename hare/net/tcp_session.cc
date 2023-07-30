@@ -6,7 +6,26 @@
 namespace hare {
 namespace net {
 
-    tcp_session::~tcp_session() = default;
+    HARE_IMPL_DEFAULT(tcp_session,
+        buffer out_buffer_ {};
+        buffer in_buffer_ {};
+        std::size_t high_water_mark_ { HARE_DEFAULT_HIGH_WATER };
+        tcp_session::write_callback write_ {};
+        tcp_session::high_water_callback high_water_ {};
+        tcp_session::read_callback read_ {};
+    )
+
+    tcp_session::~tcp_session()
+    { delete impl_; }
+
+    void tcp_session::set_high_water_mark(size_t _hwm)
+    { d_ptr(impl_)->high_water_mark_ = _hwm; }
+    void tcp_session::set_read_callback(read_callback _read)
+    { d_ptr(impl_)->read_ = std::move(_read); }
+    void tcp_session::set_write_callback(write_callback _write)
+    { d_ptr(impl_)->write_ = std::move(_write); }
+    void tcp_session::set_high_water_callback(high_water_callback _high_water)
+    { d_ptr(impl_)->high_water_ = std::move(_high_water); }
 
     auto tcp_session::append(buffer& _buffer) -> bool
     {
@@ -16,13 +35,15 @@ namespace net {
             owner_cycle()->queue_in_cycle(std::bind([](const wptr<tcp_session>& session, hare::ptr<buffer>& buffer) {
                 auto tcp = session.lock();
                 if (tcp) {
-                    auto out_buffer_size = tcp->out_buffer_.size();
-                    tcp->out_buffer_.append(*buffer);
+                    auto out_buffer_size = d_ptr(tcp->impl_)->out_buffer_.size();
+                    d_ptr(tcp->impl_)->out_buffer_.append(*buffer);
                     if (out_buffer_size == 0) {
                         tcp->event()->enable_write();
                         tcp->handle_write();
-                    } else if (out_buffer_size > tcp->high_water_mark_) {
-                        tcp->high_water_(tcp);
+                    } else if (out_buffer_size > d_ptr(tcp->impl_)->high_water_mark_ && d_ptr(tcp->impl_)->high_water_mark_) {
+                        d_ptr(tcp->impl_)->high_water_(tcp);
+                    } else if (out_buffer_size > d_ptr(tcp->impl_)->high_water_mark_) {
+                        MSG_ERROR("high_water_mark_callback has not been set for tcp-session[{}].", tcp->name());
                     }
                 }
             },
@@ -40,13 +61,15 @@ namespace net {
             owner_cycle()->queue_in_cycle(std::bind([](const wptr<tcp_session>& session, hare::ptr<buffer>& buffer) {
                 auto tcp = session.lock();
                 if (tcp) {
-                    auto out_buffer_size = tcp->out_buffer_.size();
-                    tcp->out_buffer_.append(*buffer);
+                    auto out_buffer_size = d_ptr(tcp->impl_)->out_buffer_.size();
+                    d_ptr(tcp->impl_)->out_buffer_.append(*buffer);
                     if (out_buffer_size == 0) {
                         tcp->event()->enable_write();
                         tcp->handle_write();
-                    } else if (out_buffer_size > tcp->high_water_mark_) {
-                        tcp->high_water_(tcp);
+                    } else if (out_buffer_size > d_ptr(tcp->impl_)->high_water_mark_ && d_ptr(tcp->impl_)->high_water_mark_) {
+                        d_ptr(tcp->impl_)->high_water_(tcp);
+                    } else if (out_buffer_size > d_ptr(tcp->impl_)->high_water_mark_) {
+                        MSG_ERROR("high_water_mark_callback has not been set for tcp-session[{}].", tcp->name());
                     }
                 }
             },
@@ -75,12 +98,15 @@ namespace net {
 
     void tcp_session::handle_read(const timestamp& _time)
     {
-        auto read_n = in_buffer_.read(fd(), -1);
+        auto read_n = d_ptr(impl_)->in_buffer_.read(fd(), -1);
         if (read_n == 0) {
             handle_close();
-        } else if (read_n > 0) {
-            read_(std::static_pointer_cast<tcp_session>(shared_from_this()), in_buffer_, _time);
+        } else if (read_n > 0 && d_ptr(impl_)->read_) {
+            d_ptr(impl_)->read_(std::static_pointer_cast<tcp_session>(shared_from_this()), d_ptr(impl_)->in_buffer_, _time);
         } else {
+            if (read_n > 0) {
+                MSG_ERROR("read_callback has not been set for tcp-session[{}].", name());
+            }
             handle_error();
         }
     }
@@ -88,15 +114,15 @@ namespace net {
     void tcp_session::handle_write()
     {
         if (event()->writing()) {
-            auto write_n = out_buffer_.write(fd(), -1);
+            auto write_n = d_ptr(impl_)->out_buffer_.write(fd(), -1);
             if (write_n >= 0) {
-                if (out_buffer_.size() == 0) {
+                if (d_ptr(impl_)->out_buffer_.size() == 0) {
                     event()->disable_write();
                     owner_cycle()->queue_in_cycle(std::bind([=](const wptr<tcp_session>& session) {
                         auto tcp = session.lock();
                         if (tcp) {
-                            if (write_) {
-                                write_(tcp);
+                            if (d_ptr(impl_)->write_) {
+                                d_ptr(impl_)->write_(tcp);
                             } else {
                                 MSG_ERROR("write_callback has not been set for tcp-session[{}].", name());
                             }

@@ -9,8 +9,6 @@
 
 namespace hare {
 namespace io {
-    class cycle;
-
     namespace current_thread {
 
         using TID = struct thread_io_data {
@@ -37,8 +35,8 @@ namespace io {
         HARE_INLINE
         auto get_tds() -> TID&
         {
-            static thread_local struct thread_io_data t { };
-            return t;
+            static thread_local TID t_io_data {};
+            return t_io_data;
         }
 
     } // namespace current_thread

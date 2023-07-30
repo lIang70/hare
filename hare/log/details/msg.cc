@@ -10,6 +10,7 @@ namespace log {
         {
             static thread_local std::int64_t t_last_time {};
             static thread_local std::string t_time {};
+            
             auto microseconds_since_epoch = _msg.stamp_.microseconds_since_epoch();
             auto seconds = static_cast<time_t>(microseconds_since_epoch / HARE_MICROSECONDS_PER_SECOND);
             _microseconds = static_cast<std::int32_t>(microseconds_since_epoch - seconds * HARE_MICROSECONDS_PER_SECOND);
@@ -25,7 +26,7 @@ namespace log {
                     dt = timezone::to_utc_time(seconds);
                 }
 
-                t_time = fmt::format("{:04}{:02}{:02} {:02}:{:02}:{:02}", dt.year_, dt.month_, dt.day_, dt.hour_, dt.minute_, dt.second_);
+                t_time = fmt::format("{:04}-{:02}-{:02} {:02}:{:02}:{:02}", dt.year_, dt.month_, dt.day_, dt.hour_, dt.minute_, dt.second_);
             }
 
             return t_time;

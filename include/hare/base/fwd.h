@@ -18,8 +18,8 @@
 #include <cinttypes>
 #include <cstring>
 #include <functional>
-#include <string>
 #include <memory>
+#include <string>
 
 #include <hare/base/util/system_check.h>
 
@@ -123,22 +123,20 @@ namespace detail {
     HARE_CLASS_API
     struct HARE_API impl { virtual ~impl() = default; };
 
+#define HARE_IMPL_DEFAULT(Class, ...)                 \
+    struct Class##_impl : public hare::detail::impl { \
+        __VA_ARGS__                                   \
+        ~Class##_impl() override = default;           \
+    };                                                \
+    HARE_INLINE auto d_ptr(hare::detail::impl* _impl) \
+        ->Class##_impl* { return down_cast<Class##_impl*>(_impl); }
 
-#define HARE_IMPL_DEFAULT(Class, ...)                   \
-    struct Class##_impl : public hare::detail::impl {   \
-        __VA_ARGS__                                     \
-        ~Class##_impl() override = default;             \
-    };                                                  \
-    HARE_INLINE auto d_ptr(hare::detail::impl* _impl)   \
-    -> Class##_impl* { return down_cast<Class##_impl*>(_impl); }
-
-#define HARE_IMPL(Class, ...)                           \
-    struct Class##_impl : public hare::detail::impl {   \
-        __VA_ARGS__                                     \
-    };                                                  \
-    HARE_INLINE auto d_ptr(hare::detail::impl* _impl)   \
-        -> Class##_impl* { return down_cast<Class##_impl*>(_impl); }
-
+#define HARE_IMPL(Class, ...)                         \
+    struct Class##_impl : public hare::detail::impl { \
+        __VA_ARGS__                                   \
+    };                                                \
+    HARE_INLINE auto d_ptr(hare::detail::impl* _impl) \
+        ->Class##_impl* { return down_cast<Class##_impl*>(_impl); }
 
     template <typename Int>
     auto to_unsigned(Int value) ->
@@ -218,7 +216,7 @@ auto implicit_cast(From const& _from) -> To
     return _from;
 }
 
-template<typename To, typename From>
+template <typename To, typename From>
 HARE_INLINE
 auto down_cast(From* f) -> To
 {
@@ -231,7 +229,7 @@ auto down_cast(From* f) -> To
     }
 
 #if !defined(NDEBUG) && !defined(GOOGLE_PROTOBUF_NO_RTTI)
-    assert(f == NULL || dynamic_cast<To>(f) != NULL);  // RTTI: debug mode only!
+    assert(f == NULL || dynamic_cast<To>(f) != NULL); // RTTI: debug mode only!
 #endif
     return static_cast<To>(f);
 }

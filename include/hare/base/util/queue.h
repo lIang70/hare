@@ -21,10 +21,10 @@
 namespace hare {
 namespace util {
 
+    HARE_CLASS_API
     template <typename T,
-        typename _Sequence = std::vector<T>,
-        typename _Alloc = std::allocator<T>>
-    class circular_queue : public non_copyable {
+        typename _Sequence = std::vector<T>>
+    class HARE_API circular_queue : public non_copyable {
     public:
         using size_type = std::size_t;
         using value_type = T;
@@ -38,11 +38,11 @@ namespace util {
 
     public:
         circular_queue() = default;
+        HARE_INLINE
         explicit circular_queue(size_type _max)
             : max_capacity_(_max)
             , sequence_(_max)
-        {
-        }
+        { }
 
         HARE_INLINE
         circular_queue(circular_queue&& _other) noexcept
@@ -70,9 +70,7 @@ namespace util {
 
         HARE_INLINE
         auto size() const -> size_type
-        {
-            return tail_ >= head_ ? tail_ - head_ : max_capacity_ - head_ + tail_;
-        }
+        { return tail_ >= head_ ? tail_ - head_ : max_capacity_ - head_ + tail_; }
 
         HARE_INLINE auto capacity() const -> size_type { return max_capacity_; }
 
@@ -123,8 +121,9 @@ namespace util {
 
     };
 
+    HARE_CLASS_API
     template <typename T>
-    class blocking_queue {
+    class HARE_API blocking_queue {
     public:
         using size_type = typename circular_queue<T>::size_type;
 

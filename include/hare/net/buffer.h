@@ -21,31 +21,52 @@
 namespace hare {
 namespace net {
 
-    namespace detail {
-        class cache;
-    } // namespace detail
+    class buffer;
+
+    HARE_CLASS_API
+    class HARE_API buffer_iterator : public util::non_copyable {
+        hare::detail::impl* impl_ {};
+
+    public:
+        HARE_INLINE
+        buffer_iterator(buffer_iterator&& _other) noexcept
+        { move(_other); }
+
+        HARE_INLINE
+        auto operator=(buffer_iterator&& _other) noexcept -> buffer_iterator&
+        { move(_other); return (*this); }
+
+        HARE_INLINE
+        auto valid() const -> bool
+        { return impl_ != nullptr; }
+
+        auto operator*() noexcept -> char;
+        auto operator++() noexcept -> buffer_iterator&;
+        auto operator--() noexcept -> buffer_iterator&;
+
+        friend auto operator==(const buffer_iterator& _x, const buffer_iterator& _y) noexcept -> bool;
+        friend auto operator!=(const buffer_iterator& _x, const buffer_iterator& _y) noexcept -> bool;
+
+    private:
+        HARE_INLINE
+        explicit buffer_iterator(hare::detail::impl* _impl)
+            : impl_(_impl)
+        { }
+
+        HARE_INLINE
+        void move(buffer_iterator& _other) noexcept
+        { std::swap(impl_, _other.impl_); }
+
+        friend class net::buffer;
+    };
 
     HARE_CLASS_API
     class HARE_API buffer : public util::non_copyable {
-        using block = ptr<detail::cache>;
-        using block_list = std::list<block>;
-
-        /** @code
-         *  +-------++-------++-------++-------++-------++-------+
-         *  | block || block || block || block || block || block |
-         *  +-------++-------++-------++-------++-------++-------+
-         *                             |
-         *                             write_iter
-         *  @endcode
-         **/
-        block_list block_chain_ {};
-        block_list::iterator write_iter_ { block_chain_.begin() };
-
-        std::size_t total_len_ { 0 };
-        std::size_t max_read_ { HARE_MAX_READ_DEFAULT };
+        hare::detail::impl* impl_ {};
 
     public:
         using ptr = ptr<buffer>;
+        using iterator = buffer_iterator;
 
         explicit buffer(std::size_t _max_read = HARE_MAX_READ_DEFAULT);
         ~buffer();
@@ -58,17 +79,17 @@ namespace net {
         auto operator=(buffer&& _other) noexcept -> buffer&
         { move(_other); return (*this); }
 
-        HARE_INLINE auto size() const -> std::size_t { return total_len_; }
-        HARE_INLINE void set_max_read(std::size_t _max_read) { max_read_ = _max_read; }
-
-        auto operator[](std::size_t _index) -> char;
-
+        auto size() const -> std::size_t;
+        void set_max_read(std::size_t _max_read);
         auto chain_size() const -> std::size_t;
         void clear_all();
-
-        auto find(const char* _begin, std::int32_t _size) -> std::int64_t;
         void skip(std::size_t _size);
 
+        auto begin() -> iterator;
+        auto end() -> iterator;
+        auto find(const char* _begin, std::size_t _size) -> iterator;
+
+        // read-write
         void append(buffer& _another);
 
         auto add(const void* _bytes, std::size_t _size) -> bool;
@@ -81,7 +102,6 @@ namespace net {
 
     private:
         void move(buffer& _other) noexcept;
-
     };
 
 } // namespace net

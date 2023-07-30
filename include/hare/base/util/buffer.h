@@ -42,11 +42,11 @@ namespace util {
 
     template <typename T>
     class buffer {
+    protected:
         T* ptr_ {};
         std::size_t size_ {};
         std::size_t capacity_ {};
 
-    protected:
         // Don't initialize ptr_ since it is not accessed to save a few cycles.
         explicit buffer(std::size_t sz) noexcept
             : size_(sz)
@@ -61,7 +61,6 @@ namespace util {
         {
         }
 
-        ~buffer() = default;
         buffer(buffer&&) noexcept = default;
 
         /** Sets the buffer data and capacity. */
@@ -79,18 +78,16 @@ namespace util {
         using value_type = T;
         using const_reference = const T&;
 
+        virtual ~buffer() = default;
+
         buffer(const buffer&) = delete;
         void operator=(const buffer&) = delete;
 
-        HARE_INLINE
-        auto begin() noexcept -> T* { return ptr_; }
-        HARE_INLINE
-        auto end() noexcept -> T* { return ptr_ + size_; }
+        HARE_INLINE auto begin() noexcept -> T* { return ptr_; }
+        HARE_INLINE auto end() noexcept -> T* { return ptr_ + size_; }
 
-        HARE_INLINE
-        auto begin() const noexcept -> const T* { return ptr_; }
-        HARE_INLINE
-        auto end() const noexcept -> const T* { return ptr_ + size_; }
+        HARE_INLINE auto begin() const noexcept -> const T* { return ptr_; }
+        HARE_INLINE auto end() const noexcept -> const T* { return ptr_ + size_; }
 
         /** Returns the size of this buffer. */
         constexpr auto size() const noexcept -> std::size_t { return size_; }
@@ -99,24 +96,13 @@ namespace util {
         constexpr auto capacity() const noexcept -> std::size_t { return capacity_; }
 
         /** Returns a pointer to the buffer data. */
-        auto data() noexcept -> T* { return ptr_; }
+        HARE_INLINE auto data() noexcept -> T* { return ptr_; }
 
         /** Returns a pointer to the buffer data. */
         constexpr auto data() const noexcept -> const T* { return ptr_; }
 
         /** Clears this buffer. */
-        HARE_INLINE
-        void clear() { size_ = 0; }
-
-        HARE_INLINE
-        void skip(std::size_t size)
-        {
-            if (size_ + size > capacity_) {
-                size_ = capacity_;
-            } else {
-                size_ += size;
-            }
-        }
+        HARE_INLINE void clear() { size_ = 0; }
 
         // Tries resizing the buffer to contain *count* elements. If T is a POD type
         // the new elements may not be initialized.

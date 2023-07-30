@@ -71,7 +71,7 @@ namespace net {
         return peer_addr;
     }
 
-    host_address::host_address(uint16_t _port, bool _loopback_only, bool _ipv6)
+    host_address::host_address(std::uint16_t _port, bool _loopback_only, bool _ipv6)
     {
         static_assert(offsetof(host_address, addr_.in6_) == 0, "addr_in6_ offset 0");
         static_assert(offsetof(host_address, addr_.in_) == 0, "addr_in_ offset 0");
@@ -93,7 +93,7 @@ namespace net {
         }
     }
 
-    host_address::host_address(const std::string& _ip, uint16_t _port, bool _ipv6)
+    host_address::host_address(const std::string& _ip, std::uint16_t _port, bool _ipv6)
     {
         addr_.in6_ = static_cast<struct sockaddr_in6*>(std::malloc(sizeof(struct sockaddr_in6)));
 
@@ -120,6 +120,25 @@ namespace net {
     {
         std::swap(addr_.in6_, _another.addr_.in6_);
         return (*this);
+    }
+
+    auto host_address::clone() const -> hare::ptr<host_address>
+    {
+        auto clone = std::make_shared<host_address>();
+        clone->addr_.in6_ = static_cast<struct sockaddr_in6*>(std::malloc(sizeof(struct sockaddr_in6)));
+
+        if (family() == AF_INET6) {
+            hare::detail::fill_n((clone->addr_.in6_), sizeof(struct sockaddr_in6), 0);
+            clone->addr_.in6_->sin6_family = AF_INET6;
+            clone->addr_.in6_->sin6_addr = addr_.in6_->sin6_addr;
+            clone->addr_.in6_->sin6_port = addr_.in6_->sin6_port;
+        } else {
+            hare::detail::fill_n((clone->addr_.in_), sizeof(struct sockaddr_in), 0);
+            clone->addr_.in_->sin_family = AF_INET;
+            clone->addr_.in_->sin_addr.s_addr = addr_.in_->sin_addr.s_addr;
+            clone->addr_.in_->sin_port = addr_.in_->sin_port;
+        }
+        return std::move(clone);
     }
 
     auto host_address::family() const -> std::uint8_t
@@ -160,7 +179,7 @@ namespace net {
     }
 
     // set IPv6 ScopeID
-    void host_address::set_scope_id(uint32_t _id) const
+    void host_address::set_scope_id(std::uint32_t _id) const
     {
         if (addr_.in_->sin_family == AF_INET6) {
             addr_.in6_->sin6_scope_id = _id;
