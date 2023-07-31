@@ -93,7 +93,7 @@ namespace net {
         auto cache::realign(std::size_t _size) -> bool
         {
             auto offset = readable_size();
-            if (writeable_size() > _size) {
+            if (writeable_size() >= _size) {
                 return true;
             } else if (writeable_size() + misalign_ > _size && offset <= MAX_TO_REALIGN) {
                 ::memmove(begin(), readable(), offset);
@@ -155,7 +155,7 @@ namespace net {
             auto* index = end();
             while (_size > 0) {
                 auto write_size = MIN(_size, (*index)->writeable_size());
-                (*index)->grow(write_size);
+                (*index)->add(write_size);
                 _size -= write_size;
                 if ((*index)->full() && index->next != read) {
                     index = index->next;
@@ -175,9 +175,13 @@ namespace net {
                 auto drain_size = MIN(_size, (*index)->readable_size());
                 _size -= drain_size;
                 (*index)->drain(drain_size);
-                if ((*index)->empty() && index != end()) {
-                    need_drain = true;
-                    index = index->next;
+                if ((*index)->empty()) {
+                    (*index)->clear();
+                    
+                    if (index != end()) {
+                        need_drain = true;
+                        index = index->next;
+                    }
                 }
             } while (_size != 0 && index != end());
 
@@ -200,6 +204,7 @@ namespace net {
                     --node_size_;
                 }
             }
+            read = index;
         }
 
         void cache_list::reset()
@@ -217,6 +222,36 @@ namespace net {
             read = head;
             write = head;
         }
+
+#ifdef HARE_DEBUG
+        void cache_list::print_status() const
+        {
+            MSG_TRACE("list total length: {:}", node_size_);
+
+            auto* index = begin();
+            do {
+                if (index->cache) {
+                    MSG_TRACE("|{:} {} {} {}|", 
+                        index == write && index == read ? "(WR)" : 
+                            index == write ? "(W)" : 
+                                index == read ? "(R)" : "(N)",
+                        (*index)->readable_size(),
+                        (*index)->writeable_size(),
+                        (*index)->capacity()
+                        );
+                } else {
+                    MSG_TRACE("|{:7} {}|", 
+                        index == write && index == read ? "(WR)" : 
+                            index == write ? "(W)" : 
+                                index == read ? "(R)" : "(N)",
+                        "NULL");
+                }
+                index = index->next;
+            } while (index != begin());
+
+            MSG_TRACE("    *    \n");
+        }
+#endif
 
     } // namespace detail
 
@@ -297,8 +332,10 @@ namespace net {
             return;
         }
 
-        MSG_TRACE("this buffer[{}] size: {}, another buffer[{}] size: {}.", 
-            (void*)this, d_ptr(impl_)->total_len_, (void*)&_another, d_ptr(_another.impl_)->total_len_);
+#ifdef HARE_DEBUG
+        d_ptr(impl_)->cache_chain_.print_status();
+        d_ptr(_another.impl_)->cache_chain_.print_status();
+#endif
 
         if (d_ptr(impl_)->total_len_ == 0) {
             d_ptr(impl_)->cache_chain_.swap(d_ptr(_another.impl_)->cache_chain_);
@@ -370,7 +407,43 @@ namespace net {
             static_cast<const char*>(_bytes),
             static_cast<const char*>(_bytes) + _size
         );
+
+#ifdef HARE_DEBUG
+        d_ptr(impl_)->cache_chain_.print_status();
+#endif
         return true;
+    }
+
+    auto buffer::remove(void* _buffer, std::size_t _length) -> std::size_t
+    {
+        using hare::util::detail::make_checked;
+
+        if (_length == 0 || d_ptr(impl_)->total_len_ == 0) {
+            return 0;
+        }
+
+        if (_length > d_ptr(impl_)->total_len_) {
+            _length = d_ptr(impl_)->total_len_;
+        }
+
+        auto* curr { d_ptr(impl_)->cache_chain_.begin() };
+        std::size_t total { 0 };
+        auto* dest = static_cast<char*>(_buffer);
+        while (total < _length) {
+            auto copy_len = MIN(_length - total, (*curr)->readable_size());
+            std::uninitialized_copy_n(dest + total, copy_len, 
+                make_checked((*curr)->readable(), copy_len));
+            total += copy_len;
+            curr = curr->next;
+        }
+
+        d_ptr(impl_)->total_len_ -= _length;
+        d_ptr(impl_)->cache_chain_.drain(_length);
+
+#ifdef HARE_DEBUG
+        d_ptr(impl_)->cache_chain_.print_status();
+#endif
+        return _length;
     }
 
     auto buffer::read(util_socket_t _fd, std::int64_t _howmuch) -> std::int64_t
@@ -384,6 +457,10 @@ namespace net {
         } else {
             readable = _howmuch;
         }
+
+#ifdef HARE_DEBUG
+        d_ptr(impl_)->cache_chain_.print_status();
+#endif
 
 #ifdef USE_IOVEC_IMPL
         auto block_size = d_ptr(impl_)->cache_chain_.fast_expand(readable);
@@ -424,6 +501,11 @@ namespace net {
 #else
 #error "cannot use IOVEC."
 #endif
+
+#ifdef HARE_DEBUG
+        d_ptr(impl_)->cache_chain_.print_status();
+#endif
+
         return readable;
     }
 
@@ -435,6 +517,10 @@ namespace net {
         if (total > d_ptr(impl_)->total_len_) {
             total = d_ptr(impl_)->total_len_;
         }
+
+#ifdef HARE_DEBUG
+        d_ptr(impl_)->cache_chain_.print_status();
+#endif
 
 #ifdef USE_IOVEC_IMPL
         std::array<IOV_TYPE, NUM_WRITE_IOVEC> iov {};
@@ -482,36 +568,12 @@ namespace net {
 #else
 #error "cannot use IOVEC."
 #endif
+
+#ifdef HARE_DEBUG
+        d_ptr(impl_)->cache_chain_.print_status();
+#endif
+
         return write_n;
-    }
-
-    auto buffer::remove(void* _buffer, std::size_t _length) -> std::size_t
-    {
-        using hare::util::detail::make_checked;
-
-        if (_length == 0) {
-            return _length;
-        }
-
-        if (_length > d_ptr(impl_)->total_len_) {
-            _length = d_ptr(impl_)->total_len_;
-        }
-
-        auto* curr { d_ptr(impl_)->cache_chain_.begin() };
-        std::size_t total { 0 };
-        auto* dest = static_cast<char*>(_buffer);
-        while (total < _length) {
-            auto copy_len = MIN(_length - total, (*curr)->readable_size());
-            std::uninitialized_copy_n(dest + total, copy_len, 
-                make_checked((*curr)->readable(), copy_len));
-            total += copy_len;
-            curr = curr->next;
-        }
-
-        d_ptr(impl_)->total_len_ -= _length;
-        d_ptr(impl_)->cache_chain_.drain(_length);
-        
-        return _length;
     }
 
     auto buffer::add_block(void* _bytes, size_t _size) -> bool
@@ -526,6 +588,10 @@ namespace net {
             chain.write->next = tmp;
             ++chain.node_size_;
         }
+
+#ifdef HARE_DEBUG
+        d_ptr(impl_)->cache_chain_.print_status();
+#endif
         chain.write = chain.write->next;
         d_ptr(impl_)->total_len_ += _size;
         return true;
@@ -551,6 +617,10 @@ namespace net {
             node->prev->next = chain.read;
             --chain.node_size_;
         }
+
+#ifdef HARE_DEBUG
+        d_ptr(impl_)->cache_chain_.print_status();
+#endif
 
         d_ptr(impl_)->total_len_ -= _size;
         return true;

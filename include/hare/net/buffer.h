@@ -14,8 +14,6 @@
 
 #include <hare/base/util/non_copyable.h>
 
-#include <list>
-
 #define HARE_MAX_READ_DEFAULT 4096
 
 namespace hare {
@@ -93,9 +91,10 @@ namespace net {
         void append(buffer& _another);
 
         auto add(const void* _bytes, std::size_t _size) -> bool;
+        auto remove(void* _buffer, std::size_t _length) -> std::size_t;
+        
         auto read(util_socket_t _fd, std::int64_t _howmuch) -> std::int64_t;
         auto write(util_socket_t _fd, std::int64_t _howmuch = -1) -> std::int64_t;
-        auto remove(void* _buffer, std::size_t _length) -> std::size_t;
 
         auto add_block(void* _bytes, std::size_t _size) -> bool;
         auto get_block(void** _bytes, std::size_t& _size) -> bool;

@@ -55,12 +55,14 @@ namespace net {
             HARE_INLINE void clear() { base::clear(); misalign_ = 0; }
 
             HARE_INLINE void drain(std::size_t _size) { misalign_ += _size; }
+            HARE_INLINE void add(std::size_t _size) { size_ += _size; }
 
             HARE_INLINE void bzero() { hare::detail::fill_n(data(), capacity(), 0); }
 
             auto realign(std::size_t _size) -> bool;
 
-            HARE_INLINE void grow(std::size_t _capacity) override { size_ += _capacity; }
+        private:
+            HARE_INLINE void grow(std::size_t _capacity) override { ignore_unused(_capacity); }
 
             friend class net::buffer;
         };
@@ -133,6 +135,10 @@ namespace net {
 
             void reset();
 
+#ifdef HARE_DEBUG
+            void print_status() const;
+#endif
+
         private:
             HARE_INLINE
             auto get_next_write() -> node*
@@ -142,7 +148,7 @@ namespace net {
                         (*write)->clear();
                     }
                     return end();
-                } else if (write->next != read) {
+                } else if (write->next == read) {
                     auto* tmp = new node;
                     tmp->next = write->next;
                     tmp->prev = write;

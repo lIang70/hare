@@ -1,12 +1,20 @@
 #include "hare/base/fwd-inl.h"
 
+#if !defined(HARE_EOL)
+#ifdef H_OS_WIN32
+#define EOL "\r\n"
+#else
+#define EOL "\n"
+#endif
+#endif
+
 namespace hare {
 
 namespace detail {
     void default_msg_handle(std::uint8_t _msg_type, const std::string& _msg)
     {
         static timestamp s_last_flush_time { timestamp::now() };
-        fmt::print(stdout, _msg_type == TRACE_MSG ? "[trace] {}." : "[error] {}. \n" , _msg);
+        fmt::print(stdout, _msg_type == TRACE_MSG ? "[trace] {}. {}": "[error] {}. {}", _msg, EOL);
         auto tmp = timestamp::now();
         if (std::abs(timestamp::difference(tmp, s_last_flush_time) - 0.5) > (1e-5)) {
             s_last_flush_time.swap(tmp);

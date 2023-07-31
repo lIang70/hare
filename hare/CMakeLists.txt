@@ -271,5 +271,6 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
 endif()
 
 if(HARE__BUILD_TESTS)
+    add_subdirectory(net/tests)
     add_subdirectory(net/samples)
 endif(HARE__BUILD_TESTS)
