@@ -231,7 +231,7 @@ namespace net {
             auto* index = begin();
             do {
                 if (index->cache) {
-                    MSG_TRACE("|{:} {} {} {}|", 
+                    MSG_TRACE("|{:4} {} {} {}|", 
                         index == write && index == read ? "(WR)" : 
                             index == write ? "(W)" : 
                                 index == read ? "(R)" : "(N)",
@@ -240,7 +240,7 @@ namespace net {
                         (*index)->capacity()
                         );
                 } else {
-                    MSG_TRACE("|{:7} {}|", 
+                    MSG_TRACE("|{:4} {}|", 
                         index == write && index == read ? "(WR)" : 
                             index == write ? "(W)" : 
                                 index == read ? "(R)" : "(N)",
