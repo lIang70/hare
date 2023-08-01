@@ -127,6 +127,8 @@ namespace net {
 
             void check_size(std::size_t _size);
 
+            void append(cache_list& _other);
+
             auto fast_expand(std::size_t _size) -> std::int32_t;
 
             void add(std::size_t _size);
@@ -136,7 +138,7 @@ namespace net {
             void reset();
 
 #ifdef HARE_DEBUG
-            void print_status() const;
+            void print_status(const std::string& _status) const;
 #endif
 
         private:
@@ -157,6 +159,7 @@ namespace net {
                     ++node_size_;
                 }
                 write = write->next;
+                assert(write != read);
                 return end();
             }
             

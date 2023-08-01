@@ -116,6 +116,63 @@ namespace net {
             }
         }
 
+        void cache_list::append(cache_list& _other)
+        {
+            auto* other_begin = _other.begin();
+            auto* other_end = _other.end();
+            auto chain_size = 1;
+
+            while (other_begin != other_end) {
+                ++chain_size;
+                other_begin = other_begin->next;
+            }
+            other_begin = _other.begin();
+
+            if (other_begin->prev == other_end) {
+                //   ---+---++---+---
+                // .... |   ||   | ....
+                //   ---+---++---+---
+                //        ^    ^
+                //      write read
+                end()->next = other_begin;
+                other_begin->prev = end();
+                begin()->prev = other_end;
+                other_end->next = begin();
+                write = other_end;
+
+                // reset other
+                _other.node_size_ = 1;
+                _other.head = new detail::cache_list::node;
+                _other.head->next = _other.head;
+                _other.head->prev = _other.head;
+                _other.read = _other.head;
+                _other.write = _other.head;
+            } else {
+                //   ---+---++-   --++---+---
+                // .... |   || ...  ||   | ....
+                //   ---+---++-   --++---+---
+                //        ^            ^
+                //      write         read
+                auto* before_begin = other_begin->prev;
+                auto* after_end = other_end->next;
+                end()->next = other_begin;
+                other_begin->prev = end();
+                begin()->prev = other_end;
+                other_end->next = begin();
+                write = other_end;
+
+                // chained lists are re-formed into rings
+                before_begin->next = after_end;
+                after_end->prev = before_begin;
+                _other.node_size_ -= chain_size;
+                _other.head = after_end;
+                _other.read = _other.head;
+                _other.write = _other.head;
+            }
+
+            node_size_ += chain_size;
+        }
+
         auto cache_list::fast_expand(std::size_t _size) -> std::int32_t
         {
             auto cnt { 0 };
@@ -224,32 +281,31 @@ namespace net {
         }
 
 #ifdef HARE_DEBUG
-        void cache_list::print_status() const
+        void cache_list::print_status(const std::string& _status) const
         {
-            MSG_TRACE("list total length: {:}", node_size_);
+            MSG_TRACE("[{}] list total length: {:}", _status, node_size_);
 
             auto* index = begin();
             do {
-                if (index->cache) {
-                    MSG_TRACE("|{:4} {} {} {}|", 
-                        index == write && index == read ? "(WR)" : 
-                            index == write ? "(W)" : 
-                                index == read ? "(R)" : "(N)",
-                        (*index)->readable_size(),
-                        (*index)->writeable_size(),
-                        (*index)->capacity()
+                /// | (RW|R|W|E|N) ... | [<-(w_itre|r_iter)]
+                const auto* mark = !index->cache ? "(N)" : 
+                    (*index)->readable_size() > 0 && (*index)->writeable_size() > 0 ? "(RW)" :
+                    (*index)->readable_size() > 0 ? "(R)":
+                    (*index)->writeable_size() > 0 ? "(W)" : "(E)";
+
+                    MSG_TRACE("|{:4} {} {} {}|{}",
+                        mark,
+                        !index->cache ? 0 : (*index)->readable_size(),
+                        !index->cache ? 0 : (*index)->writeable_size(),
+                        !index->cache ? 0 : (*index)->capacity(),
+                        index == read && index == write ? " <- w_iter|r_iter" :
+                            index == read ? " <- r_iter" :
+                            index == write ? " <- w_iter" : ""
                         );
-                } else {
-                    MSG_TRACE("|{:4} {}|", 
-                        index == write && index == read ? "(WR)" : 
-                            index == write ? "(W)" : 
-                                index == read ? "(R)" : "(N)",
-                        "NULL");
-                }
                 index = index->next;
             } while (index != begin());
 
-            MSG_TRACE("    *    \n");
+            MSG_TRACE("{:^16}", "*");
         }
 #endif
 
@@ -326,73 +382,30 @@ namespace net {
         return end();
     }
 
-    void buffer::append(buffer& _another)
+    void buffer::append(buffer& _other)
     {
-        if (d_ptr(_another.impl_)->total_len_ == 0) {
+        if (d_ptr(_other.impl_)->total_len_ == 0) {
             return;
         }
 
 #ifdef HARE_DEBUG
-        d_ptr(impl_)->cache_chain_.print_status();
-        d_ptr(_another.impl_)->cache_chain_.print_status();
+        d_ptr(impl_)->cache_chain_.print_status("before append buffer");
+        d_ptr(_other.impl_)->cache_chain_.print_status("before append other buffer");
 #endif
 
         if (d_ptr(impl_)->total_len_ == 0) {
-            d_ptr(impl_)->cache_chain_.swap(d_ptr(_another.impl_)->cache_chain_);
+            d_ptr(impl_)->cache_chain_.swap(d_ptr(_other.impl_)->cache_chain_);
         } else {
-            auto& other_chain = d_ptr(_another.impl_)->cache_chain_;
-            auto* other_end = other_chain.end();
-            auto* other_begin = other_chain.begin();
-
-            if (other_begin->prev == other_end) {
-                //   ---+---++---+---
-                // .... |   ||   | ....
-                //   ---+---++---+---
-                //        ^    ^
-                //      write read
-                d_ptr(impl_)->cache_chain_.end()->next = other_begin;
-                other_begin->prev = d_ptr(impl_)->cache_chain_.end();
-                d_ptr(impl_)->cache_chain_.begin()->prev = other_end;
-                other_end->next = d_ptr(impl_)->cache_chain_.begin();
-                d_ptr(impl_)->cache_chain_.write = other_end;
-
-                // reset other
-                other_chain.node_size_ = 1;
-                other_chain.head = new detail::cache_list::node;
-                other_chain.head->next = other_chain.head;
-                other_chain.head->prev = other_chain.head;
-                other_chain.read = other_chain.head;
-                other_chain.write = other_chain.head;
-            } else {
-                //   ---+---++-   --++---+---
-                // .... |   || ...  ||   | ....
-                //   ---+---++-   --++---+---
-                //        ^            ^
-                //      write         read
-                auto* before_begin = other_begin->prev;
-                auto* after_end = other_end->next;
-                d_ptr(impl_)->cache_chain_.end()->next = other_begin;
-                other_begin->prev = d_ptr(impl_)->cache_chain_.end();
-                d_ptr(impl_)->cache_chain_.begin()->prev = other_end;
-                other_end->next = d_ptr(impl_)->cache_chain_.begin();
-                d_ptr(impl_)->cache_chain_.write = other_end;
-
-                // chained lists are re-formed into rings
-                before_begin->next = after_end;
-                after_end->prev = before_begin;
-                other_chain.node_size_ = 1;
-                other_chain.head = after_end;
-                other_chain.read = other_chain.head;
-                other_chain.write = other_chain.head;
-
-                while (after_end != before_begin) {
-                    ++other_chain.node_size_;
-                    after_end = after_end->next;
-                }
-            }
+            d_ptr(impl_)->cache_chain_.append(d_ptr(_other.impl_)->cache_chain_);
         }
-        d_ptr(impl_)->total_len_ += d_ptr(_another.impl_)->total_len_;
-        d_ptr(_another.impl_)->total_len_ = 0;
+
+#ifdef HARE_DEBUG
+        d_ptr(impl_)->cache_chain_.print_status("after append buffer");
+        d_ptr(_other.impl_)->cache_chain_.print_status("after append other buffer");
+#endif
+
+        d_ptr(impl_)->total_len_ += d_ptr(_other.impl_)->total_len_;
+        d_ptr(_other.impl_)->total_len_ = 0;
     }
 
     auto buffer::add(const void* _bytes, std::size_t _size) -> bool
@@ -409,7 +422,7 @@ namespace net {
         );
 
 #ifdef HARE_DEBUG
-        d_ptr(impl_)->cache_chain_.print_status();
+        d_ptr(impl_)->cache_chain_.print_status("after add");
 #endif
         return true;
     }
@@ -441,7 +454,7 @@ namespace net {
         d_ptr(impl_)->cache_chain_.drain(_length);
 
 #ifdef HARE_DEBUG
-        d_ptr(impl_)->cache_chain_.print_status();
+        d_ptr(impl_)->cache_chain_.print_status("after remove");
 #endif
         return _length;
     }
@@ -459,7 +472,7 @@ namespace net {
         }
 
 #ifdef HARE_DEBUG
-        d_ptr(impl_)->cache_chain_.print_status();
+        d_ptr(impl_)->cache_chain_.print_status("before read");
 #endif
 
 #ifdef USE_IOVEC_IMPL
@@ -503,7 +516,7 @@ namespace net {
 #endif
 
 #ifdef HARE_DEBUG
-        d_ptr(impl_)->cache_chain_.print_status();
+        d_ptr(impl_)->cache_chain_.print_status("after read");
 #endif
 
         return readable;
@@ -519,7 +532,7 @@ namespace net {
         }
 
 #ifdef HARE_DEBUG
-        d_ptr(impl_)->cache_chain_.print_status();
+        d_ptr(impl_)->cache_chain_.print_status("before write");
 #endif
 
 #ifdef USE_IOVEC_IMPL
@@ -570,7 +583,7 @@ namespace net {
 #endif
 
 #ifdef HARE_DEBUG
-        d_ptr(impl_)->cache_chain_.print_status();
+        d_ptr(impl_)->cache_chain_.print_status("after write");
 #endif
 
         return write_n;
@@ -590,7 +603,7 @@ namespace net {
         }
 
 #ifdef HARE_DEBUG
-        d_ptr(impl_)->cache_chain_.print_status();
+        d_ptr(impl_)->cache_chain_.print_status("after add_block");
 #endif
         chain.write = chain.write->next;
         d_ptr(impl_)->total_len_ += _size;
@@ -619,7 +632,7 @@ namespace net {
         }
 
 #ifdef HARE_DEBUG
-        d_ptr(impl_)->cache_chain_.print_status();
+        d_ptr(impl_)->cache_chain_.print_status("after get_block");
 #endif
 
         d_ptr(impl_)->total_len_ -= _size;

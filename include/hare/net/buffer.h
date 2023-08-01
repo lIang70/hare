@@ -88,7 +88,7 @@ namespace net {
         auto find(const char* _begin, std::size_t _size) -> iterator;
 
         // read-write
-        void append(buffer& _another);
+        void append(buffer& _other);
 
         auto add(const void* _bytes, std::size_t _size) -> bool;
         auto remove(void* _buffer, std::size_t _length) -> std::size_t;
