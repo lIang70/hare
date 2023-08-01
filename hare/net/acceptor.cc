@@ -49,8 +49,10 @@ namespace net {
 
     acceptor::~acceptor()
     {
-        tie(nullptr);
-        deactivate();
+        if (!tied_object().expired()) {
+            tie(nullptr);
+            deactivate();
+        }
 #ifdef H_OS_LINUX
         socket_op::close(idle_fd_);
 #endif
