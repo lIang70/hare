@@ -384,7 +384,7 @@ namespace net {
 
     void buffer::append(buffer& _other)
     {
-        if (d_ptr(_other.impl_)->total_len_ == 0) {
+        if (d_ptr(_other.impl_)->total_len_ == 0 || &_other == this) {
             return;
         }
 
