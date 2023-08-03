@@ -32,7 +32,7 @@ namespace net {
         void set_write_callback(write_callback _write);
 
         auto append(buffer& _buffer) -> bool;
-        auto send(const void* _bytes, size_t _length) -> bool override;
+        auto send(const void* _bytes, std::size_t _length) -> bool override;
 
     protected:
         udp_session(io::cycle* _cycle,

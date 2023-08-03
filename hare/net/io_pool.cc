@@ -12,7 +12,7 @@ namespace net {
         stop();
     }
 
-    auto io_pool::start(io::cycle::REACTOR_TYPE _type, int32_t _thread_nbr) -> bool
+    auto io_pool::start(io::cycle::REACTOR_TYPE _type, std::int32_t _thread_nbr) -> bool
     {
         if (_thread_nbr == 0 || is_running()) {
             return false;

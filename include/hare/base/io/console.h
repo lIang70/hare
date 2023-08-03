@@ -41,7 +41,7 @@ namespace io {
     private:
         console();
 
-        void process(const event::ptr& _event, uint8_t _events, const timestamp& _receive_time);
+        void process(const event::ptr& _event, std::uint8_t _events, const timestamp& _receive_time);
     };
 
 } // namespace io

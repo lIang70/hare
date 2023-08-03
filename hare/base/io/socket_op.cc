@@ -395,12 +395,12 @@ namespace socket_op {
         return _family == PF_INET ? sizeof(struct sockaddr_in) : sizeof(struct sockaddr_in6);
     }
 
-    auto get_bytes_readable_on_socket(util_socket_t _fd) -> std::int64_t
+    auto get_bytes_readable_on_socket(util_socket_t _fd) -> std::size_t
     {
 #if defined(FIONREAD) && defined(H_OS_WIN32)
         u_long lng = MAX_READ_DEFAULT;
         if (::ioctlsocket(_fd, FIONREAD, &lng) < 0) {
-            return (-1);
+            return (0);
         }
         /* Can overflow, but mostly harmlessly. XXXX */
         return lng;
@@ -417,7 +417,7 @@ namespace socket_op {
 
     auto get_socket_error_info(util_socket_t _fd) -> std::string
     {
-        std::array<char, static_cast<std::size_t>(HARE_SMALL_BUFFER)> error_str {};
+        std::array<char, HARE_SMALL_BUFFER> error_str {};
         auto error_len = error_str.size();
         if (::getsockopt(_fd, SOL_SOCKET, SO_ERROR, error_str.data(), reinterpret_cast<socklen_t*>(&error_len)) != -1) {
             return error_str.data();
@@ -458,14 +458,14 @@ namespace socket_op {
         }
     }
 
-    auto from_ip_port(const char* target_ip, uint16_t port, struct sockaddr_in* _addr) -> bool
+    auto from_ip_port(const char* target_ip, std::uint16_t port, struct sockaddr_in* _addr) -> bool
     {
         _addr->sin_family = AF_INET;
         _addr->sin_port = host_to_network16(port);
         return ::inet_pton(AF_INET, target_ip, &_addr->sin_addr) <= 0;
     }
 
-    auto from_ip_port(const char* target_ip, uint16_t port, struct sockaddr_in6* _addr) -> bool
+    auto from_ip_port(const char* target_ip, std::uint16_t port, struct sockaddr_in6* _addr) -> bool
     {
         _addr->sin6_family = AF_INET6;
         _addr->sin6_port = host_to_network16(port);

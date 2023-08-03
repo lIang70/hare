@@ -50,7 +50,7 @@ namespace socket_op {
     HARE_API auto accept(util_socket_t _fd, struct sockaddr* _addr, std::size_t _addr_len) -> util_socket_t;
 
     HARE_API auto get_addr_len(std::uint8_t _family) -> std::size_t;
-    HARE_API auto get_bytes_readable_on_socket(util_socket_t _fd) -> std::int64_t;
+    HARE_API auto get_bytes_readable_on_socket(util_socket_t _fd) -> std::size_t;
     HARE_API auto get_socket_error_info(util_socket_t _fd) -> std::string;
 
     HARE_API void to_ip_port(char* _buf, std::size_t _size, const struct sockaddr* _addr);

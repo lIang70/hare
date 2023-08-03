@@ -43,11 +43,11 @@ namespace net {
         return false;
     }
 
-    auto udp_session::send(const void* _bytes, size_t _length) -> bool
+    auto udp_session::send(const void* _bytes, std::size_t _length) -> bool
     {
         if (state() == STATE_CONNECTED) {
             auto tmp = std::make_shared<buffer>();
-            auto* tmp_buffer = new uint8_t[_length];
+            auto* tmp_buffer = new std::uint8_t[_length];
             ::memcpy(tmp_buffer, _bytes, _length);
             tmp->add_block(tmp_buffer, _length);
             owner_cycle()->queue_in_cycle(std::bind([](const wptr<udp_session>& session, buffer::ptr& buffer) {
@@ -82,7 +82,7 @@ namespace net {
     void udp_session::handle_read(const timestamp& _time)
     {
         auto buffer_size = socket_op::get_bytes_readable_on_socket(fd());
-        auto* buffer = new uint8_t[buffer_size];
+        auto* buffer = new std::uint8_t[buffer_size];
         auto recv_size = socket_op::recvfrom(fd(), buffer, buffer_size, nullptr, 0);
         if (recv_size == 0) {
             handle_close();
@@ -102,12 +102,12 @@ namespace net {
             return;
         }
 
-        uint8_t* tmp_buffer {};
-        size_t buffer_size {};
+        std::uint8_t* tmp_buffer {};
+        std::size_t buffer_size {};
         auto ret = d_ptr(impl_)->out_buffer_.get_block((void**)&tmp_buffer, buffer_size);
 
         if (ret) {
-            int64_t res { 0 };
+            std::int64_t res { 0 };
             while (buffer_size != 0) {
                 res = socket_op::sendto(fd(), tmp_buffer + res, buffer_size,
                     peer_address().get_sockaddr(), socket_op::get_addr_len(socket().family()));

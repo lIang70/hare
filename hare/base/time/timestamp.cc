@@ -17,7 +17,7 @@ auto timestamp::now() -> timestamp
 auto timestamp::to_string() const -> std::string
 {
     auto seconds = seconds_since_epoch();
-    auto microseconds = microseconds_since_epoch_ - seconds * static_cast<std::int64_t>(HARE_MICROSECONDS_PER_SECOND);
+    auto microseconds = microseconds_since_epoch_ - seconds * HARE_MICROSECONDS_PER_SECOND;
     return fmt::format("{:}.{:06d}", seconds, microseconds);
 }
 
@@ -32,7 +32,7 @@ auto timestamp::to_fmt(bool show_microseconds) const -> std::string
 #endif
 
     if (show_microseconds) {
-        auto microseconds = static_cast<std::int32_t>(microseconds_since_epoch_ - seconds * static_cast<std::int64_t>(HARE_MICROSECONDS_PER_SECOND));
+        auto microseconds = static_cast<std::int32_t>(microseconds_since_epoch_ - seconds * HARE_MICROSECONDS_PER_SECOND);
         return fmt::format("{:04d}-{:02d}-{:02d} {:02d}:{:02d}:{:02d}.{:06d}",
             tm_time.tm_year + HARE_START_YEAR, tm_time.tm_mon + 1, tm_time.tm_mday,
             tm_time.tm_hour, tm_time.tm_min, tm_time.tm_sec,

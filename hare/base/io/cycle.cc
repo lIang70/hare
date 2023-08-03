@@ -134,11 +134,7 @@ namespace io {
             }
             auto time = static_cast<std::int32_t>(_ptimer.top().stamp_.microseconds_since_epoch() - timestamp::now().microseconds_since_epoch());
 
-#if defined(H_OS_WIN)
-            return time <= 0 ? static_cast<std::int32_t>(1) : min(time, POLL_TIME_MICROSECONDS);
-#else
-            return time <= 0 ? static_cast<std::int32_t>(1) : std::min(time, POLL_TIME_MICROSECONDS);
-#endif
+            return time <= 0 ? 1 : MIN(time, POLL_TIME_MICROSECONDS);
         }
 
         void print_active_events(const events_list& _active_events)

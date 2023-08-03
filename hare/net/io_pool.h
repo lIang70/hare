@@ -24,8 +24,8 @@ namespace net {
 
         std::string name_ {};
         bool is_running_ { false };
-        int32_t last_ { 0 };
-        int32_t thread_nbr_ { 0 };
+        std::int32_t last_ { 0 };
+        std::int32_t thread_nbr_ { 0 };
 
         pool_items items_ {};
 
@@ -39,7 +39,7 @@ namespace net {
         HARE_INLINE auto name() const -> const std::string& { return name_; }
         HARE_INLINE auto is_running() const -> bool { return is_running_; }
 
-        auto start(io::cycle::REACTOR_TYPE _type, int32_t _thread_nbr) -> bool;
+        auto start(io::cycle::REACTOR_TYPE _type, std::int32_t _thread_nbr) -> bool;
         void stop();
 
         /**

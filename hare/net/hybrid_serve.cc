@@ -73,7 +73,7 @@ namespace net {
         // the acceptor loop
         io::cycle * cycle_ {};
         ptr<io_pool> io_pool_ {};
-        uint64_t session_id_ { 0 };
+        std::uint64_t session_id_ { 0 };
         bool started_ { false };
 
         hybrid_serve::new_session_callback new_session_ {};
@@ -197,12 +197,12 @@ namespace net {
             assert(_fd == -1);
 
             struct sockaddr_in6 addr { };
-            size_t addr_len = socket_op::get_addr_len(_acceptor->family());
+            auto addr_len = socket_op::get_addr_len(_acceptor->family());
             auto buffer_size = socket_op::get_bytes_readable_on_socket(_acceptor->socket());
-            uint8_t* buffer {};
+            std::uint8_t* buffer {};
             if (buffer_size > 0) {
                 auto total_size = static_cast<std::size_t>(buffer_size);
-                buffer = new uint8_t[total_size];
+                buffer = new std::uint8_t[total_size];
                 auto recv_size = socket_op::recvfrom(_acceptor->socket(), buffer, total_size, socket_op::sockaddr_cast(&addr), addr_len);
                 assert(recv_size == buffer_size);
             }

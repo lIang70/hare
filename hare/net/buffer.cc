@@ -45,14 +45,6 @@
 #endif
 #endif
 
-#ifndef MAX
-#define MAX(a, b) ((a) > (b) ? (a) : (b))
-#endif
-
-#ifndef MIN
-#define MIN(a, b) ((a) < (b) ? (a) : (b))
-#endif
-
 namespace hare {
 namespace net {
 
@@ -459,13 +451,13 @@ namespace net {
         return _length;
     }
 
-    auto buffer::read(util_socket_t _fd, std::int64_t _howmuch) -> std::int64_t
+    auto buffer::read(util_socket_t _fd, std::size_t _howmuch) -> std::size_t
     {
-        std::int64_t readable = socket_op::get_bytes_readable_on_socket(_fd);
-        if (readable <= 0) {
-            readable = static_cast<std::int64_t>(d_ptr(impl_)->max_read_);
+        auto readable = socket_op::get_bytes_readable_on_socket(_fd);
+        if (readable == 0) {
+            readable = d_ptr(impl_)->max_read_;
         }
-        if (_howmuch < 0 || _howmuch > readable) {
+        if (_howmuch == 0 || _howmuch > readable) {
             _howmuch = readable;
         } else {
             readable = _howmuch;
@@ -485,27 +477,31 @@ namespace net {
             vecs[i].IOV_LEN_FIELD = (*block)->writeable_size();
         }
 
+        {
+            std::int64_t actual {};
 #ifdef H_OS_WIN
-		{
-			DWORD bytes_read;
-			DWORD flags { 0 };
-			if (::WSARecv(_fd, vecs.data(), block_size, &bytes_read, &flags, nullptr, nullptr)) {
-				/* The read failed. It might be a close,
-				 * or it might be an error. */
-				if (::WSAGetLastError() == WSAECONNABORTED) {
-					readable = 0;
+            {
+                DWORD bytes_read {};
+                DWORD flags { 0 };
+                if (::WSARecv(_fd, vecs.data(), block_size, &bytes_read, &flags, nullptr, nullptr) != 0) {
+                    /* The read failed. It might be a close,
+                    * or it might be an error. */
+                    if (::WSAGetLastError() == WSAECONNABORTED) {
+                        actual = 0;
+                    } else {
+                        actual = -1;
+                    }
                 } else {
-					readable = -1;
+                    readable = bytes_read;
                 }
-			} else {
-				readable = bytes_read;
             }
-		}
 #else
-        readable = ::readv(_fd, vecs.data(), block_size);
+            actual = ::readv(_fd, vecs.data(), block_size);
+            readable = actual > 0 ? actual : 0;
 #endif
-        if (readable <= 0) {
-            return readable;
+            if (actual <= 0) {
+                return (0);
+            }
         }
 
         d_ptr(impl_)->cache_chain_.add(readable);
@@ -522,10 +518,10 @@ namespace net {
         return readable;
     }
 
-    auto buffer::write(util_socket_t _fd, std::int64_t _howmuch) -> std::int64_t
+    auto buffer::write(util_socket_t _fd, std::size_t _howmuch) -> std::size_t
     {
         std::int64_t write_n {};
-        auto total = _howmuch <= 0 ? d_ptr(impl_)->total_len_ : static_cast<std::size_t>(_howmuch);
+        auto total = _howmuch == 0 ? d_ptr(impl_)->total_len_ : _howmuch;
 
         if (total > d_ptr(impl_)->total_len_) {
             total = d_ptr(impl_)->total_len_;
@@ -558,21 +554,24 @@ namespace net {
             return (0);
         }
 
-#ifdef H_OS_WIN
         {
-            DWORD bytes_sent;
-            if (::WSASend(_fd, iov.data(), write_i, &bytes_sent, 0, nullptr, nullptr)) {
-                write_n = -1;
-            } else {
-                write_n = bytes_sent;
+            std::int64_t actual {};
+#ifdef H_OS_WIN
+            {
+                DWORD bytes_sent {};
+                if (::WSASend(_fd, iov.data(), write_i, &bytes_sent, 0, nullptr, nullptr)) {
+                    actual = -1;
+                } else {
+                    write_n = bytes_sent;
+                }
             }
-        }
 #else
-        write_n = ::writev(_fd, iov.data(), write_i);
+            actual = ::writev(_fd, iov.data(), write_i);
+            write_n = actual > 0 ? actual : 0;
 #endif
-
-        if (write_n <= 0) {
-            return write_n;
+            if (actual <= 0) {
+                return (0);
+            }
         }
         
         d_ptr(impl_)->total_len_ -= write_n;
@@ -589,7 +588,7 @@ namespace net {
         return write_n;
     }
 
-    auto buffer::add_block(void* _bytes, size_t _size) -> bool
+    auto buffer::add_block(void* _bytes, std::size_t _size) -> bool
     {
         auto& chain = d_ptr(impl_)->cache_chain_;
         chain.write->cache.reset(new detail::cache(static_cast<char*>(_bytes), _size));
@@ -610,7 +609,7 @@ namespace net {
         return true;
     }
 
-    auto buffer::get_block(void** _bytes, size_t& _size) -> bool
+    auto buffer::get_block(void** _bytes, std::size_t& _size) -> bool
     {
         if (d_ptr(impl_)->total_len_ == 0) {
             *_bytes = nullptr;

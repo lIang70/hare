@@ -1,5 +1,6 @@
 #include "hare/base/fwd-inl.h"
 #include "hare/base/io/reactor/reactor_epoll.h"
+#include <hare/base/io/socket_op.h>
 #include <hare/base/exception.h>
 
 #include <sstream>
@@ -103,7 +104,7 @@ namespace io {
 
     reactor_epoll::~reactor_epoll()
     {
-        ::close(epoll_fd_);
+        socket_op::close(epoll_fd_);
     }
 
     auto reactor_epoll::poll(std::int32_t _timeout_microseconds) -> timestamp

@@ -121,7 +121,7 @@ namespace log {
 
             void append(const msg_buffer_t& _buffer)
             {
-                const size_t buffer_size = _buffer.size();
+                const auto buffer_size = _buffer.size();
 
                 typedef typename std::conditional<
                     WithLock, write, write_unlock>::type inner_write;

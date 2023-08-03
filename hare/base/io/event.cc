@@ -41,13 +41,13 @@ namespace io {
 
     HARE_IMPL_DEFAULT(event,
         util_socket_t fd_ { -1 };
-        uint8_t events_ { EVENT_DEFAULT };
+        std::uint8_t events_ { EVENT_DEFAULT };
         event::callback callback_ {};
-        int64_t timeval_ { 0 };
+        std::int64_t timeval_ { 0 };
 
         cycle* cycle_ {};
         event::id id_ { -1 };
-        int64_t timeout_ { 0 };
+        std::int64_t timeout_ { 0 };
 
         bool tied_ { false };
         wptr<void> tie_object_ {};
@@ -78,12 +78,12 @@ namespace io {
         return d_ptr(impl_)->fd_;
     }
 
-    auto event::events() const -> uint8_t
+    auto event::events() const -> std::uint8_t
     {
         return d_ptr(impl_)->events_;
     }
 
-    auto event::timeval() const -> int64_t
+    auto event::timeval() const -> std::int64_t
     {
         return d_ptr(impl_)->timeval_;
     }

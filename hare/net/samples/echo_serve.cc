@@ -29,7 +29,7 @@ static hare::ptr<hare::log::logger> server_logger {};
 static void new_session(const session::ptr& _ses, hare::timestamp _ts, const acceptor::ptr& _acc)
 {
     if (_acc->type() == hare::net::TYPE_TCP) {
-        _ses->set_connect_callback([=](const session::ptr& _session, uint8_t _event) {
+        _ses->set_connect_callback([=](const session::ptr& _session, std::uint8_t _event) {
             if ((_event & hare::net::SESSION_CONNECTED) != 0) {
                 LOG_INFO(server_logger, "session[{}] is connected.", _session->name());
             }
@@ -55,7 +55,7 @@ static void new_session(const session::ptr& _ses, hare::timestamp _ts, const acc
 
         LOG_INFO(server_logger, "recv a new tcp-session[{}] at {} on acceptor={}.", _ses->name(), _ts.to_fmt(true), _acc->fd());
     } else if (_acc->type() == hare::net::TYPE_UDP) {
-        _ses->set_connect_callback([=](const session::ptr& _session, uint8_t _event) {
+        _ses->set_connect_callback([=](const session::ptr& _session, std::uint8_t _event) {
             if ((_event & hare::net::SESSION_CONNECTED) != 0) {
                 LOG_INFO(server_logger, "session[{}] is connected.", _session->name());
             }
@@ -120,7 +120,7 @@ auto main(std::int32_t argc, char** argv) -> std::int32_t
         acceptor_type = hare::net::TYPE_UDP;
     }
 
-    acceptor::ptr acc { new acceptor(AF_INET, acceptor_type, int16_t(std::stoi(std::string(argv[2])))) };
+    acceptor::ptr acc { new acceptor(AF_INET, acceptor_type, std::uint16_t(std::stoi(std::string(argv[2])))) };
 
 #if defined(H_OS_WIN32)
     hare::io::cycle main_cycle(hare::io::cycle::REACTOR_TYPE_EPOLL);

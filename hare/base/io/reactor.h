@@ -25,8 +25,7 @@ namespace io {
             event_elem(event::ptr _event, std::uint8_t _revents)
                 : event_(std::move(_event))
                 , revents_(_revents)
-            {
-            }
+            { }
         };
 
         struct timer_elem {

@@ -141,7 +141,7 @@ namespace net {
     void session::set_destroy(destroy _destroy)
     { d_ptr(impl_)->destroy_ = std::move(_destroy); }
 
-    void session::handle_callback(const io::event::ptr& _event, uint8_t _events, const timestamp& _receive_time)
+    void session::handle_callback(const io::event::ptr& _event, std::uint8_t _events, const timestamp& _receive_time)
     {
         owner_cycle()->assert_in_cycle_thread();
         assert(_event == d_ptr(impl_)->event_);

@@ -73,7 +73,7 @@
 #define HARE_ALIGNAS(n) alignas(n)
 
 #define HARE_SMALL_FIXED_SIZE (32UL)
-#define HARE_SMALL_BUFFER (4 * 1024)
+#define HARE_SMALL_BUFFER (4096)
 #define HARE_LARGE_BUFFER (1024 * HARE_SMALL_BUFFER)
 
 namespace hare {

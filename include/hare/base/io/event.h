@@ -69,7 +69,7 @@ namespace io {
         using ptr = ptr<event>;
         using callback = std::function<void(const event::ptr&, std::uint8_t, const timestamp&)>;
 
-        event(util_socket_t _fd, callback _cb, uint8_t _events, std::int64_t _timeval);
+        event(util_socket_t _fd, callback _cb, std::uint8_t _events, std::int64_t _timeval);
         virtual ~event();
 
         auto fd() const -> util_socket_t;

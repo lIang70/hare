@@ -97,17 +97,17 @@ namespace io {
     void console::process(const event::ptr& _event, std::uint8_t _events, const timestamp& _receive_time)
     {
         assert(d_ptr(impl_)->console_event_ == _event);
-        if (!CHECK_EVENT(_events, EVENT_READ)) {
+        if (CHECK_EVENT(_events, EVENT_READ) == 0) {
             MSG_ERROR("cannot check EVENT_READ.");
             return;
         }
 
-        std::array<char, static_cast<std::size_t>(HARE_SMALL_BUFFER)> console_line {};
+        std::array<char, HARE_SMALL_BUFFER> console_line {};
 
 #if defined(H_OS_WIN32)
-        auto len = ::_read((int)_event->fd(), console_line.data(), static_cast<std::size_t>(HARE_SMALL_BUFFER));
+        auto len = ::_read((int)_event->fd(), console_line.data(), HARE_SMALL_BUFFER);
 #else
-        auto len = ::read(_event->fd(), console_line.data(), static_cast<std::size_t>(HARE_SMALL_BUFFER));
+        auto len = ::read(_event->fd(), console_line.data(), HARE_SMALL_BUFFER);
 #endif
 
         if (len < 0) {

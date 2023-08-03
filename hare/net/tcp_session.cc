@@ -53,7 +53,7 @@ namespace net {
         return false;
     }
 
-    auto tcp_session::send(const void* _bytes, size_t _length) -> bool
+    auto tcp_session::send(const void* _bytes, std::size_t _length) -> bool
     {
         if (state() == STATE_CONNECTED) {
             auto tmp = std::make_shared<buffer>();

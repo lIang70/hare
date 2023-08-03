@@ -26,14 +26,14 @@ namespace util {
         // Make a checked iterator to avoid MSVC warnings.
         template <typename T> using checked_ptr = stdext::checked_array_iterator<T*>;
         template <typename T>
-        constexpr auto make_checked(T* p, size_t size) -> checked_ptr<T>
+        constexpr auto make_checked(T* p, std::size_t size) -> checked_ptr<T>
         {
             return { p, size };
         }
 #else
         template <typename T> using checked_ptr = T*;
         template <typename T>
-        constexpr auto make_checked(T* p, size_t) -> T*
+        constexpr auto make_checked(T* p, std::size_t) -> T*
         {
             return p;
         }
@@ -158,7 +158,8 @@ namespace util {
             if (free_cap < count) {
                 count = free_cap;
             }
-            std::uninitialized_copy_n(begin, count, detail::make_checked(ptr_ + size_, count));
+            std::uninitialized_copy_n(begin, count, 
+                detail::make_checked(ptr_ + size_, count));
             size_ += count;
             begin += count;
         }

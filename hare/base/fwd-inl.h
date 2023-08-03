@@ -7,8 +7,15 @@
 #define FMT_HEADER_ONLY 1
 #include <fmt/format.h>
 
-namespace hare {
+#ifndef MAX
+#define MAX(a, b) ((a) > (b) ? (a) : (b))
+#endif
 
+#ifndef MIN
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
+#endif
+
+namespace hare {
 namespace detail {
 
 #define HARE_IMPL_DEFAULT(Class, ...)                 \

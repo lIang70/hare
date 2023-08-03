@@ -79,7 +79,7 @@ namespace net {
         return d_ptr(impl_)->socket_.family();
     }
 
-    void acceptor::event_callback(const io::event::ptr& _event, uint8_t _events, const timestamp& _receive_time)
+    void acceptor::event_callback(const io::event::ptr& _event, std::uint8_t _events, const timestamp& _receive_time)
     {
         assert(this->shared_from_this() == _event);
         if (CHECK_EVENT(_events, io::EVENT_READ) == 0) {

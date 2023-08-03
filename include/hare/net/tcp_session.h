@@ -39,7 +39,7 @@ namespace net {
         void set_high_water_callback(high_water_callback _high_water);
 
         auto append(buffer& _buffer) -> bool;
-        auto send(const void* _bytes, size_t _length) -> bool override;
+        auto send(const void* _bytes, std::size_t _length) -> bool override;
 
         auto set_tcp_no_delay(bool _on) -> error;
 
