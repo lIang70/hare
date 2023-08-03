@@ -96,9 +96,6 @@ namespace net {
         auto read(util_socket_t _fd, std::size_t _howmuch) -> std::size_t;
         auto write(util_socket_t _fd, std::size_t _howmuch = 0) -> std::size_t;
 
-        auto add_block(void* _bytes, std::size_t _size) -> bool;
-        auto get_block(void** _bytes, std::size_t& _size) -> bool;
-
     private:
         void move(buffer& _other) noexcept;
     };

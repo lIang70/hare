@@ -1,6 +1,6 @@
 #include "hare/base/fwd-inl.h"
 #include "hare/base/io/reactor.h"
-#include <hare/base/io/socket_op.h>
+#include "hare/base/io/socket_op-inl.h"
 #include <hare/net/acceptor.h>
 #include <hare/net/socket.h>
 #include <hare/hare-config.h>
@@ -24,18 +24,18 @@ namespace net {
         socket socket_;
         acceptor::new_session new_session_ {};
         std::uint16_t port_ {};
-        acceptor_impl(std::uint8_t _family, TYPE _type, util_socket_t _fd, std::uint16_t _port)
-            : socket_(_family, _type, _fd)
+        acceptor_impl(std::uint8_t _family, util_socket_t _fd, std::uint16_t _port)
+            : socket_(_family, TYPE_TCP, _fd)
             , port_(_port)
         {}
     )
 
-    acceptor::acceptor(std::uint8_t _family, TYPE _type, std::uint16_t _port, bool _reuse_port)
-        : io::event(_type == TYPE_TCP ? socket_op::create_nonblocking_or_die(_family) : (_type == TYPE_UDP ? socket_op::create_dgram_or_die(_family) : -1),
+    acceptor::acceptor(std::uint8_t _family, std::uint16_t _port, bool _reuse_port)
+        : io::event(socket_op::create_nonblocking_or_die(_family),
             std::bind(&acceptor::event_callback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
             io::EVENT_PERSIST,
             0)
-        , impl_(new acceptor_impl { _family, _type, fd(), _port })
+        , impl_(new acceptor_impl { _family, fd(), _port })
 #ifdef H_OS_LINUX
         , idle_fd_(::open("/dev/null", O_RDONLY | O_CLOEXEC))
     {
@@ -64,11 +64,6 @@ namespace net {
         return d_ptr(impl_)->socket_.fd();
     }
 
-    auto acceptor::type() const -> TYPE
-    {
-        return d_ptr(impl_)->socket_.type();
-    }
-
     auto acceptor::port() const -> std::uint16_t
     {
         return d_ptr(impl_)->port_;
@@ -90,30 +85,18 @@ namespace net {
         host_address peer_addr {};
         auto local_addr = host_address::local_address(socket());
 
-        // FIXME loop until no more ?
         auto accepted { false };
         util_socket_t conn_fd {};
 
-        switch (type()) {
-        case TYPE_TCP:
-            while ((conn_fd = d_ptr(impl_)->socket_.accept(peer_addr)) >= 0) {
-                MSG_TRACE("accepts of tcp[{}].", peer_addr.to_ip_port());
-                if (d_ptr(impl_)->new_session_) {
-                    d_ptr(impl_)->new_session_(conn_fd, peer_addr, _receive_time, this);
-                } else {
-                    socket_op::close(conn_fd);
-                }
-                accepted = true;
-            }
-            break;
-        case TYPE_UDP:
+        /// FIXME: loop until no more ?
+        while ((conn_fd = d_ptr(impl_)->socket_.accept(peer_addr)) >= 0) {
+            MSG_TRACE("accepts of tcp[{}].", peer_addr.to_ip_port());
             if (d_ptr(impl_)->new_session_) {
-                d_ptr(impl_)->new_session_(-1, local_addr, _receive_time, this);
+                d_ptr(impl_)->new_session_(conn_fd, peer_addr, _receive_time, this);
+            } else {
+                socket_op::close(conn_fd);
             }
             accepted = true;
-            break;
-        default:
-            break;
         }
 
         if (!accepted) {
@@ -143,11 +126,9 @@ namespace net {
         if (!ret) {
             return ret;
         }
-        if (type() == TYPE_TCP) {
-            ret = d_ptr(impl_)->socket_.listen();
-            if (!ret) {
-                return ret;
-            }
+        ret = d_ptr(impl_)->socket_.listen();
+        if (!ret) {
+            return ret;
         }
         tie(shared_from_this());
         enable_read();

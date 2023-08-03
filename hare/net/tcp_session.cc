@@ -1,6 +1,5 @@
 #include "hare/base/fwd-inl.h"
 #include <hare/base/io/cycle.h>
-#include <hare/base/io/socket_op.h>
 #include <hare/net/tcp_session.h>
 
 namespace hare {
@@ -18,7 +17,7 @@ namespace net {
     tcp_session::~tcp_session()
     { delete impl_; }
 
-    void tcp_session::set_high_water_mark(size_t _hwm)
+    void tcp_session::set_high_water_mark(std::size_t _hwm)
     { d_ptr(impl_)->high_water_mark_ = _hwm; }
     void tcp_session::set_read_callback(read_callback _read)
     { d_ptr(impl_)->read_ = std::move(_read); }

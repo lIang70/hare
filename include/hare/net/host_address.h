@@ -15,6 +15,8 @@
 #include <hare/base/io/socket_op.h>
 #include <hare/base/util/non_copyable.h>
 
+struct sockaddr;
+
 namespace hare {
 namespace net {
 
@@ -59,7 +61,7 @@ namespace net {
 
         auto family() const -> std::uint8_t;
 
-        HARE_INLINE auto get_sockaddr() const -> sockaddr* { return socket_op::sockaddr_cast(addr_.in6_); }
+        auto get_sockaddr() const -> sockaddr*;
         void set_sockaddr_in6(const struct sockaddr_in6* addr_in6) const;
 
         auto to_ip() const -> std::string;

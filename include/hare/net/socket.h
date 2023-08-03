@@ -21,14 +21,13 @@ namespace net {
 
     using TYPE = enum Type {
         TYPE_INVALID,
-        TYPE_TCP,
-        TYPE_UDP
+        TYPE_TCP
     };
 
 #if !defined(HARE_NET_TYPE)
 #define HARE_NET_TYPE           \
     {                           \
-        "invalid", "tcp", "udp" \
+        "invalid", "tcp"        \
     }
 #endif
 

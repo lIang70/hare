@@ -1,5 +1,5 @@
 #include "hare/base/fwd-inl.h"
-#include <hare/base/io/socket_op.h>
+#include "hare/base/io/socket_op-inl.h"
 #include <hare/hare-config.h>
 #include <hare/net/host_address.h>
 
@@ -144,6 +144,11 @@ namespace net {
     auto host_address::family() const -> std::uint8_t
     {
         return addr_.in_->sin_family;
+    }
+
+    auto host_address::get_sockaddr() const -> sockaddr* 
+    { 
+        return socket_op::sockaddr_cast(addr_.in6_); 
     }
 
     void host_address::set_sockaddr_in6(const struct sockaddr_in6* _addr_in6) const

@@ -1,6 +1,6 @@
 #include "hare/base/fwd-inl.h"
+#include "hare/base/io/socket_op-inl.h"
 #include "hare/base/io/reactor/reactor_epoll.h"
-#include <hare/base/io/socket_op.h>
 #include <hare/base/exception.h>
 
 #include <sstream>

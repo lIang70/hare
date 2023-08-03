@@ -34,11 +34,10 @@ namespace net {
         using new_session = std::function<void(util_socket_t, host_address&, const timestamp&, acceptor*)>;
         using ptr = std::shared_ptr<acceptor>;
 
-        acceptor(std::uint8_t _family, TYPE _type, std::uint16_t _port, bool _reuse_port = true);
+        acceptor(std::uint8_t _family, std::uint16_t _port, bool _reuse_port = true);
         ~acceptor() override;
 
         auto socket() const -> util_socket_t;
-        auto type() const -> TYPE;
         auto port() const -> std::uint16_t;
         auto family() const -> std::uint8_t;
 

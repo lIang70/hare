@@ -1,7 +1,7 @@
 #include "hare/base/fwd-inl.h"
+#include "hare/base/io/socket_op-inl.h"
 #include "hare/hare-config.h"
 #include <hare/base/exception.h>
-#include <hare/base/io/socket_op.h>
 #include <hare/net/socket.h>
 
 #if HARE__HAVE_NETINET_IN_H
@@ -27,8 +27,7 @@ namespace net {
         switch (_type) {
         case TYPE_TCP:
             return "TCP";
-        case TYPE_UDP:
-            return "UDP";
+        case TYPE_INVALID:
         default:
             return "INVALID";
         }
@@ -43,9 +42,6 @@ namespace net {
             switch (type) {
             case TYPE_TCP:
                 socket_ = socket_op::create_nonblocking_or_die(family);
-                break;
-            case TYPE_UDP:
-                socket_ = socket_op::create_dgram_or_die(family);
                 break;
             case TYPE_INVALID:
             default:

@@ -1,8 +1,8 @@
 #include "hare/base/fwd-inl.h"
 #include "hare/base/io/local.h"
 #include "hare/base/io/reactor.h"
+#include "hare/base/io/socket_op-inl.h"
 #include <hare/base/exception.h>
-#include <hare/base/io/socket_op.h>
 #include <hare/base/time/timestamp.h>
 #include <hare/base/util/count_down_latch.h>
 #include <hare/hare-config.h>

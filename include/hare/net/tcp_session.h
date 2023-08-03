@@ -33,7 +33,7 @@ namespace net {
 
         ~tcp_session() override;
 
-        void set_high_water_mark(size_t _hwm);
+        void set_high_water_mark(std::size_t _hwm);
         void set_read_callback(read_callback _read);
         void set_write_callback(write_callback _write);
         void set_high_water_callback(high_water_callback _high_water);

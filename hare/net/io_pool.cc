@@ -68,7 +68,7 @@ namespace net {
         return items_[index];
     }
 
-    auto io_pool::get_by_hash(size_t _hash_code) -> ptr<pool_item>
+    auto io_pool::get_by_hash(std::size_t _hash_code) -> ptr<pool_item>
     {
         return items_[_hash_code % thread_nbr_];
     }

@@ -7,7 +7,6 @@
 #include <hare/net/acceptor.h>
 #include <hare/net/hybrid_serve.h>
 #include <hare/net/tcp_session.h>
-#include <hare/net/udp_session.h>
 
 #include <map>
 
@@ -17,65 +16,41 @@
 #include <sys/socket.h>
 #endif
 
-#define USAGE "echo_serve -p [port] [udp/tcp]" HARE_EOL
+#define USAGE "echo_serve -p [port]" HARE_EOL
 
 using hare::net::acceptor;
 using hare::net::session;
 using hare::net::tcp_session;
-using hare::net::udp_session;
 
 static hare::ptr<hare::log::logger> server_logger {};
 
 static void new_session(const session::ptr& _ses, hare::timestamp _ts, const acceptor::ptr& _acc)
 {
-    if (_acc->type() == hare::net::TYPE_TCP) {
-        _ses->set_connect_callback([=](const session::ptr& _session, std::uint8_t _event) {
-            if ((_event & hare::net::SESSION_CONNECTED) != 0) {
-                LOG_INFO(server_logger, "session[{}] is connected.", _session->name());
-            }
-            if ((_event & hare::net::SESSION_CLOSED) != 0) {
-                LOG_INFO(server_logger, "session[{}] is disconnected.", _session->name());
-            }
-        });
+    _ses->set_connect_callback([=](const session::ptr& _session, std::uint8_t _event) {
+        if ((_event & hare::net::SESSION_CONNECTED) != 0) {
+            LOG_INFO(server_logger, "session[{}] is connected.", _session->name());
+        }
+        if ((_event & hare::net::SESSION_CLOSED) != 0) {
+            LOG_INFO(server_logger, "session[{}] is disconnected.", _session->name());
+        }
+    });
 
-        auto tsession = std::static_pointer_cast<tcp_session>(_ses);
+    auto tsession = std::static_pointer_cast<tcp_session>(_ses);
 
-        tsession->set_read_callback([](const hare::ptr<tcp_session>& _session, hare::net::buffer& _buffer, const hare::timestamp&) {
-            _session->append(_buffer);
-        });
+    tsession->set_read_callback([](const hare::ptr<tcp_session>& _session, hare::net::buffer& _buffer, const hare::timestamp&) {
+        _session->append(_buffer);
+    });
 
-        tsession->set_write_callback([=](const hare::ptr<tcp_session>& _session) {
+    tsession->set_write_callback([=](const hare::ptr<tcp_session>& _session) {
 
-        });
+    });
 
-        tsession->set_high_water_callback([=](const hare::ptr<tcp_session>& _session) {
-            LOG_ERROR(server_logger, "session[{}] is going offline because it is no longer receiving data.", _session->name());
-            _session->force_close();
-        });
+    tsession->set_high_water_callback([=](const hare::ptr<tcp_session>& _session) {
+        LOG_ERROR(server_logger, "session[{}] is going offline because it is no longer receiving data.", _session->name());
+        _session->force_close();
+    });
 
-        LOG_INFO(server_logger, "recv a new tcp-session[{}] at {} on acceptor={}.", _ses->name(), _ts.to_fmt(true), _acc->fd());
-    } else if (_acc->type() == hare::net::TYPE_UDP) {
-        _ses->set_connect_callback([=](const session::ptr& _session, std::uint8_t _event) {
-            if ((_event & hare::net::SESSION_CONNECTED) != 0) {
-                LOG_INFO(server_logger, "session[{}] is connected.", _session->name());
-            }
-            if ((_event & hare::net::SESSION_CLOSED) != 0) {
-                LOG_INFO(server_logger, "session[{}] is disconnected.", _session->name());
-            }
-        });
-
-        auto usession = std::static_pointer_cast<udp_session>(_ses);
-
-        usession->set_read_callback([](const hare::ptr<udp_session>& _session, hare::net::buffer& _buffer, const hare::timestamp&) {
-            _session->append(_buffer);
-        });
-
-        usession->set_write_callback([=](const hare::ptr<udp_session>& _session) {
-
-        });
-
-        LOG_INFO(server_logger, "recv a new udp-session[{}] at {} on acceptor={}.", _ses->name(), _ts.to_fmt(true), _acc->fd());
-    }
+    LOG_INFO(server_logger, "recv a new tcp-session[{}] at {} on acceptor={}.", _ses->name(), _ts.to_fmt(true), _acc->fd());
 }
 
 static void handle_msg(std::uint8_t _msg_type, const std::string& _msg) {
@@ -113,14 +88,7 @@ auto main(std::int32_t argc, char** argv) -> std::int32_t
 
     hare::register_msg_handler(handle_msg);
 
-    hare::net::TYPE acceptor_type = hare::net::TYPE_INVALID;
-    if (std::string(argv[3]) == "tcp") {
-        acceptor_type = hare::net::TYPE_TCP;
-    } else if (std::string(argv[3]) == "udp") {
-        acceptor_type = hare::net::TYPE_UDP;
-    }
-
-    acceptor::ptr acc { new acceptor(AF_INET, acceptor_type, std::uint16_t(std::stoi(std::string(argv[2])))) };
+    acceptor::ptr acc { new acceptor(AF_INET, std::uint16_t(std::stoi(std::string(argv[2])))) };
 
 #if defined(H_OS_WIN32)
     hare::io::cycle main_cycle(hare::io::cycle::REACTOR_TYPE_EPOLL);

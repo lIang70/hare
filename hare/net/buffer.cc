@@ -1,7 +1,7 @@
 #include "hare/base/fwd-inl.h"
+#include "hare/base/io/socket_op-inl.h"
 #include "hare/net/buffer-inl.h"
 #include <hare/base/exception.h>
-#include <hare/base/io/socket_op.h>
 #include <hare/hare-config.h>
 
 #include <cassert>
@@ -586,56 +586,6 @@ namespace net {
 #endif
 
         return write_n;
-    }
-
-    auto buffer::add_block(void* _bytes, std::size_t _size) -> bool
-    {
-        auto& chain = d_ptr(impl_)->cache_chain_;
-        chain.write->cache.reset(new detail::cache(static_cast<char*>(_bytes), _size));
-        if (chain.write->next == chain.begin()) {
-            auto* tmp = new detail::cache_list::node;
-            tmp->next = chain.write->next;
-            tmp->prev = chain.write;
-            chain.write->next->prev = tmp;
-            chain.write->next = tmp;
-            ++chain.node_size_;
-        }
-
-#ifdef HARE_DEBUG
-        d_ptr(impl_)->cache_chain_.print_status("after add_block");
-#endif
-        chain.write = chain.write->next;
-        d_ptr(impl_)->total_len_ += _size;
-        return true;
-    }
-
-    auto buffer::get_block(void** _bytes, std::size_t& _size) -> bool
-    {
-        if (d_ptr(impl_)->total_len_ == 0) {
-            *_bytes = nullptr;
-            _size = 0;
-            return false;
-        }
-        auto& chain = d_ptr(impl_)->cache_chain_;
-        auto* node = chain.begin();
-
-        _size = (*node)->readable_size();
-        *_bytes = (*node)->data();
-        (*node)->set(nullptr, 0);
-        chain.read = chain.read->next;
-
-        if (chain.size() > MAX_CHINA_SIZE) {
-            chain.read->prev = node->prev;
-            node->prev->next = chain.read;
-            --chain.node_size_;
-        }
-
-#ifdef HARE_DEBUG
-        d_ptr(impl_)->cache_chain_.print_status("after get_block");
-#endif
-
-        d_ptr(impl_)->total_len_ -= _size;
-        return true;
     }
 
     void buffer::move(buffer& _other) noexcept

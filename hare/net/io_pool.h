@@ -51,7 +51,7 @@ namespace net {
         /**
          * @brief With the same hash code, it will always return the same EventLoop
          */
-        auto get_by_hash(size_t _hash_code) -> ptr<pool_item>;
+        auto get_by_hash(std::size_t _hash_code) -> ptr<pool_item>;
     };
 
 } // namespace net
