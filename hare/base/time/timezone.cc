@@ -1,3 +1,4 @@
+#include "hare/base/fwd-inl.h"
 #include <hare/base/time/timezone.h>
 
 #include <algorithm>

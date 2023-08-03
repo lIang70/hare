@@ -1,3 +1,4 @@
+#include "hare/base/fwd-inl.h"
 #include <hare/base/exception.h>
 #include <hare/base/util/system.h>
 

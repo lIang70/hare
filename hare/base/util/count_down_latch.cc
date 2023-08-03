@@ -1,3 +1,4 @@
+#include "hare/base/fwd-inl.h"
 #include <hare/base/util/count_down_latch.h>
 
 #include <condition_variable>

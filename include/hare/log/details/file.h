@@ -51,10 +51,12 @@ namespace log {
 
             std::FILE* fp_ {};
             std::size_t written_bytes_ { 0 };
+            std::size_t size_ { 0 };
             filename_t filename_ {};
             fmt::basic_memory_buffer<char, Size> buffer_ {};
 
         public:
+            HARE_INLINE
             ~file()
             {
                 close();
@@ -76,6 +78,7 @@ namespace log {
                 } else {
                     filename_ = _file;
                     ignore_unused(std::setvbuf(fp_, buffer_.data(), _IOFBF, Size));
+                    size_ = util::fsize(fp_);
                 }
             }
 
@@ -101,7 +104,7 @@ namespace log {
             HARE_INLINE
             auto size() const -> std::size_t
             {
-                return fp_ == nullptr ? 0 : util::fsize(fp_);
+                return fp_ == nullptr ? 0 : size_ + written_bytes_;
             }
 
             HARE_INLINE

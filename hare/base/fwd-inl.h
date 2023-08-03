@@ -10,6 +10,22 @@
 namespace hare {
 
 namespace detail {
+
+#define HARE_IMPL_DEFAULT(Class, ...)                 \
+    struct Class##_impl : public hare::detail::impl { \
+        __VA_ARGS__                                   \
+        ~Class##_impl() override = default;           \
+    };                                                \
+    HARE_INLINE auto d_ptr(hare::detail::impl* _impl) \
+        ->Class##_impl* { return down_cast<Class##_impl*>(_impl); }
+
+#define HARE_IMPL(Class, ...)                         \
+    struct Class##_impl : public hare::detail::impl { \
+        __VA_ARGS__                                   \
+    };                                                \
+    HARE_INLINE auto d_ptr(hare::detail::impl* _impl) \
+        ->Class##_impl* { return down_cast<Class##_impl*>(_impl); }
+
     HARE_API void default_msg_handle(std::uint8_t, const std::string& msg);
 } // namespace detail
 

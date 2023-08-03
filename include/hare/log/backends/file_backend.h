@@ -47,7 +47,7 @@ namespace log {
             auto should_rotate(LEVEL _log_level, const details::file<WithLock>& _file) -> bool
             {
                 ignore_unused(_log_level);
-                return _file.written_bytes() >= MaxSize;
+                return _file.size() >= MaxSize;
             }
         };
 

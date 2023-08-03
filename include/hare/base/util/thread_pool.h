@@ -38,7 +38,8 @@ namespace util {
         task_handle handle_ {};
 
     public:
-        HARE_INLINE thread_pool(std::size_t _max_items, std::size_t _thr_n, task_handle _thr_task)
+        HARE_INLINE 
+        thread_pool(std::size_t _max_items, std::size_t _thr_n, task_handle _thr_task)
             : queue_(_max_items)
             , threads_(_thr_n)
             , handle_(std::move(_thr_task))
@@ -48,6 +49,7 @@ namespace util {
             }
         }
 
+        HARE_INLINE
         ~thread_pool()
         {
             join();
@@ -116,6 +118,7 @@ namespace util {
         }
 
     private:
+        HARE_INLINE
         void loop()
         {
             for (;;) {
