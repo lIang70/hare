@@ -55,20 +55,16 @@ namespace net {
          * @brief Get the error code of hare.
          *
          **/
-        HARE_INLINE
-        auto code() const -> std::int32_t { return error_code_; }
+        HARE_INLINE auto code() const -> std::int32_t { return error_code_; }
 
         /**
          * @brief Get the system code 'errno'.
          *
          **/
-        HARE_INLINE
-        auto system_code() const -> std::int32_t { return system_code_; }
+        HARE_INLINE auto system_code() const -> std::int32_t { return system_code_; }
 
-        HARE_INLINE
-        explicit operator bool() const { return error_code_ == ERROR_SUCCESS; }
-        HARE_INLINE
-        auto operator==(ERROR error) const -> bool { return error_code_ == error; }
+        HARE_INLINE explicit operator bool() const { return error_code_ == ERROR_SUCCESS; }
+        HARE_INLINE auto operator==(ERROR error) const -> bool { return error_code_ == error; }
 
         /**
          * @brief Get the description of the error code.

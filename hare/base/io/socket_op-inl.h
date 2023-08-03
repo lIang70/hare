@@ -15,7 +15,9 @@ namespace socket_op {
     HARE_INLINE auto sockaddr_cast(const struct sockaddr_in* _addr) -> const struct sockaddr* { return static_cast<const struct sockaddr*>(implicit_cast<const void*>(_addr)); }
     HARE_INLINE auto sockaddr_cast(struct sockaddr_in* _addr) -> struct sockaddr* { return static_cast<struct sockaddr*>(implicit_cast<void*>(_addr)); }
     HARE_INLINE auto sockaddr_in_cast(const struct sockaddr* _addr) -> const struct sockaddr_in* { return static_cast<const struct sockaddr_in*>(implicit_cast<const void*>(_addr)); }
+    HARE_INLINE auto sockaddr_in_cast(struct sockaddr* _addr) -> struct sockaddr_in* { return static_cast<struct sockaddr_in*>(implicit_cast<void*>(_addr)); }
     HARE_INLINE auto sockaddr_in6_cast(const struct sockaddr* _addr) -> const struct sockaddr_in6* { return static_cast<const struct sockaddr_in6*>(implicit_cast<const void*>(_addr)); }
+    HARE_INLINE auto sockaddr_in6_cast(struct sockaddr* _addr) -> struct sockaddr_in6* { return static_cast<struct sockaddr_in6*>(implicit_cast<void*>(_addr)); }
 
     HARE_API auto create_nonblocking_or_die(std::uint8_t _family) -> util_socket_t;
     HARE_API auto create_dgram_or_die(std::uint8_t _family) -> util_socket_t;

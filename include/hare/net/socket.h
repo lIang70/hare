@@ -85,14 +85,16 @@ namespace net {
          */
         auto set_reuse_addr(bool reuse) const -> error;
 
-        //!
-        //! Enable/disable SO_REUSEPORT
-        //!
+        /**
+         *  @brief Enable/disable SO_REUSEPORT
+         *
+         */
         auto set_reuse_port(bool reuse) const -> error;
 
-        //!
-        //! Enable/disable SO_KEEPALIVE
-        //!
+        /**
+         *  @brief Enable/disable SO_KEEPALIVE
+         *
+         */
         auto set_keep_alive(bool keep_alive) const -> error;
     };
 

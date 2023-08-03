@@ -10,12 +10,14 @@
 namespace hare {
 namespace net {
 
-    class session;
+    namespace tcp {
+        class session;
+    } // namespace tcp
 
     struct pool_item {
         ptr<io::cycle> cycle {};
         ptr<std::thread> thread {};
-        std::map<util_socket_t, ptr<session>> sessions {};
+        std::map<util_socket_t, ptr<tcp::session>> sessions {};
     };
 
     class io_pool : public util::non_copyable {
@@ -32,8 +34,7 @@ namespace net {
     public:
         explicit io_pool(std::string _name)
             : name_(std::move(_name))
-        {
-        }
+        { }
         ~io_pool();
 
         HARE_INLINE auto name() const -> const std::string& { return name_; }

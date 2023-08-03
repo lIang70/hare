@@ -2,7 +2,7 @@
 #include "hare/base/fwd-inl.h"
 #include <hare/base/util/count_down_latch.h>
 #include <hare/base/util/system.h>
-#include <hare/net/session.h>
+#include <hare/net/tcp/session.h>
 
 namespace hare {
 namespace net {

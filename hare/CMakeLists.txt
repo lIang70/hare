@@ -259,6 +259,7 @@ endif(OPENSSL_FOUND)
 # Add hare_net's src
 file(GLOB HARE_NET_SOURCES
     "net/*.cc"
+    "net/tcp/*.cc"
 )
 
 # Add the source code to the project's executable。

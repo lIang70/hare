@@ -8,15 +8,15 @@
 
 #if HARE__HAVE_UNISTD_H
 #include <unistd.h>
-#endif
+#endif // HARE__HAVE_UNISTD_H
 
 #if HARE__HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
-#endif
+#endif // HARE__HAVE_SYS_SOCKET_H
 
 #if defined(H_OS_WIN32)
 #define STDIN_FILENO 0
-#endif
+#endif // H_OS_WIN32
 
 namespace hare {
 namespace io {
@@ -108,7 +108,7 @@ namespace io {
         auto len = ::_read((int)_event->fd(), console_line.data(), HARE_SMALL_BUFFER);
 #else
         auto len = ::read(_event->fd(), console_line.data(), HARE_SMALL_BUFFER);
-#endif
+#endif // H_OS_WIN32
 
         if (len < 0) {
             MSG_ERROR("cannot read from STDIN.");

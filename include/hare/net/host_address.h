@@ -22,10 +22,7 @@ namespace net {
 
     HARE_CLASS_API
     class HARE_API host_address : public util::non_copyable {
-        union {
-            struct sockaddr_in* in_;
-            struct sockaddr_in6* in6_;
-        } addr_ {};
+        sockaddr* in_ {};
 
     public:
         using ptr = ptr<host_address>;
@@ -61,7 +58,7 @@ namespace net {
 
         auto family() const -> std::uint8_t;
 
-        auto get_sockaddr() const -> sockaddr*;
+        HARE_INLINE auto get_sockaddr() const -> sockaddr* { return in_; }
         void set_sockaddr_in6(const struct sockaddr_in6* addr_in6) const;
 
         auto to_ip() const -> std::string;

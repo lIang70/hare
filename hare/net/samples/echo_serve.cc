@@ -4,9 +4,9 @@
 #include <hare/log/backends/file_backend.h>
 #include <hare/log/backends/std_backend.h>
 #include <hare/log/registry.h>
-#include <hare/net/acceptor.h>
-#include <hare/net/hybrid_serve.h>
-#include <hare/net/tcp_session.h>
+#include <hare/net/tcp/acceptor.h>
+#include <hare/net/tcp/serve.h>
+#include <hare/net/tcp/session.h>
 
 #include <map>
 
@@ -18,34 +18,32 @@
 
 #define USAGE "echo_serve -p [port]" HARE_EOL
 
-using hare::net::acceptor;
-using hare::net::session;
-using hare::net::tcp_session;
+using hare::net::tcp::acceptor;
+using hare::net::tcp::session;
+using hare::net::tcp::serve;
 
 static hare::ptr<hare::log::logger> server_logger {};
 
 static void new_session(const session::ptr& _ses, hare::timestamp _ts, const acceptor::ptr& _acc)
 {
     _ses->set_connect_callback([=](const session::ptr& _session, std::uint8_t _event) {
-        if ((_event & hare::net::SESSION_CONNECTED) != 0) {
+        if ((_event & hare::net::tcp::SESSION_CONNECTED) != 0) {
             LOG_INFO(server_logger, "session[{}] is connected.", _session->name());
         }
-        if ((_event & hare::net::SESSION_CLOSED) != 0) {
+        if ((_event & hare::net::tcp::SESSION_CLOSED) != 0) {
             LOG_INFO(server_logger, "session[{}] is disconnected.", _session->name());
         }
     });
 
-    auto tsession = std::static_pointer_cast<tcp_session>(_ses);
-
-    tsession->set_read_callback([](const hare::ptr<tcp_session>& _session, hare::net::buffer& _buffer, const hare::timestamp&) {
+    _ses->set_read_callback([](const hare::ptr<session>& _session, hare::net::buffer& _buffer, const hare::timestamp&) {
         _session->append(_buffer);
     });
 
-    tsession->set_write_callback([=](const hare::ptr<tcp_session>& _session) {
+    _ses->set_write_callback([=](const hare::ptr<session>& _session) {
 
     });
 
-    tsession->set_high_water_callback([=](const hare::ptr<tcp_session>& _session) {
+    _ses->set_high_water_callback([=](const hare::ptr<session>& _session) {
         LOG_ERROR(server_logger, "session[{}] is going offline because it is no longer receiving data.", _session->name());
         _session->force_close();
     });
@@ -95,7 +93,8 @@ auto main(std::int32_t argc, char** argv) -> std::int32_t
 #else
     hare::io::cycle main_cycle(hare::io::cycle::REACTOR_TYPE_EPOLL);
 #endif
-    hare::net::hybrid_serve::ptr main_serve = std::make_shared<hare::net::hybrid_serve>(&main_cycle, "ECHO");
+    
+    serve::ptr main_serve = std::make_shared<serve>(&main_cycle, "ECHO");
 
     main_serve->set_new_session(new_session);
     main_serve->add_acceptor(acc);
