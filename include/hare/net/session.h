@@ -37,6 +37,9 @@ namespace net {
         STATE_DISCONNECTED
     };
 
+    class hybrid_client;
+    class hybrid_serve;
+
     HARE_CLASS_API
     class HARE_API session : public util::non_copyable
                            , public std::enable_shared_from_this<session> {
@@ -92,7 +95,8 @@ namespace net {
     private:
         void connect_established();
 
-        friend class hybrid_serve;
+        friend class net::hybrid_client;
+        friend class net::hybrid_serve;
     };
 
 } // namespace net

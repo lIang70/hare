@@ -46,8 +46,8 @@ namespace net {
         auto in_buffer() -> buffer&;
         auto read_handle() const -> const read_callback&;
 
-        friend class hybrid_client;
-        friend class hybrid_serve;
+        friend class net::hybrid_client;
+        friend class net::hybrid_serve;
     };
 
 } // namespace net

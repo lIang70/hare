@@ -52,8 +52,8 @@ namespace net {
         void handle_read(const timestamp& _time) override;
         void handle_write() override;
 
-        friend class hybrid_client;
-        friend class hybrid_serve;
+        friend class net::hybrid_client;
+        friend class net::hybrid_serve;
     };
 
 } // namespace net
