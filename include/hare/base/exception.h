@@ -20,7 +20,7 @@ namespace hare {
 
 HARE_CLASS_API
 class HARE_API exception : public std::exception {
-    detail::impl *impl_ {};
+    hare::detail::impl *impl_ {};
 
 public:
     explicit exception(std::string what) noexcept;

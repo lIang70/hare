@@ -19,7 +19,7 @@ namespace util {
 
     HARE_CLASS_API
     class HARE_API count_down_latch {
-        detail::impl* impl_ {};
+        hare::detail::impl* impl_ {};
 
     public:
         explicit count_down_latch(std::uint32_t count);

@@ -22,7 +22,7 @@ namespace net {
 
     HARE_CLASS_API
     class HARE_API acceptor : public io::event {
-        detail::impl* impl_ {};
+        hare::detail::impl* impl_ {};
 #ifdef H_OS_LINUX
         // Read the section named "The special problem of
         // accept()ing when you can't" in libev's doc.

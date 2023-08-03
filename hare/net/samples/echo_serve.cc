@@ -123,7 +123,7 @@ auto main(std::int32_t argc, char** argv) -> std::int32_t
     acceptor::ptr acc { new acceptor(AF_INET, acceptor_type, int16_t(std::stoi(std::string(argv[2])))) };
 
 #if defined(H_OS_WIN32)
-    hare::io::cycle main_cycle(hare::io::cycle::REACTOR_TYPE_SELECT);
+    hare::io::cycle main_cycle(hare::io::cycle::REACTOR_TYPE_EPOLL);
 #else
     hare::io::cycle main_cycle(hare::io::cycle::REACTOR_TYPE_EPOLL);
 #endif

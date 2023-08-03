@@ -11,10 +11,6 @@
 #include "hare/base/io/reactor/reactor_poll.h"
 #endif
 
-#if HARE__HAVE_SELECT || defined(H_OS_WIN)
-#include "hare/base/io/reactor/reactor_select.h"
-#endif
-
 namespace hare {
 namespace io {
 
@@ -32,12 +28,6 @@ namespace io {
             return new reactor_poll(_cycle);
 #else
             throw exception("POLL reactor was not supported.");
-#endif
-        case cycle::REACTOR_TYPE_SELECT:
-#if HARE__HAVE_SELECT || defined(H_OS_WIN)
-            return new reactor_select(_cycle);
-#else
-            throw exception("SELECT reactor was not supported.");
 #endif
         default:
             throw exception("A suitable reactor type was not found.");

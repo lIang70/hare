@@ -62,7 +62,7 @@ namespace io {
     HARE_CLASS_API
     class HARE_API event : public util::non_copyable
                          , public std::enable_shared_from_this<event> {
-        detail::impl* impl_ {};
+        hare::detail::impl* impl_ {};
 
     public:
         using id = std::int64_t;

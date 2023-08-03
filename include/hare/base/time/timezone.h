@@ -18,7 +18,7 @@ namespace hare {
 
 HARE_CLASS_API
 class HARE_API timezone {
-    detail::impl* impl_ {};
+    hare::detail::impl* impl_ {};
 
 public:
     timezone(); // an invalid timezone

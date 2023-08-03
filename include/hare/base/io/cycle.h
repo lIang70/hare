@@ -22,7 +22,7 @@ namespace io {
     class event;
     HARE_CLASS_API
     class HARE_API cycle : public util::non_copyable {
-        detail::impl* impl_ {};
+        hare::detail::impl* impl_ {};
 
     public:
         using ptr = ptr<cycle>;
@@ -30,7 +30,6 @@ namespace io {
         using REACTOR_TYPE = enum {
             REACTOR_TYPE_EPOLL,
             REACTOR_TYPE_POLL,
-            REACTOR_TYPE_SELECT,
 
             REACTOR_TYPE_NBRS
         };
