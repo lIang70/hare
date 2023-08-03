@@ -61,7 +61,7 @@ namespace log {
             }
 
             HARE_INLINE
-            auto written_bytes() const -> size_t { return written_bytes_; }
+            auto written_bytes() const -> std::size_t { return written_bytes_; }
 
             HARE_INLINE
             auto name() const -> filename_t { return filename_; }
@@ -72,7 +72,7 @@ namespace log {
                 close();
                 const auto* mode = truncate ? HARE_FILENAME_T("wb") : HARE_FILENAME_T("ab");
                 if (!util::open_s(&fp_, _file, mode)) {
-                    throw exception("Failed opening file " + filename_to_str(_file) + " for writing");
+                    throw exception("failed opening file " + filename_to_str(_file) + " for writing");
                 } else {
                     filename_ = _file;
                     ignore_unused(std::setvbuf(fp_, buffer_.data(), _IOFBF, Size));
@@ -83,7 +83,7 @@ namespace log {
             void reopen(bool truncate = false)
             {
                 if (filename_.empty()) {
-                    throw exception("Failed re opening file - was not opened before");
+                    throw exception("failed re-opening file - was not opened before");
                 }
                 open(filename_, truncate);
             }
@@ -95,6 +95,7 @@ namespace log {
                     ignore_unused(std::fclose(fp_));
                     fp_ = nullptr;
                 }
+                written_bytes_ = 0;
             }
 
             HARE_INLINE
