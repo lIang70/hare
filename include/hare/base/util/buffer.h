@@ -40,8 +40,9 @@ namespace util {
 #endif
     } // namespace detail
 
+    HARE_CLASS_API
     template <typename T>
-    class buffer {
+    class HARE_API buffer {
     protected:
         T* ptr_ {};
         std::size_t size_ {};

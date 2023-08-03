@@ -25,8 +25,9 @@ namespace util {
         DISCARD // Discard the message it enqueue fails
     };
 
+    HARE_CLASS_API
     template <typename T>
-    class thread_pool {
+    class HARE_API thread_pool {
     public:
         using value_type = T;
         using task_handle = std::function<bool(T&)>;
