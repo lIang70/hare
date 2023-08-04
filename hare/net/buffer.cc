@@ -520,7 +520,7 @@ namespace net {
 
     auto buffer::write(util_socket_t _fd, std::size_t _howmuch) -> std::size_t
     {
-        std::int64_t write_n {};
+        std::size_t write_n {};
         auto total = _howmuch == 0 ? d_ptr(impl_)->total_len_ : _howmuch;
 
         if (total > d_ptr(impl_)->total_len_) {

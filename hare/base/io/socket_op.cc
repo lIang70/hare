@@ -254,23 +254,6 @@ namespace socket_op {
         return _fd;
     }
 
-    auto create_dgram_or_die(std::uint8_t _family) -> util_socket_t
-    {
-#ifndef H_OS_WIN
-        auto _fd = ::socket(_family, SOCK_DGRAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0);
-        if (_fd < 0) {
-            throw exception("cannot create dgram socket");
-        }
-#else
-        auto _fd = ::socket(_family, SOCK_DGRAM, 0);
-        if (_fd < 0) {
-            throw exception("cannot create dgram socket");
-        }
-        detail::set_nonblock_closeonexec(_fd);
-#endif
-        return _fd;
-    }
-
     auto close(util_socket_t _fd) -> std::int32_t
     {
 #ifndef H_OS_WIN

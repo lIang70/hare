@@ -20,8 +20,6 @@ namespace socket_op {
     HARE_INLINE auto sockaddr_in6_cast(struct sockaddr* _addr) -> struct sockaddr_in6* { return static_cast<struct sockaddr_in6*>(implicit_cast<void*>(_addr)); }
 
     HARE_API auto create_nonblocking_or_die(std::uint8_t _family) -> util_socket_t;
-    HARE_API auto create_dgram_or_die(std::uint8_t _family) -> util_socket_t;
-
     HARE_API auto close(util_socket_t _fd) -> std::int32_t;
     HARE_API auto write(util_socket_t _fd, const void* _buf, std::size_t _size) -> std::int64_t;
     HARE_API auto read(util_socket_t _fd, void* _buf, std::size_t _size) -> std::int64_t;
