@@ -22,18 +22,7 @@
 namespace hare {
 namespace net {
 
-    auto socket::type_str(TYPE _type) -> const char*
-    {
-        switch (_type) {
-        case TYPE_TCP:
-            return "TCP";
-        case TYPE_INVALID:
-        default:
-            return "INVALID";
-        }
-    }
-
-    socket::socket(std::uint8_t family, TYPE type, util_socket_t socket)
+    Socket::Socket(std::uint8_t family, Type type, util_socket_t socket)
         : socket_(socket)
         , family_(family)
         , type_(type)
@@ -41,7 +30,7 @@ namespace net {
         if (socket == -1) {
             switch (type) {
             case TYPE_TCP:
-                socket_ = socket_op::create_nonblocking_or_die(family);
+                socket_ = socket_op::CreateNonblockingOrDie(family);
                 break;
             case TYPE_INVALID:
             default:
@@ -50,72 +39,72 @@ namespace net {
         }
     }
 
-    socket::~socket()
+    Socket::~Socket()
     {
-        close();
+        Close();
     }
 
-    auto socket::bind_address(const host_address& local_addr) const -> error
+    auto Socket::BindAddress(const HostAddress& local_addr) const -> Error
     {
-        return socket_op::bind(socket_,
-                   local_addr.get_sockaddr(), socket_op::get_addr_len(local_addr.family()))
-            ? error()
-            : error(ERROR_SOCKET_BIND);
+        return socket_op::Bind(socket_,
+                   local_addr.get_sockaddr(), socket_op::AddrLen(local_addr.Family()))
+            ? Error()
+            : Error(ERROR_SOCKET_BIND);
     }
 
-    auto socket::listen() const -> error
+    auto Socket::Listen() const -> Error
     {
-        return socket_op::listen(socket_) ? error() : error(ERROR_SOCKET_LISTEN);
+        return socket_op::Listen(socket_) ? Error() : Error(ERROR_SOCKET_LISTEN);
     }
 
-    auto socket::close() -> error
+    auto Socket::Close() -> Error
     {
         if (socket_ != -1) {
-            auto err = socket_op::close(socket_);
+            auto err = socket_op::Close(socket_);
             socket_ = -1;
-            return err ? error() : error(ERROR_SOCKET_CLOSED);
+            return err ? Error() : Error(ERROR_SOCKET_CLOSED);
         }
-        return error();
+        return Error();
     }
 
-    auto socket::accept(host_address& peer_addr) const -> util_socket_t
+    auto Socket::Accept(HostAddress& _peer_addr) const -> util_socket_t
     {
         struct sockaddr_in6 addr { };
-        hare::detail::fill_n(&addr, sizeof(addr), 0);
-        auto accept_fd = socket_op::accept(socket_, socket_op::sockaddr_cast(&addr), socket_op::get_addr_len(PF_INET6));
+        hare::detail::FillN(&addr, sizeof(addr), 0);
+        auto accept_fd = socket_op::Accept(socket_, socket_op::sockaddr_cast(&addr), socket_op::AddrLen(PF_INET6));
         if (accept_fd >= 0) {
-            peer_addr.set_sockaddr_in6(&addr);
+            _peer_addr.set_sockaddr_in6(&addr);
         }
         return accept_fd;
     }
 
-    auto socket::shutdown_write() const -> error
+    auto Socket::ShutdownWrite() const -> Error
     {
 #ifndef H_OS_WIN
-        return ::shutdown(socket_, SHUT_WR) < 0 ? error(ERROR_SOCKET_SHUTDOWN_WRITE) : error();
+        return ::shutdown(socket_, SHUT_WR) < 0 ? Error(ERROR_SOCKET_SHUTDOWN_WRITE) : Error();
 #else
         return ::shutdown(socket_, SD_SEND) < 0 ? error(ERROR_SOCKET_SHUTDOWN_WRITE) : error();
 #endif
     }
 
-    auto socket::set_tcp_no_delay(bool no_delay) const -> error
+    auto Socket::SetTcpNoDelay(bool _no_delay) const -> Error
     {
-        auto opt_val = no_delay ? 1 : 0;
+        auto opt_val = _no_delay ? 1 : 0;
         auto ret = ::setsockopt(socket_, SOL_SOCKET, TCP_NODELAY, (char*)&opt_val, static_cast<socklen_t>(sizeof(opt_val)));
-        return ret != 0 ? error(ERROR_SOCKET_TCP_NO_DELAY) : error();
+        return ret != 0 ? Error(ERROR_SOCKET_TCP_NO_DELAY) : Error();
     }
 
-    auto socket::set_reuse_addr(bool reuse) const -> error
+    auto Socket::SetReuseAddr(bool _reuse) const -> Error
     {
-        auto optval = reuse ? 1 : 0;
+        auto optval = _reuse ? 1 : 0;
         auto ret = ::setsockopt(socket_, SOL_SOCKET, SO_REUSEADDR, (char*)&optval, static_cast<socklen_t>(sizeof(optval)));
-        return ret != 0 ? error(ERROR_SOCKET_REUSE_ADDR) : error();
+        return ret != 0 ? Error(ERROR_SOCKET_REUSE_ADDR) : Error();
     }
 
-    auto socket::set_reuse_port(bool reuse) const -> error
+    auto Socket::SetReusePort(bool _reuse) const -> Error
     {
 #ifdef SO_REUSEPORT
-        auto opt_val = reuse ? 1 : 0;
+        auto opt_val = _reuse ? 1 : 0;
         auto ret = ::setsockopt(socket_, SOL_SOCKET, SO_REUSEPORT, &opt_val, static_cast<socklen_t>(sizeof(opt_val)));
 #elif defined(H_OS_WIN)
         auto ret = 0;
@@ -127,14 +116,14 @@ namespace net {
         MSG_ERROR("reuse-port is not supported.");
         auto ret = -1;
 #endif
-        return ret != 0 ? error(ERROR_SOCKET_REUSE_PORT) : error();
+        return ret != 0 ? Error(ERROR_SOCKET_REUSE_PORT) : Error();
     }
 
-    auto socket::set_keep_alive(bool keep_alive) const -> error
+    auto Socket::SetKeepAlive(bool _keep_alive) const -> Error
     {
-        auto optval = keep_alive ? 1 : 0;
+        auto optval = _keep_alive ? 1 : 0;
         auto ret = ::setsockopt(socket_, SOL_SOCKET, SO_KEEPALIVE, (char*)&optval, static_cast<socklen_t>(sizeof(optval)));
-        return ret != 0 ? error(ERROR_SOCKET_KEEP_ALIVE) : error();
+        return ret != 0 ? Error(ERROR_SOCKET_KEEP_ALIVE) : Error();
     }
 
 } // namespace net

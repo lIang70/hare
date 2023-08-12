@@ -32,16 +32,16 @@ namespace io {
     namespace detail {
 
 #if HARE__HAVE_EVENTFD
-        static auto create_notify_fd() -> util_socket_t
+        static auto CreateNotifier() -> util_socket_t
         {
             auto evtfd = ::eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
             if (evtfd < 0) {
-                throw exception("failed to get event fd in ::eventfd.");
+                throw Exception("failed to get event fd in ::eventfd.");
             }
             return evtfd;
         }
 #else
-        static auto create_notify_fd(util_socket_t& _write_fd) -> util_socket_t
+        static auto CreateNotifier(util_socket_t& _write_fd) -> util_socket_t
         {
             util_socket_t fd[2];
             auto ret = socket_op::socketpair(AF_INET, SOCK_STREAM, 0, fd);
@@ -53,30 +53,30 @@ namespace io {
         }
 #endif
 
-        class event_notify : public event {
+        class EventNotify : public Event {
 #if HARE__HAVE_EVENTFD
         public:
-            event_notify()
-                : event(create_notify_fd(),
+            EventNotify()
+                : Event(CreateNotifier(),
 #else
             util_socket_t write_fd_ {};
 
         public:
             event_notify()
-                : event(create_notify_fd(write_fd_),
+                : event(CreateNotifier(write_fd_),
 #endif
-                    std::bind(&event_notify::event_callback,
+                    std::bind(&EventNotify::EventCallback,
                         this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
                     EVENT_READ | EVENT_PERSIST,
                     0)
             { }
 
-            ~event_notify() override
+            ~EventNotify() override
             {
-                socket_op::close(fd());
+                socket_op::Close(fd());
             }
 
-            void send_notify()
+            void SendNotify()
             {
                 std::uint64_t one = 1;
                 auto write_n = ::write((int)fd(), &one, sizeof(one));
@@ -85,10 +85,9 @@ namespace io {
                 }
             }
 
-            void event_callback(const event::ptr& _event, std::uint8_t _events, const timestamp& _receive_time)
+            void EventCallback(const Ptr<Event>& _event, std::uint8_t _events, const Timestamp& _receive_time)
             {
-                ignore_unused(_event);
-                ignore_unused(_receive_time);
+                IgnoreUnused(_event, _receive_time);
                 assert(_event == this->shared_from_this());
 
                 if (CHECK_EVENT(_events, EVENT_READ) != 0) {
@@ -103,13 +102,13 @@ namespace io {
             }
         };
 
-        struct total_init {
-            total_init()
+        struct GlobalInit {
+            GlobalInit()
             {
 #if !defined(H_OS_WIN)
                 MSG_TRACE("ignore signal[SIGPIPE].");
                 auto ret = ::signal(SIGPIPE, SIG_IGN);
-                ignore_unused(ret);
+                IgnoreUnused(ret);
             }
 #else
                 WSADATA wsa_data {};
@@ -127,208 +126,209 @@ namespace io {
 #endif
         };
 
-        auto get_wait_time(const priority_timer& _ptimer) -> std::int32_t
+        auto GetWaitTime(const PriorityTimer& _ptimer) -> std::int32_t
         {
             if (_ptimer.empty()) {
                 return POLL_TIME_MICROSECONDS;
             }
-            auto time = static_cast<std::int32_t>(_ptimer.top().stamp_.microseconds_since_epoch() - timestamp::now().microseconds_since_epoch());
+            auto time = static_cast<std::int32_t>(_ptimer.top().stamp.microseconds_since_epoch() - Timestamp::Now().microseconds_since_epoch());
 
             return time <= 0 ? 1 : MIN(time, POLL_TIME_MICROSECONDS);
         }
 
-        void print_active_events(const events_list& _active_events)
+        void PrintActiveEvents(const EventsList& _active_events)
         {
             for (const auto& event_elem : _active_events) {
                 MSG_TRACE("event[{}] debug info: {}.",
-                    event_elem.event_->fd(), event_elem.event_->event_string());
-                ignore_unused(event_elem);
+                    event_elem.event->fd(), event_elem.event->EventToString());
+                IgnoreUnused(event_elem);
             }
         }
     } // namespace detail
 
-    HARE_IMPL_DEFAULT(cycle,
-        timestamp reactor_time_ {};
-        std::uint64_t tid_ { 0 };
-        bool is_running_ { false };
-        bool quit_ { false };
-        bool event_handling_ { false };
-        bool calling_pending_functions_ { false };
+    HARE_IMPL_DEFAULT(
+        Cycle,
+        Timestamp reactor_time {};
+        std::uint64_t tid { 0 };
+        bool is_running { false };
+        bool quit { false };
+        bool event_handling { false };
+        bool calling_pending_functions { false };
 
-        ptr<detail::event_notify> notify_event_ { nullptr };
-        ptr<reactor> reactor_ { nullptr };
-        ptr<event> current_active_event_ { nullptr };
-        event::id event_id_ { 0 };
+        Ptr<detail::EventNotify> notify_event { nullptr };
+        Ptr<Reactor> reactor { nullptr };
+        Ptr<Event> current_active_event { nullptr };
+        Event::Id event_id { 0 };
 
-        mutable std::mutex functions_mutex_ {};
-        std::list<task> pending_functions_ {};
+        mutable std::mutex functions_mutex {};
+        std::list<Task> pending_functions {};
 
-        std::uint64_t cycle_index_ { 0 };
+        std::uint64_t cycle_index { 0 };
     )
 
-    cycle::cycle(REACTOR_TYPE _type)
-        : impl_(new cycle_impl)
+    Cycle::Cycle(REACTOR_TYPE _type)
+        : impl_(new CycleImpl)
     {
-        static detail::total_init s_total_init {};
+        static detail::GlobalInit s_total_init {};
 
-        d_ptr(impl_)->tid_ = current_thread::get_tds().tid;
-        d_ptr(impl_)->notify_event_.reset(new detail::event_notify());
-        d_ptr(impl_)->reactor_.reset(reactor::create_by_type(_type, this));
+        d_ptr(impl_)->tid = current_thread::ThreadData().tid;
+        d_ptr(impl_)->notify_event.reset(new detail::EventNotify());
+        d_ptr(impl_)->reactor.reset(Reactor::CreateByType(_type, this));
 
-        if (current_thread::get_tds().cycle != nullptr) {
+        if (current_thread::ThreadData().cycle != nullptr) {
             MSG_FATAL("another cycle[{}] exists in this thread[{:#x}]",
-                (void*)current_thread::get_tds().cycle, current_thread::get_tds().tid);
+                (void*)current_thread::ThreadData().cycle, current_thread::ThreadData().tid);
         } else {
-            current_thread::get_tds().cycle = this;
-            MSG_TRACE("cycle[{}] is being initialized in thread[{:#x}].", (void*)this, current_thread::get_tds().tid);
+            current_thread::ThreadData().cycle = this;
+            MSG_TRACE("cycle[{}] is being initialized in thread[{:#x}].", (void*)this, current_thread::ThreadData().tid);
         }
     }
 
-    cycle::~cycle()
+    Cycle::~Cycle()
     {
         // clear thread local data.
-        assert_in_cycle_thread();
-        d_ptr(impl_)->pending_functions_.clear();
-        d_ptr(impl_)->notify_event_.reset();
-        current_thread::get_tds().cycle = nullptr;
+        AssertInCycleThread();
+        d_ptr(impl_)->pending_functions.clear();
+        d_ptr(impl_)->notify_event.reset();
+        current_thread::ThreadData().cycle = nullptr;
         delete impl_;
     }
 
-    auto cycle::reactor_return_time() const -> timestamp
+    auto Cycle::ReactorReturnTime() const -> Timestamp
     {
-        return d_ptr(impl_)->reactor_time_;
+        return d_ptr(impl_)->reactor_time;
     }
 
-    auto cycle::event_handling() const -> bool
+    auto Cycle::event_handling() const -> bool
     {
-        return d_ptr(impl_)->calling_pending_functions_;
+        return d_ptr(impl_)->calling_pending_functions;
     }
 
-    auto cycle::is_running() const -> bool
+    auto Cycle::is_running() const -> bool
     {
-        return d_ptr(impl_)->is_running_;
+        return d_ptr(impl_)->is_running;
+    }
+
+    auto Cycle::type() const -> REACTOR_TYPE
+    {
+        return d_ptr(impl_)->reactor->type();
     }
 
 #if HARE_DEBUG
 
-    auto cycle::cycle_index() const -> std::uint64_t
+    auto Cycle::cycle_index() const -> std::uint64_t
     {
-        return d_ptr(impl_)->cycle_index_;
+        return d_ptr(impl_)->cycle_index;
     }
 
 #endif
 
-    auto cycle::in_cycle_thread() const -> bool
+    auto Cycle::InCycleThread() const -> bool
     {
-        return d_ptr(impl_)->tid_ == current_thread::get_tds().tid;
+        return d_ptr(impl_)->tid == current_thread::ThreadData().tid;
     }
 
-    auto cycle::type() const -> REACTOR_TYPE
+    void Cycle::Exec()
     {
-        return d_ptr(impl_)->reactor_->type();
-    }
-
-    void cycle::loop()
-    {
-        assert(!d_ptr(impl_)->is_running_);
-        d_ptr(impl_)->is_running_ = true;
-        d_ptr(impl_)->quit_ = false;
-        event_update(d_ptr(impl_)->notify_event_);
-        d_ptr(impl_)->notify_event_->tie(d_ptr(impl_)->notify_event_);
+        assert(!d_ptr(impl_)->is_running);
+        d_ptr(impl_)->is_running = true;
+        d_ptr(impl_)->quit = false;
+        EventUpdate(d_ptr(impl_)->notify_event);
+        d_ptr(impl_)->notify_event->Tie(d_ptr(impl_)->notify_event);
 
         MSG_TRACE("cycle[{}] start running...", (void*)this);
 
-        while (!d_ptr(impl_)->quit_) {
-            d_ptr(impl_)->reactor_->active_events_.clear();
+        while (!d_ptr(impl_)->quit) {
+            d_ptr(impl_)->reactor->active_events_.clear();
 
-            d_ptr(impl_)->reactor_time_ = d_ptr(impl_)->reactor_->poll(get_wait_time(d_ptr(impl_)->reactor_->ptimer_));
+            d_ptr(impl_)->reactor_time = d_ptr(impl_)->reactor->Poll(GetWaitTime(d_ptr(impl_)->reactor->ptimer_));
 
 #if HARE_DEBUG
-            ++d_ptr(impl_)->cycle_index_;
+            ++d_ptr(impl_)->cycle_index;
 #endif
 
-            print_active_events(d_ptr(impl_)->reactor_->active_events_);
+            PrintActiveEvents(d_ptr(impl_)->reactor->active_events_);
 
             /// TODO(l1ang70): sort event by priority
-            d_ptr(impl_)->event_handling_ = true;
+            d_ptr(impl_)->event_handling = true;
 
-            for (auto& event_elem : d_ptr(impl_)->reactor_->active_events_) {
-                d_ptr(impl_)->current_active_event_ = event_elem.event_;
-                d_ptr(impl_)->current_active_event_->handle_event(event_elem.revents_, d_ptr(impl_)->reactor_time_);
-                if (CHECK_EVENT(d_ptr(impl_)->current_active_event_->events(), EVENT_PERSIST) == 0) {
-                    event_remove(d_ptr(impl_)->current_active_event_);
+            for (auto& event_elem : d_ptr(impl_)->reactor->active_events_) {
+                d_ptr(impl_)->current_active_event = event_elem.event;
+                d_ptr(impl_)->current_active_event->HandleEvent(event_elem.revents, d_ptr(impl_)->reactor_time);
+                if (CHECK_EVENT(d_ptr(impl_)->current_active_event->events(), EVENT_PERSIST) == 0) {
+                    EventRemove(d_ptr(impl_)->current_active_event);
                 }
             }
-            d_ptr(impl_)->current_active_event_.reset();
+            d_ptr(impl_)->current_active_event.reset();
 
-            d_ptr(impl_)->event_handling_ = false;
+            d_ptr(impl_)->event_handling = false;
 
-            notify_timer();
-            do_pending_functions();
+            NotifyTimer();
+            DoPendingFunctions();
         }
 
-        d_ptr(impl_)->notify_event_->deactivate();
-        d_ptr(impl_)->notify_event_->tie(nullptr);
-        d_ptr(impl_)->is_running_ = false;
+        d_ptr(impl_)->notify_event->Deactivate();
+        d_ptr(impl_)->notify_event->Tie(nullptr);
+        d_ptr(impl_)->is_running = false;
 
-        d_ptr(impl_)->reactor_->active_events_.clear();
-        for (const auto& event : d_ptr(impl_)->reactor_->events_) {
-            event.second->reset();
+        d_ptr(impl_)->reactor->active_events_.clear();
+        for (const auto& event : d_ptr(impl_)->reactor->events_) {
+            event.second->Reset();
         }
-        d_ptr(impl_)->reactor_->events_.clear();
-        priority_timer().swap(d_ptr(impl_)->reactor_->ptimer_);
+        d_ptr(impl_)->reactor->events_.clear();
+        PriorityTimer().swap(d_ptr(impl_)->reactor->ptimer_);
 
         MSG_TRACE("cycle[{}] stop running...", (void*)this);
     }
 
-    void cycle::exit()
+    void Cycle::Exit()
     {
-        d_ptr(impl_)->quit_ = true;
+        d_ptr(impl_)->quit = true;
 
         /**
          * @brief There is a chance that loop() just executes while(!quit_) and exits,
          *   then Cycle destructs, then we are accessing an invalid object.
          */
-        if (!in_cycle_thread()) {
-            notify();
+        if (!InCycleThread()) {
+            Notify();
         }
     }
 
-    void cycle::run_in_cycle(task _task)
+    void Cycle::RunInCycle(Task _task)
     {
-        if (in_cycle_thread()) {
+        if (InCycleThread()) {
             _task();
         } else {
-            queue_in_cycle(std::move(_task));
+            QueueInCycle(std::move(_task));
         }
     }
 
-    void cycle::queue_in_cycle(task _task)
+    void Cycle::QueueInCycle(Task _task)
     {
         {
-            std::lock_guard<std::mutex> guard(d_ptr(impl_)->functions_mutex_);
-            d_ptr(impl_)->pending_functions_.push_back(std::move(_task));
+            std::lock_guard<std::mutex> guard(d_ptr(impl_)->functions_mutex);
+            d_ptr(impl_)->pending_functions.push_back(std::move(_task));
         }
 
-        if (!in_cycle_thread()) {
-            notify();
+        if (!InCycleThread()) {
+            Notify();
         }
     }
 
-    auto cycle::queue_size() const -> std::size_t
+    auto Cycle::queue_size() const -> std::size_t
     {
-        std::lock_guard<std::mutex> guard(d_ptr(impl_)->functions_mutex_);
-        return d_ptr(impl_)->pending_functions_.size();
+        std::lock_guard<std::mutex> guard(d_ptr(impl_)->functions_mutex);
+        return d_ptr(impl_)->pending_functions.size();
     }
 
-    void cycle::event_update(const hare::ptr<event>& _event)
+    void Cycle::EventUpdate(const hare::Ptr<Event>& _event)
     {
-        if (_event->owner_cycle() != this && _event->event_id() != -1) {
-            MSG_ERROR("cannot add event from other cycle[{}]", (void*)_event->owner_cycle());
+        if (_event->cycle() != this && _event->id() != -1) {
+            MSG_ERROR("cannot add event from other cycle[{}]", (void*)_event->cycle());
             return;
         }
 
-        run_in_cycle(std::bind([=](const wptr<event>& wevent) {
+        RunInCycle(std::bind([=](const WPtr<Event>& wevent) {
             auto sevent = wevent.lock();
             if (!sevent) {
                 return;
@@ -337,136 +337,136 @@ namespace io {
             bool ret = true;
 
             if (sevent->fd() >= 0) {
-                ret = d_ptr(impl_)->reactor_->event_update(sevent);
+                ret = d_ptr(impl_)->reactor->EventUpdate(sevent);
             }
 
             if (!ret) {
                 return;
             }
 
-            if (sevent->event_id() == -1) {
-                sevent->active(this, d_ptr(impl_)->event_id_++);
+            if (sevent->id() == -1) {
+                sevent->Active(this, d_ptr(impl_)->event_id++);
 
-                assert(d_ptr(impl_)->reactor_->events_.find(sevent->event_id()) == d_ptr(impl_)->reactor_->events_.end());
-                d_ptr(impl_)->reactor_->events_.insert(std::make_pair(sevent->event_id(), sevent));
+                assert(d_ptr(impl_)->reactor->events_.find(sevent->id()) == d_ptr(impl_)->reactor->events_.end());
+                d_ptr(impl_)->reactor->events_.insert(std::make_pair(sevent->id(), sevent));
 
                 if (sevent->fd() >= 0) {
-                    d_ptr(impl_)->reactor_->inverse_map_.insert(std::make_pair(sevent->fd(), sevent->event_id()));
+                    d_ptr(impl_)->reactor->inverse_map_.insert(std::make_pair(sevent->fd(), sevent->id()));
                 }
             }
 
             if (CHECK_EVENT(sevent->events(), EVENT_TIMEOUT) != 0) {
-                d_ptr(impl_)->reactor_->ptimer_.emplace(sevent->event_id(),
-                    timestamp(timestamp::now().microseconds_since_epoch() + sevent->timeval()));
+                d_ptr(impl_)->reactor->ptimer_.emplace(sevent->id(),
+                    Timestamp(Timestamp::Now().microseconds_since_epoch() + sevent->timeval()));
             }
         },
             _event));
     }
 
-    void cycle::event_remove(const hare::ptr<event>& _event)
+    void Cycle::EventRemove(const hare::Ptr<Event>& _event)
     {
         if (!_event) {
             return;
         }
 
-        if (_event->owner_cycle() != this || _event->event_id() == -1) {
-            MSG_ERROR("the event is not part of the cycle[{}]", (void*)_event->owner_cycle());
+        if (_event->cycle() != this || _event->id() == -1) {
+            MSG_ERROR("the event is not part of the cycle[{}]", (void*)_event->cycle());
             return;
         }
 
-        run_in_cycle(std::bind([=](const wptr<event>& wevent) {
+        RunInCycle(std::bind([=](const WPtr<Event>& wevent) {
             auto sevent = wevent.lock();
             if (!sevent) {
                 MSG_ERROR("event is empty before it was released.");
                 return;
             }
-            auto event_id = sevent->event_id();
+            auto event_id = sevent->id();
             auto socket = sevent->fd();
 
-            auto iter = d_ptr(impl_)->reactor_->events_.find(event_id);
-            if (iter == d_ptr(impl_)->reactor_->events_.end()) {
+            auto iter = d_ptr(impl_)->reactor->events_.find(event_id);
+            if (iter == d_ptr(impl_)->reactor->events_.end()) {
                 MSG_ERROR("cannot find event in cycle[{}]", (void*)this);
             } else {
                 assert(iter->second == sevent);
 
-                sevent->reset();
+                sevent->Reset();
 
                 if (socket >= 0) {
-                    d_ptr(impl_)->reactor_->event_remove(sevent);
-                    d_ptr(impl_)->reactor_->inverse_map_.erase(socket);
+                    d_ptr(impl_)->reactor->EventRemove(sevent);
+                    d_ptr(impl_)->reactor->inverse_map_.erase(socket);
                 }
 
-                d_ptr(impl_)->reactor_->events_.erase(iter);
+                d_ptr(impl_)->reactor->events_.erase(iter);
             }
         },
             _event));
     }
 
-    auto cycle::event_check(const hare::ptr<event>& _event) -> bool
+    auto Cycle::EventCheck(const hare::Ptr<Event>& _event) -> bool
     {
-        if (!_event || _event->event_id() < 0) {
+        if (!_event || _event->id() < 0) {
             return false;
         }
-        assert_in_cycle_thread();
-        return d_ptr(impl_)->reactor_->events_.find(_event->event_id()) != d_ptr(impl_)->reactor_->events_.end();
+        AssertInCycleThread();
+        return d_ptr(impl_)->reactor->events_.find(_event->id()) != d_ptr(impl_)->reactor->events_.end();
     }
 
-    void cycle::notify()
+    void Cycle::Notify()
     {
-        d_ptr(impl_)->notify_event_->send_notify();
+        d_ptr(impl_)->notify_event->SendNotify();
     }
 
-    void cycle::abort_not_cycle_thread()
+    void Cycle::AbortNotCycleThread()
     {
         MSG_FATAL("cycle[{}] was created in thread[{:#x}], current thread is: {:#x}",
-            (void*)this, d_ptr(impl_)->tid_, current_thread::get_tds().tid);
+            (void*)this, d_ptr(impl_)->tid, current_thread::ThreadData().tid);
     }
 
-    void cycle::do_pending_functions()
+    void Cycle::DoPendingFunctions()
     {
-        std::list<task> functions {};
-        d_ptr(impl_)->calling_pending_functions_ = true;
+        std::list<Task> functions {};
+        d_ptr(impl_)->calling_pending_functions = true;
 
         {
-            std::lock_guard<std::mutex> guard(d_ptr(impl_)->functions_mutex_);
-            functions.swap(d_ptr(impl_)->pending_functions_);
+            std::lock_guard<std::mutex> guard(d_ptr(impl_)->functions_mutex);
+            functions.swap(d_ptr(impl_)->pending_functions);
         }
 
         for (const auto& function : functions) {
             function();
         }
 
-        d_ptr(impl_)->calling_pending_functions_ = false;
+        d_ptr(impl_)->calling_pending_functions = false;
     }
 
-    void cycle::notify_timer()
+    void Cycle::NotifyTimer()
     {
-        auto& priority_event = d_ptr(impl_)->reactor_->ptimer_;
-        auto& events = d_ptr(impl_)->reactor_->events_;
+        auto& priority_event = d_ptr(impl_)->reactor->ptimer_;
+        auto& events = d_ptr(impl_)->reactor->events_;
         const auto revent = EVENT_TIMEOUT;
-        auto now = timestamp::now();
+        auto now = Timestamp::Now();
 
         while (!priority_event.empty()) {
             auto top = priority_event.top();
-            if (d_ptr(impl_)->reactor_time_ < top.stamp_) {
+            if (d_ptr(impl_)->reactor_time < top.stamp) {
                 break;
             }
-            auto iter = events.find(top.id_);
+            auto iter = events.find(top.id);
             if (iter != events.end()) {
                 auto& event = iter->second;
                 if (event) {
                     MSG_TRACE("event[{}] trigged.", (void*)iter->second.get());
-                    event->handle_event(revent, now);
+                    event->HandleEvent(revent, now);
                     if ((event->events() & EVENT_PERSIST) != 0) {
-                        priority_event.emplace(top.id_, timestamp(d_ptr(impl_)->reactor_time_.microseconds_since_epoch() + event->timeval()));
+                        priority_event.emplace(top.id, Timestamp(d_ptr(impl_)->reactor_time.microseconds_since_epoch() + event->timeval()));
                     } else {
-                        event_remove(event);
+                        EventRemove(event);
                     }
                 } else {
                     events.erase(iter);
                 }
             } else {
-                MSG_TRACE("event[{}] deleted.", top.id_);
+                MSG_TRACE("event[{}] deleted.", top.id);
             }
             priority_event.pop();
         }

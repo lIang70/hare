@@ -34,13 +34,13 @@ namespace net {
 
     } // namespace detail
 
-    error::error(std::int32_t error_code)
+    Error::Error(std::int32_t error_code)
         : error_code_(error_code)
         , system_code_(errno)
     {
     }
 
-    auto error::description() const -> const char*
+    auto Error::Description() const -> const char*
     {
         return detail::error_description[error_code_];
     }

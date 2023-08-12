@@ -12,20 +12,20 @@
 namespace hare {
 namespace detail {
 
-    static const std::int32_t JULIAN_DAY_OF_19700101 { time::detail::get_julian_day_number(1970, 1, 1) };
+    static const std::int32_t JULIAN_DAY_OF_19700101 { time::detail::JulianDayNumber(1970, 1, 1) };
 
     HARE_INLINE
-    static void fill_hms(std::uint32_t _seconds, struct time::date_time* _sdt)
+    void FillHMS(std::uint32_t _seconds, struct time::DateTime* _sdt)
     {
         auto minutes = static_cast<std::int32_t>(_seconds) / SECONDS_PER_MINUTE;
-        _sdt->hour_ = minutes / MINUTES_PER_HOUR;
-        _sdt->minute_ = minutes - _sdt->hour() * MINUTES_PER_HOUR;
-        _sdt->second_ = static_cast<std::int32_t>(_seconds) - minutes * SECONDS_PER_MINUTE;
+        _sdt->hour = minutes / MINUTES_PER_HOUR;
+        _sdt->minute = minutes - _sdt->hour * MINUTES_PER_HOUR;
+        _sdt->second = static_cast<std::int32_t>(_seconds) - minutes * SECONDS_PER_MINUTE;
     }
 
-    auto break_time(std::int64_t _time) -> struct time::date_time
+    auto BreakTime(std::int64_t _time) -> struct time::DateTime
     {
-        struct time::date_time sdt {};
+        struct time::DateTime sdt { };
         auto seconds = static_cast<std::int32_t>(_time % static_cast<std::int64_t>(SECONDS_PER_DAY));
         auto days = static_cast<std::int32_t>(_time / static_cast<std::int64_t>(SECONDS_PER_DAY));
         // C++11 rounds towards zero.
@@ -34,24 +34,26 @@ namespace detail {
             --days;
         }
 
-        detail::fill_hms(seconds, &sdt);
-        time::date date(days + JULIAN_DAY_OF_19700101);
-        time::date::ymd ymd = date.detail();
-        sdt.year_ = ymd.year;
-        sdt.month_ = ymd.month;
-        sdt.day_ = ymd.day;
+        detail::FillHMS(seconds, &sdt);
+        time::Date date(days + JULIAN_DAY_OF_19700101);
+        time::Date::YMD ymd = date.Detail();
+        sdt.year = ymd.year;
+        sdt.month = ymd.month;
+        sdt.day = ymd.day;
 
         return sdt;
     }
 
 } // namespace detail
 
-HARE_IMPL_DEFAULT(timezone,
-    struct compare_utc_time;
-    struct compare_local_time;
+HARE_IMPL_DEFAULT(
+    Timezone,
+    
+    struct CompareUTCTime;
+    struct CompareLocalTime;
 
-    struct transition {
-        transition(std::int64_t _uct, std::int64_t _local, std::int32_t _local_idx)
+    struct Transition {
+        Transition(std::int64_t _uct, std::int64_t _local, std::int32_t _local_idx)
             : utc_time(_uct)
             , local_time(_local)
             , local_time_idx(_local_idx)
@@ -64,22 +66,22 @@ HARE_IMPL_DEFAULT(timezone,
 
     };
 
-    struct compare_utc_time {
-        auto operator()(const transition& _lhs, const transition& _rhs) const -> bool
+    struct CompareUTCTime {
+        auto operator()(const Transition& _lhs, const Transition& _rhs) const -> bool
         {
             return _lhs.utc_time < _rhs.utc_time;
         }
     };
 
-    struct compare_local_time {
-        auto operator()(const transition& _lhs, const transition& _rhs) const -> bool
+    struct CompareLocalTime {
+        auto operator()(const Transition& _lhs, const Transition& _rhs) const -> bool
         {
             return _lhs.local_time < _rhs.local_time;
         }
     };
 
-    struct local_time {
-        local_time(std::int32_t _offset, bool _dst, std::int32_t _idx)
+    struct LocalTime {
+        LocalTime(std::int32_t _offset, bool _dst, std::int32_t _idx)
             : utc_offset(_offset)
             , desig_idx(_idx)
             , is_dst(_dst)
@@ -89,27 +91,26 @@ HARE_IMPL_DEFAULT(timezone,
         std::int32_t utc_offset; // East of UTC
         std::int32_t desig_idx;
         bool is_dst;
+    };
 
-    };    
-
-    std::vector<transition> transitions {};
-    std::vector<local_time> local_times {};
+    std::vector<Transition> transitions {};
+    std::vector<LocalTime> local_times {};
     std::string abbreviation {};
     std::string tz_string {};
     bool valid { false };
 
-    void add_local_time(std::int32_t _utc_offset, bool _is_dst, std::int32_t _desig_idx)
+    void AddLocalTime(std::int32_t _utc_offset, bool _is_dst, std::int32_t _desig_idx)
     {
         local_times.emplace_back(_utc_offset, _is_dst, _desig_idx);
     }
 
-    void add_transition(std::int64_t _utc_time, std::int32_t _local_time_idx)
+    void AddTransition(std::int64_t _utc_time, std::int32_t _local_time_idx)
     {
         auto& local = local_times.at(_local_time_idx);
         transitions.emplace_back(_utc_time, _utc_time + local.utc_offset, _local_time_idx);
     }
 
-    void clone(timezone_impl* other)
+    void Clone(TimezoneImpl* other)
     {
         if (!valid || other == nullptr) {
             return;
@@ -121,13 +122,13 @@ HARE_IMPL_DEFAULT(timezone,
         other->valid = valid;
     }
 
-    auto find_local_time(std::int64_t _utc_time) const -> const local_time*;
-    auto find_local_time(const struct time::date_time& _tdt, bool _post_transition) const -> const local_time*;
+    auto FindLocalTime(std::int64_t _utc_time) const -> const LocalTime*;
+    auto FindLocalTime(const struct time::DateTime& _tdt, bool _post_transition) const -> const LocalTime*;
 )
 
-auto timezone_impl::find_local_time(std::int64_t _utc_time) const -> const timezone_impl::local_time*
+auto TimezoneImpl::FindLocalTime(std::int64_t _utc_time) const -> const TimezoneImpl::LocalTime*
 {
-    const local_time* local { nullptr };
+    const LocalTime* local { nullptr };
 
     // row UTC time             isdst  offset  Local time (PRC)
     //  1  1989-09-16 17:00:00Z   0      8.0   1989-09-17 01:00:00
@@ -143,8 +144,8 @@ auto timezone_impl::find_local_time(std::int64_t _utc_time) const -> const timez
         // FIXME: should be first non dst time zone
         local = &local_times.front();
     } else {
-        transition sentry(_utc_time, 0, 0);
-        auto trans_iter = std::upper_bound(transitions.begin(), transitions.end(), sentry, compare_utc_time());
+        Transition sentry(_utc_time, 0, 0);
+        auto trans_iter = std::upper_bound(transitions.begin(), transitions.end(), sentry, CompareUTCTime());
         assert(trans_iter != transitions.begin());
         if (trans_iter != transitions.end()) {
             --trans_iter;
@@ -158,17 +159,17 @@ auto timezone_impl::find_local_time(std::int64_t _utc_time) const -> const timez
     return local;
 }
 
-auto timezone_impl::find_local_time(const struct time::date_time& _tdt, bool _post_transition) const -> const timezone_impl::local_time*
+auto TimezoneImpl::FindLocalTime(const struct time::DateTime& _tdt, bool _post_transition) const -> const TimezoneImpl::LocalTime*
 {
-    const auto local_time = timezone::from_utc_time(_tdt);
+    const auto local_time = Timezone::FromUtcTime(_tdt);
 
     if (transitions.empty() || local_time < transitions.front().local_time) {
         // FIXME: should be first non dst time zone
         return &local_times.front();
     }
 
-    transition sentry(0, local_time, 0);
-    auto trans_iter = std::upper_bound(transitions.begin(), transitions.end(), sentry, compare_local_time());
+    Transition sentry(0, local_time, 0);
+    auto trans_iter = std::upper_bound(transitions.begin(), transitions.end(), sentry, CompareLocalTime());
     assert(trans_iter != transitions.begin());
 
     if (trans_iter == transitions.end()) {
@@ -218,75 +219,75 @@ auto timezone_impl::find_local_time(const struct time::date_time& _tdt, bool _po
 }
 
 // static
-auto timezone::utc() -> timezone
+auto Timezone::UTC() -> Timezone
 {
     return { 0, "UTC" };
 }
 
-timezone::timezone()
-    : impl_(new timezone_impl)
-{}
-
-timezone::timezone(std::int32_t east_of_utc, const char* name)
-    : timezone()
+Timezone::Timezone()
+    : impl_(new TimezoneImpl)
 {
-    d_ptr(impl_)->add_local_time(east_of_utc, false, 0);
+}
+
+Timezone::Timezone(std::int32_t east_of_utc, const char* name)
+    : Timezone()
+{
+    d_ptr(impl_)->AddLocalTime(east_of_utc, false, 0);
     d_ptr(impl_)->abbreviation = name;
     d_ptr(impl_)->valid = true;
 }
 
-timezone::~timezone()
+Timezone::~Timezone()
 {
     delete impl_;
 }
 
-timezone::timezone(const timezone& another)
-    : timezone()
+Timezone::Timezone(const Timezone& another)
+    : Timezone()
 {
     if (another) {
-        d_ptr(another.impl_)->clone(d_ptr(impl_));
+        d_ptr(another.impl_)->Clone(d_ptr(impl_));
     }
 }
 
-auto timezone::operator=(const timezone& another) -> timezone&
+auto Timezone::operator=(const Timezone& another) -> Timezone&
 {
     if (this == &another) {
         return (*this);
     }
 
     if (another) {
-        d_ptr(another.impl_)->clone(d_ptr(impl_));
+        d_ptr(another.impl_)->Clone(d_ptr(impl_));
     }
     return (*this);
 }
 
-auto timezone::to_utc_time(std::int64_t _seconds_since_epoch) -> struct time::date_time
+auto Timezone::ToUtcTime(std::int64_t _seconds_since_epoch) -> struct time::DateTime
 {
-    return detail::break_time(_seconds_since_epoch);
+    return detail::BreakTime(_seconds_since_epoch);
 }
 
-auto timezone::from_utc_time(const struct time::date_time& _dt) -> std::int64_t
+auto Timezone::FromUtcTime(const struct time::DateTime& _dt) -> std::int64_t
 {
-    time::date date(_dt.year(), _dt.month(), _dt.day());
-    auto seconds_in_day = _dt.hour() * (MINUTES_PER_HOUR * SECONDS_PER_MINUTE) + _dt.minute() * SECONDS_PER_MINUTE + _dt.second();
+    time::Date date(_dt.year, _dt.month, _dt.day);
+    auto seconds_in_day = _dt.hour * (MINUTES_PER_HOUR * SECONDS_PER_MINUTE) + _dt.minute * SECONDS_PER_MINUTE + _dt.second;
     auto days = date.julian_day_number() - detail::JULIAN_DAY_OF_19700101;
     return days * SECONDS_PER_DAY + seconds_in_day;
 }
 
-timezone::operator bool() const
+Timezone::operator bool() const
 {
     return d_ptr(impl_)->valid;
 }
 
-auto timezone::to_local(std::int64_t _seconds, std::int32_t* _utc_offset) const -> struct time::date_time
-{
+auto Timezone::ToLocal(std::int64_t _seconds, std::int32_t* _utc_offset) const -> struct time::DateTime {
     assert(d_ptr(impl_)->valid);
 
-    struct time::date_time local_time {};
-    const auto* local = d_ptr(impl_)->find_local_time(_seconds);
+    struct time::DateTime local_time { };
+    const auto* local = d_ptr(impl_) -> FindLocalTime(_seconds);
 
     if (local != nullptr) {
-        local_time = detail::break_time(_seconds + local->utc_offset);
+        local_time = detail::BreakTime(_seconds + local->utc_offset);
         if (_utc_offset != nullptr) {
             *_utc_offset = local->utc_offset;
         }
@@ -295,11 +296,11 @@ auto timezone::to_local(std::int64_t _seconds, std::int32_t* _utc_offset) const 
     return local_time;
 }
 
-auto timezone::from_local(const struct time::date_time& _dt, bool _post_transition) const -> std::int64_t
+auto Timezone::FromLocal(const struct time::DateTime& _dt, bool _post_transition) const -> std::int64_t
 {
     assert(d_ptr(impl_)->valid);
-    const auto* local = d_ptr(impl_)->find_local_time(_dt, _post_transition);
-    const auto local_seconds = from_utc_time(_dt);
+    const auto* local = d_ptr(impl_)->FindLocalTime(_dt, _post_transition);
+    const auto local_seconds = FromUtcTime(_dt);
     if (local != nullptr) {
         return local_seconds - local->utc_offset;
     }

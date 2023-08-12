@@ -19,23 +19,23 @@ namespace socket_op {
     HARE_INLINE auto sockaddr_in6_cast(const struct sockaddr* _addr) -> const struct sockaddr_in6* { return static_cast<const struct sockaddr_in6*>(implicit_cast<const void*>(_addr)); }
     HARE_INLINE auto sockaddr_in6_cast(struct sockaddr* _addr) -> struct sockaddr_in6* { return static_cast<struct sockaddr_in6*>(implicit_cast<void*>(_addr)); }
 
-    HARE_API auto create_nonblocking_or_die(std::uint8_t _family) -> util_socket_t;
-    HARE_API auto close(util_socket_t _fd) -> std::int32_t;
-    HARE_API auto write(util_socket_t _fd, const void* _buf, std::size_t _size) -> std::int64_t;
-    HARE_API auto read(util_socket_t _fd, void* _buf, std::size_t _size) -> std::int64_t;
+    HARE_API auto CreateNonblockingOrDie(std::uint8_t _family) -> util_socket_t;
+    HARE_API auto Close(util_socket_t _fd) -> std::int32_t;
+    HARE_API auto Write(util_socket_t _fd, const void* _buf, std::size_t _size) -> std::int64_t;
+    HARE_API auto Read(util_socket_t _fd, void* _buf, std::size_t _size) -> std::int64_t;
 
-    HARE_API auto bind(util_socket_t _fd, const struct sockaddr* _addr, std::size_t _addr_len) -> bool;
-    HARE_API auto listen(util_socket_t _fd) -> bool;
-    HARE_API auto connect(util_socket_t _fd, const struct sockaddr* _addr, std::size_t _addr_len) -> bool;
-    HARE_API auto accept(util_socket_t _fd, struct sockaddr* _addr, std::size_t _addr_len) -> util_socket_t;
+    HARE_API auto Bind(util_socket_t _fd, const struct sockaddr* _addr, std::size_t _addr_len) -> bool;
+    HARE_API auto Listen(util_socket_t _fd) -> bool;
+    HARE_API auto Connect(util_socket_t _fd, const struct sockaddr* _addr, std::size_t _addr_len) -> bool;
+    HARE_API auto Accept(util_socket_t _fd, struct sockaddr* _addr, std::size_t _addr_len) -> util_socket_t;
 
-    HARE_API auto get_addr_len(std::uint8_t _family) -> std::size_t;
-    HARE_API auto get_bytes_readable_on_socket(util_socket_t _fd) -> std::size_t;
+    HARE_API auto AddrLen(std::uint8_t _family) -> std::size_t;
+    HARE_API auto GetBytesReadableOnSocket(util_socket_t _fd) -> std::size_t;
 
-    HARE_API void to_ip_port(char* _buf, std::size_t _size, const struct sockaddr* _addr);
-    HARE_API void to_ip(char* _buf, std::size_t _size, const struct sockaddr* _addr);
-    HARE_API auto from_ip_port(const char* _ip, std::uint16_t _port, struct sockaddr_in* _addr) -> bool;
-    HARE_API auto from_ip_port(const char* _ip, std::uint16_t _port, struct sockaddr_in6* _addr) -> bool;
+    HARE_API void ToIpPort(char* _buf, std::size_t _size, const struct sockaddr* _addr);
+    HARE_API void ToIp(char* _buf, std::size_t _size, const struct sockaddr* _addr);
+    HARE_API auto FromIpPort(const char* _ip, std::uint16_t _port, struct sockaddr_in* _addr) -> bool;
+    HARE_API auto FromIpPort(const char* _ip, std::uint16_t _port, struct sockaddr_in6* _addr) -> bool;
 
 } // namespace socket_op
 } // namespace hare

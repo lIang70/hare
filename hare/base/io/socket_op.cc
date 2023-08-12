@@ -87,7 +87,7 @@ namespace socket_op {
 
     namespace detail {
 #if defined(NO_ACCEPT4)
-        static void set_nonblock_closeonexec(util_socket_t _fd)
+        static void SetForNotAccept4(util_socket_t _fd)
         {
 #ifndef H_OS_WIN
             // non-block
@@ -151,12 +151,12 @@ namespace socket_op {
                 return -1;
             }
 
-            hare::detail::fill_n(&listen_addr, sizeof(listen_addr), 0);
+            hare::detail::FillN(&listen_addr, sizeof(listen_addr), 0);
             listen_addr.sin_family = AF_INET;
             listen_addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
             listen_addr.sin_port = 0;
 
-            if (!socket_op::bind(listener, socket_op::sockaddr_cast(&listen_addr), sizeof(listen_addr))) {
+            if (!socket_op::Bind(listener, socket_op::sockaddr_cast(&listen_addr), sizeof(listen_addr))) {
                 goto tidy_up_and_fail;
             }
             if (::listen(listener, 1) == -1) {
@@ -168,7 +168,7 @@ namespace socket_op {
                 goto tidy_up_and_fail;
             }
 
-            hare::detail::fill_n(&connect_addr, sizeof(connect_addr), 0);
+            hare::detail::FillN(&connect_addr, sizeof(connect_addr), 0);
 
             /* We want to find out the port number to connect to.  */
             size = sizeof(connect_addr);
@@ -178,12 +178,12 @@ namespace socket_op {
             if (size != sizeof(connect_addr)) {
                 goto abort_tidy_up_and_fail;
             }
-            if (!socket_op::connect(connector, socket_op::sockaddr_cast(&connect_addr), sizeof(connect_addr))) {
+            if (!socket_op::Connect(connector, socket_op::sockaddr_cast(&connect_addr), sizeof(connect_addr))) {
                 goto tidy_up_and_fail;
             }
 
             size = sizeof(listen_addr);
-            acceptor = socket_op::accept(listener, socket_op::sockaddr_cast(&listen_addr), size);
+            acceptor = socket_op::Accept(listener, socket_op::sockaddr_cast(&listen_addr), size);
             if (acceptor < 0) {
                 goto tidy_up_and_fail;
             }
@@ -201,7 +201,7 @@ namespace socket_op {
                 || listen_addr.sin_port != connect_addr.sin_port) {
                 goto abort_tidy_up_and_fail;
             }
-            socket_op::close(listener);
+            socket_op::Close(listener);
 
             _fd[0] = connector;
             _fd[1] = acceptor;
@@ -215,13 +215,13 @@ namespace socket_op {
                 saved_errno = errno;
             }
             if (listener != -1) {
-                socket_op::close(listener);
+                socket_op::Close(listener);
             }
             if (connector != -1) {
-                socket_op::close(connector);
+                socket_op::Close(connector);
             }
             if (acceptor != -1) {
-                socket_op::close(acceptor);
+                socket_op::Close(acceptor);
             }
 
             SET_SOCKET_ERROR(saved_errno);
@@ -230,19 +230,19 @@ namespace socket_op {
         }
     } // namespace detail
 
-    auto host_to_network64(std::uint64_t host64) -> std::uint64_t { return htobe64(host64); }
-    auto host_to_network32(std::uint32_t host32) -> std::uint32_t { return htobe32(host32); }
-    auto host_to_network16(std::uint16_t host16) -> std::uint16_t { return htobe16(host16); }
-    auto network_to_host64(std::uint64_t net64) -> std::uint64_t { return be64toh(net64); }
-    auto network_to_host32(std::uint32_t net32) -> std::uint32_t { return be32toh(net32); }
-    auto network_to_host16(std::uint16_t net16) -> std::uint16_t { return be16toh(net16); }
+    auto HostToNetwork64(std::uint64_t host64) -> std::uint64_t { return htobe64(host64); }
+    auto HostToNetwork32(std::uint32_t host32) -> std::uint32_t { return htobe32(host32); }
+    auto HostToNetwork16(std::uint16_t host16) -> std::uint16_t { return htobe16(host16); }
+    auto NetworkToHost64(std::uint64_t net64) -> std::uint64_t { return be64toh(net64); }
+    auto NetworkToHost32(std::uint32_t net32) -> std::uint32_t { return be32toh(net32); }
+    auto NetworkToHost16(std::uint16_t net16) -> std::uint16_t { return be16toh(net16); }
 
-    auto create_nonblocking_or_die(std::uint8_t _family) -> util_socket_t
+    auto CreateNonblockingOrDie(std::uint8_t _family) -> util_socket_t
     {
 #ifndef H_OS_WIN
         auto _fd = ::socket(_family, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0);
         if (_fd < 0) {
-            throw exception("cannot create non-blocking socket");
+            throw Exception("cannot create non-blocking socket");
         }
 #else
         auto _fd = ::socket(_family, SOCK_STREAM, 0);
@@ -254,12 +254,12 @@ namespace socket_op {
         return _fd;
     }
 
-    auto close(util_socket_t _fd) -> std::int32_t
+    auto Close(util_socket_t _fd) -> std::int32_t
     {
 #ifndef H_OS_WIN
         auto ret = ::close(_fd);
         if (ret < 0) {
-            MSG_ERROR("close fd[{}], detail:{}.", _fd, get_socket_error_info(_fd));
+            MSG_ERROR("close fd[{}], detail:{}.", _fd, SocketErrorInfo(_fd));
         }
 #else
         auto ret = ::closesocket(_fd);
@@ -270,7 +270,7 @@ namespace socket_op {
         return ret;
     }
 
-    auto write(util_socket_t _fd, const void* _buf, std::size_t size) -> std::int64_t
+    auto Write(util_socket_t _fd, const void* _buf, std::size_t size) -> std::int64_t
     {
 #ifndef H_OS_WIN
         return ::write(_fd, _buf, size);
@@ -279,7 +279,7 @@ namespace socket_op {
 #endif
     }
 
-    auto read(util_socket_t _fd, void* _buf, std::size_t size) -> std::int64_t
+    auto Read(util_socket_t _fd, void* _buf, std::size_t size) -> std::int64_t
     {
 #ifndef H_OS_WIN
         return ::read(_fd, _buf, size);
@@ -288,25 +288,7 @@ namespace socket_op {
 #endif
     }
 
-    auto sendto(util_socket_t _fd, void* _buf, std::size_t _size, struct sockaddr* _addr, std::size_t _addr_len) -> std::int64_t
-    {
-#ifndef H_OS_WIN
-        return ::sendto(_fd, _buf, _size, 0, _addr, _addr_len);
-#else
-        return ::sendto(_fd, static_cast<const char*>(_buf), _size, 0, _addr, _addr_len);
-#endif
-    }
-
-    auto recvfrom(util_socket_t _fd, void* _buf, std::size_t size, struct sockaddr* _addr, std::size_t addr_len) -> std::int64_t
-    {
-#ifndef H_OS_WIN
-        return ::recvfrom(_fd, _buf, size, 0, _addr, reinterpret_cast<socklen_t*>(&addr_len));
-#else
-        return ::recvfrom(_fd, static_cast<char*>(_buf), size, 0, _addr, reinterpret_cast<socklen_t*>(&addr_len));
-#endif
-    }
-
-    auto bind(util_socket_t _fd, const struct sockaddr* _addr, std::size_t _addr_len) -> bool
+    auto Bind(util_socket_t _fd, const struct sockaddr* _addr, std::size_t _addr_len) -> bool
     {
 #ifndef H_OS_WIN
         return ::bind(_fd, _addr, _addr_len) != -1;
@@ -315,7 +297,7 @@ namespace socket_op {
 #endif
     }
 
-    auto listen(util_socket_t _fd) -> bool
+    auto Listen(util_socket_t _fd) -> bool
     {
 #ifndef H_OS_WIN
         return ::listen(_fd, SOMAXCONN) >= 0;
@@ -324,7 +306,7 @@ namespace socket_op {
 #endif
     }
 
-    auto connect(util_socket_t _fd, const struct sockaddr* _addr, std::size_t _addr_len) -> bool
+    auto Connect(util_socket_t _fd, const struct sockaddr* _addr, std::size_t _addr_len) -> bool
     {
 #ifndef H_OS_WIN
         return ::connect(_fd, _addr, _addr_len) >= 0;
@@ -333,11 +315,11 @@ namespace socket_op {
 #endif
     }
 
-    auto accept(util_socket_t _fd, struct sockaddr* _addr, std::size_t _addr_len) -> util_socket_t
+    auto Accept(util_socket_t _fd, struct sockaddr* _addr, std::size_t _addr_len) -> util_socket_t
     {
 #if defined(NO_ACCEPT4)
         auto accept_fd = ::accept(_fd, _addr, (socklen_t*)&_addr_len);
-        detail::set_nonblock_closeonexec(accept_fd);
+        detail::SetForNotAccept4(accept_fd);
 #else
         auto accept_fd = ::accept4(_fd, _addr,
             (socklen_t*)&_addr_len, SOCK_NONBLOCK | SOCK_CLOEXEC);
@@ -373,12 +355,12 @@ namespace socket_op {
         return accept_fd;
     }
 
-    auto get_addr_len(std::uint8_t _family) -> std::size_t
+    auto AddrLen(std::uint8_t _family) -> std::size_t
     {
         return _family == PF_INET ? sizeof(struct sockaddr_in) : sizeof(struct sockaddr_in6);
     }
 
-    auto get_bytes_readable_on_socket(util_socket_t _fd) -> std::size_t
+    auto GetBytesReadableOnSocket(util_socket_t _fd) -> std::size_t
     {
 #if defined(FIONREAD) && defined(H_OS_WIN32)
         u_long lng = MAX_READ_DEFAULT;
@@ -398,7 +380,7 @@ namespace socket_op {
 #endif
     }
 
-    auto get_socket_error_info(util_socket_t _fd) -> std::string
+    auto SocketErrorInfo(util_socket_t _fd) -> std::string
     {
         std::array<char, HARE_SMALL_BUFFER> error_str {};
         auto error_len = error_str.size();
@@ -408,27 +390,27 @@ namespace socket_op {
         return {};
     }
 
-    void to_ip_port(char* _buf, std::size_t size, const struct sockaddr* _addr)
+    void ToIpPort(char* _buf, std::size_t size, const struct sockaddr* _addr)
     {
         if (_addr->sa_family == AF_INET6) {
             _buf[0] = '[';
-            to_ip(_buf + 1, size - 1, _addr);
+            ToIp(_buf + 1, size - 1, _addr);
             auto end = ::strlen(_buf);
             const auto* addr6 = sockaddr_in6_cast(_addr);
-            auto port = network_to_host16(addr6->sin6_port);
+            auto port = NetworkToHost16(addr6->sin6_port);
             assert(size > end);
-            ignore_unused(::snprintf(_buf + end, size - end, "]:%u", port));
+            IgnoreUnused(::snprintf(_buf + end, size - end, "]:%u", port));
             return;
         }
-        to_ip(_buf, size, _addr);
+        ToIp(_buf, size, _addr);
         auto end = ::strlen(_buf);
         const auto* addr4 = sockaddr_in_cast(_addr);
-        auto port = network_to_host16(addr4->sin_port);
+        auto port = NetworkToHost16(addr4->sin_port);
         assert(size > end);
-        ignore_unused(::snprintf(_buf + end, size - end, ":%u", port));
+        IgnoreUnused(::snprintf(_buf + end, size - end, ":%u", port));
     }
 
-    void to_ip(char* _buf, std::size_t size, const struct sockaddr* _addr)
+    void ToIp(char* _buf, std::size_t size, const struct sockaddr* _addr)
     {
         if (_addr->sa_family == AF_INET) {
             assert(size >= INET_ADDRSTRLEN);
@@ -441,21 +423,21 @@ namespace socket_op {
         }
     }
 
-    auto from_ip_port(const char* target_ip, std::uint16_t port, struct sockaddr_in* _addr) -> bool
+    auto FromIpPort(const char* target_ip, std::uint16_t port, struct sockaddr_in* _addr) -> bool
     {
         _addr->sin_family = AF_INET;
-        _addr->sin_port = host_to_network16(port);
+        _addr->sin_port = HostToNetwork16(port);
         return ::inet_pton(AF_INET, target_ip, &_addr->sin_addr) <= 0;
     }
 
-    auto from_ip_port(const char* target_ip, std::uint16_t port, struct sockaddr_in6* _addr) -> bool
+    auto FromIpPort(const char* target_ip, std::uint16_t port, struct sockaddr_in6* _addr) -> bool
     {
         _addr->sin6_family = AF_INET6;
-        _addr->sin6_port = host_to_network16(port);
+        _addr->sin6_port = HostToNetwork16(port);
         return ::inet_pton(AF_INET6, target_ip, &_addr->sin6_addr) <= 0;
     }
 
-    auto socketpair(std::uint8_t _family, std::int32_t _type, std::int32_t _protocol, util_socket_t _sockets[2]) -> std::int32_t
+    auto Socketpair(std::uint8_t _family, std::int32_t _type, std::int32_t _protocol, util_socket_t _sockets[2]) -> std::int32_t
     {
 #ifndef H_OS_WIN32
         return ::socketpair(_family, _type, _protocol, _sockets);

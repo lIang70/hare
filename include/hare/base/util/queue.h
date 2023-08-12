@@ -24,35 +24,35 @@ namespace util {
     HARE_CLASS_API
     template <typename T,
         typename _Sequence = std::vector<T>>
-    class HARE_API circular_queue : public non_copyable {
+    class HARE_API CircularQueue : public NonCopyable {
     public:
-        using size_type = std::size_t;
-        using value_type = T;
+        using SizeType = std::size_t;
+        using ValueType = T;
 
     private:
-        size_type max_capacity_ {};
-        size_type over_counter_ {};
-        size_type head_ {};
-        size_type tail_ {};
+        SizeType max_capacity_ {};
+        SizeType over_counter_ {};
+        SizeType head_ {};
+        SizeType tail_ {};
         _Sequence sequence_ {};
 
     public:
-        circular_queue() = default;
+        CircularQueue() = default;
         HARE_INLINE
-        explicit circular_queue(size_type _max)
+        explicit CircularQueue(SizeType _max)
             : max_capacity_(_max)
             , sequence_(_max)
         { }
 
         HARE_INLINE
-        circular_queue(circular_queue&& _other) noexcept
-        { move(_other); }
+        CircularQueue(CircularQueue&& _other) noexcept
+        { Move(_other); }
 
         HARE_INLINE
-        circular_queue& operator=(circular_queue&& _other) noexcept
-        { move(_other); return (*this); }
+        CircularQueue& operator=(CircularQueue&& _other) noexcept
+        { Move(_other); return (*this); }
 
-        void push_back(T&& _item)
+        void PushBack(T&& _item)
         {
             if (max_capacity_ > 0) {
                 sequence_[tail_] = std::move(_item);
@@ -65,24 +65,24 @@ namespace util {
             }
         }
 
-        HARE_INLINE auto front() const -> const T& { return sequence_[head_]; }
-        HARE_INLINE auto front() -> T& { return sequence_[head_]; }
+        HARE_INLINE auto Front() const -> const T& { return sequence_[head_]; }
+        HARE_INLINE auto Front() -> T& { return sequence_[head_]; }
 
         HARE_INLINE
-        auto size() const -> size_type
+        auto Size() const -> SizeType
         { return tail_ >= head_ ? tail_ - head_ : max_capacity_ - head_ + tail_; }
 
-        HARE_INLINE auto capacity() const -> size_type { return max_capacity_; }
+        HARE_INLINE auto max_capacity() const -> SizeType { return max_capacity_; }
 
         HARE_INLINE
-        auto at(size_type i) const -> const T&
+        auto At(SizeType i) const -> const T&
         {
-            assert(i < size());
+            assert(i < Size());
             return sequence_[(head_ + i) % max_capacity_];
         }
 
         HARE_INLINE
-        auto pop_front() -> T
+        auto PopFront() -> T
         {
             auto tmp = std::move(sequence_[head_]);
             head_ = (head_ + 1) % max_capacity_;
@@ -90,22 +90,22 @@ namespace util {
         }
 
         HARE_INLINE
-        void get_all(_Sequence& _seq)
+        void GetAll(_Sequence& _seq)
         {
             auto i { 0 };
-            while (!empty()) {
-                _seq[i] = std::move(pop_front());
+            while (!Empty()) {
+                _seq[i] = std::move(PopFront());
             }
         }
 
-        HARE_INLINE auto empty() const -> bool { return tail_ == head_; }
-        HARE_INLINE auto full() const -> bool { return max_capacity_ > 0 ? ((tail_ + 1) % max_capacity_) == head_ : false; }
+        HARE_INLINE auto Empty() const -> bool { return tail_ == head_; }
+        HARE_INLINE auto Full() const -> bool { return max_capacity_ > 0 ? ((tail_ + 1) % max_capacity_) == head_ : false; }
 
-        HARE_INLINE auto over_counter() const -> size_type { return over_counter_; }
+        HARE_INLINE auto over_counter() const -> SizeType { return over_counter_; }
         HARE_INLINE void reset_counter() { over_counter_ = 0; }
 
     private:
-        void move(circular_queue&& _other) noexcept
+        void Move(CircularQueue&& _other) noexcept
         {
             max_capacity_ = _other.max_capacity_;
             head_ = _other.head_;
@@ -123,97 +123,97 @@ namespace util {
 
     HARE_CLASS_API
     template <typename T>
-    class HARE_API blocking_queue {
+    class HARE_API BlockingQueue {
     public:
-        using size_type = typename circular_queue<T>::size_type;
+        using SizeType = typename CircularQueue<T>::SizeType;
 
     private:
         mutable std::mutex mutex_ {};
         std::condition_variable pop_cv_ {};
         std::condition_variable push_cv_ {};
-        circular_queue<T> circular_;
+        CircularQueue<T> circular_;
 
     public:
-        using value_type = T;
+        using ValueType = T;
 
-        explicit blocking_queue(size_type _max_size)
+        explicit BlockingQueue(SizeType _max_size)
             : circular_(_max_size)
         {
         }
 
         HARE_INLINE
-        auto over_counter() const -> size_type
+        auto OverCounter() const -> SizeType
         {
             std::unique_lock<std::mutex> lock(mutex_);
             return circular_.over_counter();
         }
 
         HARE_INLINE
-        auto size() const -> size_type
+        auto Size() const -> SizeType
         {
             std::unique_lock<std::mutex> lock(mutex_);
-            return circular_.size();
+            return circular_.Size();
         }
 
         HARE_INLINE
-        void reset_counter()
+        void ResetCounter()
         {
             std::unique_lock<std::mutex> lock(mutex_);
             circular_.reset_counter();
         }
 
         // try to enqueue and block if no room left
-        void enqueue(T& item)
+        void Enqueue(T& item)
         {
             {
                 std::unique_lock<std::mutex> lock(mutex_);
-                pop_cv_.wait(lock, [this] { return !this->circular_.full(); });
-                circular_.push_back(std::move(item));
+                pop_cv_.wait(lock, [this] { return !this->circular_.Full(); });
+                circular_.PushBack(std::move(item));
             }
             push_cv_.notify_one();
         }
 
         // enqueue immediately. overrun oldest message in the queue if no room left.
-        void enqueue_nowait(T& _item)
+        void EnqueueNoWait(T& _item)
         {
             {
                 std::unique_lock<std::mutex> lock(mutex_);
-                circular_.push_back(std::move(_item));
+                circular_.PushBack(std::move(_item));
             }
             push_cv_.notify_one();
         }
 
-        auto dequeue_for(T& _item, std::chrono::milliseconds _duration) -> bool
+        auto DequeueFor(T& _item, std::chrono::milliseconds _duration) -> bool
         {
             {
                 std::unique_lock<std::mutex> lock(mutex_);
-                if (!push_cv_.wait_for(lock, _duration, [this] { return !this->circular_.empty(); })) {
+                if (!push_cv_.wait_for(lock, _duration, [this] { return !this->circular_.Empty(); })) {
                     return false;
                 }
-                _item = std::move(circular_.pop_front());
+                _item = std::move(circular_.PopFront());
             }
             pop_cv_.notify_one();
             return true;
         }
 
-        void dequeue(T& _item)
+        void Dequeue(T& _item)
         {
             {
                 std::unique_lock<std::mutex> lock(mutex_);
-                push_cv_.wait(lock, [this] { return !this->circular_.empty(); });
-                _item = std::move(circular_.pop_front());
+                push_cv_.wait(lock, [this] { return !this->circular_.Empty(); });
+                _item = std::move(circular_.PopFront());
             }
             pop_cv_.notify_one();
         }
 
-        auto dequeues() -> std::vector<T>
+        auto Dequeues() -> std::vector<T>
         {
             std::vector<T> ret {};
             {
                 std::unique_lock<std::mutex> lock(mutex_);
-                push_cv_.wait(lock, [this] { return !this->circular_.empty(); });
-                ret.resize(circular_.size());
-                circular_.get_all(ret);
+                push_cv_.wait(lock, [this] { return !this->circular_.Empty(); });
+                ret.resize(circular_.Size());
+                circular_.GetAll(ret);
             }
             pop_cv_.notify_one();
 

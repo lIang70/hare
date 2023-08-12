@@ -18,16 +18,16 @@ namespace hare {
 namespace util {
 
     HARE_CLASS_API
-    class HARE_API count_down_latch {
-        hare::detail::impl* impl_ {};
+    class HARE_API CountDownLatch {
+        hare::detail::Impl* impl_ {};
 
     public:
-        explicit count_down_latch(std::uint32_t count);
-        ~count_down_latch();
+        explicit CountDownLatch(std::uint32_t count);
+        ~CountDownLatch();
 
-        void count_down();
-        void await(std::int32_t milliseconds = 0);
-        auto count() -> std::uint32_t;
+        void CountDown();
+        void Await(std::int32_t milliseconds = 0);
+        auto Count() -> std::uint32_t;
     };
 
 } // namespace util

@@ -85,19 +85,19 @@ using util_socket_t = int;
 #endif
 
 template <typename T>
-using ptr = std::shared_ptr<T>;
+using Ptr = std::shared_ptr<T>;
 template <typename T>
-using wptr = std::weak_ptr<T>;
+using WPtr = std::weak_ptr<T>;
 template <typename T>
-using uptr = std::unique_ptr<T>;
-using task = std::function<void()>;
+using UPtr = std::unique_ptr<T>;
+using Task = std::function<void()>;
 #if defined(H_OS_WIN32) && defined(HARE_WCHAR_FILENAME)
 using filename_t = std::wstring;
 HARE_INLINE
-std::string filename_to_str(const filename_t& filename)
+std::string FilenameToStr(const filename_t& _filename)
 {
     std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t> c;
-    return c.to_bytes(filename);
+    return c.to_bytes(_filename);
 }
 
 #define HARE_FILENAME_T_INNER(s) L##s
@@ -105,9 +105,9 @@ std::string filename_to_str(const filename_t& filename)
 #else
 using filename_t = std::string;
 HARE_INLINE
-std::string filename_to_str(const filename_t& filename)
+std::string FilenameToStr(const filename_t& _filename)
 {
-    return filename;
+    return _filename;
 }
 
 #define HARE_FILENAME_T(s) s
@@ -116,26 +116,26 @@ std::string filename_to_str(const filename_t& filename)
 // Suppresses "unused variable" warnings with the method described in
 // https://herbsutter.com/2009/10/18/mailbag-shutting-up-compiler-warnings/.
 // (void)var does not work on many Intel compilers.
-template <typename... T> HARE_INLINE void ignore_unused(const T&...) { }
+template <typename... T> HARE_INLINE void IgnoreUnused(const T&...) { }
 
 namespace detail {
 
     HARE_CLASS_API
-    struct HARE_API impl { virtual ~impl() = default; };
+    struct HARE_API Impl { virtual ~Impl() = default; };
 
     template <typename Int>
-    auto to_unsigned(Int value) ->
+    auto ToUnsigned(Int _value) ->
         typename std::make_unsigned<Int>::type
     {
-        assert(std::is_unsigned<Int>::value || value >= 0);
-        return static_cast<typename std::make_unsigned<Int>::type>(value);
+        assert(std::is_unsigned<Int>::value || _value >= 0);
+        return static_cast<typename std::make_unsigned<Int>::type>(_value);
     }
 
     template <typename T, typename Size>
-    auto fill_n(T* out, Size count, char value) -> T*
+    auto FillN(T* _out, Size _count, char _value) -> T*
     {
-        std::memset(out, value, to_unsigned(count));
-        return out + count;
+        std::memset(_out, _value, ToUnsigned(_count));
+        return _out + _count;
     }
 
 } // namesapce detail
@@ -203,7 +203,7 @@ auto implicit_cast(From const& _from) -> To
 
 template <typename To, typename From>
 HARE_INLINE
-auto down_cast(From* f) -> To
+auto down_cast(From* _from) -> To
 {
     // Ensures that To is a sub-type of From *.  This test is here only
     // for compile-time type checking, and has no overhead in an
@@ -214,15 +214,15 @@ auto down_cast(From* f) -> To
     }
 
 #if !defined(NDEBUG) && !defined(GOOGLE_PROTOBUF_NO_RTTI)
-    assert(f == NULL || dynamic_cast<To>(f) != NULL); // RTTI: debug mode only!
+    assert(_from == NULL || dynamic_cast<To>(_from) != NULL); // RTTI: debug mode only!
 #endif
-    return static_cast<To>(f);
+    return static_cast<To>(_from);
 }
 
 enum : std::uint8_t { TRACE_MSG, ERROR_MSG };
-using log_handler = std::function<void(std::uint8_t, std::string)>;
+using LogHandler = std::function<void(std::uint8_t, std::string)>;
 
-HARE_API void register_msg_handler(log_handler handle);
+HARE_API void RegisterLogHandler(LogHandler _handle);
 
 } // namespace hare
 

@@ -9,323 +9,348 @@
 
 namespace hare {
 namespace net {
-    namespace tcp {
 
-        namespace detail {
+    namespace detail {
 
-            auto state_to_string(STATE state) -> const char*
-            {
-                switch (state) {
-                case STATE_CONNECTING:
-                    return "STATE_CONNECTING";
-                case STATE_CONNECTED:
-                    return "STATE_CONNECTED";
-                case STATE_DISCONNECTING:
-                    return "STATE_DISCONNECTING";
-                case STATE_DISCONNECTED:
-                    return "STATE_DISCONNECTED";
-                default:
-                    return "UNKNOWN STATE";
-                }
-            }
-        } // namespace detail
-
-        HARE_IMPL_DEFAULT(session,
-            std::string name_ {};
-            io::cycle * cycle_ { nullptr };
-            io::event::ptr event_ { nullptr };
-            socket socket_;
-
-            const host_address local_addr_ {};
-            const host_address peer_addr_ {};
-
-            bool reading_ { false };
-            STATE state_ { STATE_CONNECTING };
-            
-            buffer out_buffer_ {};
-            buffer in_buffer_ {};
-
-            std::size_t high_water_mark_ { DEFAULT_HIGH_WATER };
-            session::write_callback write_ {};
-            session::high_water_callback high_water_ {};
-            session::read_callback read_ {};
-            session::connect_callback connect_ {};
-            session::destroy destroy_ {};
-
-            util::any any_ctx_ {};
-
-            session_impl(host_address _local_addr,
-                std::uint8_t _family, util_socket_t _fd,
-                host_address _peer_addr)
-                : socket_(_family, TYPE_TCP, _fd)
-                , local_addr_(std::move(_local_addr))
-                , peer_addr_(std::move(_peer_addr)) {}
-        )
-
-        session::~session()
+        static auto StateToString(SessionState state) -> const char*
         {
-            assert(d_ptr(impl_)->state_ == STATE_DISCONNECTED);
-            MSG_TRACE("session[{}] at {} fd={} free.", d_ptr(impl_)->name_, (void*)this, fd());
-            delete impl_;
-        }
-
-        auto session::name() const -> std::string
-        { return d_ptr(impl_)->name_; }
-        auto session::owner_cycle() const -> io::cycle*
-        { return d_ptr(impl_)->cycle_; }
-        auto session::local_address() const -> const host_address&
-        { return d_ptr(impl_)->local_addr_; }
-        auto session::peer_address() const -> const host_address&
-        { return d_ptr(impl_)->peer_addr_; }
-        auto session::type() const -> TYPE
-        { return d_ptr(impl_)->socket_.type(); }
-        auto session::state() const -> STATE
-        { return d_ptr(impl_)->state_; }
-        auto session::fd() const -> util_socket_t
-        { return d_ptr(impl_)->socket_.fd(); }
-
-        void session::set_high_water_mark(std::size_t _hwm)
-        { d_ptr(impl_)->high_water_mark_ = _hwm; }
-        void session::set_read_callback(read_callback _read)
-        { d_ptr(impl_)->read_ = std::move(_read); }
-        void session::set_write_callback(write_callback _write)
-        { d_ptr(impl_)->write_ = std::move(_write); }
-        void session::set_high_water_callback(high_water_callback _high_water)
-        { d_ptr(impl_)->high_water_ = std::move(_high_water); }
-        void session::set_connect_callback(connect_callback _connect)
-        { d_ptr(impl_)->connect_ = std::move(_connect); }
-        
-        void session::set_context(const util::any& context)
-        { d_ptr(impl_)->any_ctx_ = context; }
-        auto session::get_context() const -> const util::any&
-        { return d_ptr(impl_)->any_ctx_; }
-
-        auto session::shutdown() -> error
-        {
-            if (d_ptr(impl_)->state_ == STATE_CONNECTED) {
-                set_state(STATE_DISCONNECTING);
-                if (!d_ptr(impl_)->event_->writing()) {
-                    return d_ptr(impl_)->socket_.shutdown_write();
-                }
-                return error(ERROR_SOCKET_WRITING);
-            }
-            return error(ERROR_SESSION_ALREADY_DISCONNECT);
-        }
-
-        auto session::force_close() -> error
-        {
-            if (d_ptr(impl_)->state_ == STATE_CONNECTED || d_ptr(impl_)->state_ == STATE_DISCONNECTING) {
-                handle_close();
-                return error(ERROR_SUCCESS);
-            }
-            return error(ERROR_SESSION_ALREADY_DISCONNECT);
-        }
-
-        void session::start_read()
-        {
-            if (!d_ptr(impl_)->reading_ || !d_ptr(impl_)->event_->reading()) {
-                d_ptr(impl_)->event_->enable_read();
-                d_ptr(impl_)->reading_ = true;
+            switch (state) {
+            case STATE_CONNECTING:
+                return "STATE_CONNECTING";
+            case STATE_CONNECTED:
+                return "STATE_CONNECTED";
+            case STATE_DISCONNECTING:
+                return "STATE_DISCONNECTING";
+            case STATE_DISCONNECTED:
+                return "STATE_DISCONNECTED";
+            default:
+                return "UNKNOWN STATE";
             }
         }
+    } // namespace detail
 
-        void session::stop_read()
-        {
-            if (d_ptr(impl_)->reading_ || d_ptr(impl_)->event_->reading()) {
-                d_ptr(impl_)->event_->disable_read();
-                d_ptr(impl_)->reading_ = false;
+    HARE_IMPL_DEFAULT(
+        TcpSession,
+        std::string name {};
+        io::Cycle * cycle { nullptr };
+        Ptr<io::Event> event { nullptr };
+        Socket socket;
+
+        const HostAddress local_addr {};
+        const HostAddress peer_addr {};
+
+        bool reading { false };
+        SessionState state { STATE_CONNECTING };
+
+        Buffer out_buffer {};
+        Buffer in_buffer {};
+
+        std::size_t high_water_mark { DEFAULT_HIGH_WATER };
+        TcpSession::WriteCallback write {};
+        TcpSession::HighWaterCallback high_water {};
+        TcpSession::ReadRallback read {};
+        TcpSession::ConnectCallback connect {};
+        TcpSession::SessionDestroy destroy {};
+
+        util::Any any_ctx {};
+
+        TcpSessionImpl(HostAddress _local_addr,
+            std::uint8_t _family, util_socket_t _fd,
+            HostAddress _peer_addr)
+            : socket(_family, TYPE_TCP, _fd)
+            , local_addr(std::move(_local_addr))
+            , peer_addr(std::move(_peer_addr)) 
+            {}
+    )
+
+    TcpSession::~TcpSession()
+    {
+        assert(d_ptr(impl_)->state == STATE_DISCONNECTED);
+        MSG_TRACE("session[{}] at {} fd={} free.", d_ptr(impl_)->name, (void*)this, Fd());
+        delete impl_;
+    }
+
+    auto TcpSession::Name() const -> std::string
+    {
+        return d_ptr(impl_)->name;
+    }
+    auto TcpSession::OwnerCycle() const -> io::Cycle*
+    {
+        return d_ptr(impl_)->cycle;
+    }
+    auto TcpSession::LocalAddress() const -> const HostAddress&
+    {
+        return d_ptr(impl_)->local_addr;
+    }
+    auto TcpSession::PeerAddress() const -> const HostAddress&
+    {
+        return d_ptr(impl_)->peer_addr;
+    }
+    auto TcpSession::State() const -> SessionState
+    {
+        return d_ptr(impl_)->state;
+    }
+    auto TcpSession::Fd() const -> util_socket_t
+    {
+        return d_ptr(impl_)->socket.fd();
+    }
+
+    void TcpSession::SetHighWaterMark(std::size_t _hwm)
+    {
+        d_ptr(impl_)->high_water_mark = _hwm;
+    }
+    void TcpSession::SetReadCallback(ReadRallback _read)
+    {
+        d_ptr(impl_)->read = std::move(_read);
+    }
+    void TcpSession::SetWriteCallback(WriteCallback _write)
+    {
+        d_ptr(impl_)->write = std::move(_write);
+    }
+    void TcpSession::SetHighWaterCallback(HighWaterCallback _high_water)
+    {
+        d_ptr(impl_)->high_water = std::move(_high_water);
+    }
+    void TcpSession::SetConnectCallback(ConnectCallback _connect)
+    {
+        d_ptr(impl_)->connect = std::move(_connect);
+    }
+
+    void TcpSession::SetContext(const util::Any& context)
+    {
+        d_ptr(impl_)->any_ctx = context;
+    }
+    auto TcpSession::GetContext() const -> const util::Any&
+    {
+        return d_ptr(impl_)->any_ctx;
+    }
+
+    auto TcpSession::Shutdown() -> Error
+    {
+        if (d_ptr(impl_)->state == STATE_CONNECTED) {
+            SetState(STATE_DISCONNECTING);
+            if (!d_ptr(impl_)->event->Writing()) {
+                return d_ptr(impl_)->socket.ShutdownWrite();
             }
+            return Error(ERROR_SOCKET_WRITING);
         }
+        return Error(ERROR_SESSION_ALREADY_DISCONNECT);
+    }
 
-        auto session::append(buffer& _buffer) -> bool
-        {
-            if (state() == STATE_CONNECTED) {
-                auto tmp = std::make_shared<buffer>();
-                tmp->append(_buffer);
-                owner_cycle()->queue_in_cycle(std::bind([](const wptr<session>& session, hare::ptr<buffer>& buffer) {
-                    auto tcp = session.lock();
-                    if (tcp) {
-                        auto out_buffer_size = d_ptr(tcp->impl_)->out_buffer_.size();
-                        d_ptr(tcp->impl_)->out_buffer_.append(*buffer);
-                        if (out_buffer_size == 0) {
-                            tcp->event()->enable_write();
-                            tcp->handle_write();
-                        } else if (out_buffer_size > d_ptr(tcp->impl_)->high_water_mark_ && d_ptr(tcp->impl_)->high_water_mark_) {
-                            d_ptr(tcp->impl_)->high_water_(tcp);
-                        } else if (out_buffer_size > d_ptr(tcp->impl_)->high_water_mark_) {
-                            MSG_ERROR("high_water_mark_callback has not been set for tcp-session[{}].", tcp->name());
-                        }
+    auto TcpSession::ForceClose() -> Error
+    {
+        if (d_ptr(impl_)->state == STATE_CONNECTED || d_ptr(impl_)->state == STATE_DISCONNECTING) {
+            HandleClose();
+            return Error(ERROR_SUCCESS);
+        }
+        return Error(ERROR_SESSION_ALREADY_DISCONNECT);
+    }
+
+    void TcpSession::StartRead()
+    {
+        if (!d_ptr(impl_)->reading || !d_ptr(impl_)->event->Reading()) {
+            d_ptr(impl_)->event->EnableRead();
+            d_ptr(impl_)->reading = true;
+        }
+    }
+
+    void TcpSession::StopRead()
+    {
+        if (d_ptr(impl_)->reading || d_ptr(impl_)->event->Reading()) {
+            d_ptr(impl_)->event->DisableRead();
+            d_ptr(impl_)->reading = false;
+        }
+    }
+
+    auto TcpSession::Append(Buffer& _buffer) -> bool
+    {
+        if (State() == STATE_CONNECTED) {
+            auto tmp = std::make_shared<Buffer>();
+            tmp->Append(_buffer);
+            OwnerCycle()->QueueInCycle(std::bind([](const WPtr<TcpSession>& session, hare::Ptr<Buffer>& buffer) {
+                auto tcp = session.lock();
+                if (tcp) {
+                    auto out_buffer_size = d_ptr(tcp->impl_)->out_buffer.Size();
+                    d_ptr(tcp->impl_)->out_buffer.Append(*buffer);
+                    if (out_buffer_size == 0) {
+                        tcp->Event()->EnableWrite();
+                        tcp->HandleWrite();
+                    } else if (out_buffer_size > d_ptr(tcp->impl_)->high_water_mark && d_ptr(tcp->impl_)->high_water_mark) {
+                        d_ptr(tcp->impl_)->high_water(tcp);
+                    } else if (out_buffer_size > d_ptr(tcp->impl_)->high_water_mark) {
+                        MSG_ERROR("high_water_mark_callback has not been set for tcp-session[{}].", tcp->Name());
                     }
-                },
-                    shared_from_this(), std::move(tmp)));
-                return true;
-            }
-            return false;
-        }
-
-        auto session::send(const void* _bytes, std::size_t _length) -> bool
-        {
-            if (state() == STATE_CONNECTED) {
-                auto tmp = std::make_shared<buffer>();
-                tmp->add(_bytes, _length);
-                owner_cycle()->queue_in_cycle(std::bind([](const wptr<session>& session, hare::ptr<buffer>& buffer) {
-                    auto tcp = session.lock();
-                    if (tcp) {
-                        auto out_buffer_size = d_ptr(tcp->impl_)->out_buffer_.size();
-                        d_ptr(tcp->impl_)->out_buffer_.append(*buffer);
-                        if (out_buffer_size == 0) {
-                            tcp->event()->enable_write();
-                            tcp->handle_write();
-                        } else if (out_buffer_size > d_ptr(tcp->impl_)->high_water_mark_ && d_ptr(tcp->impl_)->high_water_mark_) {
-                            d_ptr(tcp->impl_)->high_water_(tcp);
-                        } else if (out_buffer_size > d_ptr(tcp->impl_)->high_water_mark_) {
-                            MSG_ERROR("high_water_mark_callback has not been set for tcp-session[{}].", tcp->name());
-                        }
-                    }
-                },
-                    shared_from_this(), std::move(tmp)));
-                return true;
-            }
-            return false;
-        }
-
-        auto session::set_tcp_no_delay(bool _on) -> error
-        {
-            return socket().set_tcp_no_delay(_on);
-        }
-
-        session::session(io::cycle* _cycle,
-            host_address _local_addr,
-            std::string _name, std::uint8_t _family, util_socket_t _fd,
-            host_address _peer_addr)
-            : impl_(new session_impl(std::move(_local_addr), _family, _fd, std::move(_peer_addr)))
-        {
-            d_ptr(impl_)->cycle_ = CHECK_NULL(_cycle);
-            d_ptr(impl_)->event_.reset(new io::event(_fd,
-                std::bind(&session::handle_callback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
-                SESSION_READ | SESSION_WRITE | io::EVENT_PERSIST,
-                0));
-            d_ptr(impl_)->name_ = std::move(_name);
-        }
-
-        void session::set_state(STATE _state)
-        {
-            d_ptr(impl_)->state_ = _state;
-        }
-        auto session::event() -> io::event::ptr&
-        {
-            return d_ptr(impl_)->event_;
-        }
-        auto session::socket() -> net::socket&
-        {
-            return d_ptr(impl_)->socket_;
-        }
-        void session::set_destroy(destroy _destroy)
-        {
-            d_ptr(impl_)->destroy_ = std::move(_destroy);
-        }
-
-        void session::handle_callback(const io::event::ptr& _event, std::uint8_t _events, const timestamp& _receive_time)
-        {
-            owner_cycle()->assert_in_cycle_thread();
-            assert(_event == d_ptr(impl_)->event_);
-            MSG_TRACE("session[{}] revents: {}.", d_ptr(impl_)->event_->fd(), _events);
-            if (CHECK_EVENT(_events, SESSION_READ)) {
-                handle_read(_receive_time);
-            }
-            if (CHECK_EVENT(_events, SESSION_WRITE)) {
-                handle_write();
-            }
-            if (CHECK_EVENT(_events, SESSION_CLOSED)) {
-                handle_close();
-            }
-        }
-
-        void session::handle_read(const timestamp& _time)
-        {
-            auto read_n = d_ptr(impl_)->in_buffer_.read(fd(), -1);
-            if (read_n == 0) {
-                handle_close();
-            } else if (read_n > 0 && d_ptr(impl_)->read_) {
-                d_ptr(impl_)->read_(shared_from_this(), d_ptr(impl_)->in_buffer_, _time);
-            } else {
-                if (read_n > 0) {
-                    MSG_ERROR("read_callback has not been set for tcp-session[{}].", name());
                 }
-                handle_error();
-            }
+            },
+                shared_from_this(), std::move(tmp)));
+            return true;
         }
+        return false;
+    }
 
-        void session::handle_write()
-        {
-            if (event()->writing()) {
-                auto write_n = d_ptr(impl_)->out_buffer_.write(fd(), -1);
-                if (write_n >= 0) {
-                    if (d_ptr(impl_)->out_buffer_.size() == 0) {
-                        event()->disable_write();
-                        owner_cycle()->queue_in_cycle(std::bind([=](const wptr<session>& session) {
-                            auto tcp = session.lock();
-                            if (tcp) {
-                                if (d_ptr(impl_)->write_) {
-                                    d_ptr(impl_)->write_(tcp);
-                                } else {
-                                    MSG_ERROR("write_callback has not been set for tcp-session[{}].", name());
-                                }
+    auto TcpSession::Send(const void* _bytes, std::size_t _length) -> bool
+    {
+        if (State() == STATE_CONNECTED) {
+            auto tmp = std::make_shared<Buffer>();
+            tmp->Add(_bytes, _length);
+            OwnerCycle()->QueueInCycle(std::bind([](const WPtr<TcpSession>& session, hare::Ptr<Buffer>& buffer) {
+                auto tcp = session.lock();
+                if (tcp) {
+                    auto out_buffer_size = d_ptr(tcp->impl_)->out_buffer.Size();
+                    d_ptr(tcp->impl_)->out_buffer.Append(*buffer);
+                    if (out_buffer_size == 0) {
+                        tcp->Event()->EnableWrite();
+                        tcp->HandleWrite();
+                    } else if (out_buffer_size > d_ptr(tcp->impl_)->high_water_mark && d_ptr(tcp->impl_)->high_water_mark) {
+                        d_ptr(tcp->impl_)->high_water(tcp);
+                    } else if (out_buffer_size > d_ptr(tcp->impl_)->high_water_mark) {
+                        MSG_ERROR("high_water_mark_callback has not been set for tcp-session[{}].", tcp->Name());
+                    }
+                }
+            },
+                shared_from_this(), std::move(tmp)));
+            return true;
+        }
+        return false;
+    }
+
+    auto TcpSession::SetTcpNoDelay(bool _on) -> Error
+    {
+        return Socket().SetTcpNoDelay(_on);
+    }
+
+    TcpSession::TcpSession(io::Cycle* _cycle,
+        HostAddress _local_addr,
+        std::string _name, std::uint8_t _family, util_socket_t _fd,
+        HostAddress _peer_addr)
+        : impl_(new TcpSessionImpl(std::move(_local_addr), _family, _fd, std::move(_peer_addr)))
+    {
+        d_ptr(impl_)->cycle = CHECK_NULL(_cycle);
+        d_ptr(impl_)->event.reset(new io::Event(_fd,
+            std::bind(&TcpSession::HandleCallback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
+            SESSION_READ | SESSION_WRITE | io::EVENT_PERSIST,
+            0));
+        d_ptr(impl_)->name = std::move(_name);
+    }
+
+    void TcpSession::SetState(SessionState _state)
+    {
+        d_ptr(impl_)->state = _state;
+    }
+    auto TcpSession::Event() -> Ptr<io::Event>&
+    {
+        return d_ptr(impl_)->event;
+    }
+    auto TcpSession::Socket() -> net::Socket&
+    {
+        return d_ptr(impl_)->socket;
+    }
+    void TcpSession::SetDestroy(SessionDestroy _destroy)
+    {
+        d_ptr(impl_)->destroy = std::move(_destroy);
+    }
+
+    void TcpSession::HandleCallback(const Ptr<io::Event>& _event, std::uint8_t _events, const Timestamp& _receive_time)
+    {
+        OwnerCycle()->AssertInCycleThread();
+        assert(_event == d_ptr(impl_)->event);
+        MSG_TRACE("session[{}] revents: {}.", d_ptr(impl_)->event->fd(), _events);
+        if (CHECK_EVENT(_events, SESSION_READ)) {
+            HandleRead(_receive_time);
+        }
+        if (CHECK_EVENT(_events, SESSION_WRITE)) {
+            HandleWrite();
+        }
+        if (CHECK_EVENT(_events, SESSION_CLOSED)) {
+            HandleClose();
+        }
+    }
+
+    void TcpSession::HandleRead(const Timestamp& _time)
+    {
+        auto read_n = d_ptr(impl_)->in_buffer.Read(Fd(), -1);
+        if (read_n == 0) {
+            HandleClose();
+        } else if (read_n > 0 && d_ptr(impl_)->read) {
+            d_ptr(impl_)->read(shared_from_this(), d_ptr(impl_)->in_buffer, _time);
+        } else {
+            if (read_n > 0) {
+                MSG_ERROR("read_callback has not been set for tcp-session[{}].", Name());
+            }
+            HandleError();
+        }
+    }
+
+    void TcpSession::HandleWrite()
+    {
+        if (Event()->Writing()) {
+            auto write_n = d_ptr(impl_)->out_buffer.Write(Fd(), -1);
+            if (write_n >= 0) {
+                if (d_ptr(impl_)->out_buffer.Size() == 0) {
+                    Event()->DisableWrite();
+                    OwnerCycle()->QueueInCycle(std::bind([=](const WPtr<TcpSession>& session) {
+                        auto tcp = session.lock();
+                        if (tcp) {
+                            if (d_ptr(impl_)->write) {
+                                d_ptr(impl_)->write(tcp);
+                            } else {
+                                MSG_ERROR("write_callback has not been set for tcp-session[{}].", Name());
                             }
-                        }, shared_from_this()));
-                    }
-                    if (state() == STATE_DISCONNECTING) {
-                        handle_close();
-                    }
-                } else {
-                    MSG_ERROR("an error occurred while writing the socket, detail: {}.", socket_op::get_socket_error_info(fd()));
+                        }
+                    },
+                        shared_from_this()));
+                }
+                if (State() == STATE_DISCONNECTING) {
+                    HandleClose();
                 }
             } else {
-                MSG_TRACE("tcp-session[fd={}, name={}] is down, no more writing.", fd(), name());
+                MSG_ERROR("an error occurred while writing the socket, detail: {}.", socket_op::SocketErrorInfo(Fd()));
             }
+        } else {
+            MSG_TRACE("tcp-session[fd={}, name={}] is down, no more writing.", Fd(), Name());
         }
+    }
 
-        void session::handle_close()
-        {
-            MSG_TRACE("fd={} state={}.", fd(), detail::state_to_string(d_ptr(impl_)->state_));
-            assert(d_ptr(impl_)->state_ == STATE_CONNECTED || d_ptr(impl_)->state_ == STATE_DISCONNECTING);
-            // we don't close fd, leave it to dtor, so we can find leaks easily.
-            set_state(STATE_DISCONNECTED);
-            d_ptr(impl_)->event_->disable_read();
-            d_ptr(impl_)->event_->disable_write();
-            if (d_ptr(impl_)->connect_) {
-                d_ptr(impl_)->connect_(shared_from_this(), SESSION_CLOSED);
-            } else {
-                MSG_ERROR("connect_callback has not been set for session[{}], session is closed.", d_ptr(impl_)->name_);
-            }
-            d_ptr(impl_)->event_->deactivate();
-            d_ptr(impl_)->destroy_();
+    void TcpSession::HandleClose()
+    {
+        MSG_TRACE("fd={} state={}.", Fd(), detail::StateToString(d_ptr(impl_)->state));
+        assert(d_ptr(impl_)->state == STATE_CONNECTED || d_ptr(impl_)->state == STATE_DISCONNECTING);
+        // we don't close fd, leave it to dtor, so we can find leaks easily.
+        SetState(STATE_DISCONNECTED);
+        d_ptr(impl_)->event->DisableRead();
+        d_ptr(impl_)->event->DisableWrite();
+        if (d_ptr(impl_)->connect) {
+            d_ptr(impl_)->connect(shared_from_this(), SESSION_CLOSED);
+        } else {
+            MSG_ERROR("connect_callback has not been set for session[{}], session is closed.", d_ptr(impl_)->name);
         }
+        d_ptr(impl_)->event->Deactivate();
+        d_ptr(impl_)->destroy();
+    }
 
-        void session::handle_error()
-        {
-            if (d_ptr(impl_)->connect_) {
-                d_ptr(impl_)->connect_(shared_from_this(), SESSION_ERROR);
-            } else {
-                MSG_ERROR("occurred error to the session[{}], detail: {}.",
-                    d_ptr(impl_)->name_, socket_op::get_socket_error_info(fd()));
-            }
+    void TcpSession::HandleError()
+    {
+        if (d_ptr(impl_)->connect) {
+            d_ptr(impl_)->connect(shared_from_this(), SESSION_ERROR);
+        } else {
+            MSG_ERROR("occurred error to the session[{}], detail: {}.",
+                d_ptr(impl_)->name, socket_op::SocketErrorInfo(Fd()));
         }
+    }
 
-        void session::connect_established()
-        {
-            assert(d_ptr(impl_)->state_ == STATE_CONNECTING);
-            set_state(STATE_CONNECTED);
-            if (d_ptr(impl_)->connect_) {
-                d_ptr(impl_)->connect_(shared_from_this(), SESSION_CONNECTED);
-            } else {
-                MSG_ERROR("connect_callback has not been set for session[{}], session connected.", d_ptr(impl_)->name_);
-            }
-            d_ptr(impl_)->event_->tie(shared_from_this());
-            d_ptr(impl_)->cycle_->event_update(d_ptr(impl_)->event_);
-            d_ptr(impl_)->event_->enable_read();
+    void TcpSession::ConnectEstablished()
+    {
+        assert(d_ptr(impl_)->state == STATE_CONNECTING);
+        SetState(STATE_CONNECTED);
+        if (d_ptr(impl_)->connect) {
+            d_ptr(impl_)->connect(shared_from_this(), SESSION_CONNECTED);
+        } else {
+            MSG_ERROR("connect_callback has not been set for session[{}], session connected.", d_ptr(impl_)->name);
         }
+        d_ptr(impl_)->event->Tie(shared_from_this());
+        d_ptr(impl_)->cycle->EventUpdate(d_ptr(impl_)->event);
+        d_ptr(impl_)->event->EnableRead();
+    }
 
-    } // namespace tcp
 } // namespace net
 } // namespace hare

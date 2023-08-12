@@ -18,15 +18,13 @@
 namespace hare {
 namespace io {
 
-    class reactor;
-    class event;
+    class Reactor;
+    class Event;
     HARE_CLASS_API
-    class HARE_API cycle : public util::non_copyable {
-        hare::detail::impl* impl_ {};
+    class HARE_API Cycle : public util::NonCopyable {
+        hare::detail::Impl* impl_ {};
 
     public:
-        using ptr = ptr<cycle>;
-
         using REACTOR_TYPE = enum {
             REACTOR_TYPE_EPOLL,
             REACTOR_TYPE_POLL,
@@ -34,15 +32,16 @@ namespace io {
             REACTOR_TYPE_NBRS
         };
 
-        explicit cycle(REACTOR_TYPE _type);
-        virtual ~cycle();
+        explicit Cycle(REACTOR_TYPE _type);
+        virtual ~Cycle();
 
         /**
          * @brief Time when reactor returns, usually means data arrival.
          **/
-        auto reactor_return_time() const -> timestamp;
+        auto ReactorReturnTime() const -> Timestamp;
         auto event_handling() const -> bool;
         auto is_running() const -> bool;
+        auto type() const -> REACTOR_TYPE;
 
 #if HARE_DEBUG
 
@@ -51,29 +50,27 @@ namespace io {
 #endif
 
         HARE_INLINE
-        void assert_in_cycle_thread()
+        void AssertInCycleThread()
         {
-            if (!in_cycle_thread()) {
-                abort_not_cycle_thread();
+            if (!InCycleThread()) {
+                AbortNotCycleThread();
             }
         }
 
-        auto in_cycle_thread() const -> bool;
-
-        auto type() const -> REACTOR_TYPE;
+        auto InCycleThread() const -> bool;
 
         /**
          * @brief Loops forever.
          *   Must be called in the same thread as creation of the object.
          **/
-        void loop();
+        void Exec();
 
         /**
          * @brief Quits cycle.
          *   This is not 100% thread safe, if you call through a raw pointer,
          *   better to call through std::shared_ptr<Cycle> for 100% safety.
          **/
-        void exit();
+        void Exit();
 
         /**
          * @brief Runs callback immediately in the cycle thread.
@@ -81,32 +78,32 @@ namespace io {
          *   If in the same cycle thread, cb is run within the function.
          *   Safe to call from other threads.
          **/
-        void run_in_cycle(task _task);
+        void RunInCycle(Task _task);
 
         /**
          * @brief Queues callback in the cycle thread.
          *   Runs after finish pooling.
          *   Safe to call from other threads.
          **/
-        void queue_in_cycle(task _task);
+        void QueueInCycle(Task _task);
 
         auto queue_size() const -> std::size_t;
 
-        void event_update(const hare::ptr<event>& _event);
-        void event_remove(const hare::ptr<event>& _event);
+        void EventUpdate(const hare::Ptr<Event>& _event);
+        void EventRemove(const hare::Ptr<Event>& _event);
 
         /**
          * @brief Detects whether the event is in the reactor.
          *   Must be called in the cycle thread.
          **/
-        auto event_check(const hare::ptr<event>& _event) -> bool;
+        auto EventCheck(const hare::Ptr<Event>& _event) -> bool;
 
     private:
-        void notify();
-        void abort_not_cycle_thread();
+        void Notify();
+        void AbortNotCycleThread();
 
-        void notify_timer();
-        void do_pending_functions();
+        void NotifyTimer();
+        void DoPendingFunctions();
     };
 
 } // namespace io

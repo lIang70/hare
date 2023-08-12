@@ -18,7 +18,7 @@
 namespace hare {
 namespace io {
 
-    using EVENT = enum : std::uint8_t {
+    using Events = enum : std::uint8_t {
         EVENT_DEFAULT = 0x00,
         /**
          * @brief Indicates that a timeout has occurred.
@@ -54,54 +54,53 @@ namespace io {
     };
 
 #if defined(HARE_SHARED) && defined(H_OS_WIN)
-    class event;
-    template class HARE_API std::weak_ptr<event>;
+    class Event;
+    template class HARE_API std::weak_ptr<Event>;
 #endif
 
-    class cycle;
+    class Cycle;
     HARE_CLASS_API
-    class HARE_API event : public util::non_copyable
-                         , public std::enable_shared_from_this<event> {
-        hare::detail::impl* impl_ {};
+    class HARE_API Event : public util::NonCopyable
+                         , public std::enable_shared_from_this<Event> {
+        hare::detail::Impl* impl_ {};
 
     public:
-        using id = std::int64_t;
-        using ptr = ptr<event>;
-        using callback = std::function<void(const event::ptr&, std::uint8_t, const timestamp&)>;
+        using Id = std::int64_t;
+        using Callback = std::function<void(const Ptr<Event>&, std::uint8_t, const Timestamp&)>;
 
-        event(util_socket_t _fd, callback _cb, std::uint8_t _events, std::int64_t _timeval);
-        virtual ~event();
+        Event(util_socket_t _fd, Callback _cb, std::uint8_t _events, std::int64_t _timeval);
+        virtual ~Event();
 
         auto fd() const -> util_socket_t;
         auto events() const -> std::uint8_t;
         auto timeval() const -> std::int64_t;
-        auto owner_cycle() const -> cycle*;
-        auto event_id() const -> id;
+        auto cycle() const -> Cycle*;
+        auto id() const -> Id;
 
         // None of the following interfaces are thread-safe.
-        void enable_read();
-        void disable_read();
-        auto reading() -> bool;
-        void enable_write();
-        void disable_write();
-        auto writing() -> bool;
-        void deactivate();
+        void EnableRead();
+        void DisableRead();
+        auto Reading() -> bool;
+        void EnableWrite();
+        void DisableWrite();
+        auto Writing() -> bool;
+        void Deactivate();
 
-        auto event_string() const -> std::string;
+        auto EventToString() const -> std::string;
 
         /**
          * @brief Tie this event to the owner object managed by shared_ptr,
          *   prevent the owner object being destroyed in handle_event.
          */
-        void tie(const hare::ptr<void>& _obj);
-        auto tied_object() -> wptr<void>;
+        void Tie(const hare::Ptr<void>& _obj);
+        auto TiedObject() -> WPtr<void>;
 
     private:
-        void handle_event(std::uint8_t _flag, timestamp& _receive_time);
-        void active(cycle* _cycle, event::id _id);
-        void reset();
+        void HandleEvent(std::uint8_t _flag, Timestamp& _receive_time);
+        void Active(Cycle* _cycle, Event::Id _id);
+        void Reset();
 
-        friend class cycle;
+        friend class Cycle;
     };
 
 } // namespace io

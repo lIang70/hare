@@ -6,38 +6,39 @@ namespace hare {
 
 namespace detail {
 
-    HARE_IMPL_DEFAULT(exception,
-        std::string what_ {};
-        std::string stack_ {};
-    )
+    HARE_IMPL_DEFAULT(
+        Exception,
+        std::string what {};
+        std::string stack_trace {};)
 
-    static auto thread_exception() -> exception_impl* {
-        static thread_local exception_impl t_impl {};
-        return &t_impl;
+    static auto ThreadException() -> ExceptionImpl*
+    {
+        static thread_local ExceptionImpl thread_exception_impl {};
+        return &thread_exception_impl;
     }
 
 } // namespace detail
 
-exception::exception(std::string what) noexcept
-    : impl_(detail::thread_exception())
+Exception::Exception(std::string what) noexcept
+    : impl_(detail::ThreadException())
 {
-    d_ptr(impl_)->what_ = std::move(what);
-    d_ptr(impl_)->stack_ = util::stack_trace(false);
+    d_ptr(impl_)->what = std::move(what);
+    d_ptr(impl_)->stack_trace = util::StackTrace(false);
 }
 
-exception::~exception() noexcept
+Exception::~Exception() noexcept
 {
     delete impl_;
 }
 
-auto exception::what() const noexcept -> const char*
+auto Exception::what() const noexcept -> const char*
 {
-    return d_ptr(impl_)->what_.c_str();
+    return d_ptr(impl_)->what.c_str();
 }
 
-auto exception::stack_trace() const noexcept -> const char*
+auto Exception::StackTrace() const noexcept -> const char*
 {
-    return d_ptr(impl_)->stack_.c_str();
+    return d_ptr(impl_)->stack_trace.c_str();
 }
 
 } // namespace hare

@@ -14,27 +14,27 @@
 namespace hare {
 namespace io {
 
-    auto reactor::create_by_type(cycle::REACTOR_TYPE _type, cycle* _cycle) -> reactor*
+    auto Reactor::CreateByType(Cycle::REACTOR_TYPE _type, Cycle* _cycle) -> Reactor*
     {
         switch (_type) {
-        case cycle::REACTOR_TYPE_EPOLL:
+        case Cycle::REACTOR_TYPE_EPOLL:
 #if HARE__HAVE_POLL
-            return new reactor_epoll(_cycle);
+            return new ReactorEpoll(_cycle);
 #else
-            throw exception("EPOLL reactor was not supported.");
+            throw Exception("EPOLL reactor was not supported.");
 #endif
-        case cycle::REACTOR_TYPE_POLL:
+        case Cycle::REACTOR_TYPE_POLL:
 #if HARE__HAVE_POLL
-            return new reactor_poll(_cycle);
+            return new ReactorPoll(_cycle);
 #else
-            throw exception("POLL reactor was not supported.");
+            throw Exception("POLL reactor was not supported.");
 #endif
         default:
-            throw exception("A suitable reactor type was not found.");
+            throw Exception("A suitable reactor type was not found.");
         }
     }
 
-    reactor::reactor(cycle* _cycle, cycle::REACTOR_TYPE _type)
+    Reactor::Reactor(Cycle* _cycle, Cycle::REACTOR_TYPE _type)
         : type_(_type)
         , owner_cycle_(_cycle)
     {

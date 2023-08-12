@@ -19,7 +19,7 @@
 namespace hare {
 namespace net {
 
-    using TYPE = enum Type {
+    enum Type {
         TYPE_INVALID,
         TYPE_TCP
     };
@@ -34,32 +34,28 @@ namespace net {
     static constexpr const char* type_name[] HARE_NET_TYPE;
 
     HARE_INLINE
-    constexpr const char* type_to_str(TYPE _type)
+    constexpr const char* TypeToStr(Type _type)
     {
         return type_name[_type];
     }
 
     HARE_CLASS_API
-    class HARE_API socket : public util::non_copyable {
+    class HARE_API Socket : public util::NonCopyable {
         util_socket_t socket_ { -1 };
         std::uint8_t family_ { 0 };
-        TYPE type_ { TYPE_INVALID };
+        Type type_ { TYPE_INVALID };
 
     public:
-        using ptr = std::shared_ptr<socket>;
-
-        static auto type_str(TYPE _type) -> const char*;
-
-        socket(std::uint8_t family, TYPE type, util_socket_t socket = -1);
-        ~socket();
+        Socket(std::uint8_t _family, Type _type, util_socket_t _socket = -1);
+        ~Socket();
 
         HARE_INLINE auto fd() const -> util_socket_t { return socket_; }
         HARE_INLINE auto family() const -> std::uint8_t { return family_; }
-        HARE_INLINE auto type() const -> TYPE { return type_; }
+        HARE_INLINE auto type() const -> Type { return type_; }
 
-        auto bind_address(const host_address& local_addr) const -> error;
-        auto listen() const -> error;
-        auto close() -> error;
+        auto BindAddress(const HostAddress& _local_addr) const -> Error;
+        auto Listen() const -> Error;
+        auto Close() -> Error;
 
         /**
          * @brief On success, returns a non-negative integer that is
@@ -69,33 +65,33 @@ namespace net {
          *   On error, -1 is returned, and peeraddr is untouched.
          *
          */
-        auto accept(host_address& peer_addr) const -> util_socket_t;
+        auto Accept(HostAddress& _peer_addr) const -> util_socket_t;
 
-        auto shutdown_write() const -> error;
+        auto ShutdownWrite() const -> Error;
 
         /**
          * @brief Enable/disable TCP_NODELAY (disable/enable Nagle's algorithm).
          *
          */
-        auto set_tcp_no_delay(bool no_delay) const -> error;
+        auto SetTcpNoDelay(bool _no_delay) const -> Error;
 
         /**
          * @brief Enable/disable SO_REUSEADDR
          *
          */
-        auto set_reuse_addr(bool reuse) const -> error;
+        auto SetReuseAddr(bool _reuse) const -> Error;
 
         /**
          *  @brief Enable/disable SO_REUSEPORT
          *
          */
-        auto set_reuse_port(bool reuse) const -> error;
+        auto SetReusePort(bool _reuse) const -> Error;
 
         /**
          *  @brief Enable/disable SO_KEEPALIVE
          *
          */
-        auto set_keep_alive(bool keep_alive) const -> error;
+        auto SetKeepAlive(bool _keep_alive) const -> Error;
     };
 
 } // namespace net

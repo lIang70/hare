@@ -26,8 +26,8 @@ namespace log {
         enum { inline_buffer_size = 64 * 1024 };
 
         template <bool WithLock = false, std::size_t Size = inline_buffer_size>
-        class file : public util::non_copyable {
-            struct write_unlock {
+        class FileHelper : public util::NonCopyable {
+            struct WriteUnlock {
                 HARE_INLINE
                 auto operator()(const void* _ptr, std::size_t _size,
                     std::size_t _n, std::FILE* _s) -> std::size_t
@@ -40,7 +40,7 @@ namespace log {
                 }
             };
 
-            struct write {
+            struct Write {
                 HARE_INLINE
                 auto operator()(const void* _ptr, std::size_t _size,
                     std::size_t _n, std::FILE* _s) -> std::size_t
@@ -57,77 +57,77 @@ namespace log {
 
         public:
             HARE_INLINE
-            ~file()
+            ~FileHelper()
             {
-                close();
+                Close();
             }
 
             HARE_INLINE
             auto written_bytes() const -> std::size_t { return written_bytes_; }
 
             HARE_INLINE
-            auto name() const -> filename_t { return filename_; }
+            auto filename() const -> filename_t { return filename_; }
 
             HARE_INLINE
-            void open(const filename_t& _file, bool truncate = false)
+            void Open(const filename_t& _file, bool truncate = false)
             {
-                close();
+                Close();
                 const auto* mode = truncate ? HARE_FILENAME_T("wb") : HARE_FILENAME_T("ab");
-                if (!util::open_s(&fp_, _file, mode)) {
-                    throw exception("failed opening file " + filename_to_str(_file) + " for writing");
+                if (!util::FileOpen(&fp_, _file, mode)) {
+                    throw Exception("failed opening file " + FilenameToStr(_file) + " for writing");
                 } else {
                     filename_ = _file;
-                    ignore_unused(std::setvbuf(fp_, buffer_.data(), _IOFBF, Size));
-                    size_ = util::fsize(fp_);
+                    IgnoreUnused(std::setvbuf(fp_, buffer_.data(), _IOFBF, Size));
+                    size_ = util::FileSize(fp_);
                 }
             }
 
             HARE_INLINE
-            void reopen(bool truncate = false)
+            void Reopen(bool truncate = false)
             {
                 if (filename_.empty()) {
-                    throw exception("failed re-opening file - was not opened before");
+                    throw Exception("failed re-opening file - was not opened before");
                 }
-                open(filename_, truncate);
+                Open(filename_, truncate);
             }
 
             HARE_INLINE
-            void close()
+            void Close()
             {
                 if (fp_ != nullptr) {
-                    ignore_unused(std::fclose(fp_));
+                    IgnoreUnused(std::fclose(fp_));
                     fp_ = nullptr;
                 }
                 written_bytes_ = 0;
             }
 
             HARE_INLINE
-            auto size() const -> std::size_t
+            auto Length() const -> std::size_t
             {
                 return fp_ == nullptr ? 0 : size_ + written_bytes_;
             }
 
             HARE_INLINE
-            void flush()
+            void Flush()
             {
-                ignore_unused(std::fflush(fp_));
+                IgnoreUnused(std::fflush(fp_));
             }
 
             HARE_INLINE
-            auto sync() -> bool
+            auto Sync() -> bool
             {
-                return util::fsync(fp_);
+                return util::FileSync(fp_);
             }
 
-            void append(const msg_buffer_t& _buffer)
+            void Append(const msg_buffer_t& _buffer)
             {
                 const auto buffer_size = _buffer.size();
 
                 typedef typename std::conditional<
-                    WithLock, write, write_unlock>::type inner_write;
+                    WithLock, Write, WriteUnlock>::type inner_write;
 
                 if (inner_write()(_buffer.data(), 1, buffer_size, fp_) != buffer_size) {
-                    throw exception("Failed writing to file " + filename_to_str(filename_));
+                    throw Exception("Failed writing to file " + FilenameToStr(filename_));
                 }
                 written_bytes_ += buffer_size;
             }

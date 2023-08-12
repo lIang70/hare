@@ -18,40 +18,41 @@
 
 #define USAGE "echo_serve -p [port]" HARE_EOL
 
-using hare::net::tcp::acceptor;
-using hare::net::tcp::session;
-using hare::net::tcp::serve;
+using hare::net::Acceptor;
+using hare::net::TcpServe;
+using hare::net::TcpSession;
 
-static hare::ptr<hare::log::logger> server_logger {};
+static hare::Ptr<hare::log::Logger> server_logger {};
 
-static void new_session(const session::ptr& _ses, hare::timestamp _ts, const acceptor::ptr& _acc)
+static void NewSession(const hare::Ptr<TcpSession>& _ses, hare::Timestamp _ts, const hare::Ptr<Acceptor>& _acc)
 {
-    _ses->set_connect_callback([=](const session::ptr& _session, std::uint8_t _event) {
-        if ((_event & hare::net::tcp::SESSION_CONNECTED) != 0) {
-            LOG_INFO(server_logger, "session[{}] is connected.", _session->name());
+    _ses->SetConnectCallback([=](const hare::Ptr<TcpSession>& _session, std::uint8_t _event) {
+        if ((_event & hare::net::SESSION_CONNECTED) != 0) {
+            LOG_INFO(server_logger, "session[{}] is connected.", _session->Name());
         }
-        if ((_event & hare::net::tcp::SESSION_CLOSED) != 0) {
-            LOG_INFO(server_logger, "session[{}] is disconnected.", _session->name());
+        if ((_event & hare::net::SESSION_CLOSED) != 0) {
+            LOG_INFO(server_logger, "session[{}] is disconnected.", _session->Name());
         }
     });
 
-    _ses->set_read_callback([](const hare::ptr<session>& _session, hare::net::buffer& _buffer, const hare::timestamp&) {
-        _session->append(_buffer);
+    _ses->SetReadCallback([](const hare::Ptr<TcpSession>& _session, hare::net::Buffer& _buffer, const hare::Timestamp&) {
+        _session->Append(_buffer);
     });
 
-    _ses->set_write_callback([=](const hare::ptr<session>& _session) {
+    _ses->SetWriteCallback([=](const hare::Ptr<TcpSession>& _session) {
 
     });
 
-    _ses->set_high_water_callback([=](const hare::ptr<session>& _session) {
-        LOG_ERROR(server_logger, "session[{}] is going offline because it is no longer receiving data.", _session->name());
-        _session->force_close();
+    _ses->SetHighWaterCallback([=](const hare::Ptr<TcpSession>& _session) {
+        LOG_ERROR(server_logger, "session[{}] is going offline because it is no longer receiving data.", _session->Name());
+        _session->ForceClose();
     });
 
-    LOG_INFO(server_logger, "recv a new tcp-session[{}] at {} on acceptor={}.", _ses->name(), _ts.to_fmt(true), _acc->fd());
+    LOG_INFO(server_logger, "recv a new tcp-session[{}] at {} on acceptor={}.", _ses->Name(), _ts.ToFmt(true), _acc->Socket());
 }
 
-static void handle_msg(std::uint8_t _msg_type, const std::string& _msg) {
+static void HandleMsg(std::uint8_t _msg_type, const std::string& _msg)
+{
     if (_msg_type == hare::TRACE_MSG) {
         LOG_TRACE(server_logger, _msg);
     } else {
@@ -61,10 +62,10 @@ static void handle_msg(std::uint8_t _msg_type, const std::string& _msg) {
 
 auto main(std::int32_t argc, char** argv) -> std::int32_t
 {
-    using hare::log::backend;
-    using hare::log::file_backend_mt;
+    using hare::log::Backend;
+    using hare::log::FileBackendMT;
     using hare::log::std_backend_mt;
-    using hare::log::detail::rotate_file;
+    using hare::log::detail::RotateFileBySize;
 
     if (argc < 4) {
         fmt::print(USAGE);
@@ -73,47 +74,47 @@ auto main(std::int32_t argc, char** argv) -> std::int32_t
 
     constexpr std::uint64_t file_size = static_cast<std::uint64_t>(64) * 1024 * 1024;
 
-    auto tmp = hare::util::system_dir();
-    std::vector<hare::ptr<backend>> backends {
-        std::make_shared<file_backend_mt<rotate_file<file_size>>>(tmp + "/echo_serve"),
-        std_backend_mt::instance()
+    auto tmp = hare::util::SystemDir();
+    std::vector<hare::Ptr<Backend>> backends {
+        std::make_shared<FileBackendMT<RotateFileBySize<file_size>>>(tmp + "/echo_serve"),
+        std_backend_mt::Instance()
     };
     backends[0]->set_level(hare::log::LEVEL_TRACE);
     backends[1]->set_level(hare::log::LEVEL_INFO);
 
-    server_logger = hare::log::registry::create("echo_serve", backends.begin(), backends.end());
+    server_logger = hare::log::Registry::create("echo_serve", backends.begin(), backends.end());
     server_logger->set_level(hare::log::LEVEL_TRACE);
 
-    hare::register_msg_handler(handle_msg);
+    hare::RegisterLogHandler(HandleMsg);
 
-    acceptor::ptr acc { new acceptor(AF_INET, std::uint16_t(std::stoi(std::string(argv[2])))) };
+    hare::Ptr<Acceptor> acceptor { new Acceptor(AF_INET, std::uint16_t(std::stoi(std::string(argv[2])))) };
 
 #if defined(H_OS_WIN32)
     hare::io::cycle main_cycle(hare::io::cycle::REACTOR_TYPE_EPOLL);
 #else
-    hare::io::cycle main_cycle(hare::io::cycle::REACTOR_TYPE_EPOLL);
+    hare::io::Cycle main_cycle(hare::io::Cycle::REACTOR_TYPE_EPOLL);
 #endif
-    
-    serve::ptr main_serve = std::make_shared<serve>(&main_cycle, "ECHO");
 
-    main_serve->set_new_session(new_session);
-    main_serve->add_acceptor(acc);
+    hare::Ptr<TcpServe> main_serve = std::make_shared<TcpServe>(&main_cycle, "ECHO");
 
-    auto& console = hare::io::console::instance();
-    console.register_handle("quit", [&] {
-        main_cycle.exit();
+    main_serve->SetNewSession(NewSession);
+    main_serve->AddAcceptor(acceptor);
+
+    auto& console = hare::io::Console::Instance();
+    console.RegisterHandle("quit", [&] {
+        main_cycle.Exit();
     });
-    console.attach(&main_cycle);
+    console.Attach(&main_cycle);
 
     LOG_INFO(server_logger, "========= ECHO serve start =========");
 
-    auto ret = main_serve->exec(1);
+    auto ret = main_serve->Exec(1);
 
     LOG_INFO(server_logger, "========= ECHO serve stop =========");
 
-    acc.reset();
+    acceptor.reset();
 
-    server_logger->flush();
+    server_logger->Flush();
 
     return (ret ? (0) : (-1));
 }

@@ -3,55 +3,55 @@
 namespace hare {
 namespace log {
 
-    async_logger::~async_logger()
+    AsyncLogger::~AsyncLogger()
     {
-        auto thr_cnt = thread_pool_.thr_num();
+        auto thr_cnt = thread_pool_.threads_size();
         for (decltype(thr_cnt) i = 0; i < thr_cnt; ++i) {
-            thread_pool_.post(
-                details::async_msg(details::async_msg::TERMINATE),
-                POLICY::BLOCK_RETRY);
+            thread_pool_.Post(
+                details::AsyncMsg(details::AsyncMsg::TERMINATE),
+                Policy::BLOCK_RETRY);
         }
-        thread_pool_.join();
+        thread_pool_.Join();
     }
 
-    void async_logger::flush()
+    void AsyncLogger::Flush()
     {
-        thread_pool_.post(
-            details::async_msg(details::async_msg::FLUSH),
-            POLICY::BLOCK_RETRY);
+        thread_pool_.Post(
+            details::AsyncMsg(details::AsyncMsg::FLUSH),
+            Policy::BLOCK_RETRY);
     }
 
-    void async_logger::sink_it(details::msg& _msg)
+    void AsyncLogger::SinkIt(details::Msg& _msg)
     {
-        thread_pool_.post({ _msg, details::async_msg::LOG }, msg_policy_);
+        thread_pool_.Post({ _msg, details::AsyncMsg::LOG }, msg_policy_);
     }
 
-    auto async_logger::handle_msg(details::async_msg& _msg) -> bool
+    auto AsyncLogger::HandleMsg(details::AsyncMsg& _msg) -> bool
     {
         switch (_msg.type_) {
-        case details::async_msg::LOG: {
-            incr_msg_id(_msg);
+        case details::AsyncMsg::LOG: {
+            IncreaseMsgId(_msg);
 
             details::msg_buffer_t formatted {};
-            details::format_msg(_msg, formatted);
+            details::FormatMsg(_msg, formatted);
 
             for (auto& backend : backends_) {
-                if (backend->check(_msg.level_)) {
-                    backend->log(formatted, static_cast<LEVEL>(_msg.level_));
+                if (backend->Check(_msg.level_)) {
+                    backend->Log(formatted, static_cast<Level>(_msg.level_));
                 }
             }
 
-            if (should_flush_on(_msg)) {
-                flush();
+            if (ShouldFlushOn(_msg)) {
+                Flush();
             }
             return true;
         }
-        case details::async_msg::FLUSH:
+        case details::AsyncMsg::FLUSH:
             try {
                 for (auto& backend : backends_) {
-                    backend->flush();
+                    backend->Flush();
                 }
-            } catch (const hare::exception& e) {
+            } catch (const hare::Exception& e) {
                 error_handle_(ERROR_MSG, e.what());
             } catch (const std::exception& e) {
                 error_handle_(ERROR_MSG, e.what());
@@ -60,7 +60,7 @@ namespace log {
             }
             return true;
             break;
-        case details::async_msg::TERMINATE:
+        case details::AsyncMsg::TERMINATE:
             break;
         default:
             assert(false);

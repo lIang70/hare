@@ -21,12 +21,10 @@ namespace hare {
 namespace net {
 
     HARE_CLASS_API
-    class HARE_API host_address : public util::non_copyable {
+    class HARE_API HostAddress : public util::NonCopyable {
         sockaddr* in_ {};
 
     public:
-        using ptr = ptr<host_address>;
-
         /**
          * @brief resolve hostname to IP address, not changing port or sin_family.
          *
@@ -34,42 +32,42 @@ namespace net {
          *
          * @return true on success.
          */
-        static auto resolve(const std::string& _hostname, host_address* _result) -> bool;
-        static auto local_address(util_socket_t _fd) -> host_address;
-        static auto peer_address(util_socket_t _fd) -> host_address;
+        static auto Resolve(const std::string& _hostname, HostAddress* _result) -> bool;
+        static auto LocalAddress(util_socket_t _fd) -> HostAddress;
+        static auto PeerAddress(util_socket_t _fd) -> HostAddress;
 
         /**
          * @brief Constructs an endpoint with given port number.
          *   Mostly used in server listening.
          */
-        explicit host_address(std::uint16_t _port = 0, bool _loopback_only = false, bool _ipv6 = false);
+        explicit HostAddress(std::uint16_t _port = 0, bool _loopback_only = false, bool _ipv6 = false);
 
         /**
          * @brief Constructs an endpoint with given ip and port.
          * @c ip should be "1.2.3.4"
          */
-        host_address(const std::string& _ip, std::uint16_t _port, bool _ipv6 = false);
-        ~host_address();
+        HostAddress(const std::string& _ip, std::uint16_t _port, bool _ipv6 = false);
+        ~HostAddress();
 
-        host_address(host_address&& _another) noexcept;
-        auto operator=(host_address&& _another) noexcept -> host_address&;
+        HostAddress(HostAddress&& _another) noexcept;
+        auto operator=(HostAddress&& _another) noexcept -> HostAddress&;
 
-        auto clone() const -> hare::ptr<host_address>;
+        auto Clone() const -> hare::Ptr<HostAddress>;
 
-        auto family() const -> std::uint8_t;
+        auto Family() const -> std::uint8_t;
 
         HARE_INLINE auto get_sockaddr() const -> sockaddr* { return in_; }
         void set_sockaddr_in6(const struct sockaddr_in6* addr_in6) const;
 
-        auto to_ip() const -> std::string;
-        auto to_ip_port() const -> std::string;
-        HARE_INLINE auto port() const -> std::uint16_t { return socket_op::network_to_host16(port_net_endian()); }
+        auto ToIp() const -> std::string;
+        auto ToIpPort() const -> std::string;
+        HARE_INLINE auto Port() const -> std::uint16_t { return socket_op::NetworkToHost16(PortNetEndian()); }
 
-        auto ipv4_net_endian() const -> std::uint32_t;
-        auto port_net_endian() const -> std::uint16_t;
+        auto Ipv4NetEndian() const -> std::uint32_t;
+        auto PortNetEndian() const -> std::uint16_t;
 
         // set IPv6 ScopeID
-        void set_scope_id(std::uint32_t _id) const;
+        void SetScopeId(std::uint32_t _id) const;
     };
 
 } // namespace net

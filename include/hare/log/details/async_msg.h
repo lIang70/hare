@@ -20,33 +20,33 @@ namespace log {
     namespace details {
 
         HARE_CLASS_API
-        struct HARE_API async_msg : public msg {
-            enum type { LOG, FLUSH, TERMINATE };
-            type type_ { LOG };
+        struct HARE_API AsyncMsg : public Msg {
+            enum Type { LOG, FLUSH, TERMINATE };
+            Type type_ { LOG };
 
-            async_msg() = default;
+            AsyncMsg() = default;
 
-            explicit async_msg(type _type)
+            explicit AsyncMsg(Type _type)
                 : type_(_type)
             {
             }
 
-            async_msg(msg& _msg, type _type)
-                : msg(std::move(_msg))
+            AsyncMsg(Msg& _msg, Type _type)
+                : Msg(std::move(_msg))
                 , type_(_type)
             {
             }
 
             HARE_INLINE
-            async_msg(async_msg&& _other) noexcept
-            { move(_other); }
+            AsyncMsg(AsyncMsg&& _other) noexcept
+            { Move(_other); }
 
             HARE_INLINE
-            auto operator=(async_msg&& _other) noexcept -> async_msg&
-            { move(_other); return (*this); }
+            auto operator=(AsyncMsg&& _other) noexcept -> AsyncMsg&
+            { Move(_other); return (*this); }
 
             HARE_INLINE
-            void move(async_msg& _other) noexcept
+            void Move(AsyncMsg& _other) noexcept
             {
                 name_ = _other.name_;
                 timezone_ = _other.timezone_;

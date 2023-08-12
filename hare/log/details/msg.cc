@@ -6,7 +6,7 @@ namespace hare {
 namespace log {
     namespace details {
 
-        static auto log_time(const msg& _msg, std::int32_t& _microseconds) -> const std::string&
+        static auto LogTime(const Msg& _msg, std::int32_t& _microseconds) -> const std::string&
         {
             static thread_local std::int64_t t_last_time {};
             static thread_local std::string t_time {};
@@ -19,41 +19,41 @@ namespace log {
 
             if (seconds != t_last_time) {
                 t_last_time = seconds;
-                struct time::date_time dt {};
+                struct time::DateTime dt {};
                 if (bool(*_msg.timezone_)) {
-                    dt = _msg.timezone_->to_local(seconds);
+                    dt = _msg.timezone_->ToLocal(seconds);
                 } else {
-                    dt = timezone::to_utc_time(seconds);
+                    dt = Timezone::ToUtcTime(seconds);
                 }
 
-                t_time = fmt::format("{:04}-{:02}-{:02} {:02}:{:02}:{:02}", dt.year_, dt.month_, dt.day_, dt.hour_, dt.minute_, dt.second_);
+                t_time = dt.ToFmt();
             }
 
             return t_time;
         }
 
-        msg::msg(const std::string* _name, const hare::timezone* _tz, LEVEL _level, source_loc& _loc)
+        Msg::Msg(const std::string* _name, const hare::Timezone* _tz, Level _level, SourceLoc& _loc)
             : name_(_name)
             , timezone_(_tz)
             , level_(_level)
-            , tid_(io::current_thread::get_tds().tid)
+            , tid_(io::current_thread::ThreadData().tid)
             , loc_(_loc)
         {
         }
 
-        void format_msg(msg& _msg, msg_buffer_t& _fotmatted)
+        void FormatMsg(Msg& _msg, msg_buffer_t& _fotmatted)
         {
             auto microseconds { 0 };
-            const auto& stamp = log_time(_msg, microseconds);
-            const auto* level = to_str(static_cast<LEVEL>(_msg.level_));
+            const auto& stamp = LogTime(_msg, microseconds);
+            const auto* level = ToStr(static_cast<Level>(_msg.level_));
             _msg.raw_[_msg.raw_.size()] = '\0';
             
             // [LEVEL] (stamp) <tid> msg (loc)
             fmt::format_to(std::back_inserter(_fotmatted), 
                 "({:}.{:06d}) [{:8}] <{:#x}> {} [{}:{}||{}]" HARE_EOL, 
-                stamp, microseconds, level, io::current_thread::get_tds().tid, 
+                stamp, microseconds, level, io::current_thread::ThreadData().tid, 
                 _msg.raw_.data(),
-                _msg.loc_.filename_, _msg.loc_.line_, _msg.loc_.funcname_);
+                _msg.loc_.filename, _msg.loc_.line, _msg.loc_.funcname);
         }
 
     } // namespace details

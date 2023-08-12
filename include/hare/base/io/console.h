@@ -18,30 +18,30 @@ namespace hare {
 namespace io {
 
     HARE_CLASS_API
-    class HARE_API console : public util::non_copyable {
-        hare::detail::impl* impl_ {};
+    class HARE_API Console : public util::NonCopyable {
+        hare::detail::Impl* impl_ {};
 
     public:
-        using default_handle = std::function<void(const std::string& command_line)>;
+        using DefaultHandle = std::function<void(const std::string& command_line)>;
 
-        static auto instance() -> console&;
+        static auto Instance() -> Console&;
 
-        ~console();
+        ~Console();
 
         /**
          * @brief not thread-safe.
          **/
-        void register_default_handle(default_handle _handle);
-        void register_handle(std::string _handle_mask, task _handle);
-        auto attach(cycle* _cycle) -> bool;
+        void RegisterDefaultHandle(DefaultHandle _default_handle);
+        void RegisterHandle(std::string _handle_mask, Task _handle);
+        auto Attach(Cycle* _cycle) -> bool;
 
-        console(console&&) = delete;
-        auto operator=(console&&) -> console = delete;
+        Console(Console&&) = delete;
+        auto operator=(Console&&) -> Console = delete;
 
     private:
-        console();
+        Console();
 
-        void process(const event::ptr& _event, std::uint8_t _events, const timestamp& _receive_time);
+        void Process(const Ptr<Event>& _event, std::uint8_t _events, const Timestamp& _receive_time);
     };
 
 } // namespace io

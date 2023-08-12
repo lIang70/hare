@@ -24,16 +24,16 @@ namespace util {
     namespace detail {
 #if defined(_SECURE_SCL) && _SECURE_SCL
         // Make a checked iterator to avoid MSVC warnings.
-        template <typename T> using checked_ptr = stdext::checked_array_iterator<T*>;
+        template <typename T> using CheckedPtr = stdext::checked_array_iterator<T*>;
         template <typename T>
-        constexpr auto make_checked(T* p, std::size_t size) -> checked_ptr<T>
+        constexpr auto MakeChecked(T* p, std::size_t size) -> CheckedPtr<T>
         {
             return { p, size };
         }
 #else
-        template <typename T> using checked_ptr = T*;
+        template <typename T> using CheckedPtr = T*;
         template <typename T>
-        constexpr auto make_checked(T* p, std::size_t) -> T*
+        constexpr auto MakeChecked(T* p, std::size_t) -> T*
         {
             return p;
         }
@@ -42,53 +42,53 @@ namespace util {
 
     HARE_CLASS_API
     template <typename T>
-    class HARE_API buffer {
+    class HARE_API Buffer {
     protected:
         T* ptr_ {};
         std::size_t size_ {};
         std::size_t capacity_ {};
 
         // Don't initialize ptr_ since it is not accessed to save a few cycles.
-        explicit buffer(std::size_t sz) noexcept
+        explicit Buffer(std::size_t sz) noexcept
             : size_(sz)
             , capacity_(sz)
         {
         }
 
-        explicit buffer(T* p = nullptr, std::size_t sz = 0, std::size_t cap = 0) noexcept
+        explicit Buffer(T* p = nullptr, std::size_t sz = 0, std::size_t cap = 0) noexcept
             : ptr_(p)
             , size_(sz)
             , capacity_(cap)
         {
         }
 
-        buffer(buffer&&) noexcept = default;
+        Buffer(Buffer&&) noexcept = default;
 
         /** Sets the buffer data and capacity. */
         HARE_INLINE
-        void set(T* buf_data, std::size_t buf_capacity) noexcept
+        void Set(T* buf_data, std::size_t buf_capacity) noexcept
         {
             ptr_ = buf_data;
             capacity_ = buf_capacity;
         }
 
         /** Increases the buffer capacity to hold at least *capacity* elements. */
-        virtual void grow(std::size_t capacity) = 0;
+        virtual void Grow(std::size_t capacity) = 0;
 
     public:
-        using value_type = T;
-        using const_reference = const T&;
+        using ValueType = T;
+        using ConstReference = const T&;
 
-        virtual ~buffer() = default;
+        virtual ~Buffer() = default;
 
-        buffer(const buffer&) = delete;
-        void operator=(const buffer&) = delete;
+        Buffer(const Buffer&) = delete;
+        void operator=(const Buffer&) = delete;
 
-        HARE_INLINE auto begin() noexcept -> T* { return ptr_; }
-        HARE_INLINE auto end() noexcept -> T* { return ptr_ + size_; }
+        HARE_INLINE auto Begin() noexcept -> T* { return ptr_; }
+        HARE_INLINE auto End() noexcept -> T* { return ptr_ + size_; }
 
-        HARE_INLINE auto begin() const noexcept -> const T* { return ptr_; }
-        HARE_INLINE auto end() const noexcept -> const T* { return ptr_ + size_; }
+        HARE_INLINE auto Begin() const noexcept -> const T* { return ptr_; }
+        HARE_INLINE auto End() const noexcept -> const T* { return ptr_ + size_; }
 
         /** Returns the size of this buffer. */
         constexpr auto size() const noexcept -> std::size_t { return size_; }
@@ -97,19 +97,19 @@ namespace util {
         constexpr auto capacity() const noexcept -> std::size_t { return capacity_; }
 
         /** Returns a pointer to the buffer data. */
-        HARE_INLINE auto data() noexcept -> T* { return ptr_; }
+        HARE_INLINE auto Data() noexcept -> T* { return ptr_; }
 
         /** Returns a pointer to the buffer data. */
-        constexpr auto data() const noexcept -> const T* { return ptr_; }
+        constexpr auto Data() const noexcept -> const T* { return ptr_; }
 
         /** Clears this buffer. */
-        HARE_INLINE void clear() { size_ = 0; }
+        HARE_INLINE void Clear() { size_ = 0; }
 
         // Tries resizing the buffer to contain *count* elements. If T is a POD type
         // the new elements may not be initialized.
-        void try_resize(std::size_t count)
+        void TryResize(std::size_t count)
         {
-            try_reserve(count);
+            TryReserve(count);
             size_ = count <= capacity_ ? count : capacity_;
         }
 
@@ -117,22 +117,22 @@ namespace util {
         // capacity by a smaller amount than requested but guarantees there is space
         // for at least one additional element either by increasing the capacity or by
         // flushing the buffer if it is full.
-        void try_reserve(std::size_t new_capacity)
+        void TryReserve(std::size_t new_capacity)
         {
             if (new_capacity > capacity_) {
-                grow(new_capacity);
+                Grow(new_capacity);
             }
         }
 
-        void push_back(const T& value)
+        void PushBack(const T& value)
         {
-            try_reserve(size_ + 1);
+            TryReserve(size_ + 1);
             ptr_[size_++] = value;
         }
 
         /** Appends data to the end of the buffer. */
         template <typename U>
-        void append(const U* begin, const U* end);
+        void Append(const U* begin, const U* end);
 
         template <typename Idx>
         auto operator[](Idx index) -> T&
@@ -149,17 +149,17 @@ namespace util {
 
     template <typename T>
     template <typename U>
-    void buffer<T>::append(const U* begin, const U* end)
+    void Buffer<T>::Append(const U* begin, const U* end)
     {
         while (begin != end) {
-            auto count = hare::detail::to_unsigned(end - begin);
-            try_reserve(size_ + count);
+            auto count = hare::detail::ToUnsigned(end - begin);
+            TryReserve(size_ + count);
             auto free_cap = capacity_ - size_;
             if (free_cap < count) {
                 count = free_cap;
             }
             std::uninitialized_copy_n(begin, count, 
-                detail::make_checked(ptr_ + size_, count));
+                detail::MakeChecked(ptr_ + size_, count));
             size_ += count;
             begin += count;
         }

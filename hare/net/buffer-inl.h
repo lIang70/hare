@@ -23,51 +23,51 @@ namespace net {
          * |                |             |                  |
          * @endcode
          **/
-        class cache : public util::buffer<char> {
+        class Cache : public util::Buffer<char> {
             std::size_t misalign_ { 0 };
 
         public:
-            using base = util::buffer<char>;
+            using Base = util::Buffer<char>;
 
             HARE_INLINE
-            explicit cache(std::size_t _max_size)
-                : base(new base::value_type[_max_size], 0, _max_size)
+            explicit Cache(std::size_t _max_size)
+                : Base(new Base::ValueType[_max_size], 0, _max_size)
             { }
 
             HARE_INLINE
-            cache(base::value_type* _data, std::size_t _max_size)
-                : base(_data, _max_size, _max_size)
+            Cache(Base::ValueType* _data, std::size_t _max_size)
+                : Base(_data, _max_size, _max_size)
             { }
 
             HARE_INLINE
-            ~cache() override
-            { delete[] begin(); }
+            ~Cache() override
+            { delete[] Begin(); }
 
             // write to data_ directly
-            HARE_INLINE auto writeable() -> base::value_type* { return begin() + size(); }
-            HARE_INLINE auto writeable() const -> const base::value_type* { return begin() + size(); }
-            HARE_INLINE auto writeable_size() const -> std::size_t { return capacity() - size(); }
+            HARE_INLINE auto Writeable() -> Base::ValueType* { return Begin() + size(); }
+            HARE_INLINE auto Writeable() const -> const Base::ValueType* { return Begin() + size(); }
+            HARE_INLINE auto WriteableSize() const -> std::size_t { return capacity() - size(); }
 
-            HARE_INLINE auto readable() -> base::value_type* { return data() + misalign_; }
-            HARE_INLINE auto readable_size() const -> std::size_t { return size() - misalign_; }
-            HARE_INLINE auto full() const -> bool { return size() == capacity(); }
-            HARE_INLINE auto empty() const -> bool { return readable_size() == 0; }
-            HARE_INLINE void clear() { base::clear(); misalign_ = 0; }
+            HARE_INLINE auto Readable() -> Base::ValueType* { return Data() + misalign_; }
+            HARE_INLINE auto ReadableSize() const -> std::size_t { return size() - misalign_; }
+            HARE_INLINE auto Full() const -> bool { return size() == capacity(); }
+            HARE_INLINE auto Empty() const -> bool { return ReadableSize() == 0; }
+            HARE_INLINE void Clear() { Base::Clear(); misalign_ = 0; }
 
-            HARE_INLINE void drain(std::size_t _size) { misalign_ += _size; }
-            HARE_INLINE void add(std::size_t _size) { size_ += _size; }
+            HARE_INLINE void Drain(std::size_t _size) { misalign_ += _size; }
+            HARE_INLINE void Add(std::size_t _size) { size_ += _size; }
 
-            HARE_INLINE void bzero() { hare::detail::fill_n(data(), capacity(), 0); }
+            HARE_INLINE void Bzero() { hare::detail::FillN(Data(), capacity(), 0); }
 
-            auto realign(std::size_t _size) -> bool;
+            auto Realign(std::size_t _size) -> bool;
 
         private:
-            HARE_INLINE void grow(std::size_t _capacity) override { ignore_unused(_capacity); }
+            HARE_INLINE void Grow(std::size_t _capacity) override { IgnoreUnused(_capacity); }
 
-            friend class net::buffer;
+            friend class net::Buffer;
         };
 
-        using ucache = uptr<detail::cache>;
+        using Ucache = UPtr<detail::Cache>;
 
         /** @code
          *  +-------++-------++-------++-------++-------++-------+
@@ -77,24 +77,24 @@ namespace net {
          *          read_iter         write_iter
          *  @endcode
          **/
-        using cache_list = struct cache_list {
-            struct node {
-                ucache cache {};
-                node* next {};
-                node* prev {};
+        struct CacheList {
+            struct Node {
+                Ucache cache {};
+                Node* next {};
+                Node* prev {};
 
-                HARE_INLINE auto operator->() -> ucache&
+                HARE_INLINE auto operator->() -> Ucache&
                 { return cache; }
             };
 
-            node* head {};
-            node* read {};
-            node* write {};
+            Node* head {};
+            Node* read {};
+            Node* write {};
             std::size_t node_size_ { 0 };
 
             HARE_INLINE
-            cache_list()
-                : head(new node)
+            CacheList()
+                : head(new Node)
                 , read(head)
                 , write(head)
                 , node_size_(1)
@@ -104,20 +104,20 @@ namespace net {
             }
 
             HARE_INLINE
-            ~cache_list()
+            ~CacheList()
             {
-                reset();
+                Reset();
                 delete head;
             }
 
-            HARE_INLINE auto begin() const -> node* { return read; }
-            HARE_INLINE auto end() const -> node* { return write; }
-            HARE_INLINE auto size() const -> std::size_t { return node_size_; }
-            HARE_INLINE auto empty() const -> bool { return read == write && (!write->cache || (*write)->empty());}
-            HARE_INLINE auto full() const -> bool { return write->cache && (*write)->full() && write->next == read;}
+            HARE_INLINE auto Begin() const -> Node* { return read; }
+            HARE_INLINE auto End() const -> Node* { return write; }
+            HARE_INLINE auto Size() const -> std::size_t { return node_size_; }
+            HARE_INLINE auto Empty() const -> bool { return read == write && (!write->cache || (*write)->Empty());}
+            HARE_INLINE auto Full() const -> bool { return write->cache && (*write)->Full() && write->next == read;}
 
             HARE_INLINE
-            void swap(cache_list& _other)
+            void Swap(CacheList& _other)
             {
                 std::swap(head, _other.head);
                 std::swap(read, _other.read);
@@ -125,33 +125,32 @@ namespace net {
                 std::swap(node_size_, _other.node_size_);
             }
 
-            void check_size(std::size_t _size);
+            void CheckSize(std::size_t _size);
 
-            void append(cache_list& _other);
+            void Append(CacheList& _other);
 
-            auto fast_expand(std::size_t _size) -> std::int32_t;
+            auto FastExpand(std::size_t _size) -> std::int32_t;
 
-            void add(std::size_t _size);
+            void Add(std::size_t _size);
 
-            void drain(std::size_t _size);
+            void Drain(std::size_t _size);
 
-            void reset();
+            void Reset();
 
 #ifdef HARE_DEBUG
-            void print_status(const std::string& _status) const;
+            void PrintStatus(const std::string& _status) const;
 #endif
 
         private:
-            HARE_INLINE
-            auto get_next_write() -> node*
+            auto GetNextWrite() -> Node*
             {
-                if (!write->cache || (*write)->empty()) {
+                if (!write->cache || (*write)->Empty()) {
                     if (write->cache) {
-                        (*write)->clear();
+                        (*write)->Clear();
                     }
-                    return end();
+                    return End();
                 } else if (write->next == read) {
-                    auto* tmp = new node;
+                    auto* tmp = new Node;
                     tmp->next = write->next;
                     tmp->prev = write;
                     write->next->prev = tmp;
@@ -160,30 +159,30 @@ namespace net {
                 }
                 write = write->next;
                 assert(write != read);
-                return end();
+                return End();
             }
             
         };
         
     } // namespace detail
 
-    struct buffer_iterator_impl : public hare::detail::impl {
-        const detail::cache_list* list_;
-        detail::cache_list::node* iter_ {};
-        std::size_t curr_index_ {};
+    struct buffer_iterator_impl : public hare::detail::Impl {
+        const detail::CacheList* list;
+        detail::CacheList::Node* iter {};
+        std::size_t curr_index {};
 
         HARE_INLINE
-        explicit buffer_iterator_impl(detail::cache_list* _list)
-            : list_(_list)
-            , iter_(_list->begin())
-            , curr_index_(hare::detail::to_unsigned((*_list->begin())->readable() - (*_list->begin())->data()))
+        explicit buffer_iterator_impl(detail::CacheList* _list)
+            : list(_list)
+            , iter(_list->Begin())
+            , curr_index(hare::detail::ToUnsigned((*_list->Begin())->Readable() - (*_list->Begin())->Data()))
         { }
 
         HARE_INLINE
-        buffer_iterator_impl(const detail::cache_list* _list, detail::cache_list::node* _iter)
-            : list_(_list)
-            , iter_(_iter)
-            , curr_index_((*_iter)->size())
+        buffer_iterator_impl(const detail::CacheList* _list, detail::CacheList::Node* _iter)
+            : list(_list)
+            , iter(_iter)
+            , curr_index((*_iter)->size())
         { }
 
         ~buffer_iterator_impl() override = default;

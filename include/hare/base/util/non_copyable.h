@@ -18,14 +18,14 @@ namespace hare {
 namespace util {
 
     HARE_CLASS_API
-    class HARE_API non_copyable {
+    class HARE_API NonCopyable {
     public:
-        non_copyable(const non_copyable&) = delete;
-        auto operator=(const non_copyable&) -> non_copyable& = delete;
+        NonCopyable(const NonCopyable&) = delete;
+        auto operator=(const NonCopyable&) -> NonCopyable& = delete;
 
     protected:
-        non_copyable() = default;
-        ~non_copyable() = default;
+        NonCopyable() = default;
+        ~NonCopyable() = default;
     };
 
 } // namespace util

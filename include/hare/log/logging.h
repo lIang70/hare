@@ -22,49 +22,50 @@ namespace hare {
 namespace log {
 
     namespace detail {
-        HARE_API void handle_logger_error(std::uint8_t, const std::string& error_msg);
+        HARE_API void HandleLoggerError(std::uint8_t, const std::string& error_msg);
     } // namespace detail
 
     HARE_CLASS_API
-    class HARE_API logger : public util::non_copyable {
+    class HARE_API Logger : public util::NonCopyable {
+    public:
+        using BackendList = std::vector<Ptr<Backend>>;
+
     protected:
         level_t level_ { LEVEL_TRACE };
         level_t flush_level_ { LEVEL_WARNING };
         std::atomic<std::uint64_t> msg_id_ { 0 };
-        timezone timezone_ {};
+        Timezone timezone_ {};
         std::string name_ {};
-        log_handler error_handle_ {};
-        std::vector<ptr<backend>> backends_ {};
+        LogHandler error_handle_ {};
+        BackendList backends_ {};
 
     public:
-        using backend_list = std::vector<ptr<backend>>;
-
         HARE_INLINE
-        void set_level(LEVEL _level)
+        void set_level(Level _level)
         {
             level_.store(_level);
         }
 
         HARE_INLINE
-        auto level() const -> LEVEL
+        auto level() const -> Level
         {
-            return static_cast<LEVEL>(level_.load(std::memory_order_relaxed));
+            return static_cast<Level>(level_.load(std::memory_order_relaxed));
         }
 
         HARE_INLINE
-        auto check(LEVEL _level) const -> bool
+        auto Check(Level _level) const -> bool
         {
             return _level >= level_.load(std::memory_order_relaxed);
         }
 
         HARE_INLINE
-        void flush_on(LEVEL _level)
+        void FlushOn(Level _level)
         {
             flush_level_.store(_level);
         }
 
         HARE_INLINE
-        void set_timezone(const timezone& _tz)
+        void set_timezone(const Timezone& _tz)
         {
             timezone_ = _tz;
         }
@@ -76,23 +77,23 @@ namespace log {
         }
 
         HARE_INLINE
-        auto backends() const -> backend_list
+        auto backends() const -> BackendList
         {
             return backends_;
         }
 
         template <typename... Args>
-        HARE_INLINE void log(source_loc& _loc, LEVEL _level, fmt::format_string<Args...> _fmt, const Args&... _args)
+        HARE_INLINE void Log(SourceLoc& _loc, Level _level, fmt::format_string<Args...> _fmt, const Args&... _args)
         {
-            if (!check(_level)) {
+            if (!Check(_level)) {
                 return;
             }
 
             try {
-                details::msg msg(&name_, &timezone_, _level, _loc);
+                details::Msg msg(&name_, &timezone_, _level, _loc);
                 fmt::format_to(std::back_inserter(msg.raw_), _fmt, _args...);
-                sink_it(msg);
-            } catch (const hare::exception& e) {
+                SinkIt(msg);
+            } catch (const hare::Exception& e) {
                 error_handle_(ERROR_MSG, e.what());
             } catch (const std::exception& e) {
                 error_handle_(ERROR_MSG, e.what());
@@ -102,68 +103,68 @@ namespace log {
         }
 
         template <typename... Args>
-        HARE_INLINE void trace(source_loc&& _loc, fmt::format_string<Args...> _fmt, const Args&... _args)
+        HARE_INLINE void Trace(SourceLoc&& _loc, fmt::format_string<Args...> _fmt, const Args&... _args)
         {
-            log(_loc, LEVEL_TRACE, _fmt, _args...);
+            Log(_loc, LEVEL_TRACE, _fmt, _args...);
         }
 
         template <typename... Args>
-        HARE_INLINE void debug(source_loc&& _loc, fmt::format_string<Args...> _fmt, const Args&... _args)
+        HARE_INLINE void Debug(SourceLoc&& _loc, fmt::format_string<Args...> _fmt, const Args&... _args)
         {
-            log(_loc, LEVEL_DEBUG, _fmt, _args...);
+            Log(_loc, LEVEL_DEBUG, _fmt, _args...);
         }
 
         template <typename... Args>
-        HARE_INLINE void info(source_loc&& _loc, fmt::format_string<Args...> _fmt, const Args&... _args)
+        HARE_INLINE void Info(SourceLoc&& _loc, fmt::format_string<Args...> _fmt, const Args&... _args)
         {
-            log(_loc, LEVEL_INFO, _fmt, _args...);
+            Log(_loc, LEVEL_INFO, _fmt, _args...);
         }
 
         template <typename... Args>
-        HARE_INLINE void warning(source_loc&& _loc, fmt::format_string<Args...> _fmt, const Args&... _args)
+        HARE_INLINE void Warning(SourceLoc&& _loc, fmt::format_string<Args...> _fmt, const Args&... _args)
         {
-            log(_loc, LEVEL_WARNING, _fmt, _args...);
+            Log(_loc, LEVEL_WARNING, _fmt, _args...);
         }
 
         template <typename... Args>
-        HARE_INLINE void error(source_loc&& _loc, fmt::format_string<Args...> _fmt, const Args&... _args)
+        HARE_INLINE void Error(SourceLoc&& _loc, fmt::format_string<Args...> _fmt, const Args&... _args)
         {
-            log(_loc, LEVEL_ERROR, _fmt, _args...);
+            Log(_loc, LEVEL_ERROR, _fmt, _args...);
         }
 
         template <typename... Args>
-        HARE_INLINE void fatal(source_loc&& _loc, fmt::format_string<Args...> _fmt, const Args&... _args)
+        HARE_INLINE void Fatal(SourceLoc&& _loc, fmt::format_string<Args...> _fmt, const Args&... _args)
         {
-            log(_loc, LEVEL_FATAL, _fmt, _args...);
+            Log(_loc, LEVEL_FATAL, _fmt, _args...);
         }
 
         template <typename Iter>
         HARE_INLINE
-        logger(std::string _unique_name, const Iter& begin, const Iter& end)
+        Logger(std::string _unique_name, const Iter& begin, const Iter& end)
             : name_(std::move(_unique_name))
-            , error_handle_(detail::handle_logger_error)
+            , error_handle_(detail::HandleLoggerError)
             , backends_(begin, end) // message counter will start from 1. 0-message id will be reserved for controll messages
         {}
 
         HARE_INLINE
-        logger(std::string _unique_name, backend_list _backends)
-            : logger(std::move(_unique_name), _backends.begin(), _backends.end())
+        Logger(std::string _unique_name, BackendList _backends)
+            : Logger(std::move(_unique_name), _backends.begin(), _backends.end())
         {}
 
         HARE_INLINE
-        logger(std::string _unique_name, ptr<backend> _backend)
-            : logger(std::move(_unique_name), backend_list { std::move(_backend) })
+        Logger(std::string _unique_name, Ptr<Backend> _backend)
+            : Logger(std::move(_unique_name), BackendList { std::move(_backend) })
         {}
 
-        virtual ~logger() = default;
+        virtual ~Logger() = default;
 
-        virtual void flush()
+        virtual void Flush()
         {
             try {
                 for (auto& backend : backends_) {
-                    backend->flush();
+                    backend->Flush();
                 }
-            } catch (const hare::exception& e) {
+            } catch (const hare::Exception& e) {
                 error_handle_(ERROR_MSG, e.what());
             } catch (const std::exception& e) {
                 error_handle_(ERROR_MSG, e.what());
@@ -174,33 +175,33 @@ namespace log {
 
     protected:
         HARE_INLINE
-        void incr_msg_id(details::msg& _msg)
+        void IncreaseMsgId(details::Msg& _msg)
         {
             _msg.id_ = msg_id_.fetch_add(1, std::memory_order_relaxed);
         }
 
         HARE_INLINE
-        auto should_flush_on(const details::msg& _msg) -> bool
+        auto ShouldFlushOn(const details::Msg& _msg) -> bool
         {
             const auto flush_level = flush_level_.load(std::memory_order_relaxed);
             return (_msg.level_ >= flush_level) && (_msg.level_ < LEVEL_NBRS);
         }
 
-        virtual void sink_it(details::msg& _msg)
+        virtual void SinkIt(details::Msg& _msg)
         {
-            incr_msg_id(_msg);
+            IncreaseMsgId(_msg);
 
             details::msg_buffer_t formatted {};
-            details::format_msg(_msg, formatted);
+            details::FormatMsg(_msg, formatted);
 
             for (auto& backend : backends_) {
-                if (backend->check(_msg.level_)) {
-                    backend->log(formatted, static_cast<LEVEL>(_msg.level_));
+                if (backend->Check(_msg.level_)) {
+                    backend->Log(formatted, static_cast<Level>(_msg.level_));
                 }
             }
 
-            if (should_flush_on(_msg)) {
-                flush();
+            if (ShouldFlushOn(_msg)) {
+                Flush();
             }
         }
     };
@@ -208,11 +209,11 @@ namespace log {
 } // namespace log
 } // namespace hare
 
-#define LOG_TRACE(logger, format, ...) logger->trace({ __FILE__, __LINE__, __func__ }, format, ##__VA_ARGS__)
-#define LOG_DEBUG(logger, format, ...) logger->debug({ __FILE__, __LINE__, __func__ }, format, ##__VA_ARGS__)
-#define LOG_INFO(logger, format, ...) logger->info({ __FILE__, __LINE__, __func__ }, format, ##__VA_ARGS__)
-#define LOG_WARNING(logger, format, ...) logger->warning({ __FILE__, __LINE__, __func__ }, format, ##__VA_ARGS__)
-#define LOG_ERROR(logger, format, ...) logger->error({ __FILE__, __LINE__, __func__ }, format, ##__VA_ARGS__)
-#define LOG_FATAL(logger, format, ...) logger->fatal({ __FILE__, __LINE__, __func__ }, format, ##__VA_ARGS__)
+#define LOG_TRACE(logger, format, ...) logger->Trace({ __FILE__, __LINE__, __func__ }, format, ##__VA_ARGS__)
+#define LOG_DEBUG(logger, format, ...) logger->Debug({ __FILE__, __LINE__, __func__ }, format, ##__VA_ARGS__)
+#define LOG_INFO(logger, format, ...) logger->Info({ __FILE__, __LINE__, __func__ }, format, ##__VA_ARGS__)
+#define LOG_WARNING(logger, format, ...) logger->Warning({ __FILE__, __LINE__, __func__ }, format, ##__VA_ARGS__)
+#define LOG_ERROR(logger, format, ...) logger->Error({ __FILE__, __LINE__, __func__ }, format, ##__VA_ARGS__)
+#define LOG_FATAL(logger, format, ...) logger->Fatal({ __FILE__, __LINE__, __func__ }, format, ##__VA_ARGS__)
 
 #endif // _HARE_LOG_LOGGING_H_

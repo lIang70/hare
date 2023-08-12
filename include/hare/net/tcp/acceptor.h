@@ -19,41 +19,39 @@
 
 namespace hare {
 namespace net {
-    namespace tcp {
 
-        HARE_CLASS_API
-        class HARE_API acceptor : public io::event {
-            hare::detail::impl* impl_ {};
+    HARE_CLASS_API
+    class HARE_API Acceptor : public io::Event {
+        hare::detail::Impl* impl_ {};
+
 #ifdef H_OS_LINUX
-            // Read the section named "The special problem of
-            // accept()ing when you can't" in libev's doc.
-            // By Marc Lehmann, author of libev.
-            util_socket_t idle_fd_ { -1 };
+        // Read the section named "The special problem of
+        // accept()ing when you can't" in libev's doc.
+        // By Marc Lehmann, author of libev.
+        util_socket_t idle_fd_ { -1 };
 #endif
 
-        public:
-            using new_session = std::function<void(util_socket_t, host_address&, const timestamp&, acceptor*)>;
-            using ptr = std::shared_ptr<acceptor>;
+    public:
+        using NewSessionCallback = std::function<void(util_socket_t, HostAddress&, const Timestamp&, Acceptor*)>;
 
-            acceptor(std::uint8_t _family, std::uint16_t _port, bool _reuse_port = true);
-            ~acceptor() override;
+        Acceptor(std::uint8_t _family, std::uint16_t _port, bool _reuse_port = true);
+        ~Acceptor() override;
 
-            auto socket() const -> util_socket_t;
-            auto port() const -> std::uint16_t;
-            auto family() const -> std::uint8_t;
+        auto Socket() const -> util_socket_t;
+        auto Port() const -> std::uint16_t;
+        auto Family() const -> std::uint8_t;
 
-        protected:
-            void event_callback(const io::event::ptr& _event, std::uint8_t _events, const timestamp& _receive_time);
+    protected:
+        void EventCallback(const Ptr<io::Event>& _event, std::uint8_t _events, const Timestamp& _receive_time);
 
-        private:
-            auto listen() -> error;
+    private:
+        auto Listen() -> Error;
 
-            void set_new_session(new_session _cb);
+        void SetNewSession(NewSessionCallback _cb);
 
-            friend class serve;
-        };
+        friend class TcpServe;
+    };
 
-    } // namespace tcp
 } // namespace net
 } // namespace hare
 

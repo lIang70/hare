@@ -11,32 +11,32 @@ namespace hare {
 namespace io {
     namespace current_thread {
 
-        using TID = struct thread_io_data {
+        struct Data {
             // io
-            io::cycle* cycle { nullptr };
+            io::Cycle* cycle { nullptr };
 
             // thread
             std::uint64_t tid {};
 
-            thread_io_data()
+            Data()
             {
                 std::ostringstream oss {};
                 oss << std::this_thread::get_id();
                 tid = std::stoull(oss.str());
             }
 
-            thread_io_data(const thread_io_data&) = delete;
-            thread_io_data(thread_io_data&&) noexcept = delete;
+            Data(const Data&) = delete;
+            Data(Data&&) noexcept = delete;
 
-            thread_io_data& operator=(const thread_io_data&) = delete;
-            thread_io_data& operator=(thread_io_data&&) = delete;
+            Data& operator=(const Data&) = delete;
+            Data& operator=(Data&&) = delete;
         };
 
         HARE_INLINE
-        auto get_tds() -> TID&
+        auto ThreadData() -> struct Data&
         {
-            static thread_local TID t_io_data {};
-            return t_io_data;
+            static thread_local struct Data thread_data {};
+            return thread_data;
         }
 
     } // namespace current_thread

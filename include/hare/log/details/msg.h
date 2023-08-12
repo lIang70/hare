@@ -46,7 +46,7 @@ namespace log {
      * @brief The enumeration of log level.
      *
      **/
-    using LEVEL = enum : std::int8_t {
+    using Level = enum : std::int8_t {
         LEVEL_TRACE,
         LEVEL_DEBUG,
         LEVEL_INFO,
@@ -57,7 +57,7 @@ namespace log {
     };
 
 #ifndef HARELOG_USING_ATOMIC_LEVELS
-    using level_t = details::dummy_atomic_t<std::int8_t>;
+    using level_t = details::DummyAtomic<std::int8_t>;
 #else
     using level_t = std::atomic<std::int8_t>;
 #endif
@@ -72,15 +72,15 @@ namespace log {
     static constexpr const char* level_name[] HARELOG_LEVEL_NAMES;
 
     HARE_INLINE
-    constexpr const char* to_str(LEVEL _level)
+    constexpr const char* ToStr(Level _level)
     {
         return level_name[_level];
     }
 
     HARE_INLINE
-    LEVEL from_str(const std::string& name)
+    Level FromStr(const std::string& name)
     {
-        static std::unordered_map<std::string, LEVEL> name_to_level = {
+        static std::unordered_map<std::string, Level> name_to_level = {
             { level_name[0], LEVEL_TRACE }, // trace
             { level_name[1], LEVEL_DEBUG }, // debug
             { level_name[2], LEVEL_INFO }, // info
@@ -95,24 +95,24 @@ namespace log {
     }
 
     HARE_CLASS_API
-    struct HARE_API source_loc {
-        const char* filename_ { nullptr };
-        const char* funcname_ { nullptr };
-        std::int32_t line_ { 0 };
+    struct HARE_API SourceLoc {
+        const char* filename { nullptr };
+        const char* funcname { nullptr };
+        std::int32_t line { 0 };
 
-        constexpr source_loc() = default;
-        HARE_INLINE source_loc(const char* _filename, std::int32_t _line, const char* _funcname)
-            : funcname_ { _funcname }
-            , line_ { _line }
+        constexpr SourceLoc() = default;
+        HARE_INLINE SourceLoc(const char* _filename, std::int32_t _line, const char* _funcname)
+            : funcname { _funcname }
+            , line { _line }
         {
             const auto* slash = std::strrchr(_filename, HARE_SLASH);
-            filename_ = slash != nullptr ? slash + 1 : _filename;
+            filename = slash != nullptr ? slash + 1 : _filename;
         }
 
         HARE_INLINE
-        auto empty() const noexcept -> bool
+        auto Empty() const noexcept -> bool
         {
-            return line_ == 0;
+            return line == 0;
         }
     };
 
@@ -121,31 +121,31 @@ namespace log {
         using msg_buffer_t = fmt::basic_memory_buffer<char, 256>;
 
         HARE_CLASS_API
-        struct HARE_API msg : public util::non_copyable {
+        struct HARE_API Msg : public util::NonCopyable {
             const std::string* name_ {};
-            const timezone* timezone_ {};
+            const Timezone* timezone_ {};
             std::int8_t level_ { LEVEL_NBRS };
             std::uint64_t tid_ { 0 };
             std::uint64_t id_ { 0 };
-            timestamp stamp_ { timestamp::now() };
+            Timestamp stamp_ { Timestamp::Now() };
             msg_buffer_t raw_ {};
-            source_loc loc_ {};
+            SourceLoc loc_ {};
 
-            msg() = default;
-            virtual ~msg() = default;
+            Msg() = default;
+            virtual ~Msg() = default;
 
-            msg(const std::string* _name, const hare::timezone* _tz, LEVEL _level, source_loc& _loc);
-
-            HARE_INLINE
-            msg(msg&& _other) noexcept
-            { move(_other); }
+            Msg(const std::string* _name, const hare::Timezone* _tz, Level _level, SourceLoc& _loc);
 
             HARE_INLINE
-            auto operator=(msg&& _other) noexcept -> msg&
-            { move(_other); return (*this); }
+            Msg(Msg&& _other) noexcept
+            { Move(_other); }
 
             HARE_INLINE
-            void move(msg& _other) noexcept
+            auto operator=(Msg&& _other) noexcept -> Msg&
+            { Move(_other); return (*this); }
+
+            HARE_INLINE
+            void Move(Msg& _other) noexcept
             {
                 name_ = _other.name_;
                 timezone_ = _other.timezone_;
@@ -158,7 +158,7 @@ namespace log {
             }
         };
 
-        HARE_API void format_msg(msg& _msg, msg_buffer_t& _fotmatted);
+        HARE_API void FormatMsg(Msg& _msg, msg_buffer_t& _fotmatted);
 
     } // namespace details
 } // namespace log

@@ -13,22 +13,22 @@
 namespace hare {
 namespace io {
 
-    class reactor_poll : public reactor {
+    class ReactorPoll : public Reactor {
         using pollfd_list = std::vector<struct pollfd>;
 
         pollfd_list poll_fds_ {};
         std::map<util_socket_t, std::int32_t> inverse_map_ {};
 
     public:
-        explicit reactor_poll(cycle* _cycle);
-        ~reactor_poll() override;
+        explicit ReactorPoll(Cycle* _cycle);
+        ~ReactorPoll() override;
 
-        auto poll(std::int32_t _timeout_microseconds) -> timestamp override;
-        auto event_update(const ptr<event>& _event) -> bool override;
-        auto event_remove(const ptr<event>& _event) -> bool override;
+        auto Poll(std::int32_t _timeout_microseconds) -> Timestamp override;
+        auto EventUpdate(const Ptr<Event>& _event) -> bool override;
+        auto EventRemove(const Ptr<Event>& _event) -> bool override;
 
     private:
-        void fill_active_events(std::int32_t _num_of_events);
+        void FillActiveEvents(std::int32_t _num_of_events);
     };
 
 } // namespace io

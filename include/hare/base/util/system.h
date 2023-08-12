@@ -19,22 +19,22 @@
 namespace hare {
 namespace util {
 
-    HARE_API auto system_dir() -> std::string;
-    HARE_API auto hostname() -> std::string;
-    HARE_API auto pid() -> std::int32_t;
-    HARE_API auto page_size() -> std::size_t;
-    HARE_API auto cpu_usage(std::int32_t _pid) -> double;
-    HARE_API auto stack_trace(bool _demangle) -> std::string;
-    HARE_API auto set_thread_name(const char* _tname) -> bool;
-    HARE_API auto errnostr(std::int32_t _errorno) -> const char*;
+    HARE_API auto SystemDir() -> std::string;
+    HARE_API auto HostName() -> std::string;
+    HARE_API auto Pid() -> std::int32_t;
+    HARE_API auto PageSize() -> std::size_t;
+    HARE_API auto CpuUsage(std::int32_t _pid) -> double;
+    HARE_API auto StackTrace(bool _demangle) -> std::string;
+    HARE_API auto SetCurrentThreadName(const char* _tname) -> bool;
+    HARE_API auto ErrnoStr(std::int32_t _errorno) -> const char*;
 
-    HARE_API auto open_s(std::FILE** _fp, const filename_t& _filename, const filename_t& _mode) -> bool;
-    HARE_API auto fexists(const filename_t& _filepath) -> bool;
-    HARE_API auto fremove(const filename_t& _filepath) -> bool;
-    HARE_API auto fsize(std::FILE* _fp) -> std::size_t;
-    HARE_API auto fsync(std::FILE* _fp) -> bool;
+    HARE_API auto FileOpen(std::FILE** _fp, const filename_t& _filename, const filename_t& _mode) -> bool;
+    HARE_API auto FileExists(const filename_t& _filepath) -> bool;
+    HARE_API auto FileRemove(const filename_t& _filepath) -> bool;
+    HARE_API auto FileSize(std::FILE* _fp) -> std::size_t;
+    HARE_API auto FileSync(std::FILE* _fp) -> bool;
 
-    HARE_API auto get_local_address(std::uint8_t _family, std::list<std::string>& _addr_list) -> std::int32_t;
+    HARE_API auto LocalAddress(std::uint8_t _family, std::list<std::string>& _addr_list) -> std::int32_t;
 
 } // namespace util
 } // namespace hare

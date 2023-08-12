@@ -3,7 +3,7 @@
 
 TEST(SystemTest, testCpuUsage)
 {
-    auto cpu_usage = hare::util::cpu_usage(hare::util::pid());
+    auto cpu_usage = hare::util::CpuUsage(hare::util::Pid());
     std::cout << "cpu_usage:" << cpu_usage << std::endl;
     GTEST_ASSERT_LT(std::abs(cpu_usage - 0.0), 1e-5);
 }

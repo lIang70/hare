@@ -16,35 +16,32 @@
 
 namespace hare {
 namespace net {
-    namespace tcp {
 
-        class acceptor;
+    class Acceptor;
 
-        HARE_CLASS_API
-        class HARE_API serve : public util::non_copyable {
-            hare::detail::impl* impl_ {};
+    HARE_CLASS_API
+    class HARE_API TcpServe : public util::NonCopyable {
+        hare::detail::Impl* impl_ {};
 
-        public:
-            using new_session_callback = std::function<void(const session::ptr&, const timestamp&, const hare::ptr<acceptor>&)>;
-            using ptr = ptr<serve>;
+    public:
+        using NewSessionCallback = std::function<void(const Ptr<TcpSession>&, const Timestamp&, const Ptr<Acceptor>&)>;
 
-            explicit serve(io::cycle* _cycle, std::string _name = "HARE_SERVE");
-            virtual ~serve();
+        explicit TcpServe(io::Cycle* _cycle, std::string _name = "HARE_SERVE");
+        virtual ~TcpServe();
 
-            auto main_cycle() const -> io::cycle*;
-            auto is_running() const -> bool;
-            void set_new_session(new_session_callback _new_session);
+        auto MainCycle() const -> io::Cycle*;
+        auto IsRunning() const -> bool;
+        void SetNewSession(NewSessionCallback _new_session);
 
-            auto add_acceptor(const hare::ptr<acceptor>& _acceptor) -> bool;
+        auto AddAcceptor(const Ptr<Acceptor>& _acceptor) -> bool;
 
-            auto exec(std::int32_t _thread_nbr) -> error;
-            void exit();
+        auto Exec(std::int32_t _thread_nbr) -> Error;
+        void Exit();
 
-        private:
-            void new_session(util_socket_t _fd, host_address& _address, const timestamp& _time, acceptor* _acceptor);
-        };
+    private:
+        void NewSession(util_socket_t _fd, HostAddress& _address, const Timestamp& _time, Acceptor* _acceptor);
+    };
 
-    } // namespace tcp
 } // namespace net
 } // namespace hare
 

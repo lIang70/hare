@@ -10,7 +10,7 @@ namespace time {
 
         // algorithm and explanation see:
         //   http://www.faqs.org/faqs/calendars/faq/part2/
-        auto get_julian_day_number(std::int32_t _year, std::int32_t _month, std::int32_t _day) noexcept -> std::int32_t
+        auto JulianDayNumber(std::int32_t _year, std::int32_t _month, std::int32_t _day) noexcept -> std::int32_t
         {
             static_assert(sizeof(int) >= sizeof(std::int32_t), "request 32 bit integer at least.");
             auto a = (14 - _month) / 12;
@@ -19,7 +19,7 @@ namespace time {
             return _day + (153 * m + 2) / 5 + y * 365 + y / 4 - y / 100 + y / 400 - 32045;
         }
 
-        static auto get_year_month_day(std::int32_t _julian_day_number) -> date::ymd
+        static auto GetYMD(std::int32_t _julian_day_number) -> Date::YMD
         {
             auto a = _julian_day_number + 32044;
             auto b = (4 * a + 3) / 146097;
@@ -36,32 +36,32 @@ namespace time {
 
     } // namespace detail
 
-    date_time::date_time() = default;
+    DateTime::DateTime() = default;
 
-    date_time::date_time(const std::tm& _tm)
-        : year_(_tm.tm_year + HARE_START_YEAR)
-        , month_(_tm.tm_mon + 1)
-        , day_(_tm.tm_mday)
-        , hour_(_tm.tm_hour)
-        , minute_(_tm.tm_min)
-        , second_(_tm.tm_sec)
+    DateTime::DateTime(const std::tm& _tm)
+        : year(_tm.tm_year + HARE_START_YEAR)
+        , month(_tm.tm_mon + 1)
+        , day(_tm.tm_mday)
+        , hour(_tm.tm_hour)
+        , minute(_tm.tm_min)
+        , second(_tm.tm_sec)
     {
     }
 
-    auto date_time::to_fmt() const -> std::string
+    auto DateTime::ToFmt() const -> std::string
     {
-        return fmt::format("{:04d}-{:02d}-{:02d} {:02d}:{:02d}:{:02d}", year_, month_, day_, hour_, minute_, second_);
+        return fmt::format("{:04}-{:02}-{:02} {:02}:{:02}:{:02}", year, month, day, hour, minute, second);
     }
 
-    auto date::to_fmt() const -> std::string
+    auto Date::ToFmt() const -> std::string
     {
-        ymd year_month_day(detail());
+        YMD year_month_day(Detail());
         return fmt::format("{:04d}-{:02d}-{:02d}", year_month_day.year, year_month_day.month, year_month_day.day);
     }
 
-    auto date::detail() const -> date::ymd
+    auto Date::Detail() const -> Date::YMD
     {
-        return detail::get_year_month_day(julian_day_number_);
+        return detail::GetYMD(julian_day_number_);
     }
 
 } // namespace time

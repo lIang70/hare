@@ -24,45 +24,45 @@ namespace hare {
 namespace log {
 
     HARE_CLASS_API
-    class HARE_API async_logger : public logger {
-        util::thread_pool<details::async_msg> thread_pool_;
-        POLICY msg_policy_ { util::POLICY::BLOCK_RETRY };
+    class HARE_API AsyncLogger : public Logger {
+        util::ThreadPool<details::AsyncMsg> thread_pool_;
+        Policy msg_policy_ { util::Policy::BLOCK_RETRY };
 
     public:
         template <typename Iter>
         HARE_INLINE
-        async_logger(std::string _unique_name, const Iter& begin, const Iter& end,
+        AsyncLogger(std::string _unique_name, const Iter& begin, const Iter& end,
             std::size_t _max_msg, std::size_t _thr_n)
-            : logger(std::move(_unique_name), begin, end)
-            , thread_pool_(_max_msg, _thr_n, std::bind(&async_logger::handle_msg, this, std::placeholders::_1))
+            : Logger(std::move(_unique_name), begin, end)
+            , thread_pool_(_max_msg, _thr_n, std::bind(&AsyncLogger::HandleMsg, this, std::placeholders::_1))
         {
-            thread_pool_.start([] {}, [] {});
+            thread_pool_.Start([] {}, [] {});
         }
 
         HARE_INLINE
-        async_logger(std::string _unique_name, backend_list _backends, std::size_t _max_msg, std::size_t _thr_n)
-            : async_logger(std::move(_unique_name), _backends.begin(), _backends.end(), 
+        AsyncLogger(std::string _unique_name, BackendList _backends, std::size_t _max_msg, std::size_t _thr_n)
+            : AsyncLogger(std::move(_unique_name), _backends.begin(), _backends.end(), 
             _max_msg, _thr_n)
         {
         }
 
         HARE_INLINE
-        async_logger(std::string _unique_name, ptr<backend> _backend, std::size_t _max_msg, std::size_t _thr_n)
-            : async_logger(std::move(_unique_name), backend_list { std::move(_backend) }, 
+        AsyncLogger(std::string _unique_name, Ptr<Backend> _backend, std::size_t _max_msg, std::size_t _thr_n)
+            : AsyncLogger(std::move(_unique_name), BackendList { std::move(_backend) }, 
             _max_msg, _thr_n)
         {
         }
 
-        ~async_logger() override;
+        ~AsyncLogger() override;
 
-        HARE_INLINE void set_policy(POLICY _policy) { msg_policy_ = _policy; }
+        HARE_INLINE void set_policy(Policy _policy) { msg_policy_ = _policy; }
 
-        void flush() override;
+        void Flush() override;
 
     private:
-        void sink_it(details::msg& _msg) override;
+        void SinkIt(details::Msg& _msg) override;
 
-        auto handle_msg(details::async_msg& _msg) -> bool;
+        auto HandleMsg(details::AsyncMsg& _msg) -> bool;
     };
 
 } // namespace log

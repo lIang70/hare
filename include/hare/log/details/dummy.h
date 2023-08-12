@@ -20,7 +20,7 @@ namespace log {
     namespace details {
 
         HARE_CLASS_API
-        struct HARE_API dummy_mutex {
+        struct HARE_API DummyMutex {
             void lock() { }
             void unlock() { }
             auto try_lock() -> bool
@@ -31,14 +31,14 @@ namespace log {
 
         HARE_CLASS_API
         template <typename T>
-        struct HARE_API dummy_atomic_t {
+        struct HARE_API DummyAtomic {
             using value = T;
 
             T value_ {};
 
-            dummy_atomic_t() = default;
+            DummyAtomic() = default;
 
-            explicit dummy_atomic_t(T _value)
+            explicit DummyAtomic(T _value)
                 : value_(_value)
             {
             }

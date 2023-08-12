@@ -20,55 +20,55 @@
 namespace hare {
 namespace util {
 
-    enum class POLICY {
+    enum class Policy {
         BLOCK_RETRY, // Block / yield / sleep until message can be enqueued
         DISCARD // Discard the message it enqueue fails
     };
 
     HARE_CLASS_API
     template <typename T>
-    class HARE_API thread_pool {
+    class HARE_API ThreadPool {
     public:
-        using value_type = T;
-        using task_handle = std::function<bool(T&)>;
+        using ValueType = T;
+        using TaskHandle = std::function<bool(ValueType&)>;
 
     private:
-        blocking_queue<T> queue_ {};
+        BlockingQueue<T> queue_ {};
         std::vector<std::thread> threads_ {};
-        task_handle handle_ {};
+        TaskHandle handle_ {};
 
     public:
         HARE_INLINE 
-        thread_pool(std::size_t _max_items, std::size_t _thr_n, task_handle _thr_task)
+        ThreadPool(std::size_t _max_items, std::size_t _thr_n, TaskHandle _thr_task)
             : queue_(_max_items)
             , threads_(_thr_n)
             , handle_(std::move(_thr_task))
         {
             if (_thr_n == 0 || _thr_n >= 1024) {
-                throw exception("invalid _thr_n param (valid range 1-1024)");
+                throw Exception("invalid _thr_n param (valid range 1-1024)");
             }
         }
 
         HARE_INLINE
-        ~thread_pool()
+        ~ThreadPool()
         {
-            join();
+            Join();
         }
 
         HARE_INLINE
-        void start(const task& _before_thr, const task& _after_thr)
+        void Start(const Task& _before_thr, const Task& _after_thr)
         {
             for (auto& thr : threads_) {
                 thr = std::move(std::thread([this, _before_thr, _after_thr] {
                     _before_thr();
-                    this->loop();
+                    this->Loop();
                     _after_thr();
                 }));
             }
         }
 
         HARE_INLINE
-        void join()
+        void Join()
         {
             for (auto& thr : threads_) {
                 if (thr.joinable()) {
@@ -78,38 +78,38 @@ namespace util {
         }
 
         HARE_INLINE
-        auto thr_num() const -> std::size_t
+        auto threads_size() const -> std::size_t
         {
             return threads_.size();
         }
 
         HARE_INLINE
-        auto over_counter() const -> std::size_t
+        auto OverCounter() const -> std::size_t
         {
-            return queue_.over_counter();
+            return queue_.OverCounter();
         }
 
         HARE_INLINE
-        void reset_counter()
+        void ResetCounter()
         {
-            queue_.reset_counter();
+            queue_.ResetCounter();
         }
 
         HARE_INLINE
-        auto queue_size() -> std::size_t
+        auto QueueSize() -> std::size_t
         {
-            return queue_.size();
+            return queue_.Size();
         }
 
         HARE_INLINE
-        void post(T&& _item, POLICY _policy)
+        void Post(T&& _item, Policy _policy)
         {
             switch (_policy) {
-            case POLICY::BLOCK_RETRY:
-                queue_.enqueue(_item);
+            case Policy::BLOCK_RETRY:
+                queue_.Enqueue(_item);
                 break;
-            case POLICY::DISCARD:
-                queue_.enqueue_nowait(_item);
+            case Policy::DISCARD:
+                queue_.EnqueueNoWait(_item);
                 break;
             default:
                 assert(false);
@@ -119,11 +119,11 @@ namespace util {
 
     private:
         HARE_INLINE
-        void loop()
+        void Loop()
         {
             for (;;) {
                 T item {};
-                queue_.dequeue(item);
+                queue_.Dequeue(item);
 
                 auto ret = handle_(item);
                 if (!ret) {

@@ -17,27 +17,27 @@
 namespace hare {
 
 HARE_CLASS_API
-class HARE_API timezone {
-    hare::detail::impl* impl_ {};
+class HARE_API Timezone {
+    hare::detail::Impl* impl_ {};
 
 public:
-    timezone(); // an invalid timezone
-    timezone(std::int32_t _east_of_utc, const char* _tz_name); // a fixed timezone
-    ~timezone();
+    Timezone(); // an invalid timezone
+    Timezone(std::int32_t _east_of_utc, const char* _tz_name); // a fixed timezone
+    ~Timezone();
 
-    timezone(const timezone& _another);
-    auto operator=(const timezone& _another) -> timezone&;
+    Timezone(const Timezone& _another);
+    auto operator=(const Timezone& _another) -> Timezone&;
 
-    static auto utc() -> timezone;
+    static auto UTC() -> Timezone;
     // gmtime(3)
-    static auto to_utc_time(std::int64_t _seconds_since_epoch) -> time::date_time;
+    static auto ToUtcTime(std::int64_t _seconds_since_epoch) -> time::DateTime;
     // timegm(3)
-    static auto from_utc_time(const time::date_time& _dt) -> std::int64_t;
+    static auto FromUtcTime(const time::DateTime& _dt) -> std::int64_t;
 
     explicit operator bool() const;
 
-    auto to_local(std::int64_t _seconds_since_epoch, std::int32_t* _utc_offset = nullptr) const -> time::date_time;
-    auto from_local(const time::date_time& _dt, bool _post_transition = false) const -> std::int64_t;
+    auto ToLocal(std::int64_t _seconds_since_epoch, std::int32_t* _utc_offset = nullptr) const -> time::DateTime;
+    auto FromLocal(const time::DateTime& _dt, bool _post_transition = false) const -> std::int64_t;
 };
 
 } // namespace hare

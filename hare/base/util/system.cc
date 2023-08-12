@@ -68,20 +68,20 @@ namespace util {
 
     namespace detail {
 
-        class system_info {
+        class SystemInfo {
             std::array<char, NAME_LENGTH> host_name_ {};
             std::array<char, NAME_LENGTH> system_dir_ {};
             std::int32_t pid_ { 0 };
             std::size_t page_size_ { 0 };
 
         public:
-            static auto instance() -> system_info
+            static auto instance() -> SystemInfo
             {
-                static system_info s_info {};
-                return s_info;
+                static SystemInfo system_info {};
+                return system_info;
             }
 
-            system_info()
+            SystemInfo()
             {
                 // Get the host name
                 if (::gethostname(host_name_.data(), NAME_LENGTH) == 0) {
@@ -90,7 +90,7 @@ namespace util {
 
                 // Get application dir
                 if (::getcwd(system_dir_.data(), NAME_LENGTH) == nullptr) {
-                    throw exception("Cannot call ::getcwd.");
+                    throw Exception("Cannot call ::getcwd.");
                 }
 
                 pid_ = ::getpid();
@@ -104,13 +104,13 @@ namespace util {
 #endif
             }
 
-            friend auto util::system_dir() -> std::string;
-            friend auto util::hostname() -> std::string;
-            friend auto util::pid() -> std::int32_t;
-            friend auto util::page_size() -> std::size_t;
+            friend auto util::SystemDir() -> std::string;
+            friend auto util::HostName() -> std::string;
+            friend auto util::Pid() -> std::int32_t;
+            friend auto util::PageSize() -> std::size_t;
         };
 
-        static auto get_cpu_total_occupy() -> std::uint64_t
+        static auto CpuTotalOccupy() -> std::uint64_t
         {
 #ifndef H_OS_WIN
             // different mode cpu occupy time
@@ -171,7 +171,7 @@ namespace util {
 #endif
         }
 
-        static auto get_cpu_proc_occupy(std::int32_t _pid) -> std::uint64_t
+        static auto CpuProcOccupy(std::int32_t _pid) -> std::uint64_t
         {
 #ifndef H_OS_WIN
 #define PROCESS_ITEM 14
@@ -245,7 +245,7 @@ namespace util {
 #endif
         }
 
-        static auto get_nprocs() -> std::int64_t
+        static auto NProcs() -> std::int64_t
         {
 #ifndef H_OS_WIN
             return ::sysconf(_SC_NPROCESSORS_ONLN);
@@ -257,53 +257,53 @@ namespace util {
         }
     } // namespace detail
 
-    auto system_dir() -> std::string
+    auto SystemDir() -> std::string
     {
-        return detail::system_info::instance().system_dir_.data();
+        return detail::SystemInfo::instance().system_dir_.data();
     }
 
-    auto hostname() -> std::string
+    auto HostName() -> std::string
     {
-        return detail::system_info::instance().host_name_.data();
+        return detail::SystemInfo::instance().host_name_.data();
     }
 
-    auto pid() -> std::int32_t
+    auto Pid() -> std::int32_t
     {
-        return detail::system_info::instance().pid_;
+        return detail::SystemInfo::instance().pid_;
     }
 
-    auto page_size() -> std::size_t
+    auto PageSize() -> std::size_t
     {
-        return detail::system_info::instance().page_size_;
+        return detail::SystemInfo::instance().page_size_;
     }
 
-    auto cpu_usage(std::int32_t _pid) -> double
+    auto CpuUsage(std::int32_t _pid) -> double
     {
 #ifdef H_OS_WIN
         MSG_TRACE("cpu usage calculation is not supported under windows.");
         return (0.0);
 #endif
-        auto total_cputime1 = detail::get_cpu_total_occupy();
-        auto pro_cputime1 = detail::get_cpu_proc_occupy(_pid);
+        auto total_cputime1 = detail::CpuTotalOccupy();
+        auto pro_cputime1 = detail::CpuProcOccupy(_pid);
 
         // sleep 200ms to fetch two time point cpu usage snapshots sample for later calculation.
         std::this_thread::sleep_for(std::chrono::microseconds(SLEEP_TIME_SLICE_MICROS));
 
-        auto total_cputime2 = detail::get_cpu_total_occupy();
-        auto pro_cputime2 = detail::get_cpu_proc_occupy(_pid);
+        auto total_cputime2 = detail::CpuTotalOccupy();
+        auto pro_cputime2 = detail::CpuProcOccupy(_pid);
 
         auto pcpu { 0.0 };
         if (0 != total_cputime2 - total_cputime1) {
             pcpu = static_cast<double>(pro_cputime2 - pro_cputime1) / static_cast<double>(total_cputime2 - total_cputime1); // double number
         }
 
-        auto cpu_num = detail::get_nprocs();
+        auto cpu_num = detail::NProcs();
         pcpu *= static_cast<double>(cpu_num); // should multiply cpu num in multiple cpu machine
 
         return pcpu;
     }
 
-    auto stack_trace(bool _demangle) -> std::string
+    auto StackTrace(bool _demangle) -> std::string
     {
         static const auto MAX_STACK_FRAMES = 20;
         std::string stack {};
@@ -362,7 +362,7 @@ namespace util {
 #endif
     }
 
-    auto set_thread_name(const char* _tname) -> bool
+    auto SetCurrentThreadName(const char* _tname) -> bool
     {
         auto ret = -1;
 #ifndef H_OS_WIN
@@ -373,7 +373,7 @@ namespace util {
         return ret != -1;
     }
 
-    auto errnostr(std::int32_t _errorno) -> const char*
+    auto ErrnoStr(std::int32_t _errorno) -> const char*
     {
         static thread_local std::array<char, HARE_SMALL_FIXED_SIZE * HARE_SMALL_FIXED_SIZE / 2> t_errno_buf;
 #ifdef H_OS_WIN32
@@ -384,7 +384,7 @@ namespace util {
         return t_errno_buf.data();
     }
 
-    auto open_s(std::FILE** _fp, const filename_t& _filename, const filename_t& _mode) -> bool
+    auto FileOpen(std::FILE** _fp, const filename_t& _filename, const filename_t& _mode) -> bool
     {
 #if defined(H_OS_WIN32) && HARE_WCHAR_FILENAME
         *_fp = ::_wfsopen((_filename.c_str()), _mode.c_str(), _SH_DENYWR);
@@ -396,7 +396,7 @@ namespace util {
         return *_fp != nullptr;
     }
 
-    auto fexists(const filename_t& _filepath) -> bool
+    auto FileExists(const filename_t& _filepath) -> bool
     {
 #if defined(H_OS_LINUX) // common linux/unix all have the stat system call
         struct stat buffer { };
@@ -410,16 +410,16 @@ namespace util {
 #endif
     }
 
-    auto fremove(const filename_t& _filepath) -> bool
+    auto FileRemove(const filename_t& _filepath) -> bool
     {
-        if (!fexists(_filepath)) {
+        if (!FileExists(_filepath)) {
             return false;
         }
-
-        return std::remove(filename_to_str(_filepath).c_str()) == 0;
+        // TODO(l1ang70): remove file in disk;
+        return std::remove(FilenameToStr(_filepath).c_str()) == 0;
     }
 
-    auto fsize(std::FILE* _fp) -> std::size_t
+    auto FileSize(std::FILE* _fp) -> std::size_t
     {
         if (_fp == nullptr) {
             return 0;
@@ -447,7 +447,7 @@ namespace util {
 #endif
     }
 
-    auto fsync(std::FILE* _fp) -> bool
+    auto FileSync(std::FILE* _fp) -> bool
     {
 #if defined(H_OS_LINUX)
         return ::fsync(::fileno(_fp)) == 0;
@@ -456,7 +456,7 @@ namespace util {
 #endif
     }
 
-    auto get_local_address(std::uint8_t _family, std::list<std::string>& _addr_list) -> std::int32_t
+    auto LocalAddress(std::uint8_t _family, std::list<std::string>& _addr_list) -> std::int32_t
     {
 #ifndef H_OS_WIN
         // Get the list of ip addresses of machine

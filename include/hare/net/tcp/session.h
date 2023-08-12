@@ -20,99 +20,91 @@
 
 namespace hare {
 namespace net {
-    namespace tcp {
 
-        using SESSION = enum : std::uint8_t {
-            SESSION_DEFAULT = io::EVENT_DEFAULT,
-            SESSION_READ = io::EVENT_READ,
-            SESSION_WRITE = io::EVENT_WRITE,
-            SESSION_CLOSED = io::EVENT_CLOSED,
-            SESSION_ERROR = 0x40,
-            SESSION_CONNECTED = 0x80,
-        };
+    using SessionEvent = enum : std::uint8_t {
+        SESSION_DEFAULT = io::EVENT_DEFAULT,
+        SESSION_READ = io::EVENT_READ,
+        SESSION_WRITE = io::EVENT_WRITE,
+        SESSION_CLOSED = io::EVENT_CLOSED,
+        SESSION_ERROR = 0x40,
+        SESSION_CONNECTED = 0x80,
+    };
 
-        using STATE = enum : std::int8_t {
-            STATE_CONNECTING = 0x00,
-            STATE_CONNECTED,
-            STATE_DISCONNECTING,
-            STATE_DISCONNECTED
-        };
+    using SessionState = enum : std::int8_t {
+        STATE_CONNECTING = 0x00,
+        STATE_CONNECTED,
+        STATE_DISCONNECTING,
+        STATE_DISCONNECTED
+    };
 
-        class client;
-        class serve;
+    HARE_CLASS_API
+    class HARE_API TcpSession : public util::NonCopyable
+                              , public std::enable_shared_from_this<TcpSession> {
+        hare::detail::Impl* impl_ {};
 
-        HARE_CLASS_API
-        class HARE_API session : public util::non_copyable
-                               , public std::enable_shared_from_this<session> {
-            hare::detail::impl* impl_ {};
+    public:
+        using ConnectCallback = std::function<void(const hare::Ptr<TcpSession>&, std::uint8_t)>;
+        using WriteCallback = std::function<void(const hare::Ptr<TcpSession>&)>;
+        using HighWaterCallback = std::function<void(const hare::Ptr<TcpSession>&)>;
+        using ReadRallback = std::function<void(const hare::Ptr<TcpSession>&, Buffer&, const Timestamp&)>;
+        using SessionDestroy = std::function<void()>;
 
-        public:
-            using ptr = ptr<session>;
-            using connect_callback = std::function<void(const hare::ptr<session>&, std::uint8_t)>;
-            using write_callback = std::function<void(const hare::ptr<session>&)>;
-            using high_water_callback = std::function<void(const hare::ptr<session>&)>;
-            using read_callback = std::function<void(const hare::ptr<session>&, buffer&, const timestamp&)>;
-            using destroy = std::function<void()>;
+        virtual ~TcpSession();
 
-            virtual ~session();
+        auto Name() const -> std::string;
+        auto OwnerCycle() const -> io::Cycle*;
+        auto LocalAddress() const -> const HostAddress&;
+        auto PeerAddress() const -> const HostAddress&;
+        auto State() const -> SessionState;
+        auto Fd() const -> util_socket_t;
 
-            auto name() const -> std::string;
-            auto owner_cycle() const -> io::cycle*;
-            auto local_address() const -> const host_address&;
-            auto peer_address() const -> const host_address&;
-            auto type() const -> TYPE;
-            auto state() const -> STATE;
-            auto fd() const -> util_socket_t;
+        void SetConnectCallback(ConnectCallback _connect);
+        void SetReadCallback(ReadRallback _read);
+        void SetWriteCallback(WriteCallback _write);
+        void SetHighWaterCallback(HighWaterCallback _high_water);
+        void SetHighWaterMark(std::size_t _hwm);
 
-            void set_connect_callback(connect_callback _connect);
-            void set_high_water_mark(std::size_t _hwm);
-            void set_read_callback(read_callback _read);
-            void set_write_callback(write_callback _write);
-            void set_high_water_callback(high_water_callback _high_water);
+        void SetContext(const util::Any& context);
+        auto GetContext() const -> const util::Any&;
 
-            void set_context(const util::any& context);
-            auto get_context() const -> const util::any&;
+        auto Shutdown() -> Error;
+        auto ForceClose() -> Error;
 
-            auto shutdown() -> error;
-            auto force_close() -> error;
+        void StartRead();
+        void StopRead();
 
-            void start_read();
-            void stop_read();
+        HARE_INLINE auto Connected() const -> bool { return State() == STATE_CONNECTED; }
 
-            HARE_INLINE auto connected() const -> bool
-            { return state() == STATE_CONNECTED; }
+        auto Append(Buffer& _buffer) -> bool;
+        auto Send(const void* _bytes, std::size_t _length) -> bool;
 
-            auto append(buffer& _buffer) -> bool;
-            auto send(const void* _bytes, std::size_t _length) -> bool;
+        auto SetTcpNoDelay(bool _on) -> Error;
 
-            auto set_tcp_no_delay(bool _on) -> error;
+    protected:
+        TcpSession(io::Cycle* _cycle,
+            HostAddress _local_addr,
+            std::string _name, std::uint8_t _family, util_socket_t _fd,
+            HostAddress _peer_addr);
 
-        protected:
-            session(io::cycle* _cycle,
-                host_address _local_addr,
-                std::string _name, std::uint8_t _family, util_socket_t _fd,
-                host_address _peer_addr);
+        void SetState(SessionState _state);
+        auto Event() -> Ptr<io::Event>&;
+        auto Socket() -> net::Socket&;
+        void SetDestroy(SessionDestroy _destroy);
 
-            void set_state(STATE _state);
-            auto event() -> io::event::ptr&;
-            auto socket() -> net::socket&;
-            void set_destroy(destroy _destroy);
+        void HandleCallback(const Ptr<io::Event>& _event, std::uint8_t _events, const Timestamp& _receive_time);
 
-            void handle_callback(const io::event::ptr& _event, std::uint8_t _events, const timestamp& _receive_time);
+        void HandleRead(const Timestamp&);
+        void HandleWrite();
+        void HandleClose();
+        void HandleError();
 
-            void handle_read(const timestamp&);
-            void handle_write();
-            void handle_close();
-            void handle_error();
+    private:
+        void ConnectEstablished();
 
-        private:
-            void connect_established();
+        friend class TcpClient;
+        friend class TcpServe;
+    };
 
-            friend class client;
-            friend class serve;
-        };
-
-    } // namespace tcp
 } // namespace net
 } // namespace hare
 

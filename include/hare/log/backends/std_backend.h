@@ -20,35 +20,35 @@ namespace hare {
 namespace log {
 
     template <typename Mutex>
-    class std_backend final : public base_backend<Mutex> {
+    class STDBackend final : public BaseBackend<Mutex> {
 
     public:
-        using current_backend = std_backend<Mutex>;
+        using CurrentBackend = STDBackend<Mutex>;
 
-        static auto instance() -> ptr<current_backend>
+        static auto Instance() -> Ptr<CurrentBackend>
         {
-            static ptr<current_backend> s_std_backend { new current_backend };
-            return s_std_backend;
+            // not thread-safe
+            static Ptr<CurrentBackend> static_std_backend { new CurrentBackend };
+            return static_std_backend;
         }
 
     private:
-        std_backend() = default;
+        STDBackend() = default;
 
-        void inner_sink_it(details::msg_buffer_t& _msg, LEVEL _log_level) final
+        void InnerSinkIt(details::msg_buffer_t& _msg, Level _log_level) final
         {
-            ignore_unused(std::fwrite(_msg.data(), 1, _msg.size(), _log_level <= LEVEL_INFO ? stdout : stderr));
-            inner_flush();
+            IgnoreUnused(std::fwrite(_msg.data(), 1, _msg.size(), _log_level <= LEVEL_INFO ? stdout : stderr));
+            InnerFlush();
         }
 
-        void inner_flush() final
+        void InnerFlush() final
         {
-            ignore_unused(std::fflush(stderr));
-            ignore_unused(std::fflush(stdout));
+            IgnoreUnused(std::fflush(stderr), std::fflush(stdout));
         }
     };
 
-    using std_backend_mt = std_backend<std::mutex>;
-    using std_backend_st = std_backend<details::dummy_mutex>;
+    using std_backend_mt = STDBackend<std::mutex>;
+    using std_backend_st = STDBackend<details::DummyMutex>;
 
 } // namespace log
 } // namespace hare

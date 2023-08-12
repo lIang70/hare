@@ -17,7 +17,7 @@
 namespace hare {
 namespace net {
 
-    using ERROR = enum : std::int32_t {
+    using Errors = enum : std::int32_t {
         ERROR_ILLEGAL = -1,
         ERROR_SUCCESS,
 
@@ -43,19 +43,19 @@ namespace net {
     };
 
     HARE_CLASS_API
-    class HARE_API error {
+    class HARE_API Error {
         std::int32_t error_code_ { ERROR_SUCCESS };
         std::int32_t system_code_ { 0 };
 
     public:
-        explicit error(std::int32_t error_code = ERROR_SUCCESS);
-        virtual ~error() = default;
+        explicit Error(std::int32_t error_code = ERROR_SUCCESS);
+        virtual ~Error() = default;
 
         /**
          * @brief Get the error code of hare.
          *
          **/
-        HARE_INLINE auto code() const -> std::int32_t { return error_code_; }
+        HARE_INLINE auto error_code() const -> std::int32_t { return error_code_; }
 
         /**
          * @brief Get the system code 'errno'.
@@ -64,13 +64,13 @@ namespace net {
         HARE_INLINE auto system_code() const -> std::int32_t { return system_code_; }
 
         HARE_INLINE explicit operator bool() const { return error_code_ == ERROR_SUCCESS; }
-        HARE_INLINE auto operator==(ERROR error) const -> bool { return error_code_ == error; }
+        HARE_INLINE auto operator==(Errors error) const -> bool { return error_code_ == error; }
 
         /**
          * @brief Get the description of the error code.
          *
          **/
-        virtual auto description() const -> const char*;
+        auto Description() const -> const char*;
     };
 
 } // namespace net

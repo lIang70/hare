@@ -10,9 +10,9 @@ namespace hare {
 namespace io {
 
     namespace detail {
-        static const std::int32_t INIT_EVENTS_CNT = 16;
+        static const std::int32_t kInitEventsCnt = 16;
 
-        auto decode_poll(std::uint8_t events) -> decltype(pollfd::events)
+        auto DecodePoll(std::uint8_t events) -> decltype(pollfd::events)
         {
             decltype(pollfd::events) res { 0 };
             if (CHECK_EVENT(events, EVENT_WRITE) != 0) {
@@ -27,7 +27,7 @@ namespace io {
             return res;
         }
 
-        auto encode_poll(decltype(pollfd::events) events) -> std::int32_t
+        static auto EncodePoll(decltype(pollfd::events) events) -> std::int32_t
         {
             std::uint8_t res = EVENT_DEFAULT;
             if (CHECK_EVENT(events, (POLLHUP | POLLERR | POLLNVAL)) != 0) {
@@ -45,7 +45,7 @@ namespace io {
             return res;
         }
 
-        auto events_to_string(decltype(pollfd::events) event) -> std::string
+        static auto EventsToString(decltype(pollfd::events) event) -> std::string
         {
             std::ostringstream oss {};
             if ((event & POLLIN) != 0) {
@@ -71,22 +71,22 @@ namespace io {
 
     } // namespace detail
 
-    reactor_poll::reactor_poll(cycle* _cycle)
-        : reactor(_cycle, cycle::REACTOR_TYPE_POLL)
+    ReactorPoll::ReactorPoll(Cycle* _cycle)
+        : Reactor(_cycle, Cycle::REACTOR_TYPE_POLL)
     {
     }
 
-    reactor_poll::~reactor_poll() = default;
+    ReactorPoll::~ReactorPoll() = default;
 
-    auto reactor_poll::poll(std::int32_t _timeout_microseconds) -> timestamp
+    auto ReactorPoll::Poll(std::int32_t _timeout_microseconds) -> Timestamp
     {
         auto event_num = ::poll(&*poll_fds_.begin(), poll_fds_.size(), _timeout_microseconds / 1000);
         auto saved_errno = errno;
-        auto now { timestamp::now() };
+        auto now { Timestamp::Now() };
 
         if (event_num > 0) {
             MSG_TRACE("{} events happened.", event_num);
-            fill_active_events(event_num);
+            FillActiveEvents(event_num);
         } else if (event_num == 0) {
             MSG_TRACE("nothing happened.");
         } else {
@@ -98,21 +98,21 @@ namespace io {
         return now;
     }
 
-    auto reactor_poll::event_update(const ptr<event>& _event) -> bool
+    auto ReactorPoll::EventUpdate(const Ptr<Event>& _event) -> bool
     {
         MSG_TRACE("poll-update: fd={}, events={}.", _event->fd(), _event->events());
 
         auto target_fd = _event->fd();
         auto inverse_iter = inverse_map_.find(target_fd);
 
-        if (_event->event_id() == -1) {
+        if (_event->id() == -1) {
             // a new one, add to pollfd_list
             assert(inverse_map_.find(target_fd) == inverse_map_.end());
             assert(inverse_iter == inverse_map_.end());
             struct pollfd poll_fd { };
-            hare::detail::fill_n(&poll_fd, sizeof(poll_fd), 0);
+            hare::detail::FillN(&poll_fd, sizeof(poll_fd), 0);
             poll_fd.fd = target_fd;
-            poll_fd.events = detail::decode_poll(_event->events());
+            poll_fd.events = detail::DecodePoll(_event->events());
             poll_fd.revents = 0;
             poll_fds_.push_back(poll_fd);
             auto index = static_cast<std::int32_t>(poll_fds_.size()) - 1;
@@ -121,7 +121,7 @@ namespace io {
         }
 
         // update existing one
-        auto event_id = _event->event_id();
+        auto event_id = _event->id();
         assert(events_.find(event_id) != events_.end());
         assert(events_[event_id] == _event);
         assert(inverse_iter != inverse_map_.end());
@@ -130,12 +130,12 @@ namespace io {
         struct pollfd& pfd = poll_fds_[index];
         assert(pfd.fd == target_fd || pfd.fd == -target_fd - 1);
         pfd.fd = target_fd;
-        pfd.events = detail::decode_poll(_event->events());
+        pfd.events = detail::DecodePoll(_event->events());
         pfd.revents = 0;
         return true;
     }
 
-    auto reactor_poll::event_remove(const ptr<event>& _event) -> bool
+    auto ReactorPoll::EventRemove(const Ptr<Event>& _event) -> bool
     {
         const auto target_fd = _event->fd();
         auto inverse_iter = inverse_map_.find(target_fd);
@@ -146,7 +146,7 @@ namespace io {
         assert(0 <= index && index < static_cast<std::int32_t>(poll_fds_.size()));
         
         const auto& pfd = poll_fds_[index];
-        assert(pfd.events == detail::decode_poll(_event->events()));
+        assert(pfd.events == detail::DecodePoll(_event->events()));
         if (implicit_cast<std::size_t>(index) == poll_fds_.size() - 1) {
             poll_fds_.pop_back();
         } else {
@@ -162,17 +162,17 @@ namespace io {
         return true;
     }
 
-    void reactor_poll::fill_active_events(std::int32_t _num_of_events)
+    void ReactorPoll::FillActiveEvents(std::int32_t _num_of_events)
     {
-        const event::id size = static_cast<std::uint32_t>(poll_fds_.size());
-        for (event::id event_id = 0; event_id < size && _num_of_events > 0; ++event_id) {
+        const Event::Id size = static_cast<std::uint32_t>(poll_fds_.size());
+        for (Event::Id event_id = 0; event_id < size && _num_of_events > 0; ++event_id) {
             const auto& pfd = poll_fds_[event_id];
             if (pfd.revents > 0) {
                 --_num_of_events;
                 auto event_iter = events_.find(event_id);
                 assert(event_iter != events_.end());
                 assert(event_iter->second->fd() == pfd.fd);
-                active_events_.emplace_back(event_iter->second, detail::encode_poll(pfd.revents));
+                active_events_.emplace_back(event_iter->second, detail::EncodePoll(pfd.revents));
             }
         }
     }

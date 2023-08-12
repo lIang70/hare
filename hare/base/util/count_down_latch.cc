@@ -7,49 +7,50 @@
 namespace hare {
 namespace util {
 
-    HARE_IMPL_DEFAULT(count_down_latch,
-        mutable std::mutex mutex_ {};
-        std::uint32_t count_ { 0 };
-        std::condition_variable cv_ {};
+    HARE_IMPL_DEFAULT(
+        CountDownLatch,
+        mutable std::mutex mutex {};
+        std::uint32_t count { 0 };
+        std::condition_variable cv {};
     )
 
-    count_down_latch::count_down_latch(std::uint32_t count)
-        : impl_(new count_down_latch_impl)
+    CountDownLatch::CountDownLatch(std::uint32_t count)
+        : impl_(new CountDownLatchImpl)
     {
-        d_ptr(impl_)->count_ = count;
+        d_ptr(impl_)->count = count;
     }
 
-    count_down_latch::~count_down_latch()
+    CountDownLatch::~CountDownLatch()
     {
-        d_ptr(impl_)->cv_.notify_all();
+        d_ptr(impl_)->cv.notify_all();
         delete impl_;
     }
 
-    void count_down_latch::count_down()
+    void CountDownLatch::CountDown()
     {
-        std::lock_guard<std::mutex> lock(d_ptr(impl_)->mutex_);
-        --d_ptr(impl_)->count_;
-        if (d_ptr(impl_)->count_ == 0U) {
-            d_ptr(impl_)->cv_.notify_all();
+        std::lock_guard<std::mutex> lock(d_ptr(impl_)->mutex);
+        --d_ptr(impl_)->count;
+        if (d_ptr(impl_)->count == 0U) {
+            d_ptr(impl_)->cv.notify_all();
         }
     }
 
-    void count_down_latch::await(std::int32_t milliseconds)
+    void CountDownLatch::Await(std::int32_t milliseconds)
     {
-        std::unique_lock<std::mutex> lock(d_ptr(impl_)->mutex_);
-        while (d_ptr(impl_)->count_ > 0) {
+        std::unique_lock<std::mutex> lock(d_ptr(impl_)->mutex);
+        while (d_ptr(impl_)->count > 0) {
             if (milliseconds > 0) {
-                d_ptr(impl_)->cv_.wait_for(lock, std::chrono::milliseconds(milliseconds));
+                d_ptr(impl_)->cv.wait_for(lock, std::chrono::milliseconds(milliseconds));
                 break;
             }
-            d_ptr(impl_)->cv_.wait(lock);
+            d_ptr(impl_)->cv.wait(lock);
         }
     }
 
-    auto count_down_latch::count() -> std::uint32_t
+    auto CountDownLatch::Count() -> std::uint32_t
     {
-        std::lock_guard<std::mutex> lock(d_ptr(impl_)->mutex_);
-        return d_ptr(impl_)->count_;
+        std::lock_guard<std::mutex> lock(d_ptr(impl_)->mutex);
+        return d_ptr(impl_)->count;
     }
 
 } // namespace util

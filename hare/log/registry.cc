@@ -4,16 +4,16 @@
 namespace hare {
 namespace log {
 
-    auto registry::instance() -> registry&
+    auto Registry::instance() -> Registry&
     {
-        static registry s_registry {};
+        static Registry s_registry {};
         return s_registry;
     }
 
-    void registry::assert_if_exists(const std::string& logger_name)
+    void Registry::assert_if_exists(const std::string& logger_name)
     {
         if (loggers_.find(logger_name) != loggers_.end()) {
-            throw exception("logger with name '" + logger_name + "' already exists.");
+            throw Exception("logger with name '" + logger_name + "' already exists.");
         }
     }
 

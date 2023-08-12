@@ -9,21 +9,21 @@
 
 namespace hare {
 
-auto timestamp::now() -> timestamp
+auto Timestamp::Now() -> Timestamp
 {
-    return timestamp(std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
+    return Timestamp(std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
 }
 
-auto timestamp::to_string() const -> std::string
+auto Timestamp::ToString() const -> std::string
 {
-    auto seconds = seconds_since_epoch();
+    auto seconds = SecondsSinceEpoch();
     auto microseconds = microseconds_since_epoch_ - seconds * HARE_MICROSECONDS_PER_SECOND;
     return fmt::format("{:}.{:06d}", seconds, microseconds);
 }
 
-auto timestamp::to_fmt(bool show_microseconds) const -> std::string
+auto Timestamp::ToFmt(bool _show_microseconds) const -> std::string
 {
-    auto seconds = seconds_since_epoch();
+    auto seconds = SecondsSinceEpoch();
     std::tm tm_time { };
 #ifdef H_OS_WIN32
     ::gmtime_s(&tm_time, &seconds);
@@ -31,7 +31,7 @@ auto timestamp::to_fmt(bool show_microseconds) const -> std::string
     ::gmtime_r(&seconds, &tm_time);
 #endif
 
-    if (show_microseconds) {
+    if (_show_microseconds) {
         auto microseconds = static_cast<std::int32_t>(microseconds_since_epoch_ - seconds * HARE_MICROSECONDS_PER_SECOND);
         return fmt::format("{:04d}-{:02d}-{:02d} {:02d}:{:02d}:{:02d}.{:06d}",
             tm_time.tm_year + HARE_START_YEAR, tm_time.tm_mon + 1, tm_time.tm_mday,

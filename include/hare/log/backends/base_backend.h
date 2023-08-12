@@ -22,61 +22,61 @@
 namespace hare {
 namespace log {
 
-    using POLICY = hare::util::POLICY;
+    using Policy = hare::util::Policy;
 
     HARE_CLASS_API
-    class HARE_API backend {
+    class HARE_API Backend {
         level_t level_ { LEVEL_INFO };
 
     public:
-        virtual ~backend() = default;
+        virtual ~Backend() = default;
 
-        virtual void log(details::msg_buffer_t& _msg, LEVEL _log_level) = 0;
-        virtual void flush() = 0;
+        virtual void Log(details::msg_buffer_t& _msg, Level _log_level) = 0;
+        virtual void Flush() = 0;
 
         HARE_INLINE
-        auto check(std::int8_t _msg_level) const -> bool
+        auto Check(std::int8_t _msg_level) const -> bool
         {
             return _msg_level >= level_.load(std::memory_order_relaxed);
         }
 
         HARE_INLINE
-        void set_level(LEVEL _log_level)
+        void set_level(Level _log_level)
         {
             level_.store(_log_level);
         }
 
         HARE_INLINE
-        auto level() const -> LEVEL
+        auto level() const -> Level
         {
-            return static_cast<LEVEL>(level_.load(std::memory_order_relaxed));
+            return static_cast<Level>(level_.load(std::memory_order_relaxed));
         }
     };
 
-    template <typename Mutex = details::dummy_mutex>
-    class base_backend : public backend
-                       , public util::non_copyable {
+    template <typename Mutex = details::DummyMutex>
+    class BaseBackend : public Backend
+                       , public util::NonCopyable {
     protected:
         mutable Mutex mutex_ {};
 
     public:
-        base_backend() = default;
+        BaseBackend() = default;
 
-        void log(details::msg_buffer_t& _msg, LEVEL _log_level) final
+        void Log(details::msg_buffer_t& _msg, Level _log_level) final
         {
             std::lock_guard<Mutex> lock(mutex_);
-            inner_sink_it(_msg, _log_level);
+            InnerSinkIt(_msg, _log_level);
         }
 
-        void flush() final
+        void Flush() final
         {
             std::lock_guard<Mutex> lock(mutex_);
-            inner_flush();
+            InnerFlush();
         }
 
     protected:
-        virtual void inner_sink_it(details::msg_buffer_t& _msg, LEVEL _log_level) = 0;
-        virtual void inner_flush() = 0;
+        virtual void InnerSinkIt(details::msg_buffer_t& _msg, Level _log_level) = 0;
+        virtual void InnerFlush() = 0;
     };
 
 } // namespace log
