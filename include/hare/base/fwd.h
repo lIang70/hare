@@ -43,8 +43,43 @@
 #define HARE_MSC_WARNING(...)
 #endif
 
+#ifdef __has_builtin
+#define HARE_HAVE_BUILTIN(x) __has_builtin(x)
+#else
+#define HARE_HAVE_BUILTIN(x) 0
+#endif
+
+#ifdef __has_feature
+#define HARE_HAVE_FEATURE(f) __has_feature(f)
+#else
+#define HARE_HAVE_FEATURE(f) 0
+#endif
+
+#ifdef __has_attribute
+#define HARE_HAVE_ATTRIBUTE(x) __has_attribute(x)
+#else
+#define HARE_HAVE_ATTRIBUTE(x) 0
+#endif
+
+#if defined(__cplusplus) && defined(__has_cpp_attribute)
+// NOTE: requiring __cplusplus above should not be necessary, but
+// works around https://bugs.llvm.org/show_bug.cgi?id=23435.
+#define HARE_HAVE_CPP_ATTRIBUTE(x) __has_cpp_attribute(x)
+#else
+#define HARE_HAVE_CPP_ATTRIBUTE(x) 0
+#endif
+
+#if HARE_HAVE_BUILTIN(__builtin_expect) || \
+    (defined(__GNUC__) && !defined(__clang__))
+#define HARE_PREDICT_FALSE(x) (__builtin_expect(false || (x), false))
+#define HARE_PREDICT_TRUE(x) (__builtin_expect(false || (x), true))
+#else
+#define HARE_PREDICT_FALSE(x) (x)
+#define HARE_PREDICT_TRUE(x) (x)
+#endif
+
 #ifndef HARE_INLINE
-#if HARE_GCC_VERSION || HARE_CLANG_VERSION
+#if HARE_HAVE_ATTRIBUTE(always_inline) && (HARE_GCC_VERSION || HARE_CLANG_VERSION)
 #define HARE_INLINE inline __attribute__((always_inline))
 #else
 #define HARE_INLINE inline

@@ -275,7 +275,7 @@ namespace net {
 #ifdef HARE_DEBUG
         void CacheList::PrintStatus(const std::string& _status) const
         {
-            MSG_TRACE("[{}] list total length: {:}", _status, node_size_);
+            HARE_INTERNAL_TRACE("[{}] list total length: {:}", _status, node_size_);
 
             auto* index = Begin();
             do {
@@ -285,7 +285,7 @@ namespace net {
                     (*index)->ReadableSize() > 0 ? "(R)":
                     (*index)->WriteableSize() > 0 ? "(W)" : "(E)";
 
-                    MSG_TRACE("|{:4} {} {} {}|{}",
+                    HARE_INTERNAL_TRACE("|{:4} {} {} {}|{}",
                         mark,
                         !index->cache ? 0 : (*index)->ReadableSize(),
                         !index->cache ? 0 : (*index)->WriteableSize(),
@@ -297,7 +297,7 @@ namespace net {
                 index = index->next;
             } while (index != Begin());
 
-            MSG_TRACE("{:^16}", "*");
+            HARE_INTERNAL_TRACE("{:^16}", "*");
         }
 #endif
 

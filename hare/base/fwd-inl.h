@@ -46,14 +46,14 @@ auto InnerLog() -> LogHandler&
 }
 
 #ifdef HARE_DEBUG
-#define MSG_TRACE(fromat, ...) \
+#define HARE_INTERNAL_TRACE(fromat, ...) \
     InnerLog()(TRACE_MSG, fmt::format(fromat, ##__VA_ARGS__))
 #else
-#define MSG_TRACE(fromat, ...)
+#define HARE_INTERNAL_TRACE(fromat, ...)
 #endif
-#define MSG_ERROR(fromat, ...) \
+#define HARE_INTERNAL_ERROR(fromat, ...) \
     InnerLog()(ERROR_MSG, fmt::format(fromat, ##__VA_ARGS__))
-#define MSG_FATAL(fromat, ...) \
+#define HARE_INTERNAL_FATAL(fromat, ...) \
     throw Exception(fmt::format(fromat, ##__VA_ARGS__))
 
 template <typename T>
@@ -61,7 +61,7 @@ HARE_INLINE
 auto CheckNotNull(const char* _names, T* _ptr) -> T*
 {
     if (_ptr == nullptr) {
-        MSG_FATAL(_names);
+        HARE_INTERNAL_FATAL(_names);
     }
     return _ptr;
 }

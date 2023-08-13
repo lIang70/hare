@@ -39,7 +39,7 @@ namespace io {
          * @brief Time when reactor returns, usually means data arrival.
          **/
         auto ReactorReturnTime() const -> Timestamp;
-        auto event_handling() const -> bool;
+        auto EventHandling() const -> bool;
         auto is_running() const -> bool;
         auto type() const -> REACTOR_TYPE;
 
@@ -87,7 +87,7 @@ namespace io {
          **/
         void QueueInCycle(Task _task);
 
-        auto queue_size() const -> std::size_t;
+        auto QueueSize() const -> std::size_t;
 
         void EventUpdate(const hare::Ptr<Event>& _event);
         void EventRemove(const hare::Ptr<Event>& _event);

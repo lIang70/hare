@@ -280,7 +280,7 @@ namespace util {
     auto CpuUsage(std::int32_t _pid) -> double
     {
 #ifdef H_OS_WIN
-        MSG_TRACE("cpu usage calculation is not supported under windows.");
+        HARE_INTERNAL_TRACE("cpu usage calculation is not supported under windows.");
         return (0.0);
 #endif
         auto total_cputime1 = detail::CpuTotalOccupy();

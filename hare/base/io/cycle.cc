@@ -46,7 +46,7 @@ namespace io {
             util_socket_t fd[2];
             auto ret = socket_op::socketpair(AF_INET, SOCK_STREAM, 0, fd);
             if (ret < 0) {
-                MSG_FATAL("fail to create socketpair for notify_fd.");
+                HARE_INTERNAL_FATAL("fail to create socketpair for notify_fd.");
             }
             _write_fd = fd[0];
             return fd[1];
@@ -81,7 +81,7 @@ namespace io {
                 std::uint64_t one = 1;
                 auto write_n = ::write((int)fd(), &one, sizeof(one));
                 if (write_n != sizeof(one)) {
-                    MSG_ERROR("write[{} B] instead of {} B", write_n, sizeof(one));
+                    HARE_INTERNAL_ERROR("write[{} B] instead of {} B", write_n, sizeof(one));
                 }
             }
 
@@ -94,10 +94,10 @@ namespace io {
                     std::uint64_t one = 0;
                     auto read_n = ::read((int)fd(), &one, sizeof(one));
                     if (read_n != sizeof(one) && one != static_cast<std::uint64_t>(1)) {
-                        MSG_ERROR("read notify[{} B] instead of {} B", read_n, sizeof(one));
+                        HARE_INTERNAL_ERROR("read notify[{} B] instead of {} B", read_n, sizeof(one));
                     }
                 } else {
-                    MSG_FATAL("an error occurred while accepting notify in fd[{}]", fd());
+                    HARE_INTERNAL_FATAL("an error occurred while accepting notify in fd[{}]", fd());
                 }
             }
         };
@@ -106,22 +106,22 @@ namespace io {
             GlobalInit()
             {
 #if !defined(H_OS_WIN)
-                MSG_TRACE("ignore signal[SIGPIPE].");
+                HARE_INTERNAL_TRACE("ignore signal[SIGPIPE].");
                 auto ret = ::signal(SIGPIPE, SIG_IGN);
                 IgnoreUnused(ret);
             }
 #else
                 WSADATA wsa_data {};
                 if (::WSAStartup(MAKEWORD(2, 2), &wsa_data) == SOCKET_ERROR) {
-                    MSG_FATAL("fail to ::WSAStartup.");
+                    HARE_INTERNAL_FATAL("fail to ::WSAStartup.");
                 }
-                MSG_TRACE("::WSAStartup success.");
+                HARE_INTERNAL_TRACE("::WSAStartup success.");
             }
 
             ~total_init()
             {
                 ignore_unused(::WSACleanup());
-                MSG_TRACE("::WSACleanup success.");
+                HARE_INTERNAL_TRACE("::WSACleanup success.");
             }
 #endif
         };
@@ -139,7 +139,7 @@ namespace io {
         void PrintActiveEvents(const EventsList& _active_events)
         {
             for (const auto& event_elem : _active_events) {
-                MSG_TRACE("event[{}] debug info: {}.",
+                HARE_INTERNAL_TRACE("event[{}] debug info: {}.",
                     event_elem.event->fd(), event_elem.event->EventToString());
                 IgnoreUnused(event_elem);
             }
@@ -176,11 +176,11 @@ namespace io {
         d_ptr(impl_)->reactor.reset(Reactor::CreateByType(_type, this));
 
         if (current_thread::ThreadData().cycle != nullptr) {
-            MSG_FATAL("another cycle[{}] exists in this thread[{:#x}]",
+            HARE_INTERNAL_FATAL("another cycle[{}] exists in this thread[{:#x}]",
                 (void*)current_thread::ThreadData().cycle, current_thread::ThreadData().tid);
         } else {
             current_thread::ThreadData().cycle = this;
-            MSG_TRACE("cycle[{}] is being initialized in thread[{:#x}].", (void*)this, current_thread::ThreadData().tid);
+            HARE_INTERNAL_TRACE("cycle[{}] is being initialized in thread[{:#x}].", (void*)this, current_thread::ThreadData().tid);
         }
     }
 
@@ -199,7 +199,7 @@ namespace io {
         return d_ptr(impl_)->reactor_time;
     }
 
-    auto Cycle::event_handling() const -> bool
+    auto Cycle::EventHandling() const -> bool
     {
         return d_ptr(impl_)->calling_pending_functions;
     }
@@ -236,7 +236,7 @@ namespace io {
         EventUpdate(d_ptr(impl_)->notify_event);
         d_ptr(impl_)->notify_event->Tie(d_ptr(impl_)->notify_event);
 
-        MSG_TRACE("cycle[{}] start running...", (void*)this);
+        HARE_INTERNAL_TRACE("cycle[{}] start running...", (void*)this);
 
         while (!d_ptr(impl_)->quit) {
             d_ptr(impl_)->reactor->active_events_.clear();
@@ -278,7 +278,7 @@ namespace io {
         d_ptr(impl_)->reactor->events_.clear();
         PriorityTimer().swap(d_ptr(impl_)->reactor->ptimer_);
 
-        MSG_TRACE("cycle[{}] stop running...", (void*)this);
+        HARE_INTERNAL_TRACE("cycle[{}] stop running...", (void*)this);
     }
 
     void Cycle::Exit()
@@ -315,7 +315,7 @@ namespace io {
         }
     }
 
-    auto Cycle::queue_size() const -> std::size_t
+    auto Cycle::QueueSize() const -> std::size_t
     {
         std::lock_guard<std::mutex> guard(d_ptr(impl_)->functions_mutex);
         return d_ptr(impl_)->pending_functions.size();
@@ -324,7 +324,7 @@ namespace io {
     void Cycle::EventUpdate(const hare::Ptr<Event>& _event)
     {
         if (_event->cycle() != this && _event->id() != -1) {
-            MSG_ERROR("cannot add event from other cycle[{}]", (void*)_event->cycle());
+            HARE_INTERNAL_ERROR("cannot add event from other cycle[{}]", (void*)_event->cycle());
             return;
         }
 
@@ -370,14 +370,14 @@ namespace io {
         }
 
         if (_event->cycle() != this || _event->id() == -1) {
-            MSG_ERROR("the event is not part of the cycle[{}]", (void*)_event->cycle());
+            HARE_INTERNAL_ERROR("the event is not part of the cycle[{}]", (void*)_event->cycle());
             return;
         }
 
         RunInCycle(std::bind([=](const WPtr<Event>& wevent) {
             auto sevent = wevent.lock();
             if (!sevent) {
-                MSG_ERROR("event is empty before it was released.");
+                HARE_INTERNAL_ERROR("event is empty before it was released.");
                 return;
             }
             auto event_id = sevent->id();
@@ -385,7 +385,7 @@ namespace io {
 
             auto iter = d_ptr(impl_)->reactor->events_.find(event_id);
             if (iter == d_ptr(impl_)->reactor->events_.end()) {
-                MSG_ERROR("cannot find event in cycle[{}]", (void*)this);
+                HARE_INTERNAL_ERROR("cannot find event in cycle[{}]", (void*)this);
             } else {
                 assert(iter->second == sevent);
 
@@ -418,7 +418,7 @@ namespace io {
 
     void Cycle::AbortNotCycleThread()
     {
-        MSG_FATAL("cycle[{}] was created in thread[{:#x}], current thread is: {:#x}",
+        HARE_INTERNAL_FATAL("cycle[{}] was created in thread[{:#x}], current thread is: {:#x}",
             (void*)this, d_ptr(impl_)->tid, current_thread::ThreadData().tid);
     }
 
@@ -455,7 +455,7 @@ namespace io {
             if (iter != events.end()) {
                 auto& event = iter->second;
                 if (event) {
-                    MSG_TRACE("event[{}] trigged.", (void*)iter->second.get());
+                    HARE_INTERNAL_TRACE("event[{}] trigged.", (void*)iter->second.get());
                     event->HandleEvent(revent, now);
                     if ((event->events() & EVENT_PERSIST) != 0) {
                         priority_event.emplace(top.id, Timestamp(d_ptr(impl_)->reactor_time.microseconds_since_epoch() + event->timeval()));
@@ -466,7 +466,7 @@ namespace io {
                     events.erase(iter);
                 }
             } else {
-                MSG_TRACE("event[{}] deleted.", top.id);
+                HARE_INTERNAL_TRACE("event[{}] deleted.", top.id);
             }
             priority_event.pop();
         }

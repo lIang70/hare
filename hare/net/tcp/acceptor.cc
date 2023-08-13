@@ -79,7 +79,7 @@ namespace net {
     {
         assert(this->shared_from_this() == _event);
         if (CHECK_EVENT(_events, io::EVENT_READ) == 0) {
-            MSG_ERROR("unexpected operation of acceptor.");
+            HARE_INTERNAL_ERROR("unexpected operation of acceptor.");
             return;
         }
 
@@ -91,7 +91,7 @@ namespace net {
 
         /// FIXME: loop until no more ?
         while ((conn_fd = d_ptr(impl_)->socket.Accept(peer_addr)) >= 0) {
-            MSG_TRACE("accepts of tcp[{}].", peer_addr.ToIpPort());
+            HARE_INTERNAL_TRACE("accepts of tcp[{}].", peer_addr.ToIpPort());
             if (d_ptr(impl_)->new_session) {
                 d_ptr(impl_)->new_session(conn_fd, peer_addr, _receive_time, this);
             } else {
@@ -101,7 +101,7 @@ namespace net {
         }
 
         if (!accepted) {
-            MSG_ERROR("cannot accept new connect.");
+            HARE_INTERNAL_ERROR("cannot accept new connect.");
 #ifdef H_OS_LINUX
             // Read the section named "The special problem of
             // accept()ing when you can't" in libev's doc.
@@ -119,7 +119,7 @@ namespace net {
     auto Acceptor::Listen() -> Error
     {
         if (cycle() == nullptr) {
-            MSG_ERROR("this acceptor[{}] has not been added to any cycle.", (void*)this);
+            HARE_INTERNAL_ERROR("this acceptor[{}] has not been added to any cycle.", (void*)this);
             return Error(ERROR_ACCEPTOR_ACTIVED);
         }
         const HostAddress address(d_ptr(impl_)->port, false, d_ptr(impl_)->socket.family() == AF_INET6);

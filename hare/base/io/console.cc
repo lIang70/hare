@@ -24,7 +24,7 @@ namespace io {
     namespace detail {
         static void GlobalConsoleHandle(const std::string& _command_line)
         {
-            MSG_ERROR("unregistered command[{}], you can register \"default handle\" to console for handling all command.", _command_line);
+            HARE_INTERNAL_ERROR("unregistered command[{}], you can register \"default handle\" to console for handling all command.", _command_line);
         }
     }
 
@@ -99,7 +99,7 @@ namespace io {
     {
         assert(d_ptr(impl_)->console_event == _event);
         if (CHECK_EVENT(_events, EVENT_READ) == 0) {
-            MSG_ERROR("cannot check EVENT_READ.");
+            HARE_INTERNAL_ERROR("cannot check EVENT_READ.");
             return;
         }
 
@@ -112,7 +112,7 @@ namespace io {
 #endif // H_OS_WIN32
 
         if (len < 0) {
-            MSG_ERROR("cannot read from STDIN.");
+            HARE_INTERNAL_ERROR("cannot read from STDIN.");
             return;
         }
         std::string line(console_line.data(), len);
@@ -120,7 +120,7 @@ namespace io {
             line.pop_back();
         }
 
-        MSG_TRACE("recv console input[{}] in {}.", line, _receive_time.ToFmt(true));
+        HARE_INTERNAL_TRACE("recv console input[{}] in {}.", line, _receive_time.ToFmt(true));
 
         auto iter = d_ptr(impl_)->handlers.find(line);
         if (iter != d_ptr(impl_)->handlers.end()) {

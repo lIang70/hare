@@ -259,12 +259,12 @@ namespace socket_op {
 #ifndef H_OS_WIN
         auto ret = ::close(_fd);
         if (ret < 0) {
-            MSG_ERROR("close fd[{}], detail:{}.", _fd, SocketErrorInfo(_fd));
+            HARE_INTERNAL_ERROR("close fd[{}], detail:{}.", _fd, SocketErrorInfo(_fd));
         }
 #else
         auto ret = ::closesocket(_fd);
         if (ret < 0) {
-            MSG_ERROR("close fd[{}], detail:{}.", _fd, get_socket_error_info(_fd));
+            HARE_INTERNAL_ERROR("close fd[{}], detail:{}.", _fd, get_socket_error_info(_fd));
         }
 #endif
         return ret;
@@ -345,10 +345,10 @@ namespace socket_op {
             case ENOTSOCK:
             case EOPNOTSUPP:
                 // unexpected errors
-                MSG_FATAL("unexpected error of ::accept {}.", saved_errno);
+                HARE_INTERNAL_FATAL("unexpected error of ::accept {}.", saved_errno);
                 break;
             default:
-                MSG_FATAL("unknown error of ::accept {}.", saved_errno);
+                HARE_INTERNAL_FATAL("unknown error of ::accept {}.", saved_errno);
                 break;
             }
         }

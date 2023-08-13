@@ -85,14 +85,14 @@ namespace io {
         auto now { Timestamp::Now() };
 
         if (event_num > 0) {
-            MSG_TRACE("{} events happened.", event_num);
+            HARE_INTERNAL_TRACE("{} events happened.", event_num);
             FillActiveEvents(event_num);
         } else if (event_num == 0) {
-            MSG_TRACE("nothing happened.");
+            HARE_INTERNAL_TRACE("nothing happened.");
         } else {
             if (saved_errno != EINTR) {
                 errno = saved_errno;
-                MSG_ERROR("reactor_poll::poll() error.");
+                HARE_INTERNAL_ERROR("reactor_poll::poll() error.");
             }
         }
         return now;
@@ -100,7 +100,7 @@ namespace io {
 
     auto ReactorPoll::EventUpdate(const Ptr<Event>& _event) -> bool
     {
-        MSG_TRACE("poll-update: fd={}, events={}.", _event->fd(), _event->events());
+        HARE_INTERNAL_TRACE("poll-update: fd={}, events={}.", _event->fd(), _event->events());
 
         auto target_fd = _event->fd();
         auto inverse_iter = inverse_map_.find(target_fd);
@@ -142,7 +142,7 @@ namespace io {
         assert(inverse_iter != inverse_map_.end());
         auto& index = inverse_iter->second;
 
-        MSG_TRACE("poll-remove: fd={}, events={}.", target_fd, _event->events());
+        HARE_INTERNAL_TRACE("poll-remove: fd={}, events={}.", target_fd, _event->events());
         assert(0 <= index && index < static_cast<std::int32_t>(poll_fds_.size()));
         
         const auto& pfd = poll_fds_[index];

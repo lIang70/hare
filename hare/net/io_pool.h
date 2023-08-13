@@ -69,7 +69,7 @@ namespace net {
 
         items_.resize(_thread_nbr);
 
-        MSG_TRACE("start IO Pool.");
+        HARE_INTERNAL_TRACE("start IO Pool.");
         for (auto i = 0; i < _thread_nbr; ++i) {
             items_[i] = std::make_shared<PoolItem<T>>();
             items_[i]->thread = std::make_shared<std::thread>([=] {
@@ -88,7 +88,7 @@ namespace net {
     template <typename T>
     void IOPool<T>::Stop()
     {
-        MSG_TRACE("stop io_pool.");
+        HARE_INTERNAL_TRACE("stop io_pool.");
         for (auto& item : items_) {
             item->cycle->RunInCycle([=]() mutable {
                 for (const auto& session : item->sessions) {

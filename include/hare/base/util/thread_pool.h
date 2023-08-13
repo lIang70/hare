@@ -78,7 +78,7 @@ namespace util {
         }
 
         HARE_INLINE
-        auto threads_size() const -> std::size_t
+        auto ThreadSize() const -> std::size_t
         {
             return threads_.size();
         }

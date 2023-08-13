@@ -40,7 +40,7 @@ namespace net {
         auto ret { 0 };
 
         if ((ret = ::getaddrinfo(_hostname.c_str(), nullptr, &hints, &res)) != 0) {
-            MSG_ERROR("::getaddrinfo error {} : {}.", ret, ::gai_strerror(ret));
+            HARE_INTERNAL_ERROR("::getaddrinfo error {} : {}.", ret, ::gai_strerror(ret));
             return false;
         }
         socket_op::sockaddr_in_cast(_result->in_)->sin_addr = socket_op::sockaddr_in_cast(res->ai_addr)->sin_addr;
@@ -54,7 +54,7 @@ namespace net {
 
         auto addr_len = static_cast<socklen_t>(sizeof(struct sockaddr_in6));
         if (::getsockname(_fd, local_addr.in_, &addr_len) < 0) {
-            MSG_ERROR("cannot get local addr.");
+            HARE_INTERNAL_ERROR("cannot get local addr.");
         }
         return local_addr;
     }
@@ -66,7 +66,7 @@ namespace net {
 
         auto addr_len = static_cast<socklen_t>(sizeof(struct sockaddr_in6));
         if (::getpeername(_fd, peer_addr.in_, &addr_len) < 0) {
-            MSG_ERROR("cannot get peer addr.");
+            HARE_INTERNAL_ERROR("cannot get peer addr.");
         }
         return peer_addr;
     }

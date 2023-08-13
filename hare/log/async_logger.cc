@@ -5,7 +5,7 @@ namespace log {
 
     AsyncLogger::~AsyncLogger()
     {
-        auto thr_cnt = thread_pool_.threads_size();
+        auto thr_cnt = thread_pool_.ThreadSize();
         for (decltype(thr_cnt) i = 0; i < thr_cnt; ++i) {
             thread_pool_.Post(
                 details::AsyncMsg(details::AsyncMsg::TERMINATE),

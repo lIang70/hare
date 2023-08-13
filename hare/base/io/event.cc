@@ -64,7 +64,7 @@ namespace io {
         if (CHECK_EVENT(d_ptr(impl_)->events, EVENT_TIMEOUT) != 0 && CHECK_EVENT(d_ptr(impl_)->events, EVENT_PERSIST) != 0) {
             CLEAR_EVENT(d_ptr(impl_)->events, EVENT_TIMEOUT);
             d_ptr(impl_)->timeval = 0;
-            MSG_ERROR("cannot be set EVENT_PERSIST and EVENT_TIMEOUT at the same time.");
+            HARE_INTERNAL_ERROR("cannot be set EVENT_PERSIST and EVENT_TIMEOUT at the same time.");
         }
     }
 
@@ -105,7 +105,7 @@ namespace io {
         if (d_ptr(impl_)->cycle) {
             d_ptr(impl_)->cycle->EventUpdate(shared_from_this());
         } else {
-            MSG_ERROR("event[{}] need to be added to cycle.", (void*)this);
+            HARE_INTERNAL_ERROR("event[{}] need to be added to cycle.", (void*)this);
         }
     }
 
@@ -115,7 +115,7 @@ namespace io {
         if (d_ptr(impl_)->cycle) {
             d_ptr(impl_)->cycle->EventUpdate(shared_from_this());
         } else {
-            MSG_ERROR("event[{}] need to be added to cycle.", (void*)this);
+            HARE_INTERNAL_ERROR("event[{}] need to be added to cycle.", (void*)this);
         }
     }
 
@@ -130,7 +130,7 @@ namespace io {
         if (d_ptr(impl_)->cycle) {
             d_ptr(impl_)->cycle->EventUpdate(shared_from_this());
         } else {
-            MSG_ERROR("event[{}] need to be added to cycle.", (void*)this);
+            HARE_INTERNAL_ERROR("event[{}] need to be added to cycle.", (void*)this);
         }
     }
 
@@ -140,7 +140,7 @@ namespace io {
         if (d_ptr(impl_)->cycle) {
             d_ptr(impl_)->cycle->EventUpdate(shared_from_this());
         } else {
-            MSG_ERROR("event[{}] need to be added to cycle.", (void*)this);
+            HARE_INTERNAL_ERROR("event[{}] need to be added to cycle.", (void*)this);
         }
     }
 
@@ -154,7 +154,7 @@ namespace io {
         if (d_ptr(impl_)->cycle != nullptr) {
             d_ptr(impl_)->cycle->EventRemove(shared_from_this());
         } else {
-            MSG_ERROR("event[{}] need to be added to cycle.", (void*)this);
+            HARE_INTERNAL_ERROR("event[{}] need to be added to cycle.", (void*)this);
         }
     }
 

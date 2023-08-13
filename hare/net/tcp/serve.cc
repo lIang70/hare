@@ -71,12 +71,12 @@ namespace net {
             _acceptor->SetNewSession(std::bind(&TcpServe::NewSession, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
             auto ret = _acceptor->Listen();
             if (!ret) {
-                MSG_ERROR("acceptor[{}] cannot listen.", _acceptor->Socket());
+                HARE_INTERNAL_ERROR("acceptor[{}] cannot listen.", _acceptor->Socket());
                 cdl.CountDown();
                 return;
             }
 
-            MSG_TRACE("add acceptor[{}], port={}, type={}] to serve[{}].",
+            HARE_INTERNAL_TRACE("add acceptor[{}], port={}, type={}] to serve[{}].",
                 _acceptor->Socket(), _acceptor->Port(), TypeToStr(TYPE_TCP), (void*)this);
             added = true;
             cdl.CountDown();
@@ -103,7 +103,7 @@ namespace net {
         d_ptr(impl_)->cycle->Exec();
         d_ptr(impl_)->started = false;
 
-        MSG_TRACE("clean io pool...");
+        HARE_INTERNAL_TRACE("clean io pool...");
         d_ptr(impl_)->io_pool->Stop();
         d_ptr(impl_)->io_pool.reset();
 
@@ -129,7 +129,7 @@ namespace net {
 
         name_cache = fmt::format("{}-{}#tcp{}", d_ptr(impl_)->name, local_addr.ToIpPort(), d_ptr(impl_)->session_id++);
 
-        MSG_TRACE("new session[{}] in serve[{}] from {} in {}.",
+        HARE_INTERNAL_TRACE("new session[{}] in serve[{}] from {} in {}.",
             name_cache, d_ptr(impl_)->name_, _address.ToIpPort(), _time.ToFmt());
 
         tcp_session.reset(new TcpSession(next_item->cycle.get(),
@@ -138,7 +138,7 @@ namespace net {
             std::move(_address)));
 
         if (!tcp_session) {
-            MSG_ERROR("fail to create session[{}].", name_cache);
+            HARE_INTERNAL_ERROR("fail to create session[{}].", name_cache);
             socket_op::Close(_fd);
             return;
         }
@@ -155,7 +155,7 @@ namespace net {
         next_item->cycle->RunInCycle([=]() mutable {
             assert(next_item->sessions.find(sfd) == next_item->sessions.end());
             if (!d_ptr(impl_)->new_session) {
-                MSG_ERROR("you need register new_session_callback to serve[{}].", d_ptr(impl_)->name);
+                HARE_INTERNAL_ERROR("you need register new_session_callback to serve[{}].", d_ptr(impl_)->name);
                 if (sfd != -1) {
                     socket_op::Close(sfd);
                 }

@@ -34,7 +34,7 @@ namespace net {
                 break;
             case TYPE_INVALID:
             default:
-                MSG_FATAL("unrecognized type of socket.");
+                HARE_INTERNAL_FATAL("unrecognized type of socket.");
             }
         }
     }
@@ -113,7 +113,7 @@ namespace net {
             ret = ::setsockopt(socket_, SOL_SOCKET, SO_EXCLUSIVEADDRUSE, (const char*)&opt_val, static_cast<socklen_t>(sizeof(opt_val)));
         }
 #else
-        MSG_ERROR("reuse-port is not supported.");
+        HARE_INTERNAL_ERROR("reuse-port is not supported.");
         auto ret = -1;
 #endif
         return ret != 0 ? Error(ERROR_SOCKET_REUSE_PORT) : Error();

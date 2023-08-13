@@ -66,7 +66,7 @@ namespace net {
     TcpSession::~TcpSession()
     {
         assert(d_ptr(impl_)->state == STATE_DISCONNECTED);
-        MSG_TRACE("session[{}] at {} fd={} free.", d_ptr(impl_)->name, (void*)this, Fd());
+        HARE_INTERNAL_TRACE("session[{}] at {} fd={} free.", d_ptr(impl_)->name, (void*)this, Fd());
         delete impl_;
     }
 
@@ -178,7 +178,7 @@ namespace net {
                     } else if (out_buffer_size > d_ptr(tcp->impl_)->high_water_mark && d_ptr(tcp->impl_)->high_water_mark) {
                         d_ptr(tcp->impl_)->high_water(tcp);
                     } else if (out_buffer_size > d_ptr(tcp->impl_)->high_water_mark) {
-                        MSG_ERROR("high_water_mark_callback has not been set for tcp-session[{}].", tcp->Name());
+                        HARE_INTERNAL_ERROR("high_water_mark_callback has not been set for tcp-session[{}].", tcp->Name());
                     }
                 }
             },
@@ -204,7 +204,7 @@ namespace net {
                     } else if (out_buffer_size > d_ptr(tcp->impl_)->high_water_mark && d_ptr(tcp->impl_)->high_water_mark) {
                         d_ptr(tcp->impl_)->high_water(tcp);
                     } else if (out_buffer_size > d_ptr(tcp->impl_)->high_water_mark) {
-                        MSG_ERROR("high_water_mark_callback has not been set for tcp-session[{}].", tcp->Name());
+                        HARE_INTERNAL_ERROR("high_water_mark_callback has not been set for tcp-session[{}].", tcp->Name());
                     }
                 }
             },
@@ -254,7 +254,7 @@ namespace net {
     {
         OwnerCycle()->AssertInCycleThread();
         assert(_event == d_ptr(impl_)->event);
-        MSG_TRACE("session[{}] revents: {}.", d_ptr(impl_)->event->fd(), _events);
+        HARE_INTERNAL_TRACE("session[{}] revents: {}.", d_ptr(impl_)->event->fd(), _events);
         if (CHECK_EVENT(_events, SESSION_READ)) {
             HandleRead(_receive_time);
         }
@@ -275,7 +275,7 @@ namespace net {
             d_ptr(impl_)->read(shared_from_this(), d_ptr(impl_)->in_buffer, _time);
         } else {
             if (read_n > 0) {
-                MSG_ERROR("read_callback has not been set for tcp-session[{}].", Name());
+                HARE_INTERNAL_ERROR("read_callback has not been set for tcp-session[{}].", Name());
             }
             HandleError();
         }
@@ -294,7 +294,7 @@ namespace net {
                             if (d_ptr(impl_)->write) {
                                 d_ptr(impl_)->write(tcp);
                             } else {
-                                MSG_ERROR("write_callback has not been set for tcp-session[{}].", Name());
+                                HARE_INTERNAL_ERROR("write_callback has not been set for tcp-session[{}].", Name());
                             }
                         }
                     },
@@ -304,16 +304,16 @@ namespace net {
                     HandleClose();
                 }
             } else {
-                MSG_ERROR("an error occurred while writing the socket, detail: {}.", socket_op::SocketErrorInfo(Fd()));
+                HARE_INTERNAL_ERROR("an error occurred while writing the socket, detail: {}.", socket_op::SocketErrorInfo(Fd()));
             }
         } else {
-            MSG_TRACE("tcp-session[fd={}, name={}] is down, no more writing.", Fd(), Name());
+            HARE_INTERNAL_TRACE("tcp-session[fd={}, name={}] is down, no more writing.", Fd(), Name());
         }
     }
 
     void TcpSession::HandleClose()
     {
-        MSG_TRACE("fd={} state={}.", Fd(), detail::StateToString(d_ptr(impl_)->state));
+        HARE_INTERNAL_TRACE("fd={} state={}.", Fd(), detail::StateToString(d_ptr(impl_)->state));
         assert(d_ptr(impl_)->state == STATE_CONNECTED || d_ptr(impl_)->state == STATE_DISCONNECTING);
         // we don't close fd, leave it to dtor, so we can find leaks easily.
         SetState(STATE_DISCONNECTED);
@@ -322,7 +322,7 @@ namespace net {
         if (d_ptr(impl_)->connect) {
             d_ptr(impl_)->connect(shared_from_this(), SESSION_CLOSED);
         } else {
-            MSG_ERROR("connect_callback has not been set for session[{}], session is closed.", d_ptr(impl_)->name);
+            HARE_INTERNAL_ERROR("connect_callback has not been set for session[{}], session is closed.", d_ptr(impl_)->name);
         }
         d_ptr(impl_)->event->Deactivate();
         d_ptr(impl_)->destroy();
@@ -333,7 +333,7 @@ namespace net {
         if (d_ptr(impl_)->connect) {
             d_ptr(impl_)->connect(shared_from_this(), SESSION_ERROR);
         } else {
-            MSG_ERROR("occurred error to the session[{}], detail: {}.",
+            HARE_INTERNAL_ERROR("occurred error to the session[{}], detail: {}.",
                 d_ptr(impl_)->name, socket_op::SocketErrorInfo(Fd()));
         }
     }
@@ -345,7 +345,7 @@ namespace net {
         if (d_ptr(impl_)->connect) {
             d_ptr(impl_)->connect(shared_from_this(), SESSION_CONNECTED);
         } else {
-            MSG_ERROR("connect_callback has not been set for session[{}], session connected.", d_ptr(impl_)->name);
+            HARE_INTERNAL_ERROR("connect_callback has not been set for session[{}], session connected.", d_ptr(impl_)->name);
         }
         d_ptr(impl_)->event->Tie(shared_from_this());
         d_ptr(impl_)->cycle->EventUpdate(d_ptr(impl_)->event);

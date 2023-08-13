@@ -42,15 +42,21 @@ namespace util {
         explicit CircularQueue(SizeType _max)
             : max_capacity_(_max)
             , sequence_(_max)
-        { }
+        {
+        }
 
         HARE_INLINE
         CircularQueue(CircularQueue&& _other) noexcept
-        { Move(_other); }
+        {
+            Move(_other);
+        }
 
         HARE_INLINE
         CircularQueue& operator=(CircularQueue&& _other) noexcept
-        { Move(_other); return (*this); }
+        {
+            Move(_other);
+            return (*this);
+        }
 
         void PushBack(T&& _item)
         {
@@ -70,7 +76,9 @@ namespace util {
 
         HARE_INLINE
         auto Size() const -> SizeType
-        { return tail_ >= head_ ? tail_ - head_ : max_capacity_ - head_ + tail_; }
+        {
+            return tail_ >= head_ ? tail_ - head_ : max_capacity_ - head_ + tail_;
+        }
 
         HARE_INLINE auto max_capacity() const -> SizeType { return max_capacity_; }
 
@@ -118,7 +126,6 @@ namespace util {
             _other.head_ = _other.tail_ = 0;
             _other.over_counter_ = 0;
         }
-
     };
 
     HARE_CLASS_API

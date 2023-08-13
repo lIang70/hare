@@ -109,7 +109,7 @@ namespace io {
 
     auto ReactorEpoll::Poll(std::int32_t _timeout_microseconds) -> Timestamp
     {
-        MSG_TRACE("active events total count: {}.", active_events_.size());
+        HARE_INTERNAL_TRACE("active events total count: {}.", active_events_.size());
 
         auto event_num = ::epoll_wait(epoll_fd_,
             &*epoll_events_.begin(), static_cast<std::int32_t>(epoll_events_.size()),
@@ -118,18 +118,18 @@ namespace io {
         auto saved_errno = errno;
         auto now { Timestamp::Now() };
         if (event_num > 0) {
-            MSG_TRACE("{} events happened.", event_num);
+            HARE_INTERNAL_TRACE("{} events happened.", event_num);
             FillActiveEvents(event_num);
             if (implicit_cast<std::size_t>(event_num) == epoll_events_.size()) {
                 epoll_events_.resize(epoll_events_.size() * 2);
             }
         } else if (event_num == 0) {
-            MSG_TRACE("nothing happened.");
+            HARE_INTERNAL_TRACE("nothing happened.");
         } else {
             // error happens, log uncommon ones
             if (saved_errno != EINTR) {
                 errno = saved_errno;
-                MSG_ERROR("there was an error in the reactor.");
+                HARE_INTERNAL_ERROR("there was an error in the reactor.");
             }
         }
         return now;
@@ -138,7 +138,7 @@ namespace io {
     auto ReactorEpoll::EventUpdate(const Ptr<Event>& _event) -> bool
     {
         auto event_id = _event->id();
-        MSG_TRACE("epoll-update: fd={}, flags={}.", _event->fd(), _event->events());
+        HARE_INTERNAL_TRACE("epoll-update: fd={}, flags={}.", _event->fd(), _event->events());
 
         if (event_id == -1) {
             // a new one, add with EPOLL_CTL_ADD
@@ -160,7 +160,7 @@ namespace io {
         const auto target_fd = _event->fd();
         const auto event_id = _event->id();
 
-        MSG_TRACE("epoll-remove: fd={}, flags={}.", target_fd, _event->events());
+        HARE_INTERNAL_TRACE("epoll-remove: fd={}, flags={}.", target_fd, _event->events());
         assert(inverse_map_.find(target_fd) != inverse_map_.end());
         assert(event_id == -1);
 
@@ -189,11 +189,11 @@ namespace io {
         ep_event.data.ptr = _event.get();
         auto target_fd = _event->fd();
 
-        MSG_TRACE("epoll_ctl op={} fd={} event=[{}].",
+        HARE_INTERNAL_TRACE("epoll_ctl op={} fd={} event=[{}].",
             detail::OperationToString(_operation), target_fd, detail::EpollToString(detail::DecodeEpoll(_event->events())));
 
         if (::epoll_ctl(epoll_fd_, _operation, target_fd, &ep_event) < 0) {
-            MSG_ERROR("epoll_ctl error op = {} fd = {}", detail::OperationToString(_operation), target_fd);
+            HARE_INTERNAL_ERROR("epoll_ctl error op = {} fd = {}", detail::OperationToString(_operation), target_fd);
             return false;
         }
         return true;

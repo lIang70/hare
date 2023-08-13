@@ -12,7 +12,7 @@
 #ifndef _HARE_BASE_UTIL_BUFFER_H_
 #define _HARE_BASE_UTIL_BUFFER_H_
 
-#include <hare/base/fwd.h>
+#include <hare/base/util/non_copyable.h>
 
 #if defined(_SECURE_SCL) && _SECURE_SCL
 #include <iterator>
@@ -42,7 +42,7 @@ namespace util {
 
     HARE_CLASS_API
     template <typename T>
-    class HARE_API Buffer {
+    class HARE_API Buffer : public NonCopyable {
     protected:
         T* ptr_ {};
         std::size_t size_ {};
@@ -80,9 +80,6 @@ namespace util {
         using ConstReference = const T&;
 
         virtual ~Buffer() = default;
-
-        Buffer(const Buffer&) = delete;
-        void operator=(const Buffer&) = delete;
 
         HARE_INLINE auto Begin() noexcept -> T* { return ptr_; }
         HARE_INLINE auto End() noexcept -> T* { return ptr_ + size_; }
