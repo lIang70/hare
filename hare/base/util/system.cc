@@ -90,7 +90,7 @@ namespace util {
 
                 // Get application dir
                 if (::getcwd(system_dir_.data(), NAME_LENGTH) == nullptr) {
-                    throw Exception("Cannot call ::getcwd.");
+                    HARE_INTERNAL_FATAL("cannot call ::getcwd.");
                 }
 
                 pid_ = ::getpid();

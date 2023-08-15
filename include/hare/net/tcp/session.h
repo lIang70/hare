@@ -68,6 +68,7 @@ namespace net {
         auto GetContext() const -> const util::Any&;
 
         auto Shutdown() -> Error;
+        // not thread-safe
         auto ForceClose() -> Error;
 
         void StartRead();

@@ -43,7 +43,7 @@ namespace util {
                 IMPL->cv.wait_for(lock, std::chrono::milliseconds(milliseconds));
                 break;
             }
-            IMPL->cv.wait(lock);
+            IMPL->cv.wait(lock, [=] { return IMPL->count == 0; });
         }
     }
 

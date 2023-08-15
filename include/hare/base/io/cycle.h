@@ -12,14 +12,11 @@
 #ifndef _HARE_BASE_IO_CYCLE_H_
 #define _HARE_BASE_IO_CYCLE_H_
 
-#include <hare/base/time/timestamp.h>
-#include <hare/base/util/non_copyable.h>
+#include <hare/base/io/event.h>
 
 namespace hare {
 namespace io {
 
-    class Reactor;
-    class Event;
     HARE_CLASS_API
     class HARE_API Cycle : public util::NonCopyable {
         hare::detail::Impl* impl_ {};
@@ -88,6 +85,11 @@ namespace io {
         void QueueInCycle(Task _task);
 
         auto QueueSize() const -> std::size_t;
+
+        auto RunAfter(const Task& _task, std::int64_t _delay) -> Event::Id;
+        auto RunEvery(const Task& _task, std::int64_t _delay) -> Event::Id;
+
+        void Cancel(Event::Id _event_id);
 
         void EventUpdate(const hare::Ptr<Event>& _event);
         void EventRemove(const hare::Ptr<Event>& _event);

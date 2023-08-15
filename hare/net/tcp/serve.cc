@@ -41,7 +41,7 @@ namespace net {
 
     TcpServe::~TcpServe()
     {
-        assert(!IMPL->started_);
+        assert(!IMPL->started);
         delete impl_;
     }
 
@@ -91,7 +91,7 @@ namespace net {
 
     auto TcpServe::Exec(std::int32_t _thread_nbr) -> Error
     {
-        assert(IMPL->cycle_ != nullptr);
+        assert(IMPL->cycle != nullptr);
 
         IMPL->io_pool = std::make_shared<IOPool<Ptr<TcpSession>>>("SERVER_WORKER");
         auto ret = IMPL->io_pool->Start(IMPL->cycle->type(), _thread_nbr);
@@ -117,7 +117,7 @@ namespace net {
 
     void TcpServe::NewSession(util_socket_t _fd, HostAddress& _address, const Timestamp& _time, Acceptor* _acceptor)
     {
-        assert(IMPL->started_);
+        assert(IMPL->started);
         IMPL->cycle->AssertInCycleThread();
 
         auto next_item = IMPL->io_pool->GetNextItem();
@@ -130,7 +130,7 @@ namespace net {
         name_cache = fmt::format("{}-{}#tcp{}", IMPL->name, local_addr.ToIpPort(), IMPL->session_id++);
 
         HARE_INTERNAL_TRACE("new session[{}] in serve[{}] from {} in {}.",
-            name_cache, IMPL->name_, _address.ToIpPort(), _time.ToFmt());
+            name_cache, IMPL->name, _address.ToIpPort(), _time.ToFmt());
 
         tcp_session.reset(new TcpSession(next_item->cycle.get(),
             std::move(local_addr),

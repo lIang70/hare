@@ -1,4 +1,5 @@
 #include "hare/base/io/reactor.h"
+#include "hare/base/fwd-inl.h"
 #include <hare/base/exception.h>
 #include <hare/base/io/event.h>
 #include <hare/hare-config.h>
@@ -21,16 +22,17 @@ namespace io {
 #if HARE__HAVE_POLL
             return new ReactorEpoll(_cycle);
 #else
-            throw Exception("EPOLL reactor was not supported.");
+            HARE_INTERNAL_FATAL("epoll reactor was not supported.");
 #endif
         case Cycle::REACTOR_TYPE_POLL:
 #if HARE__HAVE_POLL
             return new ReactorPoll(_cycle);
 #else
-            throw Exception("POLL reactor was not supported.");
+            HARE_INTERNAL_FATAL("poll reactor was not supported.");
 #endif
         default:
-            throw Exception("A suitable reactor type was not found.");
+            HARE_INTERNAL_FATAL("a suitable reactor type was not found.");
+            return nullptr;
         }
     }
 

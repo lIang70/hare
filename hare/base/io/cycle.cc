@@ -3,6 +3,7 @@
 #include "hare/base/io/reactor.h"
 #include "hare/base/io/socket_op-inl.h"
 #include <hare/base/exception.h>
+#include <hare/base/io/timer.h>
 #include <hare/base/time/timestamp.h>
 #include <hare/base/util/count_down_latch.h>
 #include <hare/hare-config.h>
@@ -36,7 +37,7 @@ namespace io {
         {
             auto evtfd = ::eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
             if (evtfd < 0) {
-                throw Exception("failed to get event fd in ::eventfd.");
+                HARE_INTERNAL_FATAL("failed to get event fd in ::eventfd.");
             }
             return evtfd;
         }
@@ -69,7 +70,8 @@ namespace io {
                         this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
                     EVENT_READ | EVENT_PERSIST,
                     0)
-            { }
+            {
+            }
 
             ~EventNotify() override
             {
@@ -173,7 +175,7 @@ namespace io {
 
         IMPL->tid = current_thread::ThreadData().tid;
         IMPL->notify_event.reset(new detail::EventNotify());
-        IMPL->reactor.reset(Reactor::CreateByType(_type, this));
+        IMPL->reactor.reset(CHECK_NULL(Reactor::CreateByType(_type, this)));
 
         if (current_thread::ThreadData().cycle != nullptr) {
             HARE_INTERNAL_FATAL("another cycle[{}] exists in this thread[{:#x}]",
@@ -321,10 +323,98 @@ namespace io {
         return IMPL->pending_functions.size();
     }
 
+    auto Cycle::RunAfter(const Task& _task, std::int64_t _delay) -> Event::Id
+    {
+        if (!is_running()) {
+            return -1;
+        }
+        auto timer = std::make_shared<Timer>(_task, _delay);
+        util::CountDownLatch cdl { 1 };
+
+        RunInCycle([&, timer] {
+            assert(timer->id() == -1);
+
+            timer->Active(this, IMPL->event_id++);
+            assert(IMPL->reactor->events_.find(timer->id()) == IMPL->reactor->events_.end());
+            IMPL->reactor->events_.insert(std::make_pair(timer->id(), timer));
+
+            assert(CHECK_EVENT(timer->events(), EVENT_TIMEOUT) != 0);
+            IMPL->reactor->ptimer_.emplace(timer->id(),
+                Timestamp(Timestamp::Now().microseconds_since_epoch() + timer->timeval()));
+
+            cdl.CountDown();
+        });
+
+        if (!InCycleThread()) {
+            cdl.Await();
+        }
+
+        return timer->id();
+    }
+
+    auto Cycle::RunEvery(const Task& _task, std::int64_t _delay) -> Event::Id
+    {
+        if (!is_running()) {
+            return -1;
+        }
+        
+        auto timer = std::make_shared<Timer>(_task, _delay, true);
+        util::CountDownLatch cdl { 1 };
+
+        RunInCycle([&, timer] {
+            assert(timer->id() == -1);
+
+            timer->Active(this, IMPL->event_id++);
+            assert(IMPL->reactor->events_.find(timer->id()) == IMPL->reactor->events_.end());
+            IMPL->reactor->events_.insert(std::make_pair(timer->id(), timer));
+
+            assert(CHECK_EVENT(timer->events(), EVENT_TIMEOUT) != 0);
+            IMPL->reactor->ptimer_.emplace(timer->id(),
+                Timestamp(Timestamp::Now().microseconds_since_epoch() + timer->timeval()));
+
+            cdl.CountDown();
+        });
+
+        if (!InCycleThread()) {
+            cdl.Await();
+        }
+
+        return timer->id();
+    }
+
+    void Cycle::Cancel(Event::Id _event_id)
+    {
+        if (!is_running()) {
+            return;
+        }
+
+        util::CountDownLatch cdl { 1 };
+        
+        RunInCycle([&] {
+            auto iter = IMPL->reactor->events_.find(_event_id);
+            if (iter != IMPL->reactor->events_.end()) {
+                auto event = iter->second;
+                if (event->fd() < 0) {
+                    event->Reset();
+                    IMPL->reactor->events_.erase(iter);
+                } else {
+                    HARE_INTERNAL_ERROR("cannot \'Cancel\' an event with non-zero file descriptors.");
+                }
+            } else {
+                HARE_INTERNAL_TRACE("event[{}] already finished/cancelled!", _event_id);
+            }
+            cdl.CountDown();
+        });
+
+        if (!InCycleThread()) {
+            cdl.Await();
+        }
+    }
+
     void Cycle::EventUpdate(const hare::Ptr<Event>& _event)
     {
         if (_event->cycle() != this && _event->id() != -1) {
-            HARE_INTERNAL_ERROR("cannot add event from other cycle[{}]", (void*)_event->cycle());
+            HARE_INTERNAL_ERROR("cannot add event from other cycle[{}].", (void*)_event->cycle());
             return;
         }
 
@@ -370,7 +460,7 @@ namespace io {
         }
 
         if (_event->cycle() != this || _event->id() == -1) {
-            HARE_INTERNAL_ERROR("the event is not part of the cycle[{}]", (void*)_event->cycle());
+            HARE_INTERNAL_ERROR("the event is not part of the cycle[{}].", (void*)_event->cycle());
             return;
         }
 

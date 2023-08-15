@@ -242,12 +242,12 @@ namespace socket_op {
 #ifndef H_OS_WIN
         auto _fd = ::socket(_family, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0);
         if (_fd < 0) {
-            throw Exception("cannot create non-blocking socket");
+            HARE_INTERNAL_FATAL("cannot create non-blocking socket");
         }
 #else
         auto _fd = ::socket(_family, SOCK_STREAM, 0);
         if (_fd < 0) {
-            throw exception("cannot create non-blocking socket");
+            HARE_INTERNAL_FATAL("cannot create non-blocking socket");
         }
         detail::set_nonblock_closeonexec(_fd);
 #endif

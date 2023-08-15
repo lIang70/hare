@@ -116,6 +116,7 @@ namespace net {
     auto HostAddress::operator=(HostAddress&& _another) noexcept -> HostAddress&
     {
         std::swap(in_, _another.in_);
+        std::free(_another.in_);
         return (*this);
     }
 

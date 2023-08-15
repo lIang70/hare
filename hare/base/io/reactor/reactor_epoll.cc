@@ -98,7 +98,7 @@ namespace io {
         , epoll_events_(detail::kInitEventsCnt)
     {
         if (epoll_fd_ < 0) {
-            throw Exception("cannot create a epoll fd.");
+            HARE_INTERNAL_FATAL("cannot create a epoll fd.");
         }
     }
 
