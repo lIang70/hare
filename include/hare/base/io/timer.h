@@ -3,7 +3,7 @@
  * @author l1ang70 (gog_017@outlook.com)
  * @brief Describe the class associated with timer.h
  * @version 0.1-beta
- * @date 2023-04-14
+ * @date 2023-08-16
  *
  * @copyright Copyright (c) 2023
  *
