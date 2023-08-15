@@ -312,50 +312,50 @@ namespace net {
 
     Buffer::Buffer(std::size_t _max_read)
         : impl_(new BufferImpl)
-    { d_ptr(impl_)->max_read = _max_read; }
+    { IMPL->max_read = _max_read; }
     Buffer::~Buffer()
     { delete impl_; }
     
     auto Buffer::Size() const -> std::size_t
-    { return d_ptr(impl_)->total_len; }
+    { return IMPL->total_len; }
     void Buffer::SetMaxRead(std::size_t _max_read)
-    { d_ptr(impl_)->max_read = _max_read; }
+    { IMPL->max_read = _max_read; }
 
     auto Buffer::ChainSize() const -> std::size_t
-    { return d_ptr(impl_)->cache_chain.Size(); }
+    { return IMPL->cache_chain.Size(); }
 
     void Buffer::ClearAll()
     {
-        d_ptr(impl_)->cache_chain.Reset();
-        d_ptr(impl_)->total_len = 0;
+        IMPL->cache_chain.Reset();
+        IMPL->total_len = 0;
     }
 
     void Buffer::Skip(std::size_t _size)
     {
-        if (_size >= d_ptr(impl_)->total_len) {
+        if (_size >= IMPL->total_len) {
             ClearAll();
         } else {
-            d_ptr(impl_)->total_len -= _size;
-            d_ptr(impl_)->cache_chain.Drain(_size);
+            IMPL->total_len -= _size;
+            IMPL->cache_chain.Drain(_size);
         }
     }
 
     auto Buffer::Begin() -> Iterator
     { 
         return Iterator(
-            new buffer_iterator_impl(&d_ptr(impl_)->cache_chain)); 
+            new buffer_iterator_impl(&IMPL->cache_chain)); 
     }
 
     auto Buffer::End() -> Iterator
     { 
         return Iterator(
             new buffer_iterator_impl(
-                &d_ptr(impl_)->cache_chain, d_ptr(impl_)->cache_chain.End())); 
+                &IMPL->cache_chain, IMPL->cache_chain.End())); 
     }
 
     auto Buffer::Find(const char* _begin, std::size_t _size) -> Iterator
     {
-        if (_size > d_ptr(impl_)->total_len ) {
+        if (_size > IMPL->total_len ) {
             return End();
         }
         auto next_val = detail::get_next(_begin, _size);
@@ -382,40 +382,40 @@ namespace net {
         }
 
 #ifdef HARE_DEBUG
-        d_ptr(impl_)->cache_chain.PrintStatus("before append buffer");
+        IMPL->cache_chain.PrintStatus("before append buffer");
         d_ptr(_other.impl_)->cache_chain.PrintStatus("before append other buffer");
 #endif
 
-        if (d_ptr(impl_)->total_len == 0) {
-            d_ptr(impl_)->cache_chain.Swap(d_ptr(_other.impl_)->cache_chain);
+        if (IMPL->total_len == 0) {
+            IMPL->cache_chain.Swap(d_ptr(_other.impl_)->cache_chain);
         } else {
-            d_ptr(impl_)->cache_chain.Append(d_ptr(_other.impl_)->cache_chain);
+            IMPL->cache_chain.Append(d_ptr(_other.impl_)->cache_chain);
         }
 
 #ifdef HARE_DEBUG
-        d_ptr(impl_)->cache_chain.PrintStatus("after append buffer");
+        IMPL->cache_chain.PrintStatus("after append buffer");
         d_ptr(_other.impl_)->cache_chain.PrintStatus("after append other buffer");
 #endif
 
-        d_ptr(impl_)->total_len += d_ptr(_other.impl_)->total_len;
+        IMPL->total_len += d_ptr(_other.impl_)->total_len;
         d_ptr(_other.impl_)->total_len = 0;
     }
 
     auto Buffer::Add(const void* _bytes, std::size_t _size) -> bool
     {
-        if (d_ptr(impl_)->total_len + _size > MAX_SIZE) {
+        if (IMPL->total_len + _size > MAX_SIZE) {
             return false;
         }
 
-        d_ptr(impl_)->total_len += _size;
-        d_ptr(impl_)->cache_chain.CheckSize(_size);
-        d_ptr(impl_)->cache_chain.End()->cache->Append(
+        IMPL->total_len += _size;
+        IMPL->cache_chain.CheckSize(_size);
+        IMPL->cache_chain.End()->cache->Append(
             static_cast<const char*>(_bytes),
             static_cast<const char*>(_bytes) + _size
         );
 
 #ifdef HARE_DEBUG
-        d_ptr(impl_)->cache_chain.PrintStatus("after add");
+        IMPL->cache_chain.PrintStatus("after add");
 #endif
         return true;
     }
@@ -424,15 +424,15 @@ namespace net {
     {
         using hare::util::detail::MakeChecked;
 
-        if (_length == 0 || d_ptr(impl_)->total_len == 0) {
+        if (_length == 0 || IMPL->total_len == 0) {
             return 0;
         }
 
-        if (_length > d_ptr(impl_)->total_len) {
-            _length = d_ptr(impl_)->total_len;
+        if (_length > IMPL->total_len) {
+            _length = IMPL->total_len;
         }
 
-        auto* curr { d_ptr(impl_)->cache_chain.Begin() };
+        auto* curr { IMPL->cache_chain.Begin() };
         std::size_t total { 0 };
         auto* dest = static_cast<char*>(_buffer);
         while (total < _length) {
@@ -443,11 +443,11 @@ namespace net {
             curr = curr->next;
         }
 
-        d_ptr(impl_)->total_len -= _length;
-        d_ptr(impl_)->cache_chain.Drain(_length);
+        IMPL->total_len -= _length;
+        IMPL->cache_chain.Drain(_length);
 
 #ifdef HARE_DEBUG
-        d_ptr(impl_)->cache_chain.PrintStatus("after remove");
+        IMPL->cache_chain.PrintStatus("after remove");
 #endif
         return _length;
     }
@@ -456,7 +456,7 @@ namespace net {
     {
         auto readable = socket_op::GetBytesReadableOnSocket(_fd);
         if (readable == 0) {
-            readable = d_ptr(impl_)->max_read;
+            readable = IMPL->max_read;
         }
         if (_howmuch == 0 || _howmuch > readable) {
             _howmuch = readable;
@@ -465,13 +465,13 @@ namespace net {
         }
 
 #ifdef HARE_DEBUG
-        d_ptr(impl_)->cache_chain.PrintStatus("before read");
+        IMPL->cache_chain.PrintStatus("before read");
 #endif
 
 #ifdef USE_IOVEC_IMPL
-        auto block_size = d_ptr(impl_)->cache_chain.FastExpand(readable);
+        auto block_size = IMPL->cache_chain.FastExpand(readable);
         std::vector<IOV_TYPE> vecs(block_size);
-        auto* block = d_ptr(impl_)->cache_chain.End();
+        auto* block = IMPL->cache_chain.End();
 
         for (auto i = 0; i < block_size; ++i, block = block->next) {
             vecs[i].IOV_PTR_FIELD = (*block)->Writeable();
@@ -505,15 +505,15 @@ namespace net {
             }
         }
 
-        d_ptr(impl_)->cache_chain.Add(readable);
-        d_ptr(impl_)->total_len += readable;
+        IMPL->cache_chain.Add(readable);
+        IMPL->total_len += readable;
         
 #else
 #error "cannot use IOVEC."
 #endif
 
 #ifdef HARE_DEBUG
-        d_ptr(impl_)->cache_chain.PrintStatus("after read");
+        IMPL->cache_chain.PrintStatus("after read");
 #endif
 
         return readable;
@@ -522,19 +522,19 @@ namespace net {
     auto Buffer::Write(util_socket_t _fd, std::size_t _howmuch) -> std::size_t
     {
         std::size_t write_n {};
-        auto total = _howmuch == 0 ? d_ptr(impl_)->total_len : _howmuch;
+        auto total = _howmuch == 0 ? IMPL->total_len : _howmuch;
 
-        if (total > d_ptr(impl_)->total_len) {
-            total = d_ptr(impl_)->total_len;
+        if (total > IMPL->total_len) {
+            total = IMPL->total_len;
         }
 
 #ifdef HARE_DEBUG
-        d_ptr(impl_)->cache_chain.PrintStatus("before write");
+        IMPL->cache_chain.PrintStatus("before write");
 #endif
 
 #ifdef USE_IOVEC_IMPL
         std::array<IOV_TYPE, NUM_WRITE_IOVEC> iov {};
-        auto* curr { d_ptr(impl_)->cache_chain.Begin() };
+        auto* curr { IMPL->cache_chain.Begin() };
         auto write_i { 0 };
 
         while (write_i < NUM_WRITE_IOVEC && total > 0) {
@@ -575,15 +575,15 @@ namespace net {
             }
         }
         
-        d_ptr(impl_)->total_len -= write_n;
-        d_ptr(impl_)->cache_chain.Drain(write_n);
+        IMPL->total_len -= write_n;
+        IMPL->cache_chain.Drain(write_n);
         
 #else
 #error "cannot use IOVEC."
 #endif
 
 #ifdef HARE_DEBUG
-        d_ptr(impl_)->cache_chain.PrintStatus("after write");
+        IMPL->cache_chain.PrintStatus("after write");
 #endif
 
         return write_n;
@@ -591,9 +591,9 @@ namespace net {
 
     void Buffer::Move(Buffer& _other) noexcept
     {
-        d_ptr(impl_)->cache_chain.Swap(d_ptr(_other.impl_)->cache_chain);
-        std::swap(d_ptr(impl_)->total_len, d_ptr(_other.impl_)->total_len);
-        std::swap(d_ptr(impl_)->max_read, d_ptr(_other.impl_)->max_read);
+        IMPL->cache_chain.Swap(d_ptr(_other.impl_)->cache_chain);
+        std::swap(IMPL->total_len, d_ptr(_other.impl_)->total_len);
+        std::swap(IMPL->max_read, d_ptr(_other.impl_)->max_read);
     }
 
 } // namespace net

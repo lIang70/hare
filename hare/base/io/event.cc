@@ -57,53 +57,53 @@ namespace io {
     Event::Event(util_socket_t _fd, Callback _cb, std::uint8_t _events, std::int64_t _timeval)
         : impl_(new EventImpl)
     {
-        d_ptr(impl_)->fd = _fd;
-        d_ptr(impl_)->events = _events;
-        d_ptr(impl_)->callback = std::move(_cb);
-        d_ptr(impl_)->timeval = _timeval;
-        if (CHECK_EVENT(d_ptr(impl_)->events, EVENT_TIMEOUT) != 0 && CHECK_EVENT(d_ptr(impl_)->events, EVENT_PERSIST) != 0) {
-            CLEAR_EVENT(d_ptr(impl_)->events, EVENT_TIMEOUT);
-            d_ptr(impl_)->timeval = 0;
+        IMPL->fd = _fd;
+        IMPL->events = _events;
+        IMPL->callback = std::move(_cb);
+        IMPL->timeval = _timeval;
+        if (CHECK_EVENT(IMPL->events, EVENT_TIMEOUT) != 0 && CHECK_EVENT(IMPL->events, EVENT_PERSIST) != 0) {
+            CLEAR_EVENT(IMPL->events, EVENT_TIMEOUT);
+            IMPL->timeval = 0;
             HARE_INTERNAL_ERROR("cannot be set EVENT_PERSIST and EVENT_TIMEOUT at the same time.");
         }
     }
 
     Event::~Event()
     {
-        assert(d_ptr(impl_)->cycle == nullptr);
+        assert(IMPL->cycle == nullptr);
         delete impl_;
     }
 
     auto Event::fd() const -> util_socket_t
     {
-        return d_ptr(impl_)->fd;
+        return IMPL->fd;
     }
 
     auto Event::events() const -> std::uint8_t
     {
-        return d_ptr(impl_)->events;
+        return IMPL->events;
     }
 
     auto Event::timeval() const -> std::int64_t
     {
-        return d_ptr(impl_)->timeval;
+        return IMPL->timeval;
     }
 
     auto Event::cycle() const -> Cycle*
     {
-        return d_ptr(impl_)->cycle;
+        return IMPL->cycle;
     }
 
     auto Event::id() const -> Id
     {
-        return d_ptr(impl_)->id;
+        return IMPL->id;
     }
 
     void Event::EnableRead()
     {
-        SET_EVENT(d_ptr(impl_)->events, EVENT_READ);
-        if (d_ptr(impl_)->cycle) {
-            d_ptr(impl_)->cycle->EventUpdate(shared_from_this());
+        SET_EVENT(IMPL->events, EVENT_READ);
+        if (IMPL->cycle) {
+            IMPL->cycle->EventUpdate(shared_from_this());
         } else {
             HARE_INTERNAL_ERROR("event[{}] need to be added to cycle.", (void*)this);
         }
@@ -111,9 +111,9 @@ namespace io {
 
     void Event::DisableRead()
     {
-        CLEAR_EVENT(d_ptr(impl_)->events, EVENT_READ);
-        if (d_ptr(impl_)->cycle) {
-            d_ptr(impl_)->cycle->EventUpdate(shared_from_this());
+        CLEAR_EVENT(IMPL->events, EVENT_READ);
+        if (IMPL->cycle) {
+            IMPL->cycle->EventUpdate(shared_from_this());
         } else {
             HARE_INTERNAL_ERROR("event[{}] need to be added to cycle.", (void*)this);
         }
@@ -121,14 +121,14 @@ namespace io {
 
     auto Event::Reading() -> bool
     {
-        return CHECK_EVENT(d_ptr(impl_)->events, EVENT_READ) != 0;
+        return CHECK_EVENT(IMPL->events, EVENT_READ) != 0;
     }
 
     void Event::EnableWrite()
     {
-        SET_EVENT(d_ptr(impl_)->events, EVENT_WRITE);
-        if (d_ptr(impl_)->cycle) {
-            d_ptr(impl_)->cycle->EventUpdate(shared_from_this());
+        SET_EVENT(IMPL->events, EVENT_WRITE);
+        if (IMPL->cycle) {
+            IMPL->cycle->EventUpdate(shared_from_this());
         } else {
             HARE_INTERNAL_ERROR("event[{}] need to be added to cycle.", (void*)this);
         }
@@ -136,9 +136,9 @@ namespace io {
 
     void Event::DisableWrite()
     {
-        CLEAR_EVENT(d_ptr(impl_)->events, EVENT_WRITE);
-        if (d_ptr(impl_)->cycle) {
-            d_ptr(impl_)->cycle->EventUpdate(shared_from_this());
+        CLEAR_EVENT(IMPL->events, EVENT_WRITE);
+        if (IMPL->cycle) {
+            IMPL->cycle->EventUpdate(shared_from_this());
         } else {
             HARE_INTERNAL_ERROR("event[{}] need to be added to cycle.", (void*)this);
         }
@@ -146,13 +146,13 @@ namespace io {
 
     auto Event::Writing() -> bool
     {
-        return CHECK_EVENT(d_ptr(impl_)->events, EVENT_WRITE) != 0;
+        return CHECK_EVENT(IMPL->events, EVENT_WRITE) != 0;
     }
 
     void Event::Deactivate()
     {
-        if (d_ptr(impl_)->cycle != nullptr) {
-            d_ptr(impl_)->cycle->EventRemove(shared_from_this());
+        if (IMPL->cycle != nullptr) {
+            IMPL->cycle->EventRemove(shared_from_this());
         } else {
             HARE_INTERNAL_ERROR("event[{}] need to be added to cycle.", (void*)this);
         }
@@ -160,44 +160,44 @@ namespace io {
 
     auto Event::EventToString() const -> std::string
     {
-        return detail::EventsToString(d_ptr(impl_)->fd, d_ptr(impl_)->events);
+        return detail::EventsToString(IMPL->fd, IMPL->events);
     }
 
     void Event::Tie(const hare::Ptr<void>& _obj)
     {
-        d_ptr(impl_)->tie_object = _obj;
-        d_ptr(impl_)->tied = true;
+        IMPL->tie_object = _obj;
+        IMPL->tied = true;
     }
 
     auto Event::TiedObject() -> WPtr<void>
     {
-        return d_ptr(impl_)->tie_object;
+        return IMPL->tie_object;
     }
 
     void Event::HandleEvent(std::uint8_t _flag, Timestamp& _receive_time)
     {
         hare::Ptr<void> object;
-        if (d_ptr(impl_)->tied) {
-            object = d_ptr(impl_)->tie_object.lock();
+        if (IMPL->tied) {
+            object = IMPL->tie_object.lock();
             if (!object) {
                 return;
             }
-            if (d_ptr(impl_)->callback) {
-                d_ptr(impl_)->callback(shared_from_this(), _flag, _receive_time);
+            if (IMPL->callback) {
+                IMPL->callback(shared_from_this(), _flag, _receive_time);
             }
         }
     }
 
     void Event::Active(Cycle* _cycle, Event::Id _id)
     {
-        d_ptr(impl_)->cycle = CHECK_NULL(_cycle);
-        d_ptr(impl_)->id = _id;
+        IMPL->cycle = CHECK_NULL(_cycle);
+        IMPL->id = _id;
     }
 
     void Event::Reset()
     {
-        d_ptr(impl_)->cycle = nullptr;
-        d_ptr(impl_)->id = -1;
+        IMPL->cycle = nullptr;
+        IMPL->id = -1;
     }
 
 } // namespace io

@@ -33,6 +33,8 @@ namespace detail {
     HARE_INLINE auto d_ptr(hare::detail::Impl* impl) \
         ->Class##Impl* { return down_cast<Class##Impl*>(impl); }
 
+#define IMPL d_ptr(impl_)
+
     HARE_API void DefaultMsgHandle(std::uint8_t, const std::string& msg);
 } // namespace detail
 

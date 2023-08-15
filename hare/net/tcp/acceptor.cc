@@ -44,8 +44,8 @@ namespace net {
 #else
     {
 #endif
-        d_ptr(impl_)->socket.SetReusePort(_reuse_port);
-        d_ptr(impl_)->socket.SetReuseAddr(true);
+        IMPL->socket.SetReusePort(_reuse_port);
+        IMPL->socket.SetReuseAddr(true);
     }
 
     Acceptor::~Acceptor()
@@ -62,17 +62,17 @@ namespace net {
 
     auto Acceptor::Socket() const -> util_socket_t
     {
-        return d_ptr(impl_)->socket.fd();
+        return IMPL->socket.fd();
     }
 
     auto Acceptor::Port() const -> std::uint16_t
     {
-        return d_ptr(impl_)->port;
+        return IMPL->port;
     }
 
     auto Acceptor::Family() const -> std::uint8_t
     {
-        return d_ptr(impl_)->socket.family();
+        return IMPL->socket.family();
     }
 
     void Acceptor::EventCallback(const Ptr<io::Event>& _event, std::uint8_t _events, const Timestamp& _receive_time)
@@ -90,10 +90,10 @@ namespace net {
         util_socket_t conn_fd {};
 
         /// FIXME: loop until no more ?
-        while ((conn_fd = d_ptr(impl_)->socket.Accept(peer_addr)) >= 0) {
+        while ((conn_fd = IMPL->socket.Accept(peer_addr)) >= 0) {
             HARE_INTERNAL_TRACE("accepts of tcp[{}].", peer_addr.ToIpPort());
-            if (d_ptr(impl_)->new_session) {
-                d_ptr(impl_)->new_session(conn_fd, peer_addr, _receive_time, this);
+            if (IMPL->new_session) {
+                IMPL->new_session(conn_fd, peer_addr, _receive_time, this);
             } else {
                 socket_op::Close(conn_fd);
             }
@@ -108,7 +108,7 @@ namespace net {
             // By Marc Lehmann, author of libev.
             if (errno == EMFILE) {
                 socket_op::Close(idle_fd_);
-                idle_fd_ = socket_op::Accept(d_ptr(impl_)->socket.fd(), nullptr, 0);
+                idle_fd_ = socket_op::Accept(IMPL->socket.fd(), nullptr, 0);
                 socket_op::Close(idle_fd_);
                 idle_fd_ = ::open("/dev/null", O_RDONLY | O_CLOEXEC);
             }
@@ -122,12 +122,12 @@ namespace net {
             HARE_INTERNAL_ERROR("this acceptor[{}] has not been added to any cycle.", (void*)this);
             return Error(ERROR_ACCEPTOR_ACTIVED);
         }
-        const HostAddress address(d_ptr(impl_)->port, false, d_ptr(impl_)->socket.family() == AF_INET6);
-        auto ret = d_ptr(impl_)->socket.BindAddress(address);
+        const HostAddress address(IMPL->port, false, IMPL->socket.family() == AF_INET6);
+        auto ret = IMPL->socket.BindAddress(address);
         if (!ret) {
             return ret;
         }
-        ret = d_ptr(impl_)->socket.Listen();
+        ret = IMPL->socket.Listen();
         if (!ret) {
             return ret;
         }
@@ -138,7 +138,7 @@ namespace net {
 
     void Acceptor::SetNewSession(NewSessionCallback _cb)
     {
-        d_ptr(impl_)->new_session = std::move(_cb);
+        IMPL->new_session = std::move(_cb);
     }
 
 } // namespace net

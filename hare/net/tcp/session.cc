@@ -65,72 +65,72 @@ namespace net {
 
     TcpSession::~TcpSession()
     {
-        assert(d_ptr(impl_)->state == STATE_DISCONNECTED);
-        HARE_INTERNAL_TRACE("session[{}] at {} fd={} free.", d_ptr(impl_)->name, (void*)this, Fd());
+        assert(IMPL->state == STATE_DISCONNECTED);
+        HARE_INTERNAL_TRACE("session[{}] at {} fd={} free.", IMPL->name, (void*)this, Fd());
         delete impl_;
     }
 
     auto TcpSession::Name() const -> std::string
     {
-        return d_ptr(impl_)->name;
+        return IMPL->name;
     }
     auto TcpSession::OwnerCycle() const -> io::Cycle*
     {
-        return d_ptr(impl_)->cycle;
+        return IMPL->cycle;
     }
     auto TcpSession::LocalAddress() const -> const HostAddress&
     {
-        return d_ptr(impl_)->local_addr;
+        return IMPL->local_addr;
     }
     auto TcpSession::PeerAddress() const -> const HostAddress&
     {
-        return d_ptr(impl_)->peer_addr;
+        return IMPL->peer_addr;
     }
     auto TcpSession::State() const -> SessionState
     {
-        return d_ptr(impl_)->state;
+        return IMPL->state;
     }
     auto TcpSession::Fd() const -> util_socket_t
     {
-        return d_ptr(impl_)->socket.fd();
+        return IMPL->socket.fd();
     }
 
     void TcpSession::SetHighWaterMark(std::size_t _hwm)
     {
-        d_ptr(impl_)->high_water_mark = _hwm;
+        IMPL->high_water_mark = _hwm;
     }
     void TcpSession::SetReadCallback(ReadRallback _read)
     {
-        d_ptr(impl_)->read = std::move(_read);
+        IMPL->read = std::move(_read);
     }
     void TcpSession::SetWriteCallback(WriteCallback _write)
     {
-        d_ptr(impl_)->write = std::move(_write);
+        IMPL->write = std::move(_write);
     }
     void TcpSession::SetHighWaterCallback(HighWaterCallback _high_water)
     {
-        d_ptr(impl_)->high_water = std::move(_high_water);
+        IMPL->high_water = std::move(_high_water);
     }
     void TcpSession::SetConnectCallback(ConnectCallback _connect)
     {
-        d_ptr(impl_)->connect = std::move(_connect);
+        IMPL->connect = std::move(_connect);
     }
 
     void TcpSession::SetContext(const util::Any& context)
     {
-        d_ptr(impl_)->any_ctx = context;
+        IMPL->any_ctx = context;
     }
     auto TcpSession::GetContext() const -> const util::Any&
     {
-        return d_ptr(impl_)->any_ctx;
+        return IMPL->any_ctx;
     }
 
     auto TcpSession::Shutdown() -> Error
     {
-        if (d_ptr(impl_)->state == STATE_CONNECTED) {
+        if (IMPL->state == STATE_CONNECTED) {
             SetState(STATE_DISCONNECTING);
-            if (!d_ptr(impl_)->event->Writing()) {
-                return d_ptr(impl_)->socket.ShutdownWrite();
+            if (!IMPL->event->Writing()) {
+                return IMPL->socket.ShutdownWrite();
             }
             return Error(ERROR_SOCKET_WRITING);
         }
@@ -139,7 +139,7 @@ namespace net {
 
     auto TcpSession::ForceClose() -> Error
     {
-        if (d_ptr(impl_)->state == STATE_CONNECTED || d_ptr(impl_)->state == STATE_DISCONNECTING) {
+        if (IMPL->state == STATE_CONNECTED || IMPL->state == STATE_DISCONNECTING) {
             HandleClose();
             return Error(ERROR_SUCCESS);
         }
@@ -148,17 +148,17 @@ namespace net {
 
     void TcpSession::StartRead()
     {
-        if (!d_ptr(impl_)->reading || !d_ptr(impl_)->event->Reading()) {
-            d_ptr(impl_)->event->EnableRead();
-            d_ptr(impl_)->reading = true;
+        if (!IMPL->reading || !IMPL->event->Reading()) {
+            IMPL->event->EnableRead();
+            IMPL->reading = true;
         }
     }
 
     void TcpSession::StopRead()
     {
-        if (d_ptr(impl_)->reading || d_ptr(impl_)->event->Reading()) {
-            d_ptr(impl_)->event->DisableRead();
-            d_ptr(impl_)->reading = false;
+        if (IMPL->reading || IMPL->event->Reading()) {
+            IMPL->event->DisableRead();
+            IMPL->reading = false;
         }
     }
 
@@ -214,47 +214,42 @@ namespace net {
         return false;
     }
 
-    auto TcpSession::SetTcpNoDelay(bool _on) -> Error
-    {
-        return Socket().SetTcpNoDelay(_on);
-    }
-
     TcpSession::TcpSession(io::Cycle* _cycle,
         HostAddress _local_addr,
         std::string _name, std::uint8_t _family, util_socket_t _fd,
         HostAddress _peer_addr)
         : impl_(new TcpSessionImpl(std::move(_local_addr), _family, _fd, std::move(_peer_addr)))
     {
-        d_ptr(impl_)->cycle = CHECK_NULL(_cycle);
-        d_ptr(impl_)->event.reset(new io::Event(_fd,
+        IMPL->cycle = CHECK_NULL(_cycle);
+        IMPL->event.reset(new io::Event(_fd,
             std::bind(&TcpSession::HandleCallback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
             SESSION_READ | SESSION_WRITE | io::EVENT_PERSIST,
             0));
-        d_ptr(impl_)->name = std::move(_name);
+        IMPL->name = std::move(_name);
     }
 
     void TcpSession::SetState(SessionState _state)
     {
-        d_ptr(impl_)->state = _state;
+        IMPL->state = _state;
     }
     auto TcpSession::Event() -> Ptr<io::Event>&
     {
-        return d_ptr(impl_)->event;
+        return IMPL->event;
     }
     auto TcpSession::Socket() -> net::Socket&
     {
-        return d_ptr(impl_)->socket;
+        return IMPL->socket;
     }
     void TcpSession::SetDestroy(SessionDestroy _destroy)
     {
-        d_ptr(impl_)->destroy = std::move(_destroy);
+        IMPL->destroy = std::move(_destroy);
     }
 
     void TcpSession::HandleCallback(const Ptr<io::Event>& _event, std::uint8_t _events, const Timestamp& _receive_time)
     {
         OwnerCycle()->AssertInCycleThread();
-        assert(_event == d_ptr(impl_)->event);
-        HARE_INTERNAL_TRACE("session[{}] revents: {}.", d_ptr(impl_)->event->fd(), _events);
+        assert(_event == IMPL->event);
+        HARE_INTERNAL_TRACE("session[{}] revents: {}.", IMPL->event->fd(), _events);
         if (CHECK_EVENT(_events, SESSION_READ)) {
             HandleRead(_receive_time);
         }
@@ -268,11 +263,11 @@ namespace net {
 
     void TcpSession::HandleRead(const Timestamp& _time)
     {
-        auto read_n = d_ptr(impl_)->in_buffer.Read(Fd(), -1);
+        auto read_n = IMPL->in_buffer.Read(Fd(), -1);
         if (read_n == 0) {
             HandleClose();
-        } else if (read_n > 0 && d_ptr(impl_)->read) {
-            d_ptr(impl_)->read(shared_from_this(), d_ptr(impl_)->in_buffer, _time);
+        } else if (read_n > 0 && IMPL->read) {
+            IMPL->read(shared_from_this(), IMPL->in_buffer, _time);
         } else {
             if (read_n > 0) {
                 HARE_INTERNAL_ERROR("read_callback has not been set for tcp-session[{}].", Name());
@@ -284,15 +279,15 @@ namespace net {
     void TcpSession::HandleWrite()
     {
         if (Event()->Writing()) {
-            auto write_n = d_ptr(impl_)->out_buffer.Write(Fd(), -1);
+            auto write_n = IMPL->out_buffer.Write(Fd(), -1);
             if (write_n >= 0) {
-                if (d_ptr(impl_)->out_buffer.Size() == 0) {
+                if (IMPL->out_buffer.Size() == 0) {
                     Event()->DisableWrite();
                     OwnerCycle()->QueueInCycle(std::bind([=](const WPtr<TcpSession>& session) {
                         auto tcp = session.lock();
                         if (tcp) {
-                            if (d_ptr(impl_)->write) {
-                                d_ptr(impl_)->write(tcp);
+                            if (IMPL->write) {
+                                IMPL->write(tcp);
                             } else {
                                 HARE_INTERNAL_ERROR("write_callback has not been set for tcp-session[{}].", Name());
                             }
@@ -313,43 +308,43 @@ namespace net {
 
     void TcpSession::HandleClose()
     {
-        HARE_INTERNAL_TRACE("fd={} state={}.", Fd(), detail::StateToString(d_ptr(impl_)->state));
-        assert(d_ptr(impl_)->state == STATE_CONNECTED || d_ptr(impl_)->state == STATE_DISCONNECTING);
+        HARE_INTERNAL_TRACE("fd={} state={}.", Fd(), detail::StateToString(IMPL->state));
+        assert(IMPL->state == STATE_CONNECTED || IMPL->state == STATE_DISCONNECTING);
         // we don't close fd, leave it to dtor, so we can find leaks easily.
         SetState(STATE_DISCONNECTED);
-        d_ptr(impl_)->event->DisableRead();
-        d_ptr(impl_)->event->DisableWrite();
-        if (d_ptr(impl_)->connect) {
-            d_ptr(impl_)->connect(shared_from_this(), SESSION_CLOSED);
+        IMPL->event->DisableRead();
+        IMPL->event->DisableWrite();
+        if (IMPL->connect) {
+            IMPL->connect(shared_from_this(), SESSION_CLOSED);
         } else {
-            HARE_INTERNAL_ERROR("connect_callback has not been set for session[{}], session is closed.", d_ptr(impl_)->name);
+            HARE_INTERNAL_ERROR("connect_callback has not been set for session[{}], session is closed.", IMPL->name);
         }
-        d_ptr(impl_)->event->Deactivate();
-        d_ptr(impl_)->destroy();
+        IMPL->event->Deactivate();
+        IMPL->destroy();
     }
 
     void TcpSession::HandleError()
     {
-        if (d_ptr(impl_)->connect) {
-            d_ptr(impl_)->connect(shared_from_this(), SESSION_ERROR);
+        if (IMPL->connect) {
+            IMPL->connect(shared_from_this(), SESSION_ERROR);
         } else {
             HARE_INTERNAL_ERROR("occurred error to the session[{}], detail: {}.",
-                d_ptr(impl_)->name, socket_op::SocketErrorInfo(Fd()));
+                IMPL->name, socket_op::SocketErrorInfo(Fd()));
         }
     }
 
     void TcpSession::ConnectEstablished()
     {
-        assert(d_ptr(impl_)->state == STATE_CONNECTING);
+        assert(IMPL->state == STATE_CONNECTING);
         SetState(STATE_CONNECTED);
-        if (d_ptr(impl_)->connect) {
-            d_ptr(impl_)->connect(shared_from_this(), SESSION_CONNECTED);
+        if (IMPL->connect) {
+            IMPL->connect(shared_from_this(), SESSION_CONNECTED);
         } else {
-            HARE_INTERNAL_ERROR("connect_callback has not been set for session[{}], session connected.", d_ptr(impl_)->name);
+            HARE_INTERNAL_ERROR("connect_callback has not been set for session[{}], session connected.", IMPL->name);
         }
-        d_ptr(impl_)->event->Tie(shared_from_this());
-        d_ptr(impl_)->cycle->EventUpdate(d_ptr(impl_)->event);
-        d_ptr(impl_)->event->EnableRead();
+        IMPL->event->Tie(shared_from_this());
+        IMPL->cycle->EventUpdate(IMPL->event);
+        IMPL->event->EnableRead();
     }
 
 } // namespace net

@@ -44,19 +44,19 @@ namespace io {
 
     Console::~Console()
     {
-        d_ptr(impl_)->console_event->Tie(nullptr);
+        IMPL->console_event->Tie(nullptr);
         delete impl_;
     }
 
     void Console::RegisterDefaultHandle(DefaultHandle _default_handle)
     {
-        d_ptr(impl_)->default_handle = std::move(_default_handle);
+        IMPL->default_handle = std::move(_default_handle);
     }
 
     void Console::RegisterHandle(std::string _handle_mask, Task _handle)
     {
-        assert(!d_ptr(impl_)->attached);
-        d_ptr(impl_)->handlers.emplace(_handle_mask, _handle);
+        assert(!IMPL->attached);
+        IMPL->handlers.emplace(_handle_mask, _handle);
     }
 
     auto Console::Attach(Cycle* _cycle) -> bool
@@ -68,7 +68,7 @@ namespace io {
             auto in_cycle_thread = _cycle->InCycleThread();
             auto cdl = std::make_shared<util::CountDownLatch>(1);
             _cycle->RunInCycle([=] {
-                _cycle->EventUpdate(d_ptr(impl_)->console_event);
+                _cycle->EventUpdate(IMPL->console_event);
                 cdl->CountDown();
             });
 
@@ -77,27 +77,27 @@ namespace io {
             }
 
         } else {
-            _cycle->EventUpdate(d_ptr(impl_)->console_event);
+            _cycle->EventUpdate(IMPL->console_event);
         }
 
-        d_ptr(impl_)->console_event->Tie(d_ptr(impl_)->console_event);
-        d_ptr(impl_)->attached = true;
+        IMPL->console_event->Tie(IMPL->console_event);
+        IMPL->attached = true;
         return true;
     }
 
     Console::Console()
         : impl_(new ConsoleImpl)
     {
-        d_ptr(impl_)->console_event.reset(new Event(STDIN_FILENO,
+        IMPL->console_event.reset(new Event(STDIN_FILENO,
             std::bind(&Console::Process, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
             EVENT_READ | EVENT_PERSIST | EVENT_ET,
             0));
-        d_ptr(impl_)->default_handle = detail::GlobalConsoleHandle;
+        IMPL->default_handle = detail::GlobalConsoleHandle;
     }
 
     void Console::Process(const Ptr<Event>& _event, std::uint8_t _events, const Timestamp& _receive_time)
     {
-        assert(d_ptr(impl_)->console_event == _event);
+        assert(IMPL->console_event == _event);
         if (CHECK_EVENT(_events, EVENT_READ) == 0) {
             HARE_INTERNAL_ERROR("cannot check EVENT_READ.");
             return;
@@ -122,11 +122,11 @@ namespace io {
 
         HARE_INTERNAL_TRACE("recv console input[{}] in {}.", line, _receive_time.ToFmt(true));
 
-        auto iter = d_ptr(impl_)->handlers.find(line);
-        if (iter != d_ptr(impl_)->handlers.end()) {
+        auto iter = IMPL->handlers.find(line);
+        if (iter != IMPL->handlers.end()) {
             iter->second();
         } else {
-            d_ptr(impl_)->default_handle(line);
+            IMPL->default_handle(line);
         }
     }
 

@@ -9,24 +9,24 @@ namespace net {
 
     auto BufferIterator::operator*() noexcept -> char
     {
-        return Valid() ? (*d_ptr(impl_)->iter)->Data()[d_ptr(impl_)->curr_index] : '\0';
+        return Valid() ? (*IMPL->iter)->Data()[IMPL->curr_index] : '\0';
     }
 
     auto BufferIterator::operator++() noexcept -> BufferIterator&
     {
         if (Valid()) {
-            auto* end = d_ptr(impl_)->list->End();
+            auto* end = IMPL->list->End();
 
-            if (d_ptr(impl_)->iter == end && 
-                d_ptr(impl_)->curr_index == (*end)->size()) {
+            if (IMPL->iter == end && 
+                IMPL->curr_index == (*end)->size()) {
                 return (*this);
             }
 
-            ++d_ptr(impl_)->curr_index;
-            if (d_ptr(impl_)->curr_index > (*d_ptr(impl_)->iter)->size()) {
-                d_ptr(impl_)->iter = d_ptr(impl_)->iter->next;
-                d_ptr(impl_)->curr_index = 
-                    hare::detail::ToUnsigned((*d_ptr(impl_)->iter)->Readable() - (*d_ptr(impl_)->iter)->Data());
+            ++IMPL->curr_index;
+            if (IMPL->curr_index > (*IMPL->iter)->size()) {
+                IMPL->iter = IMPL->iter->next;
+                IMPL->curr_index = 
+                    hare::detail::ToUnsigned((*IMPL->iter)->Readable() - (*IMPL->iter)->Data());
             }
         }
         return (*this);
@@ -35,18 +35,18 @@ namespace net {
     auto BufferIterator::operator--() noexcept -> BufferIterator&
     {
         if (Valid()) {
-            auto* begin = d_ptr(impl_)->list->Begin();
-            if (d_ptr(impl_)->iter == begin && 
-                d_ptr(impl_)->curr_index == hare::detail::ToUnsigned((*begin)->Readable() - (*begin)->Data())) {
+            auto* begin = IMPL->list->Begin();
+            if (IMPL->iter == begin && 
+                IMPL->curr_index == hare::detail::ToUnsigned((*begin)->Readable() - (*begin)->Data())) {
                 return (*this);
             }
 
-            if (d_ptr(impl_)->curr_index == 0 || 
-                d_ptr(impl_)->curr_index - 1 < hare::detail::ToUnsigned((*d_ptr(impl_)->iter)->Readable() - (*d_ptr(impl_)->iter)->Data())) {
-                d_ptr(impl_)->iter = d_ptr(impl_)->iter->prev;
-                d_ptr(impl_)->curr_index = (*d_ptr(impl_)->iter)->size();
+            if (IMPL->curr_index == 0 || 
+                IMPL->curr_index - 1 < hare::detail::ToUnsigned((*IMPL->iter)->Readable() - (*IMPL->iter)->Data())) {
+                IMPL->iter = IMPL->iter->prev;
+                IMPL->curr_index = (*IMPL->iter)->size();
             } else {
-                --d_ptr(impl_)->curr_index;
+                --IMPL->curr_index;
             }
         }
         return (*this);

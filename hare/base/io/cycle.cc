@@ -171,9 +171,9 @@ namespace io {
     {
         static detail::GlobalInit s_total_init {};
 
-        d_ptr(impl_)->tid = current_thread::ThreadData().tid;
-        d_ptr(impl_)->notify_event.reset(new detail::EventNotify());
-        d_ptr(impl_)->reactor.reset(Reactor::CreateByType(_type, this));
+        IMPL->tid = current_thread::ThreadData().tid;
+        IMPL->notify_event.reset(new detail::EventNotify());
+        IMPL->reactor.reset(Reactor::CreateByType(_type, this));
 
         if (current_thread::ThreadData().cycle != nullptr) {
             HARE_INTERNAL_FATAL("another cycle[{}] exists in this thread[{:#x}]",
@@ -188,102 +188,102 @@ namespace io {
     {
         // clear thread local data.
         AssertInCycleThread();
-        d_ptr(impl_)->pending_functions.clear();
-        d_ptr(impl_)->notify_event.reset();
+        IMPL->pending_functions.clear();
+        IMPL->notify_event.reset();
         current_thread::ThreadData().cycle = nullptr;
         delete impl_;
     }
 
     auto Cycle::ReactorReturnTime() const -> Timestamp
     {
-        return d_ptr(impl_)->reactor_time;
+        return IMPL->reactor_time;
     }
 
     auto Cycle::EventHandling() const -> bool
     {
-        return d_ptr(impl_)->calling_pending_functions;
+        return IMPL->calling_pending_functions;
     }
 
     auto Cycle::is_running() const -> bool
     {
-        return d_ptr(impl_)->is_running;
+        return IMPL->is_running;
     }
 
     auto Cycle::type() const -> REACTOR_TYPE
     {
-        return d_ptr(impl_)->reactor->type();
+        return IMPL->reactor->type();
     }
 
 #if HARE_DEBUG
 
     auto Cycle::cycle_index() const -> std::uint64_t
     {
-        return d_ptr(impl_)->cycle_index;
+        return IMPL->cycle_index;
     }
 
 #endif
 
     auto Cycle::InCycleThread() const -> bool
     {
-        return d_ptr(impl_)->tid == current_thread::ThreadData().tid;
+        return IMPL->tid == current_thread::ThreadData().tid;
     }
 
     void Cycle::Exec()
     {
-        assert(!d_ptr(impl_)->is_running);
-        d_ptr(impl_)->is_running = true;
-        d_ptr(impl_)->quit = false;
-        EventUpdate(d_ptr(impl_)->notify_event);
-        d_ptr(impl_)->notify_event->Tie(d_ptr(impl_)->notify_event);
+        assert(!IMPL->is_running);
+        IMPL->is_running = true;
+        IMPL->quit = false;
+        EventUpdate(IMPL->notify_event);
+        IMPL->notify_event->Tie(IMPL->notify_event);
 
         HARE_INTERNAL_TRACE("cycle[{}] start running...", (void*)this);
 
-        while (!d_ptr(impl_)->quit) {
-            d_ptr(impl_)->reactor->active_events_.clear();
+        while (!IMPL->quit) {
+            IMPL->reactor->active_events_.clear();
 
-            d_ptr(impl_)->reactor_time = d_ptr(impl_)->reactor->Poll(GetWaitTime(d_ptr(impl_)->reactor->ptimer_));
+            IMPL->reactor_time = IMPL->reactor->Poll(GetWaitTime(IMPL->reactor->ptimer_));
 
 #if HARE_DEBUG
-            ++d_ptr(impl_)->cycle_index;
+            ++IMPL->cycle_index;
 #endif
 
-            PrintActiveEvents(d_ptr(impl_)->reactor->active_events_);
+            PrintActiveEvents(IMPL->reactor->active_events_);
 
             /// TODO(l1ang70): sort event by priority
-            d_ptr(impl_)->event_handling = true;
+            IMPL->event_handling = true;
 
-            for (auto& event_elem : d_ptr(impl_)->reactor->active_events_) {
-                d_ptr(impl_)->current_active_event = event_elem.event;
-                d_ptr(impl_)->current_active_event->HandleEvent(event_elem.revents, d_ptr(impl_)->reactor_time);
-                if (CHECK_EVENT(d_ptr(impl_)->current_active_event->events(), EVENT_PERSIST) == 0) {
-                    EventRemove(d_ptr(impl_)->current_active_event);
+            for (auto& event_elem : IMPL->reactor->active_events_) {
+                IMPL->current_active_event = event_elem.event;
+                IMPL->current_active_event->HandleEvent(event_elem.revents, IMPL->reactor_time);
+                if (CHECK_EVENT(IMPL->current_active_event->events(), EVENT_PERSIST) == 0) {
+                    EventRemove(IMPL->current_active_event);
                 }
             }
-            d_ptr(impl_)->current_active_event.reset();
+            IMPL->current_active_event.reset();
 
-            d_ptr(impl_)->event_handling = false;
+            IMPL->event_handling = false;
 
             NotifyTimer();
             DoPendingFunctions();
         }
 
-        d_ptr(impl_)->notify_event->Deactivate();
-        d_ptr(impl_)->notify_event->Tie(nullptr);
-        d_ptr(impl_)->is_running = false;
+        IMPL->notify_event->Deactivate();
+        IMPL->notify_event->Tie(nullptr);
+        IMPL->is_running = false;
 
-        d_ptr(impl_)->reactor->active_events_.clear();
-        for (const auto& event : d_ptr(impl_)->reactor->events_) {
+        IMPL->reactor->active_events_.clear();
+        for (const auto& event : IMPL->reactor->events_) {
             event.second->Reset();
         }
-        d_ptr(impl_)->reactor->events_.clear();
-        PriorityTimer().swap(d_ptr(impl_)->reactor->ptimer_);
+        IMPL->reactor->events_.clear();
+        PriorityTimer().swap(IMPL->reactor->ptimer_);
 
         HARE_INTERNAL_TRACE("cycle[{}] stop running...", (void*)this);
     }
 
     void Cycle::Exit()
     {
-        d_ptr(impl_)->quit = true;
+        IMPL->quit = true;
 
         /**
          * @brief There is a chance that loop() just executes while(!quit_) and exits,
@@ -306,8 +306,8 @@ namespace io {
     void Cycle::QueueInCycle(Task _task)
     {
         {
-            std::lock_guard<std::mutex> guard(d_ptr(impl_)->functions_mutex);
-            d_ptr(impl_)->pending_functions.push_back(std::move(_task));
+            std::lock_guard<std::mutex> guard(IMPL->functions_mutex);
+            IMPL->pending_functions.push_back(std::move(_task));
         }
 
         if (!InCycleThread()) {
@@ -317,8 +317,8 @@ namespace io {
 
     auto Cycle::QueueSize() const -> std::size_t
     {
-        std::lock_guard<std::mutex> guard(d_ptr(impl_)->functions_mutex);
-        return d_ptr(impl_)->pending_functions.size();
+        std::lock_guard<std::mutex> guard(IMPL->functions_mutex);
+        return IMPL->pending_functions.size();
     }
 
     void Cycle::EventUpdate(const hare::Ptr<Event>& _event)
@@ -337,7 +337,7 @@ namespace io {
             bool ret = true;
 
             if (sevent->fd() >= 0) {
-                ret = d_ptr(impl_)->reactor->EventUpdate(sevent);
+                ret = IMPL->reactor->EventUpdate(sevent);
             }
 
             if (!ret) {
@@ -345,18 +345,18 @@ namespace io {
             }
 
             if (sevent->id() == -1) {
-                sevent->Active(this, d_ptr(impl_)->event_id++);
+                sevent->Active(this, IMPL->event_id++);
 
-                assert(d_ptr(impl_)->reactor->events_.find(sevent->id()) == d_ptr(impl_)->reactor->events_.end());
-                d_ptr(impl_)->reactor->events_.insert(std::make_pair(sevent->id(), sevent));
+                assert(IMPL->reactor->events_.find(sevent->id()) == IMPL->reactor->events_.end());
+                IMPL->reactor->events_.insert(std::make_pair(sevent->id(), sevent));
 
                 if (sevent->fd() >= 0) {
-                    d_ptr(impl_)->reactor->inverse_map_.insert(std::make_pair(sevent->fd(), sevent->id()));
+                    IMPL->reactor->inverse_map_.insert(std::make_pair(sevent->fd(), sevent->id()));
                 }
             }
 
             if (CHECK_EVENT(sevent->events(), EVENT_TIMEOUT) != 0) {
-                d_ptr(impl_)->reactor->ptimer_.emplace(sevent->id(),
+                IMPL->reactor->ptimer_.emplace(sevent->id(),
                     Timestamp(Timestamp::Now().microseconds_since_epoch() + sevent->timeval()));
             }
         },
@@ -383,8 +383,8 @@ namespace io {
             auto event_id = sevent->id();
             auto socket = sevent->fd();
 
-            auto iter = d_ptr(impl_)->reactor->events_.find(event_id);
-            if (iter == d_ptr(impl_)->reactor->events_.end()) {
+            auto iter = IMPL->reactor->events_.find(event_id);
+            if (iter == IMPL->reactor->events_.end()) {
                 HARE_INTERNAL_ERROR("cannot find event in cycle[{}]", (void*)this);
             } else {
                 assert(iter->second == sevent);
@@ -392,11 +392,11 @@ namespace io {
                 sevent->Reset();
 
                 if (socket >= 0) {
-                    d_ptr(impl_)->reactor->EventRemove(sevent);
-                    d_ptr(impl_)->reactor->inverse_map_.erase(socket);
+                    IMPL->reactor->EventRemove(sevent);
+                    IMPL->reactor->inverse_map_.erase(socket);
                 }
 
-                d_ptr(impl_)->reactor->events_.erase(iter);
+                IMPL->reactor->events_.erase(iter);
             }
         },
             _event));
@@ -408,47 +408,47 @@ namespace io {
             return false;
         }
         AssertInCycleThread();
-        return d_ptr(impl_)->reactor->events_.find(_event->id()) != d_ptr(impl_)->reactor->events_.end();
+        return IMPL->reactor->events_.find(_event->id()) != IMPL->reactor->events_.end();
     }
 
     void Cycle::Notify()
     {
-        d_ptr(impl_)->notify_event->SendNotify();
+        IMPL->notify_event->SendNotify();
     }
 
     void Cycle::AbortNotCycleThread()
     {
         HARE_INTERNAL_FATAL("cycle[{}] was created in thread[{:#x}], current thread is: {:#x}",
-            (void*)this, d_ptr(impl_)->tid, current_thread::ThreadData().tid);
+            (void*)this, IMPL->tid, current_thread::ThreadData().tid);
     }
 
     void Cycle::DoPendingFunctions()
     {
         std::list<Task> functions {};
-        d_ptr(impl_)->calling_pending_functions = true;
+        IMPL->calling_pending_functions = true;
 
         {
-            std::lock_guard<std::mutex> guard(d_ptr(impl_)->functions_mutex);
-            functions.swap(d_ptr(impl_)->pending_functions);
+            std::lock_guard<std::mutex> guard(IMPL->functions_mutex);
+            functions.swap(IMPL->pending_functions);
         }
 
         for (const auto& function : functions) {
             function();
         }
 
-        d_ptr(impl_)->calling_pending_functions = false;
+        IMPL->calling_pending_functions = false;
     }
 
     void Cycle::NotifyTimer()
     {
-        auto& priority_event = d_ptr(impl_)->reactor->ptimer_;
-        auto& events = d_ptr(impl_)->reactor->events_;
+        auto& priority_event = IMPL->reactor->ptimer_;
+        auto& events = IMPL->reactor->events_;
         const auto revent = EVENT_TIMEOUT;
         auto now = Timestamp::Now();
 
         while (!priority_event.empty()) {
             auto top = priority_event.top();
-            if (d_ptr(impl_)->reactor_time < top.stamp) {
+            if (IMPL->reactor_time < top.stamp) {
                 break;
             }
             auto iter = events.find(top.id);
@@ -458,7 +458,7 @@ namespace io {
                     HARE_INTERNAL_TRACE("event[{}] trigged.", (void*)iter->second.get());
                     event->HandleEvent(revent, now);
                     if ((event->events() & EVENT_PERSIST) != 0) {
-                        priority_event.emplace(top.id, Timestamp(d_ptr(impl_)->reactor_time.microseconds_since_epoch() + event->timeval()));
+                        priority_event.emplace(top.id, Timestamp(IMPL->reactor_time.microseconds_since_epoch() + event->timeval()));
                     } else {
                         EventRemove(event);
                     }

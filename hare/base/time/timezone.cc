@@ -232,9 +232,9 @@ Timezone::Timezone()
 Timezone::Timezone(std::int32_t east_of_utc, const char* name)
     : Timezone()
 {
-    d_ptr(impl_)->AddLocalTime(east_of_utc, false, 0);
-    d_ptr(impl_)->abbreviation = name;
-    d_ptr(impl_)->valid = true;
+    IMPL->AddLocalTime(east_of_utc, false, 0);
+    IMPL->abbreviation = name;
+    IMPL->valid = true;
 }
 
 Timezone::~Timezone()
@@ -246,7 +246,7 @@ Timezone::Timezone(const Timezone& another)
     : Timezone()
 {
     if (another) {
-        d_ptr(another.impl_)->Clone(d_ptr(impl_));
+        d_ptr(another.impl_)->Clone(IMPL);
     }
 }
 
@@ -257,7 +257,7 @@ auto Timezone::operator=(const Timezone& another) -> Timezone&
     }
 
     if (another) {
-        d_ptr(another.impl_)->Clone(d_ptr(impl_));
+        d_ptr(another.impl_)->Clone(IMPL);
     }
     return (*this);
 }
@@ -277,14 +277,14 @@ auto Timezone::FromUtcTime(const struct time::DateTime& _dt) -> std::int64_t
 
 Timezone::operator bool() const
 {
-    return d_ptr(impl_)->valid;
+    return IMPL->valid;
 }
 
 auto Timezone::ToLocal(std::int64_t _seconds, std::int32_t* _utc_offset) const -> struct time::DateTime {
-    assert(d_ptr(impl_)->valid);
+    assert(IMPL->valid);
 
     struct time::DateTime local_time { };
-    const auto* local = d_ptr(impl_) -> FindLocalTime(_seconds);
+    const auto* local = IMPL -> FindLocalTime(_seconds);
 
     if (local != nullptr) {
         local_time = detail::BreakTime(_seconds + local->utc_offset);
@@ -298,8 +298,8 @@ auto Timezone::ToLocal(std::int64_t _seconds, std::int32_t* _utc_offset) const -
 
 auto Timezone::FromLocal(const struct time::DateTime& _dt, bool _post_transition) const -> std::int64_t
 {
-    assert(d_ptr(impl_)->valid);
-    const auto* local = d_ptr(impl_)->FindLocalTime(_dt, _post_transition);
+    assert(IMPL->valid);
+    const auto* local = IMPL->FindLocalTime(_dt, _post_transition);
     const auto local_seconds = FromUtcTime(_dt);
     if (local != nullptr) {
         return local_seconds - local->utc_offset;

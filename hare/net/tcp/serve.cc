@@ -35,39 +35,39 @@ namespace net {
     TcpServe::TcpServe(io::Cycle* _cycle, std::string _name)
         : impl_(new TcpServeImpl)
     {
-        d_ptr(impl_)->name = std::move(_name);
-        d_ptr(impl_)->cycle = _cycle;
+        IMPL->name = std::move(_name);
+        IMPL->cycle = _cycle;
     }
 
     TcpServe::~TcpServe()
     {
-        assert(!d_ptr(impl_)->started_);
+        assert(!IMPL->started_);
         delete impl_;
     }
 
     auto TcpServe::MainCycle() const -> io::Cycle*
     {
-        return d_ptr(impl_)->cycle;
+        return IMPL->cycle;
     }
 
     auto TcpServe::IsRunning() const -> bool
     {
-        return d_ptr(impl_)->started;
+        return IMPL->started;
     }
 
     void TcpServe::SetNewSession(NewSessionCallback _new_session)
     {
-        d_ptr(impl_)->new_session = std::move(_new_session);
+        IMPL->new_session = std::move(_new_session);
     }
 
     auto TcpServe::AddAcceptor(const Ptr<Acceptor>& _acceptor) -> bool
     {
         util::CountDownLatch cdl(1);
-        auto in_cycle = d_ptr(impl_)->cycle->InCycleThread();
+        auto in_cycle = IMPL->cycle->InCycleThread();
         auto added { false };
 
-        d_ptr(impl_)->cycle->RunInCycle([&] {
-            d_ptr(impl_)->cycle->EventUpdate(_acceptor);
+        IMPL->cycle->RunInCycle([&] {
+            IMPL->cycle->EventUpdate(_acceptor);
             _acceptor->SetNewSession(std::bind(&TcpServe::NewSession, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
             auto ret = _acceptor->Listen();
             if (!ret) {
@@ -91,46 +91,46 @@ namespace net {
 
     auto TcpServe::Exec(std::int32_t _thread_nbr) -> Error
     {
-        assert(d_ptr(impl_)->cycle_ != nullptr);
+        assert(IMPL->cycle_ != nullptr);
 
-        d_ptr(impl_)->io_pool = std::make_shared<IOPool<Ptr<TcpSession>>>("SERVER_WORKER");
-        auto ret = d_ptr(impl_)->io_pool->Start(d_ptr(impl_)->cycle->type(), _thread_nbr);
+        IMPL->io_pool = std::make_shared<IOPool<Ptr<TcpSession>>>("SERVER_WORKER");
+        auto ret = IMPL->io_pool->Start(IMPL->cycle->type(), _thread_nbr);
         if (!ret) {
             return Error(ERROR_INIT_IO_POOL);
         }
 
-        d_ptr(impl_)->started = true;
-        d_ptr(impl_)->cycle->Exec();
-        d_ptr(impl_)->started = false;
+        IMPL->started = true;
+        IMPL->cycle->Exec();
+        IMPL->started = false;
 
         HARE_INTERNAL_TRACE("clean io pool...");
-        d_ptr(impl_)->io_pool->Stop();
-        d_ptr(impl_)->io_pool.reset();
+        IMPL->io_pool->Stop();
+        IMPL->io_pool.reset();
 
         return Error();
     }
 
     void TcpServe::Exit()
     {
-        d_ptr(impl_)->cycle->Exit();
+        IMPL->cycle->Exit();
     }
 
     void TcpServe::NewSession(util_socket_t _fd, HostAddress& _address, const Timestamp& _time, Acceptor* _acceptor)
     {
-        assert(d_ptr(impl_)->started_);
-        d_ptr(impl_)->cycle->AssertInCycleThread();
+        assert(IMPL->started_);
+        IMPL->cycle->AssertInCycleThread();
 
-        auto next_item = d_ptr(impl_)->io_pool->GetNextItem();
+        auto next_item = IMPL->io_pool->GetNextItem();
         Ptr<TcpSession> tcp_session { nullptr };
         std::string name_cache {};
 
         assert(_fd != -1);
         auto local_addr = HostAddress::LocalAddress(_fd);
 
-        name_cache = fmt::format("{}-{}#tcp{}", d_ptr(impl_)->name, local_addr.ToIpPort(), d_ptr(impl_)->session_id++);
+        name_cache = fmt::format("{}-{}#tcp{}", IMPL->name, local_addr.ToIpPort(), IMPL->session_id++);
 
         HARE_INTERNAL_TRACE("new session[{}] in serve[{}] from {} in {}.",
-            name_cache, d_ptr(impl_)->name_, _address.ToIpPort(), _time.ToFmt());
+            name_cache, IMPL->name_, _address.ToIpPort(), _time.ToFmt());
 
         tcp_session.reset(new TcpSession(next_item->cycle.get(),
             std::move(local_addr),
@@ -154,8 +154,8 @@ namespace net {
 
         next_item->cycle->RunInCycle([=]() mutable {
             assert(next_item->sessions.find(sfd) == next_item->sessions.end());
-            if (!d_ptr(impl_)->new_session) {
-                HARE_INTERNAL_ERROR("you need register new_session_callback to serve[{}].", d_ptr(impl_)->name);
+            if (!IMPL->new_session) {
+                HARE_INTERNAL_ERROR("you need register new_session_callback to serve[{}].", IMPL->name);
                 if (sfd != -1) {
                     socket_op::Close(sfd);
                 }
@@ -163,7 +163,7 @@ namespace net {
             }
 
             next_item->sessions.insert(std::make_pair(sfd, tcp_session));
-            d_ptr(impl_)->new_session(tcp_session, _time, std::static_pointer_cast<Acceptor>(_acceptor->shared_from_this()));
+            IMPL->new_session(tcp_session, _time, std::static_pointer_cast<Acceptor>(_acceptor->shared_from_this()));
             tcp_session->ConnectEstablished();
         });
     }

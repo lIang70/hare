@@ -78,7 +78,7 @@ namespace net {
         auto Append(Buffer& _buffer) -> bool;
         auto Send(const void* _bytes, std::size_t _length) -> bool;
 
-        auto SetTcpNoDelay(bool _on) -> Error;
+        HARE_INLINE auto SetTcpNoDelay(bool _on) -> Error { return Socket().SetTcpNoDelay(_on); }
 
     protected:
         TcpSession(io::Cycle* _cycle,
