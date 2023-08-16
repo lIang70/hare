@@ -9,6 +9,7 @@
 #include <hare/hare-config.h>
 
 #include <algorithm>
+#include <atomic>
 #include <cerrno>
 #include <csignal>
 #include <list>
@@ -160,7 +161,7 @@ namespace io {
         Ptr<detail::EventNotify> notify_event { nullptr };
         Ptr<Reactor> reactor { nullptr };
         Ptr<Event> current_active_event { nullptr };
-        Event::Id event_id { 0 };
+        std::atomic<Event::Id> event_id { 0 };
 
         mutable std::mutex functions_mutex {};
         std::list<Task> pending_functions {};
@@ -329,12 +330,12 @@ namespace io {
             return -1;
         }
         auto timer = std::make_shared<Timer>(_task, _delay);
-        util::CountDownLatch cdl { 1 };
+        auto id = IMPL->event_id.fetch_add(1);
 
-        RunInCycle([&, timer] {
+        RunInCycle([=] {
             assert(timer->id() == -1);
 
-            timer->Active(this, IMPL->event_id++);
+            timer->Active(this, id);
             assert(IMPL->reactor->events_.find(timer->id()) == IMPL->reactor->events_.end());
             IMPL->reactor->events_.insert(std::make_pair(timer->id(), timer));
 
@@ -342,14 +343,9 @@ namespace io {
             IMPL->reactor->ptimer_.emplace(timer->id(),
                 Timestamp(Timestamp::Now().microseconds_since_epoch() + timer->timeval()));
 
-            cdl.CountDown();
         });
 
-        if (!InCycleThread()) {
-            cdl.Await();
-        }
-
-        return timer->id();
+        return id;
     }
 
     auto Cycle::RunEvery(const Task& _task, std::int64_t _delay) -> Event::Id
@@ -359,27 +355,21 @@ namespace io {
         }
         
         auto timer = std::make_shared<Timer>(_task, _delay, true);
-        util::CountDownLatch cdl { 1 };
+        auto id = IMPL->event_id.fetch_add(1);
 
-        RunInCycle([&, timer] {
+        RunInCycle([=] {
             assert(timer->id() == -1);
 
-            timer->Active(this, IMPL->event_id++);
+            timer->Active(this, id);
             assert(IMPL->reactor->events_.find(timer->id()) == IMPL->reactor->events_.end());
             IMPL->reactor->events_.insert(std::make_pair(timer->id(), timer));
 
             assert(CHECK_EVENT(timer->events(), EVENT_TIMEOUT) != 0);
             IMPL->reactor->ptimer_.emplace(timer->id(),
                 Timestamp(Timestamp::Now().microseconds_since_epoch() + timer->timeval()));
-
-            cdl.CountDown();
         });
 
-        if (!InCycleThread()) {
-            cdl.Await();
-        }
-
-        return timer->id();
+        return id;
     }
 
     void Cycle::Cancel(Event::Id _event_id)
@@ -435,7 +425,7 @@ namespace io {
             }
 
             if (sevent->id() == -1) {
-                sevent->Active(this, IMPL->event_id++);
+                sevent->Active(this, IMPL->event_id.fetch_add(1));
 
                 assert(IMPL->reactor->events_.find(sevent->id()) == IMPL->reactor->events_.end());
                 IMPL->reactor->events_.insert(std::make_pair(sevent->id(), sevent));

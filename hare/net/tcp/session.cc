@@ -320,6 +320,7 @@ namespace net {
             HARE_INTERNAL_ERROR("connect_callback has not been set for session[{}], session is closed.", IMPL->name);
         }
         IMPL->event->Deactivate();
+        assert(IMPL->destroy);
         IMPL->destroy();
     }
 
