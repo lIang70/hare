@@ -10,39 +10,15 @@
 #define _HARE_CONFIG_H_
 
 /* Numeric representation of the version */
-#define HARE__NUMERIC_VERSION @HARE_NUMERIC_VERSION@
-#define HARE__PACKAGE_VERSION "@HARE_PACKAGE_VERSION@"
-
-#define HARE__VERSION_MAJOR @HARE_VERSION_MAJOR@
-#define HARE__VERSION_MINOR @HARE_VERSION_MINOR@
-#define HARE__VERSION_PATCH @HARE_VERSION_PATCH@
+#define HARE__VERSION_MAJOR @PROJECT_VERSION_MAJOR@
+#define HARE__VERSION_MINOR @PROJECT_VERSION_MINOR@
+#define HARE__VERSION_PATCH @PROJECT_VERSION_PATCH@
 
 /* Version number of package */
-#define HARE__VERSION "@HARE_VERSION@"
+#define HARE__VERSION "@PROJECT_VERSION_MAJOR@.@PROJECT_VERSION_MINOR@.@PROJECT_VERSION_PATCH@"
 
 /* Name of package */
-#define HARE__PACKAGE "hare"
-
-/* Define to the address where bug reports for this package should be sent. */
-#define HARE__PACKAGE_BUGREPORT ""
-
-/* Define to the full name of this package. */
-#define HARE__PACKAGE_NAME ""
-
-/* Define to the full name and version of this package. */
-#define HARE__PACKAGE_STRING ""
-
-/* Define to the one symbol short name of this package. */
-#define HARE__PACKAGE_TARNAME ""
-
-/* Define if libevent should build without support for a debug mode */
-#cmakedefine HARE__DISABLE_DEBUG_MODE 1
-
-/* Define if libevent should not allow replacing the mm functions */
-#cmakedefine HARE__DISABLE_MM_REPLACEMENT 1
-
-/* Define if libevent should not be compiled with thread support */
-#cmakedefine HARE__DISABLE_THREAD_SUPPORT 1
+#define HARE__PACKAGE "libhare"
 
 /* Define to 1 if you have the `accept4' function. */
 #cmakedefine HARE__HAVE_ACCEPT4 1
