@@ -35,11 +35,11 @@ if(NOT HARE__BUILD_TESTS)
     option(HARE__BUILD_TESTS "Build all of own tests." OFF)
 endif()
 
-if(NOT BUILD_WITH_DEBUGINFO)
-    option(BUILD_WITH_DEBUGINFO "Build with DEBUG-INFO" OFF)
+if(NOT HARE__WITH_DEBUGINFO)
+    option(HARE__WITH_DEBUGINFO "Build with DEBUG-INFO" OFF)
 endif()
 
-if(BUILD_WITH_DEBUGINFO)
+if(HARE__WITH_DEBUGINFO)
     add_definitions(-DHARE_DEBUG)
     set(CMAKE_BUILD_TYPE Debug)
 
