@@ -178,39 +178,20 @@ configure_file(
     ${CMAKE_CURRENT_BINARY_DIR}/include/hare/hare-config.h
     NEWLINE_STYLE UNIX)
 
-find_package(PkgConfig)
-
-if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../lib/jemalloc/" AND IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../lib/jemalloc/")
-    message(STATUS "Jemalloc is built")
-
-    if(PKG_CONFIG_FOUND)
-        set(ENV{PKG_CONFIG_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/../lib/jemalloc/lib/pkgconfig:$ENV{PKG_CONFIG_PATH})
-        pkg_search_module(Jemalloc REQUIRED IMPORTED_TARGET jemalloc>=5.3)
-        set(JEMALLOC_FOUND ON)
-    endif(PKG_CONFIG_FOUND)
-else()
-    message(STATUS "Jemalloc need to be built")
-    set(JEMALLOC_FOUND OFF)
-endif()
-
-if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../lib/openssl/" AND IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../lib/openssl/")
-    message(STATUS "OpenSSL is built")
-    set(ENV{PKG_CONFIG_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/../lib/openssl/lib64/pkgconfig:$ENV{PKG_CONFIG_PATH})
-    find_package(OpenSSL REQUIRED SSL Crypto)
-    include_directories(${OPENSSL_INCLUDE_DIR})
-else()
-    message(STATUS "OpenSSL need to be built")
-endif()
-
-if(OPENSSL_FOUND)
-    message(STATUS "OPENSSL_VERSION = ${OPENSSL_VERSION}")
-    message(STATUS "OPENSSL_INCLUDE_DIR = ${OPENSSL_INCLUDE_DIR}")
-    message(STATUS "OPENSSL_LIBRARIES = ${OPENSSL_LIBRARIES}")
-endif(OPENSSL_FOUND)
-
 # Add hare-config
 include_directories(${HARE_INCLUDE_DIR} ${FMT_INCLUDE_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR}/include)
+
+find_package(PkgConfig REQUIRED)
+if(PKG_CONFIG_FOUND)
+    pkg_search_module(Jemalloc REQUIRED IMPORTED_TARGET jemalloc>=5.3)
+    set(JEMALLOC_FOUND ON)
+else()
+    set(JEMALLOC_FOUND OFF)
+endif(PKG_CONFIG_FOUND)
+include_directories(${JEMALLOC_INCLUDE_DIRS})
+
+find_package(OpenSSL REQUIRED SSL Crypto COMPONENTS)
 
 add_subdirectory(base)
 add_subdirectory(log)
