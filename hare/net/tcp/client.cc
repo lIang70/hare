@@ -1,5 +1,5 @@
-#include "hare/base/fwd-inl.h"
-#include "hare/base/io/socket_op-inl.h"
+#include "base/fwd-inl.h"
+#include "base/io/socket_op-inl.h"
 #include <hare/base/io/cycle.h>
 #include <hare/base/util/count_down_latch.h>
 #include <hare/net/tcp/client.h>

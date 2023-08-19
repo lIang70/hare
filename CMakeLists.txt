@@ -69,8 +69,6 @@ endif()
 
 message(STATUS "CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
 
-add_subdirectory(3rdparty)
-
 if(HARE__BUILD_TESTS)
     if(CMAKE_HOST_SYSTEM_NAME MATCHES "Windows")
         set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
@@ -86,4 +84,14 @@ if(HARE__BUILD_TESTS)
     include(GoogleTest)
 endif(HARE__BUILD_TESTS)
 
+set(CMAKE_FILES_DIR "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+set(HARE_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/include")
+
+set(HARE_VERSION_MAJOR ${PROJECT_VERSION_MAJOR})
+set(HARE_VERSION_MINOR ${PROJECT_VERSION_MINOR})
+set(HARE_VERSION_PATCH ${PROJECT_VERSION_PATCH})
+
+add_subdirectory(3rdparty)
 add_subdirectory(hare)
+
+unset(CMAKE_FILES_DIR)

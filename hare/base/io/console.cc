@@ -1,5 +1,5 @@
-#include "hare/base/fwd-inl.h"
-#include "hare/base/io/reactor.h"
+#include "base/fwd-inl.h"
+#include "base/io/reactor.h"
 #include <hare/base/io/console.h>
 #include <hare/base/util/count_down_latch.h>
 #include <hare/hare-config.h>

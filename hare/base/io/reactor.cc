@@ -1,15 +1,15 @@
-#include "hare/base/io/reactor.h"
-#include "hare/base/fwd-inl.h"
+#include "base/io/reactor.h"
+#include "base/fwd-inl.h"
 #include <hare/base/exception.h>
 #include <hare/base/io/event.h>
 #include <hare/hare-config.h>
 
 #if HARE__HAVE_EPOLL
-#include "hare/base/io/reactor/reactor_epoll.h"
+#include "base/io/reactor/reactor_epoll.h"
 #endif
 
 #if HARE__HAVE_POLL
-#include "hare/base/io/reactor/reactor_poll.h"
+#include "base/io/reactor/reactor_poll.h"
 #endif
 
 namespace hare {

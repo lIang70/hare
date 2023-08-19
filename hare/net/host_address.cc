@@ -1,5 +1,5 @@
-#include "hare/base/fwd-inl.h"
-#include "hare/base/io/socket_op-inl.h"
+#include "base/fwd-inl.h"
+#include "base/io/socket_op-inl.h"
 #include <hare/hare-config.h>
 #include <hare/net/host_address.h>
 

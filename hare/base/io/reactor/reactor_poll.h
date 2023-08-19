@@ -1,7 +1,7 @@
 #ifndef _HARE_BASE_IO_REACTOR_POLL_H_
 #define _HARE_BASE_IO_REACTOR_POLL_H_
 
-#include "hare/base/io/reactor.h"
+#include "base/io/reactor.h"
 #include <hare/hare-config.h>
 
 #include <map>

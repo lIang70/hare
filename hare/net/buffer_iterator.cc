@@ -1,5 +1,5 @@
-#include "hare/base/fwd-inl.h"
-#include "hare/net/buffer-inl.h"
+#include "base/fwd-inl.h"
+#include "net/buffer-inl.h"
 
 namespace hare {
 namespace net {

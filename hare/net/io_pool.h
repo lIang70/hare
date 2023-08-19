@@ -1,7 +1,7 @@
 #ifndef _HARE_NET_IO_POOL_H_
 #define _HARE_NET_IO_POOL_H_
 
-#include "hare/base/fwd-inl.h"
+#include "base/fwd-inl.h"
 #include <hare/base/io/cycle.h>
 #include <hare/base/util/count_down_latch.h>
 #include <hare/base/util/system.h>

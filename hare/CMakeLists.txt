@@ -1,4 +1,4 @@
-﻿include(macors.cmake)
+﻿include(${CMAKE_FILES_DIR}/check_file_symbol.cmake)
 
 # Check if header files exist
 list(APPEND FILES_TO_CHECK
@@ -186,60 +186,12 @@ if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../lib/jemalloc/" AND IS_DIRECTORY "${CMA
     if(PKG_CONFIG_FOUND)
         set(ENV{PKG_CONFIG_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/../lib/jemalloc/lib/pkgconfig:$ENV{PKG_CONFIG_PATH})
         pkg_search_module(Jemalloc REQUIRED IMPORTED_TARGET jemalloc>=5.3)
-        option(JEMALLOC_FOUND ON)
+        set(JEMALLOC_FOUND ON)
     endif(PKG_CONFIG_FOUND)
 else()
     message(STATUS "Jemalloc need to be built")
-    option(JEMALLOC_FOUND OFF)
+    set(JEMALLOC_FOUND OFF)
 endif()
-
-# Add hare-config
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../include ${CMAKE_CURRENT_SOURCE_DIR}/../ ${CMAKE_CURRENT_BINARY_DIR}/include)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../3rdparty/fmt/include)
-
-# Add hare_base's src
-file(GLOB HARE_BASE_SOURCES
-    "base/*.cc"
-    "base/time/*.cc"
-    "base/util/*.cc"
-    "base/io/*.cc"
-    "base/io/reactor/*.cc"
-)
-
-# Add the source code to the project's executable。
-add_library(hare_base ${HARE__LIBRARY_TYPE} ${HARE_BASE_SOURCES})
-target_include_directories(hare_base PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../include/hare/base/)
-
-if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
-    set_target_properties(hare_base PROPERTIES COMPILE_FLAGS "/EHsc")
-endif()
-
-if(HARE__BUILD_TESTS)
-    add_subdirectory(base/tests)
-endif(HARE__BUILD_TESTS)
-
-# Add hare_base's src
-file(GLOB HARE_LOG_SOURCES
-    "log/*.cc"
-    "log/backends/*.cc"
-    "log/details/*.cc"
-)
-
-# Add the source code to the project's executable。
-add_library(hare_log ${HARE__LIBRARY_TYPE} ${HARE_LOG_SOURCES})
-target_include_directories(hare_log PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/../include/hare/log/
-    ${CMAKE_CURRENT_SOURCE_DIR}/../3rdparty/fmt/include/)
-
-target_link_libraries(hare_log hare_base)
-
-if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
-    set_target_properties(hare_log PROPERTIES COMPILE_FLAGS "/EHsc")
-endif()
-
-if(HARE__BUILD_TESTS)
-    add_subdirectory(log/tests)
-endif(HARE__BUILD_TESTS)
 
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../lib/openssl/" AND IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../lib/openssl/")
     message(STATUS "OpenSSL is built")
@@ -256,22 +208,10 @@ if(OPENSSL_FOUND)
     message(STATUS "OPENSSL_LIBRARIES = ${OPENSSL_LIBRARIES}")
 endif(OPENSSL_FOUND)
 
-# Add hare_net's src
-file(GLOB HARE_NET_SOURCES
-    "net/*.cc"
-    "net/tcp/*.cc"
-)
+# Add hare-config
+include_directories(${HARE_INCLUDE_DIR} ${FMT_INCLUDE_DIR})
+include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR}/include)
 
-# Add the source code to the project's executable。
-add_library(hare_net ${HARE__LIBRARY_TYPE} ${HARE_NET_SOURCES})
-target_include_directories(hare_net PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../include/hare/net/)
-target_link_libraries(hare_net hare_base ${OPENSSL_LIBRARIES})
-
-if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
-    set_target_properties(hare_net PROPERTIES COMPILE_FLAGS "/EHsc")
-endif()
-
-if(HARE__BUILD_TESTS)
-    add_subdirectory(net/tests)
-    add_subdirectory(net/samples)
-endif(HARE__BUILD_TESTS)
+add_subdirectory(base)
+add_subdirectory(log)
+add_subdirectory(net)
