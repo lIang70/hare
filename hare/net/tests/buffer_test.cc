@@ -7,7 +7,7 @@
 TEST(BufferTest, testAddRemove)
 {
     using hare::net::Buffer;
-    buffer test_buffer {};
+    Buffer test_buffer {};
 
     constexpr std::size_t big_buffer_size { 0xc000 };
     constexpr std::size_t mid_buffer_size { 0x8000 };
@@ -31,8 +31,8 @@ TEST(BufferTest, testAddRemove)
 TEST(BufferTest, testAppend)
 {
     using hare::net::Buffer;
-    buffer test_buffer1 {};
-    buffer test_buffer2 {};
+    Buffer test_buffer1 {};
+    Buffer test_buffer2 {};
 
     constexpr std::size_t big_buffer_size { 0xc000 };
     constexpr std::size_t mid_buffer_size { 0x8000 };
