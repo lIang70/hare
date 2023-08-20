@@ -24,8 +24,6 @@
 #include <io.h>
 #include <iphlpapi.h>
 #include <sys/stat.h>
-#pragma comment(lib, "Iphlpapi.lib")
-#pragma comment(lib, "WS2_32.lib")
 
 #define getcwd _getcwd
 #define getpid _getpid
@@ -176,7 +174,6 @@ namespace util {
 #ifndef H_OS_WIN
 #define PROCESS_ITEM 14
             // get specific pid cpu use time
-            std::uint32_t tmp_pid {};
             std::uint64_t user_time {};
             std::uint64_t system_time {};
             std::uint64_t cutime {}; // all user time

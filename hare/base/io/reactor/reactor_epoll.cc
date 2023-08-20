@@ -15,7 +15,7 @@ namespace io {
     namespace detail {
         const std::int32_t kInitEventsCnt = 16;
 
-        auto OperationToString(std::int32_t _op) -> std::string
+        static auto OperationToString(std::int32_t _op) -> std::string
         {
             switch (_op) {
             case EPOLL_CTL_ADD:
@@ -30,7 +30,7 @@ namespace io {
             }
         }
 
-        auto DecodeEpoll(std::uint8_t _events) -> decltype(epoll_event::events)
+        static auto DecodeEpoll(std::uint8_t _events) -> decltype(epoll_event::events)
         {
             decltype(epoll_event::events) events = 0;
             if (CHECK_EVENT(_events, EVENT_READ) != 0) {
@@ -45,7 +45,7 @@ namespace io {
             return events;
         }
 
-        auto EncodeEpoll(decltype(epoll_event::events) _events) -> std::uint8_t
+        static auto EncodeEpoll(decltype(epoll_event::events) _events) -> std::uint8_t
         {
             std::uint8_t events { EVENT_DEFAULT };
 

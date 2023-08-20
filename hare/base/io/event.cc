@@ -9,7 +9,7 @@ namespace io {
 
     namespace detail {
 
-        auto EventsToString(util_socket_t _fd, std::uint8_t _events) -> std::string
+        static auto EventsToString(util_socket_t _fd, std::uint8_t _events) -> std::string
         {
             std::stringstream oss {};
             oss << _fd << ": ";

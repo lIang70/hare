@@ -1,29 +1,21 @@
-project(hare_log
-    VERSION ${HARE_VERSION_MAJOR}.${HARE_VERSION_MINOR}.${HARE_VERSION_PATCH}
-    LANGUAGES CXX
-)
-
 # Add hare_log's src
-file(GLOB PROJECT_SOURCES
+file(GLOB LOG_SOURCES
     "*.cc"
     "backends/*.cc"
     "details/*.cc"
 )
 
-# Add the source code to the project's library.
-add_library(${PROJECT_NAME} ${HARE__LIBRARY_TYPE} ${PROJECT_SOURCES})
-target_include_directories(${PROJECT_NAME} PUBLIC
-    ${HARE_INCLUDE_DIR}/hare/log/
-    ${CMAKE_CURRENT_SOURCE_DIR}/../3rdparty/fmt/include/)
-
 if(JEMALLOC_FOUND)
-    target_link_libraries(${PROJECT_NAME} hare_base PkgConfig::Jemalloc)
+    add_hare_library(hare_log
+        INNER_LIBRARIES hare_base
+        LIBRARIES PkgConfig::Jemalloc
+        SOURCES ${LOG_SOURCES}
+    )
 else()
-    target_link_libraries(${PROJECT_NAME} hare_base)
-endif()
-
-if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
-    set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_FLAGS "/EHsc")
+    add_hare_library(hare_log
+        INNER_LIBRARIES hare_base
+        SOURCES ${LOG_SOURCES}
+    )
 endif()
 
 if(HARE__BUILD_TESTS)

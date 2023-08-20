@@ -139,7 +139,7 @@ namespace net {
             clone_in->sin_addr.s_addr = in->sin_addr.s_addr;
             clone_in->sin_port = in->sin_port;
         }
-        return std::move(clone);
+        return clone;
     }
 
     auto HostAddress::Family() const -> std::uint8_t

@@ -23,7 +23,7 @@ namespace detail {
         _sdt->second = static_cast<std::int32_t>(_seconds) - minutes * SECONDS_PER_MINUTE;
     }
 
-    auto BreakTime(std::int64_t _time) -> struct time::DateTime
+    static auto BreakTime(std::int64_t _time) -> struct time::DateTime
     {
         struct time::DateTime sdt { };
         auto seconds = static_cast<std::int32_t>(_time % static_cast<std::int64_t>(SECONDS_PER_DAY));

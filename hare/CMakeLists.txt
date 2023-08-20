@@ -1,4 +1,11 @@
-﻿include(${CMAKE_FILES_DIR}/check_file_symbol.cmake)
+﻿find_package(PkgConfig REQUIRED)
+
+if(PKG_CONFIG_FOUND)
+    pkg_search_module(Jemalloc REQUIRED IMPORTED_TARGET jemalloc>=5.3)
+    set(JEMALLOC_FOUND ON)
+else()
+    set(JEMALLOC_FOUND OFF)
+endif(PKG_CONFIG_FOUND)
 
 # Check if header files exist
 list(APPEND FILES_TO_CHECK
@@ -62,7 +69,7 @@ if(NOT "${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "Linux")
     list(APPEND FILES_TO_CHECK sys/sysctl.h)
 endif()
 
-# Fills EVENT_INCLUDES
+# Fills HARE_INCLUDES
 foreach(FILE ${FILES_TO_CHECK})
     CHECK_INCLUDE_FILE_CONCAT(${FILE} "HARE")
 endforeach()
@@ -148,7 +155,7 @@ if(WIN32 AND NOT CYGWIN)
 endif()
 
 if(HAVE_PORT_H AND HAVE_PORT_CREATE)
-    set(HARE__HAVE_EVENT_PORTS 1)
+    set(HARE__HAVE_HARE_PORTS 1)
 endif()
 
 if(HARE__HAVE_EPOLL)
@@ -171,8 +178,6 @@ if(WIN32)
     list(APPEND BACKENDS WIN32)
 endif()
 
-message(STATUS "Available event backends: ${BACKENDS}")
-
 configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/hare-config.h.cmake
     ${CMAKE_CURRENT_BINARY_DIR}/include/hare/hare-config.h
@@ -181,18 +186,121 @@ configure_file(
 # Add hare-config
 include_directories(${HARE_INCLUDE_DIR} ${FMT_INCLUDE_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR}/include)
-
-find_package(PkgConfig REQUIRED)
-if(PKG_CONFIG_FOUND)
-    pkg_search_module(Jemalloc REQUIRED IMPORTED_TARGET jemalloc>=5.3)
-    set(JEMALLOC_FOUND ON)
-else()
-    set(JEMALLOC_FOUND OFF)
-endif(PKG_CONFIG_FOUND)
 include_directories(${JEMALLOC_INCLUDE_DIRS})
 
-find_package(OpenSSL REQUIRED SSL Crypto COMPONENTS)
+if(WIN32)
+    set(LIB_PLATFORM iphlpapi ws2_32)
+endif()
+
+if(HARE__BUILD_TESTS)
+    if(CMAKE_HOST_SYSTEM_NAME MATCHES "Windows")
+        set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+
+        if(MSVC)
+            # BigObj required for tests.
+            set(CXX_FLAGS "${CXX_FLAGS} -bigobj")
+        endif(MSVC)
+    endif()
+
+    # To enable test
+    enable_testing()
+    include(GoogleTest)
+    find_package(GTest CONFIG REQUIRED)
+endif(HARE__BUILD_TESTS)
+
+set(LIBHARE_SHARED_LIBRARIES "")
+set(LIBHARE_STATIC_LIBRARIES "")
+
+include(AddHareLibrary)
 
 add_subdirectory(base)
 add_subdirectory(log)
 add_subdirectory(net)
+
+#
+# Installation preparation.
+#
+set(HARE_INSTALL_CMAKE_DIR
+    "${CMAKE_INSTALL_LIBDIR}/cmake/libhare")
+
+export(PACKAGE libhare)
+
+configure_file(${PROJECT_SOURCE_DIR}/cmake/LibhareConfig.cmake.in
+    ${PROJECT_BINARY_DIR}/LibhareConfig.cmake
+    @ONLY)
+
+# Generate version info for both build-tree and install-tree.
+configure_file(${PROJECT_SOURCE_DIR}/cmake/LibhareConfigVersion.cmake.in
+    ${PROJECT_BINARY_DIR}/LibhareConfigVersion.cmake
+    @ONLY)
+
+# Install public headers
+install(
+    DIRECTORY ${HARE_INCLUDE_DIR}/hare
+    DESTINATION "include"
+    COMPONENT dev
+)
+
+# Install the configs.
+install(FILES
+    ${PROJECT_BINARY_DIR}/LibhareConfig.cmake
+    ${PROJECT_BINARY_DIR}/LibhareConfigVersion.cmake
+    DESTINATION "${HARE_INSTALL_CMAKE_DIR}"
+    COMPONENT dev)
+
+# Install exports for the install-tree.
+macro(install_export type)
+    install(EXPORT LibhareTargets-${type}
+        NAMESPACE ${PROJECT_NAME}::
+        DESTINATION "${HARE_INSTALL_CMAKE_DIR}"
+        COMPONENT dev)
+endmacro()
+
+if(${HARE_LIBRARY_STATIC})
+    install_export(static)
+endif()
+
+if(${HARE_LIBRARY_SHARED})
+    install_export(shared)
+endif()
+
+if(NOT TARGET uninstall)
+    # Create the uninstall target.
+    # https://gitlab.kitware.com/cmake/community/wikis/FAQ#can-i-do-make-uninstall-with-cmake
+    configure_file(${PROJECT_SOURCE_DIR}/cmake/Uninstall.cmake.in
+        ${PROJECT_BINARY_DIR}/Uninstall.cmake
+        @ONLY)
+
+    add_custom_target(uninstall
+        COMMAND ${CMAKE_COMMAND} -P ${PROJECT_BINARY_DIR}/Uninstall.cmake)
+endif()
+
+message(STATUS "")
+message(STATUS "        ---( Libhare " ${HARE_PACKAGE_VERSION} " )---")
+message(STATUS "")
+message(STATUS "Available event backends: ${BACKENDS}")
+message(STATUS "CMAKE_BINARY_DIR:         ${CMAKE_BINARY_DIR}")
+message(STATUS "CMAKE_CURRENT_BINARY_DIR: ${CMAKE_CURRENT_BINARY_DIR}")
+message(STATUS "CMAKE_SOURCE_DIR:         ${CMAKE_SOURCE_DIR}")
+message(STATUS "CMAKE_CURRENT_SOURCE_DIR: ${CMAKE_CURRENT_SOURCE_DIR}")
+message(STATUS "PROJECT_BINARY_DIR:       ${PROJECT_BINARY_DIR}")
+message(STATUS "PROJECT_SOURCE_DIR:       ${PROJECT_SOURCE_DIR}")
+message(STATUS "CMAKE_MODULE_PATH:        ${CMAKE_MODULE_PATH}")
+message(STATUS "CMAKE_COMMAND:            ${CMAKE_COMMAND}")
+message(STATUS "CMAKE_ROOT:               ${CMAKE_ROOT}")
+message(STATUS "CMAKE_SYSTEM:             ${CMAKE_SYSTEM}")
+message(STATUS "CMAKE_SYSTEM_NAME:        ${CMAKE_SYSTEM_NAME}")
+message(STATUS "CMAKE_SYSTEM_VERSION:     ${CMAKE_SYSTEM_VERSION}")
+message(STATUS "CMAKE_SYSTEM_PROCESSOR:   ${CMAKE_SYSTEM_PROCESSOR}")
+message(STATUS "CMAKE_SKIP_RPATH:         ${CMAKE_SKIP_RPATH}")
+message(STATUS "CMAKE_SKIP_INSTALL_RPATH: ${CMAKE_SKIP_INSTALL_RPATH}")
+message(STATUS "CMAKE_INSTALL_RPATH:      ${CMAKE_INSTALL_RPATH}")
+message(STATUS "CMAKE_VERBOSE_MAKEFILE:   ${CMAKE_VERBOSE_MAKEFILE}")
+message(STATUS "CMAKE_CXX_FLAGS:          ${CMAKE_CXX_FLAGS}")
+message(STATUS "CMAKE_BUILD_TYPE:         ${CMAKE_BUILD_TYPE}")
+message(STATUS "CMAKE_CXX_COMPILER:       ${CMAKE_CXX_COMPILER} (id ${CMAKE_CXX_COMPILER_ID}, CLANG ${CLANG}, GNUC ${GNUC}, version ${CMAKE_CXX_COMPILER_VERSION})")
+message(STATUS "CMAKE_AR:                 ${CMAKE_AR}")
+message(STATUS "CMAKE_RANLIB:             ${CMAKE_RANLIB}")
+message(STATUS "CMAKE_INSTALL_PREFIX:     ${CMAKE_INSTALL_PREFIX}")
+message(STATUS "CMAKE_DEBUG_POSTFIX:      ${CMAKE_DEBUG_POSTFIX}")
+message(STATUS "")

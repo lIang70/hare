@@ -59,11 +59,11 @@ namespace util {
         void Start(const Task& _before_thr, const Task& _after_thr)
         {
             for (auto& thr : threads_) {
-                thr = std::move(std::thread([this, _before_thr, _after_thr] {
+                thr = std::thread([this, _before_thr, _after_thr] {
                     _before_thr();
                     this->Loop();
                     _after_thr();
-                }));
+                });
             }
         }
 

@@ -1,26 +1,29 @@
-project(hare_net
-    VERSION ${HARE_VERSION_MAJOR}.${HARE_VERSION_MINOR}.${HARE_VERSION_PATCH}
-    LANGUAGES CXX
-)
-
 # Add hare_net's src
-file(GLOB PROJECT_SOURCES
+file(GLOB NET_SOURCES
     "*.cc"
     "tcp/*.cc"
 )
 
-# Add the source code to the project's library.
-add_library(${PROJECT_NAME} ${HARE__LIBRARY_TYPE} ${PROJECT_SOURCES})
-target_include_directories(${PROJECT_NAME} PUBLIC ${HARE_INCLUDE_DIR}/hare/net/)
+find_package(OpenSSL)
+if(OPENSSL_FOUND)
+    set(OPENSSL_TARGETS OpenSSL::SSL)
 
-if(JEMALLOC_FOUND)
-    target_link_libraries(${PROJECT_NAME} hare_base ${OPENSSL_LIBRARIES} PkgConfig::Jemalloc)
-else()
-    target_link_libraries(${PROJECT_NAME} hare_base ${OPENSSL_LIBRARIES})
+    message(STATUS "OpenSSL include: ${OPENSSL_INCLUDE_DIR}")
+    message(STATUS "OpenSSL lib: ${OPENSSL_LIBRARIES}")
 endif()
 
-if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
-    set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_FLAGS "/EHsc")
+if(JEMALLOC_FOUND)
+    add_hare_library(hare_net
+        INNER_LIBRARIES hare_base
+        LIBRARIES PkgConfig::Jemalloc ${OPENSSL_TARGETS}
+        SOURCES ${NET_SOURCES}
+    )
+else()
+    add_hare_library(hare_net
+        INNER_LIBRARIES hare_base
+        LIBRARIES ${OPENSSL_TARGETS}
+        SOURCES ${NET_SOURCES}
+    )
 endif()
 
 if(HARE__BUILD_TESTS)

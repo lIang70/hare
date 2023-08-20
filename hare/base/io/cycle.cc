@@ -129,7 +129,7 @@ namespace io {
 #endif
         };
 
-        auto GetWaitTime(const PriorityTimer& _ptimer) -> std::int32_t
+        static auto GetWaitTime(const PriorityTimer& _ptimer) -> std::int32_t
         {
             if (_ptimer.empty()) {
                 return POLL_TIME_MICROSECONDS;
@@ -139,7 +139,7 @@ namespace io {
             return time <= 0 ? 1 : MIN(time, POLL_TIME_MICROSECONDS);
         }
 
-        void PrintActiveEvents(const EventsList& _active_events)
+        static void PrintActiveEvents(const EventsList& _active_events)
         {
             for (const auto& event_elem : _active_events) {
                 HARE_INTERNAL_TRACE("event[{}] debug info: {}.",

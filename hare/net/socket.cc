@@ -15,7 +15,6 @@
 #if defined(H_OS_WIN)
 #include <WinSock2.h>
 #include <Ws2tcpip.h>
-#pragma comment(lib, "WS2_32.lib")
 #define socklen_t int
 #endif
 

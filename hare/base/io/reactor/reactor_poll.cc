@@ -12,7 +12,7 @@ namespace io {
     namespace detail {
         static const std::int32_t kInitEventsCnt = 16;
 
-        auto DecodePoll(std::uint8_t events) -> decltype(pollfd::events)
+        static auto DecodePoll(std::uint8_t events) -> decltype(pollfd::events)
         {
             decltype(pollfd::events) res { 0 };
             if (CHECK_EVENT(events, EVENT_WRITE) != 0) {
@@ -73,6 +73,7 @@ namespace io {
 
     ReactorPoll::ReactorPoll(Cycle* _cycle)
         : Reactor(_cycle, Cycle::REACTOR_TYPE_POLL)
+        , poll_fds_(detail::kInitEventsCnt)
     {
     }
 

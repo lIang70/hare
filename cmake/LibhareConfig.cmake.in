@@ -1,0 +1,135 @@
+# - Config file for the Libhare package
+# It defines the following variables
+#  LIBHARE_FOUND            - true if libhare and all required components found on the system
+#  LIBHARE_xxx_FOUND        - true if component xxx(see available components) found on the system
+#  LIBHARE_VERSION          - libhare version in format Major.Minor.Patch
+#  LIBHARE_INCLUDE_DIRS     - directories where libhare header is located.
+#  LIBHARE_INCLUDE_DIR      - same as DIRS
+#  LIBHARE_LIBRARIES        - libhare library to link against.
+#  LIBHARE_LIBRARY          - same as LIBRARIES
+#
+# These variables are deprecated, don't use them.
+#  LIBHARE_STATIC_LIBRARIES - libraries to link against (archive/static)
+#  LIBHARE_SHARED_LIBRARIES - libraries to link against (shared)
+#
+# When you try to locate the libhare libraries, you should specify which components you want to use.
+# The following table lists all available components. If none is given, all imported targets will used.
+#  base        - the base module of libhare
+#  log         - the log module of libhare
+#  net         - the net module of libhare
+#
+# If no component provided, all components will be used.
+# example:
+#  find_package(Libhare 0.2 REQUIRED COMPONENTS base)
+#  include_directories(${LIBHARE_INCLUDE_DIRS})  # Can be omitted
+#  target_link_libraries(myapp ${LIBHARE_LIBRARIES})
+#    or target_link_libraries(myapp libhare::base)
+#
+# find_package() can handle dependencies automatically. For example, given the 'net' component,
+# all dependencies (libevent_core, libssl, libcrypto and openssl include directories) will be found.
+
+set(LIBHARE_VERSION @HARE_PACKAGE_VERSION@)
+
+# Load the dependencies of all components. As find_dependency propagates the original
+# find_package attributes (i.e. required or not), there's no need to repeat this or filter
+# by component.
+include(CMakeFindDependencyMacro)
+find_dependency(OpenSSL)
+
+# IMPORTED targets from LibhareTargets.cmake
+set(LIBHARE_STATIC_LIBRARIES "@LIBHARE_STATIC_LIBRARIES@")
+set(LIBHARE_SHARED_LIBRARIES "@LIBHARE_SHARED_LIBRARIES@")
+
+if(${LIBHARE_STATIC_LINK})
+    set(_LIB_TYPE static)
+    set(_AVAILABLE_LIBS "${LIBHARE_STATIC_LIBRARIES}")
+
+    # CMake before 3.15 doesn't link OpenSSL to pthread/dl, do it ourselves instead
+    if (${CMAKE_VERSION} VERSION_LESS "3.15.0" AND ${LIBHARE_STATIC_LINK} AND ${OPENSSL_FOUND} AND ${Threads_FOUND})
+        set_property(TARGET OpenSSL::Crypto APPEND PROPERTY INTERFACE_LINK_LIBRARIES Threads::Threads)
+        set_property(TARGET OpenSSL::Crypto APPEND PROPERTY INTERFACE_LINK_LIBRARIES ${CMAKE_DL_LIBS})
+    endif ()
+else()
+    set(_LIB_TYPE shared)
+    set(_AVAILABLE_LIBS "${LIBHARE_SHARED_LIBRARIES}")
+endif()
+
+macro(message_if_needed _flag _msg)
+    if (NOT ${CMAKE_FIND_PACKAGE_NAME}_FIND_QUIETLY)
+        message(${_flag} "${_msg}")
+    endif()
+endmacro()
+
+macro(no_component_msg _comp)
+    if(${CMAKE_FIND_PACKAGE_NAME}_FIND_REQUIRED_${_comp})
+        set(pthreadlib)
+        if(NOT WIN32)
+            set(pthreadlib ", pthreads")
+        endif()
+        message(FATAL_ERROR "Your libhare library does not contain a ${_comp} component!\n"
+                "The valid components are core, extra${pthreadlib}, openssl and mbedtls.")
+    else()
+        message_if_needed(WARNING "Your libhare library does not contain a ${_comp} component!")
+    endif()
+endmacro()
+
+set(_HARE_COMPONENTS)
+if(${CMAKE_FIND_PACKAGE_NAME}_FIND_COMPONENTS)
+    list(REMOVE_DUPLICATES ${CMAKE_FIND_PACKAGE_NAME}_FIND_COMPONENTS)
+    foreach(_comp ${${CMAKE_FIND_PACKAGE_NAME}_FIND_COMPONENTS})
+        list(FIND _AVAILABLE_LIBS ${_comp} _INDEX)
+        if(_INDEX GREATER -1)
+            list(APPEND _HARE_COMPONENTS ${_comp})
+        else()
+            no_component_msg(${_comp})
+        endif()
+    endforeach()
+else()
+    set(_HARE_COMPONENTS ${_AVAILABLE_LIBS})
+endif()
+
+set(_POSSIBLE_PKG_NAMES)
+list(APPEND _POSSIBLE_PKG_NAMES ${CMAKE_FIND_PACKAGE_NAME} LIBHARE Libhare libhare)
+list(REMOVE_DUPLICATES _POSSIBLE_PKG_NAMES)
+
+macro(set_case_insensitive_found _comp)
+    foreach(name ${_POSSIBLE_PKG_NAMES})
+        if("${_comp}" STREQUAL "")
+            set(${name}_FOUND TRUE)
+            set(${name}_NOTFOUND FALSE)
+        else()
+            set(${name}_${_comp}_FOUND TRUE)
+            set(${name}_${_comp}_NOTFOUND FALSE)
+        endif()
+    endforeach()
+endmacro()
+
+foreach(_comp ${_EVENT_COMPONENTS})
+    list(APPEND LIBHARE_LIBRARIES "libhare::${_comp}")
+    set_case_insensitive_found(${_comp})
+endforeach()
+
+if(LIBHARE_LIBRARIES)
+    set(LIBHARE_LIBRARY ${LIBHARE_LIBRARIES})
+
+    # Avoid including targets more than once.
+    if(NOT TARGET libhare::base)
+        # Include the project Targets file, this contains definitions for IMPORTED targets.
+        include(${CMAKE_CURRENT_LIST_DIR}/LibhareTargets-${_LIB_TYPE}.cmake)
+    endif()
+    get_target_property(LIBHARE_INCLUDE_DIRS libhare::base INTERFACE_INCLUDE_DIRECTORIES)
+    get_filename_component(LIBHARE_INSTALL_PREFIX "${LIBHARE_INCLUDE_DIRS}" PATH)
+    message_if_needed(STATUS "Found libhare ${LIBHARE_VERSION} in ${LIBHARE_INSTALL_PREFIX}")
+else()
+    if(${CMAKE_FIND_PACKAGE_NAME}_FIND_REQUIRED)
+        message(FATAL_ERROR "Can not find any libraries for libhare.")
+    else()
+        message_if_needed(WARNING "Can not find any libraries for libhare.")
+    endif()
+endif()
+set(LIBHARE_INCLUDE_DIR ${LIBHARE_INCLUDE_DIRS})
+
+unset(_LIB_TYPE)
+unset(_AVAILABLE_LIBS)
+unset(_EVENT_COMPONENTS)
+unset(_POSSIBLE_PKG_NAMES)
