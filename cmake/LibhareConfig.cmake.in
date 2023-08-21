@@ -26,7 +26,7 @@
 #    or target_link_libraries(myapp libhare::base)
 #
 # find_package() can handle dependencies automatically. For example, given the 'net' component,
-# all dependencies (libevent_core, libssl, libcrypto and openssl include directories) will be found.
+# all dependencies (libhare_base, libssl, libcrypto and openssl include directories) will be found.
 
 set(LIBHARE_VERSION @HARE_PACKAGE_VERSION@)
 
@@ -35,6 +35,7 @@ set(LIBHARE_VERSION @HARE_PACKAGE_VERSION@)
 # by component.
 include(CMakeFindDependencyMacro)
 find_dependency(OpenSSL)
+find_dependency(Jemalloc)
 
 # IMPORTED targets from LibhareTargets.cmake
 set(LIBHARE_STATIC_LIBRARIES "@LIBHARE_STATIC_LIBRARIES@")

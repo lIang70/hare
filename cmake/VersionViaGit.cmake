@@ -10,7 +10,7 @@
 #
 # Example usage:
 #
-# event_fuzzy_version_from_git()
+# hare_fuzzy_version_from_git()
 #     message("Libvent major=${HARE_GIT__VERSION_MAJOR}")
 #     message("        minor=${HARE_GIT__VERSION_MINOR}")
 #     message("        patch=${HARE_GIT__VERSION_PATCH}")

@@ -12,13 +12,15 @@ macro(export_install_target TYPE LIB_NAME)
     string(TOUPPER ${TYPE} UPPER_TYPE)
     set(LIBHARE_${UPPER_TYPE}_LIBRARIES "${PURE_NAME};${LIBHARE_${UPPER_TYPE}_LIBRARIES}" PARENT_SCOPE)
     set(OUTER_INCS)
-    if (NOT "${OUTER_INCLUDES}" STREQUAL "NONE")
+
+    if(NOT "${OUTER_INCLUDES}" STREQUAL "NONE")
         set(OUTER_INCS ${OUTER_INCLUDES})
     endif()
+
     target_include_directories("${LIB_NAME}_${TYPE}"
-        PUBLIC  "$<INSTALL_INTERFACE:include>"
-                "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>"
-                "$<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>"
+        PUBLIC "$<INSTALL_INTERFACE:include>"
+        "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>"
+        "$<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>"
     )
     set_target_properties("${LIB_NAME}_${TYPE}" PROPERTIES EXPORT_NAME ${PURE_NAME})
     export(TARGETS "${LIB_NAME}_${TYPE}"
@@ -46,7 +48,7 @@ macro(add_hare_library LIB_NAME)
     set(ADD_HARE_LIBRARY_INTERFACE)
     set(INNER_LIBRARIES)
 
-    if (${HARE_LIBRARY_STATIC})
+    if(${HARE_LIBRARY_STATIC})
         add_library("${LIB_NAME}_static" STATIC ${LIB_SOURCES})
         set_target_properties("${LIB_NAME}_static" PROPERTIES
             OUTPUT_NAME "${LIB_NAME}"
@@ -55,6 +57,7 @@ macro(add_hare_library LIB_NAME)
         if(LIB_INNER_LIBRARIES)
             set(INNER_LIBRARIES "${LIB_INNER_LIBRARIES}_static")
         endif()
+
         target_link_libraries("${LIB_NAME}_static"
             ${LIB_PLATFORM}
             ${INNER_LIBRARIES}
@@ -65,44 +68,44 @@ macro(add_hare_library LIB_NAME)
         set(ADD_HARE_LIBRARY_INTERFACE "${LIB_NAME}_static")
     endif()
 
-    if (${HARE_LIBRARY_SHARED})
+    if(${HARE_LIBRARY_SHARED})
         add_library("${LIB_NAME}_shared" SHARED ${LIB_SOURCES})
 
         if(LIB_INNER_LIBRARIES)
             set(INNER_LIBRARIES "${LIB_INNER_LIBRARIES}_shared")
         endif()
+
         target_link_libraries("${LIB_NAME}_shared"
             ${LIB_PLATFORM}
             ${INNER_LIBRARIES}
             ${LIB_LIBRARIES})
 
-        if (HARE_SHARED_FLAGS)
+        if(HARE_SHARED_FLAGS)
             set_shared_lib_flags("${LIB_NAME}" "${HARE_SHARED_FLAGS}")
         endif()
 
-        if (WIN32)
+        if(WIN32)
             set_target_properties(
                 "${LIB_NAME}_shared" PROPERTIES
                 OUTPUT_NAME "${LIB_NAME}"
                 SOVERSION ${HARE_ABI_LIBVERSION})
         else()
-            math(EXPR CURRENT_MINUS_AGE "${HARE_ABI_LIBVERSION_CURRENT}-${HARE_ABI_LIBVERSION_AGE}")
             set_target_properties(
                 "${LIB_NAME}_shared" PROPERTIES
-                OUTPUT_NAME "${LIB_NAME}-${HARE_PACKAGE_RELEASE}"
-                VERSION "${CURRENT_MINUS_AGE}.${HARE_ABI_LIBVERSION_AGE}.${HARE_ABI_LIBVERSION_REVISION}"
-                SOVERSION "${CURRENT_MINUS_AGE}")
+                OUTPUT_NAME "${LIB_NAME}"
+                VERSION "${HARE_ABI_LIBVERSION}"
+                SOVERSION "${HARE_ABI_MAJOR}")
         endif()
 
-        if (NOT WIN32)
+        if(NOT WIN32)
             set(LIB_LINK_NAME
                 "${CMAKE_SHARED_LIBRARY_PREFIX}${LIB_NAME}${CMAKE_SHARED_LIBRARY_SUFFIX}")
 
             add_custom_command(TARGET ${LIB_NAME}_shared
                 POST_BUILD
                 COMMAND ${CMAKE_COMMAND} -E create_symlink
-                    "$<TARGET_FILE_NAME:${LIB_NAME}_shared>"
-                    "${LIB_LINK_NAME}"
+                "$<TARGET_FILE_NAME:${LIB_NAME}_shared>"
+                "${LIB_LINK_NAME}"
                 WORKING_DIRECTORY "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}")
         endif()
 
@@ -110,7 +113,7 @@ macro(add_hare_library LIB_NAME)
 
         set(ADD_HARE_LIBRARY_INTERFACE "${LIB_NAME}_shared")
 
-        if (NOT WIN32)
+        if(NOT WIN32)
             install(FILES
                 "$<TARGET_FILE_DIR:${LIB_NAME}_shared>/${LIB_LINK_NAME}"
                 DESTINATION "lib"
