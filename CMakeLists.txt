@@ -13,7 +13,8 @@ endif()
 string(TOLOWER "${CMAKE_BUILD_TYPE}" CMAKE_BUILD_TYPE_LOWER)
 
 project(hare
-    LANGUAGES CXX)
+    LANGUAGES CXX
+)
 
 
 set(GNUC 0)
@@ -207,7 +208,7 @@ if(WIN32)
         iphlpapi
         ws2_32
     )
-    set(CMAKE_REQUIRED_DEFINITIONS -FIwinsock2.h -FIws2tcpip.h)
+    set(CMAKE_REQUIRED_DEFINITIONS -FIwinsock2.h -FIws2tcpip.h -Fiphlpapi.h)
 endif()
 
 if(${GNUC})

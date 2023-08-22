@@ -175,6 +175,20 @@ namespace detail {
 
 } // namesapce detail
 
+template <typename T>
+HARE_INLINE
+auto Max(const T& _x, const T& _y) -> T
+{
+    return _x > _y ? _x : _y;
+}
+
+template <typename T>
+HARE_INLINE
+auto Min(const T& _x, const T& _y) -> T
+{
+    return _x < _y ? _x : _y;
+}
+
 // Taken from google-protobuf stubs/common.h
 //
 // Protocol Buffers - Google's data interchange format
@@ -212,40 +226,40 @@ namespace detail {
 // Contains basic types and utilities used by the rest of the library.
 
 //
-// Use implicit_cast as a safe version of static_cast or const_cast
+// Use ImplicitCast as a safe version of static_cast or const_cast
 // for upcasting in the type hierarchy (i.e. casting a pointer to Foo
 // to a pointer to SuperclassOfFoo or casting a pointer to Foo to
 // a const pointer to Foo).
-// When you use implicit_cast, the compiler checks that the cast is safe.
-// Such explicit implicit_casts are necessary in surprisingly many
+// When you use ImplicitCast, the compiler checks that the cast is safe.
+// Such explicit ImplicitCasts are necessary in surprisingly many
 // situations where C++ demands an exact type match instead of an
 // argument type convertable to a target type.
 //
 // The From type can be inferred, so the preferred syntax for using
-// implicit_cast is the same as for static_cast etc.:
+// ImplicitCast is the same as for static_cast etc.:
 //
-//   implicit_cast<ToType>(expr)
+//   ImplicitCast<ToType>(expr)
 //
-// implicit_cast would have been part of the C++ standard library,
+// ImplicitCast would have been part of the C++ standard library,
 // but the proposal was submitted too late.  It will probably make
 // its way into the language in the future.
 template <typename To, typename From>
 HARE_INLINE
-auto implicit_cast(From const& _from) -> To
+auto ImplicitCast(From const& _from) -> To
 {
     return _from;
 }
 
 template <typename To, typename From>
 HARE_INLINE
-auto down_cast(From* _from) -> To
+auto DownCast(From* _from) -> To
 {
     // Ensures that To is a sub-type of From *.  This test is here only
     // for compile-time type checking, and has no overhead in an
     // optimized build at run-time, as it will be optimized away
     // completely.
-    if (false) {
-        implicit_cast<From*, To>(0);
+    if (false ) { 
+        ImplicitCast<From*, To>(nullptr); 
     }
 
 #if !defined(NDEBUG) && !defined(GOOGLE_PROTOBUF_NO_RTTI)

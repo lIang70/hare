@@ -136,7 +136,7 @@ namespace io {
             }
             auto time = static_cast<std::int32_t>(_ptimer.top().stamp.microseconds_since_epoch() - Timestamp::Now().microseconds_since_epoch());
 
-            return time <= 0 ? 1 : MIN(time, POLL_TIME_MICROSECONDS);
+            return time <= 0 ? 1 : Min(time, POLL_TIME_MICROSECONDS);
         }
 
         static void PrintActiveEvents(const EventsList& _active_events)

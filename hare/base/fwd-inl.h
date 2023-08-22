@@ -7,14 +7,6 @@
 #define FMT_HEADER_ONLY 1
 #include <fmt/format.h>
 
-#ifndef MAX
-#define MAX(a, b) ((a) > (b) ? (a) : (b))
-#endif
-
-#ifndef MIN
-#define MIN(a, b) ((a) < (b) ? (a) : (b))
-#endif
-
 namespace hare {
 namespace detail {
 
@@ -24,14 +16,14 @@ namespace detail {
         ~Class##Impl() override = default;           \
     };                                               \
     HARE_INLINE auto d_ptr(hare::detail::Impl* impl) \
-        ->Class##Impl* { return down_cast<Class##Impl*>(impl); }
+        ->Class##Impl* { return DownCast<Class##Impl*>(impl); }
 
 #define HARE_IMPL(Class, ...)                        \
     struct Class##Impl : public hare::detail::Impl { \
         __VA_ARGS__                                  \
     };                                               \
     HARE_INLINE auto d_ptr(hare::detail::Impl* impl) \
-        ->Class##Impl* { return down_cast<Class##Impl*>(impl); }
+        ->Class##Impl* { return DownCast<Class##Impl*>(impl); }
 
 #define IMPL d_ptr(impl_)
 

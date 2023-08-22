@@ -171,11 +171,11 @@ namespace net {
             GetNextWrite();
             auto* index = End();
             if (!index->cache) {
-                index->cache.reset(new Cache(MIN(round_up(_size), MAX_TO_ALLOC)));
+                index->cache.reset(new Cache(Min(round_up(_size), MAX_TO_ALLOC)));
             }
 
             do {
-                _size -= MIN((*index)->WriteableSize(), _size);
+                _size -= Min((*index)->WriteableSize(), _size);
                 ++cnt;
                 if (index->next == read) {
                     break;
@@ -184,7 +184,7 @@ namespace net {
             } while (true);
 
             while (_size > 0) {
-                auto alloc_size = MIN(round_up(_size), MAX_TO_ALLOC);
+                auto alloc_size = Min(round_up(_size), MAX_TO_ALLOC);
                 auto* tmp = new Node;
                 tmp->cache.reset(new Cache(alloc_size));
                 tmp->prev = index;
@@ -203,7 +203,7 @@ namespace net {
         {
             auto* index = End();
             while (_size > 0) {
-                auto write_size = MIN(_size, (*index)->WriteableSize());
+                auto write_size = Min(_size, (*index)->WriteableSize());
                 (*index)->Add(write_size);
                 _size -= write_size;
                 if ((*index)->Full() && index->next != read) {
@@ -221,7 +221,7 @@ namespace net {
             auto* index = Begin();
             auto need_drain { false };
             do {
-                auto drain_size = MIN(_size, (*index)->ReadableSize());
+                auto drain_size = Min(_size, (*index)->ReadableSize());
                 _size -= drain_size;
                 (*index)->Drain(drain_size);
                 if ((*index)->Empty()) {
@@ -436,7 +436,7 @@ namespace net {
         std::size_t total { 0 };
         auto* dest = static_cast<char*>(_buffer);
         while (total < _length) {
-            auto copy_len = MIN(_length - total, (*curr)->ReadableSize());
+            auto copy_len = Min(_length - total, (*curr)->ReadableSize());
             std::uninitialized_copy_n(dest + total, copy_len, 
                 MakeChecked((*curr)->Readable(), copy_len));
             total += copy_len;

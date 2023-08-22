@@ -35,7 +35,9 @@ set(LIBHARE_VERSION @HARE_PACKAGE_VERSION@)
 # by component.
 include(CMakeFindDependencyMacro)
 find_dependency(OpenSSL)
-find_dependency(Jemalloc)
+if(@JEMALLOC_FOUND@)
+    find_dependency(Jemalloc)
+endif()
 
 # IMPORTED targets from LibhareTargets.cmake
 set(LIBHARE_STATIC_LIBRARIES "@LIBHARE_STATIC_LIBRARIES@")

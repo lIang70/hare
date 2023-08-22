@@ -120,7 +120,7 @@ namespace io {
         if (event_num > 0) {
             HARE_INTERNAL_TRACE("{} events happened.", event_num);
             FillActiveEvents(event_num);
-            if (implicit_cast<std::size_t>(event_num) == epoll_events_.size()) {
+            if (ImplicitCast<std::size_t>(event_num) == epoll_events_.size()) {
                 epoll_events_.resize(epoll_events_.size() * 2);
             }
         } else if (event_num == 0) {
@@ -169,7 +169,7 @@ namespace io {
 
     void ReactorEpoll::FillActiveEvents(std::int32_t _num_of_events)
     {
-        assert(implicit_cast<std::size_t>(_num_of_events) <= epoll_events_.size());
+        assert(ImplicitCast<std::size_t>(_num_of_events) <= epoll_events_.size());
         for (auto i = 0; i < _num_of_events; ++i) {
             auto* event = static_cast<io::Event*>(epoll_events_[i].data.ptr);
             assert(inverse_map_.find(event->fd()) != inverse_map_.end());
