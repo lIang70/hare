@@ -17,13 +17,14 @@
 
 namespace hare {
 namespace log {
-    namespace details {
+    namespace detail {
 
         HARE_CLASS_API
         struct HARE_API DummyMutex {
+            virtual ~DummyMutex() = default;
             void lock() { }
             void unlock() { }
-            auto try_lock() -> bool
+            virtual auto try_lock() -> bool
             {
                 return true;
             }
@@ -34,27 +35,27 @@ namespace log {
         struct HARE_API DummyAtomic {
             using value = T;
 
-            T value_ {};
+            T value_store {};
 
             DummyAtomic() = default;
 
             explicit DummyAtomic(T _value)
-                : value_(_value)
+                : value_store(_value)
             {
             }
 
             auto load(std::memory_order = std::memory_order_relaxed) const -> T
             {
-                return value_;
+                return value_store;
             }
 
             void store(T _value, std::memory_order = std::memory_order_relaxed)
             {
-                value_ = _value;
+                value_store = _value;
             }
         };
 
-    } // namespace details
+    } // namespace detail
 } // namespace log
 } // namespace hare
 

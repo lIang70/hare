@@ -35,7 +35,7 @@ namespace log {
     private:
         STDBackend() = default;
 
-        void InnerSinkIt(details::msg_buffer_t& _msg, Level _log_level) final
+        void InnerSinkIt(detail::msg_buffer_t& _msg, Level _log_level) final
         {
             IgnoreUnused(std::fwrite(_msg.data(), 1, _msg.size(), _log_level <= LEVEL_INFO ? stdout : stderr));
             InnerFlush();
@@ -48,7 +48,7 @@ namespace log {
     };
 
     using std_backend_mt = STDBackend<std::mutex>;
-    using std_backend_st = STDBackend<details::DummyMutex>;
+    using std_backend_st = STDBackend<detail::DummyMutex>;
 
 } // namespace log
 } // namespace hare

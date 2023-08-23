@@ -21,7 +21,7 @@
 namespace hare {
 namespace log {
 
-    namespace details {
+    namespace detail {
 
         enum { inline_buffer_size = 64 * 1024 };
 
@@ -133,7 +133,7 @@ namespace log {
             }
         };
 
-    } // namespace details
+    } // namespace detail
 } // namespace log
 } // namespace hare
 

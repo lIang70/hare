@@ -25,7 +25,7 @@ namespace log {
 
     HARE_CLASS_API
     class HARE_API AsyncLogger : public Logger {
-        util::ThreadPool<details::AsyncMsg> thread_pool_;
+        util::ThreadPool<detail::AsyncMsg> thread_pool_;
         Policy msg_policy_ { util::Policy::BLOCK_RETRY };
 
     public:
@@ -60,9 +60,9 @@ namespace log {
         void Flush() override;
 
     private:
-        void SinkIt(details::Msg& _msg) override;
+        void SinkIt(detail::Msg& _msg) override;
 
-        auto HandleMsg(details::AsyncMsg& _msg) -> bool;
+        auto HandleMsg(detail::AsyncMsg& _msg) -> bool;
     };
 
 } // namespace log

@@ -22,7 +22,7 @@ namespace log {
 
     namespace detail {
 
-        template <std::uint64_t MaxSize = details::inline_buffer_size>
+        template <std::uint64_t MaxSize = detail::inline_buffer_size>
         struct RotateFileBySize {
             std::int32_t rotate_id_ { 0 };
             std::int32_t max_files_ { 0 };
@@ -44,7 +44,7 @@ namespace log {
 
             template <bool WithLock>
             HARE_INLINE
-            auto ShouldRotate(Level _log_level, const details::FileHelper<WithLock>& _file) -> bool
+            auto ShouldRotate(Level _log_level, const detail::FileHelper<WithLock>& _file) -> bool
             {
                 IgnoreUnused(_log_level);
                 return _file.Length() >= MaxSize;
@@ -57,7 +57,7 @@ namespace log {
     class FileBackend final : public BaseBackend<Mutex> {
         FileNameGenerator generator_ {};
         filename_t basename_ {};
-        details::FileHelper<false> file_ {};
+        detail::FileHelper<false> file_ {};
         std::int32_t max_files_ { -1 };
         util::CircularQueue<filename_t> filename_history_ {};
 
@@ -82,7 +82,7 @@ namespace log {
         }
 
     private:
-        void InnerSinkIt(details::msg_buffer_t& _msg, Level _log_level) final
+        void InnerSinkIt(detail::msg_buffer_t& _msg, Level _log_level) final
         {
             file_.Append(_msg);
 
@@ -118,7 +118,7 @@ namespace log {
     using FileBackendMT = FileBackend<std::mutex, FileNameGenerator>;
 
     template <typename FileNameGenerator>
-    using FileBackendSt = FileBackend<details::DummyMutex, FileNameGenerator>;
+    using FileBackendSt = FileBackend<detail::DummyMutex, FileNameGenerator>;
 
 } // namespace log
 } // namespace hare

@@ -90,7 +90,7 @@ namespace log {
             }
 
             try {
-                details::Msg msg(&name_, &timezone_, _level, _loc);
+                detail::Msg msg(&name_, &timezone_, _level, _loc);
                 fmt::format_to(std::back_inserter(msg.raw_), _fmt, _args...);
                 SinkIt(msg);
             } catch (const hare::Exception& e) {
@@ -175,24 +175,24 @@ namespace log {
 
     protected:
         HARE_INLINE
-        void IncreaseMsgId(details::Msg& _msg)
+        void IncreaseMsgId(detail::Msg& _msg)
         {
             _msg.id_ = msg_id_.fetch_add(1, std::memory_order_relaxed);
         }
 
         HARE_INLINE
-        auto ShouldFlushOn(const details::Msg& _msg) -> bool
+        auto ShouldFlushOn(const detail::Msg& _msg) -> bool
         {
             const auto flush_level = flush_level_.load(std::memory_order_relaxed);
             return (_msg.level_ >= flush_level) && (_msg.level_ < LEVEL_NBRS);
         }
 
-        virtual void SinkIt(details::Msg& _msg)
+        virtual void SinkIt(detail::Msg& _msg)
         {
             IncreaseMsgId(_msg);
 
-            details::msg_buffer_t formatted {};
-            details::FormatMsg(_msg, formatted);
+            detail::msg_buffer_t formatted {};
+            detail::FormatMsg(_msg, formatted);
 
             for (auto& backend : backends_) {
                 if (backend->Check(_msg.level_)) {

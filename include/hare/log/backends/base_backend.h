@@ -31,7 +31,7 @@ namespace log {
     public:
         virtual ~Backend() = default;
 
-        virtual void Log(details::msg_buffer_t& _msg, Level _log_level) = 0;
+        virtual void Log(detail::msg_buffer_t& _msg, Level _log_level) = 0;
         virtual void Flush() = 0;
 
         HARE_INLINE
@@ -53,7 +53,7 @@ namespace log {
         }
     };
 
-    template <typename Mutex = details::DummyMutex>
+    template <typename Mutex = detail::DummyMutex>
     class BaseBackend : public Backend
                        , public util::NonCopyable {
     protected:
@@ -62,7 +62,7 @@ namespace log {
     public:
         BaseBackend() = default;
 
-        void Log(details::msg_buffer_t& _msg, Level _log_level) final
+        void Log(detail::msg_buffer_t& _msg, Level _log_level) final
         {
             std::lock_guard<Mutex> lock(mutex_);
             InnerSinkIt(_msg, _log_level);
@@ -75,7 +75,7 @@ namespace log {
         }
 
     protected:
-        virtual void InnerSinkIt(details::msg_buffer_t& _msg, Level _log_level) = 0;
+        virtual void InnerSinkIt(detail::msg_buffer_t& _msg, Level _log_level) = 0;
         virtual void InnerFlush() = 0;
     };
 

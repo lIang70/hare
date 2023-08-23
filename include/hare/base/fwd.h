@@ -86,6 +86,21 @@
 #endif
 #endif
 
+#if HARE_HAVE_CPP_ATTRIBUTE(noreturn) && !HARE_MSC_VERSION && \
+    !defined(__NVCC__)
+#  define HARE_NORETURN [[noreturn]]
+#else
+#  define HARE_NORETURN
+#endif
+
+#if HARE_HAVE_CPP_ATTRIBUTE(clang::lifetimebound)
+#define HARE_ATTRIBUTE_LIFETIME_BOUND [[clang::lifetimebound]]
+#elif HARE_HAVE_ATTRIBUTE(lifetimebound)
+#define HARE_ATTRIBUTE_LIFETIME_BOUND __attribute__((lifetimebound))
+#else
+#define HARE_ATTRIBUTE_LIFETIME_BOUND
+#endif
+
 #if defined(H_OS_WIN32)
 #define HARE_CLASS_API HARE_MSC_WARNING(suppress : 4275)
 #ifdef HARE_STATIC
@@ -173,7 +188,20 @@ namespace detail {
         return _out + _count;
     }
 
+    HARE_CLASS_API
+    struct HARE_API in_place_t {
+        explicit in_place_t() = default;
+    };
+
+    template<typename _Tp>
+    HARE_CLASS_API
+    struct HARE_API in_place_type_t {
+        explicit in_place_type_t() = default;
+    };
+
 } // namesapce detail
+
+constexpr detail::in_place_t in_place{};
 
 template <typename T>
 HARE_INLINE

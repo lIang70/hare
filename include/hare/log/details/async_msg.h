@@ -17,7 +17,7 @@
 
 namespace hare {
 namespace log {
-    namespace details {
+    namespace detail {
 
         HARE_CLASS_API
         struct HARE_API AsyncMsg : public Msg {
@@ -60,7 +60,7 @@ namespace log {
             }
         };
 
-    } // namespace details
+    } // namespace detail
 } // namespace log
 } // namespace hare
 

@@ -4,7 +4,7 @@
 
 namespace hare {
 namespace log {
-    namespace details {
+    namespace detail {
 
         static auto LogTime(const Msg& _msg, std::int32_t& _microseconds) -> const std::string&
         {
@@ -56,6 +56,6 @@ namespace log {
                 _msg.loc_.filename, _msg.loc_.line, _msg.loc_.funcname);
         }
 
-    } // namespace details
+    } // namespace detail
 } // namespace log
 } // namespace hare

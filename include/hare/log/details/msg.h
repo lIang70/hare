@@ -57,7 +57,7 @@ namespace log {
     };
 
 #ifndef HARELOG_USING_ATOMIC_LEVELS
-    using level_t = details::DummyAtomic<std::int8_t>;
+    using level_t = detail::DummyAtomic<std::int8_t>;
 #else
     using level_t = std::atomic<std::int8_t>;
 #endif
@@ -116,7 +116,7 @@ namespace log {
         }
     };
 
-    namespace details {
+    namespace detail {
 
         using msg_buffer_t = fmt::basic_memory_buffer<char, 256>;
 
@@ -160,7 +160,7 @@ namespace log {
 
         HARE_API void FormatMsg(Msg& _msg, msg_buffer_t& _fotmatted);
 
-    } // namespace details
+    } // namespace detail
 } // namespace log
 } // namespace hare
 
