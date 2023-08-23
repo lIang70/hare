@@ -22,7 +22,7 @@ namespace io {
         hare::detail::Impl* impl_ {};
 
     public:
-        using DefaultHandle = std::function<void(const std::string& command_line)>;
+        using DefaultHandle = void(*)(const std::string& command_line);
 
         static auto Instance() -> Console&;
 

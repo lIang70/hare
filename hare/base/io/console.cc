@@ -32,7 +32,7 @@ namespace io {
         Console,
         Ptr<Event> console_event { nullptr };
         std::map<std::string, Task> handlers {};
-        Console::DefaultHandle default_handle {};
+        util::AtomicHook<Console::DefaultHandle> default_handle { detail::GlobalConsoleHandle };
         bool attached { false };
     )
 
@@ -50,7 +50,7 @@ namespace io {
 
     void Console::RegisterDefaultHandle(DefaultHandle _default_handle)
     {
-        IMPL->default_handle = std::move(_default_handle);
+        IMPL->default_handle.Store(_default_handle);
     }
 
     void Console::RegisterHandle(std::string _handle_mask, Task _handle)
@@ -92,7 +92,7 @@ namespace io {
             std::bind(&Console::Process, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
             EVENT_READ | EVENT_PERSIST | EVENT_ET,
             0));
-        IMPL->default_handle = detail::GlobalConsoleHandle;
+        IMPL->default_handle.Store(detail::GlobalConsoleHandle);
     }
 
     void Console::Process(const Ptr<Event>& _event, std::uint8_t _events, const Timestamp& _receive_time)

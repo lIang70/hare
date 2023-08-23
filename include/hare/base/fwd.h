@@ -141,6 +141,7 @@ using WPtr = std::weak_ptr<T>;
 template <typename T>
 using UPtr = std::unique_ptr<T>;
 using Task = std::function<void()>;
+
 #if defined(H_OS_WIN32) && defined(HARE_WCHAR_FILENAME)
 using filename_t = std::wstring;
 HARE_INLINE
@@ -286,7 +287,7 @@ auto DownCast(From* _from) -> To
     // for compile-time type checking, and has no overhead in an
     // optimized build at run-time, as it will be optimized away
     // completely.
-    if (false ) { 
+    if (false) { 
         ImplicitCast<From*, To>(nullptr); 
     }
 
@@ -297,7 +298,7 @@ auto DownCast(From* _from) -> To
 }
 
 enum : std::uint8_t { TRACE_MSG, ERROR_MSG };
-using LogHandler = std::function<void(std::uint8_t, std::string)>;
+using LogHandler = void(*)(std::uint8_t, const std::string&);
 
 HARE_API void RegisterLogHandler(LogHandler _handle);
 

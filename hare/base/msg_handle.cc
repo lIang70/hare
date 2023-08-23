@@ -25,7 +25,7 @@ namespace detail {
 
 void RegisterLogHandler(LogHandler handle)
 {
-    InnerLog() = std::move(handle);
+    InnerLog().Store(handle);
 }
 
 } // namespace hare

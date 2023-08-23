@@ -1,6 +1,7 @@
 #ifndef _HARE_BASE_FWD_INL_H_
 #define _HARE_BASE_FWD_INL_H_
 
+#include "base/util/atomic_hook.h"
 #include <hare/base/exception.h>
 #include <hare/base/time/timestamp.h>
 
@@ -31,11 +32,9 @@ namespace detail {
 } // namespace detail
 
 HARE_INLINE
-auto InnerLog() -> LogHandler&
+auto InnerLog() -> util::AtomicHook<LogHandler>&
 {
-    static LogHandler log_handler {
-        detail::DefaultMsgHandle
-    };
+    static util::AtomicHook<LogHandler> log_handler { detail::DefaultMsgHandle };
     return log_handler;
 }
 
@@ -51,8 +50,7 @@ auto InnerLog() -> LogHandler&
     throw Exception(fmt::format(fromat, ##__VA_ARGS__))
 
 template <typename T>
-HARE_INLINE
-auto CheckNotNull(const char* _names, T* _ptr) -> T*
+HARE_INLINE auto CheckNotNull(const char* _names, T* _ptr) -> T*
 {
     if (_ptr == nullptr) {
         HARE_INTERNAL_FATAL(_names);
