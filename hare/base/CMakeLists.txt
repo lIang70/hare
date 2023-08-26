@@ -1,10 +1,6 @@
 # Add hare_base's src
-file(GLOB BASE_SOURCES
+file(GLOB_RECURSE BASE_SOURCES
     "*.cc"
-    "time/*.cc"
-    "util/*.cc"
-    "io/*.cc"
-    "io/reactor/*.cc"
 )
 
 if(JEMALLOC_FOUND)
@@ -17,7 +13,3 @@ else()
         SOURCES ${BASE_SOURCES}
     )
 endif()
-
-if(HARE__BUILD_TESTS)
-    add_subdirectory(tests)
-endif(HARE__BUILD_TESTS)

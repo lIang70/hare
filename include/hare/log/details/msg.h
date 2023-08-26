@@ -13,6 +13,7 @@
 #ifndef _HARE_LOG_DETAILS_MSG_H_
 #define _HARE_LOG_DETAILS_MSG_H_
 
+#include <hare/base/io/file.h>
 #include <hare/base/time/timestamp.h>
 #include <hare/base/time/timezone.h>
 #include <hare/base/util/non_copyable.h>
@@ -22,22 +23,6 @@
 #include <fmt/format.h>
 
 #include <unordered_map>
-
-#if !defined(HARE_EOL)
-#ifdef H_OS_WIN32
-#define HARE_EOL "\r\n"
-#else
-#define HARE_EOL "\n"
-#endif
-#endif
-
-#if !defined(HARE_SLASH)
-#ifdef H_OS_WIN32
-#define HARE_SLASH '\\'
-#else
-#define HARE_SLASH '/'
-#endif
-#endif
 
 namespace hare {
 namespace log {

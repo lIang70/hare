@@ -1,6 +1,6 @@
 #include "base/fwd-inl.h"
 #include "base/io/reactor.h"
-#include <hare/base/io/socket_op.h>
+#include <hare/base/io/operation.h>
 #include <hare/net/tcp/session.h>
 
 #include <cassert>
@@ -299,7 +299,7 @@ namespace net {
                     HandleClose();
                 }
             } else {
-                HARE_INTERNAL_ERROR("an error occurred while writing the socket, detail: {}.", socket_op::SocketErrorInfo(Fd()));
+                HARE_INTERNAL_ERROR("an error occurred while writing the socket, detail: {}.", io::SocketErrorInfo(Fd()));
             }
         } else {
             HARE_INTERNAL_TRACE("tcp-session[fd={}, name={}] is down, no more writing.", Fd(), Name());
@@ -330,7 +330,7 @@ namespace net {
             IMPL->connect(shared_from_this(), SESSION_ERROR);
         } else {
             HARE_INTERNAL_ERROR("occurred error to the session[{}], detail: {}.",
-                IMPL->name, socket_op::SocketErrorInfo(Fd()));
+                IMPL->name, io::SocketErrorInfo(Fd()));
         }
     }
 

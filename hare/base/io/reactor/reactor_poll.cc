@@ -123,6 +123,7 @@ namespace io {
 
         // update existing one
         auto event_id = _event->id();
+        IgnoreUnused(event_id);
         assert(events_.find(event_id) != events_.end());
         assert(events_[event_id] == _event);
         assert(inverse_iter != inverse_map_.end());
@@ -147,6 +148,7 @@ namespace io {
         assert(0 <= index && index < static_cast<std::int32_t>(poll_fds_.size()));
         
         const auto& pfd = poll_fds_[index];
+        IgnoreUnused(pfd);
         assert(pfd.events == detail::DecodePoll(_event->events()));
         if (ImplicitCast<std::size_t>(index) == poll_fds_.size() - 1) {
             poll_fds_.pop_back();

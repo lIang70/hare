@@ -217,6 +217,10 @@ add_subdirectory(base)
 add_subdirectory(log)
 add_subdirectory(net)
 
+if(HARE__BUILD_TESTS)
+    add_subdirectory(tests)
+endif(HARE__BUILD_TESTS)
+
 #
 # Installation preparation.
 #

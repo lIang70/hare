@@ -41,11 +41,11 @@ Makefile.in
 echo_serve
 
 # test binaries
-system_test*
-async_logger_test*
-format_msg_test*
-logger_test*
-buffer_test*
+system_test*.cmake
+async_logger_test*.cmake
+format_msg_test*.cmake
+logger_test*.cmake
+buffer_test*.cmake
 
 hare-config.h
 

@@ -1,5 +1,5 @@
 #include "base/fwd-inl.h"
-#include "base/io/socket_op-inl.h"
+#include "socket_op.h"
 #include <hare/hare-config.h>
 #include <hare/net/host_address.h>
 
@@ -43,7 +43,7 @@ namespace net {
             HARE_INTERNAL_ERROR("::getaddrinfo error {} : {}.", ret, ::gai_strerror(ret));
             return false;
         }
-        socket_op::sockaddr_in_cast(_result->in_)->sin_addr = socket_op::sockaddr_in_cast(res->ai_addr)->sin_addr;
+        socket_op::SockaddrCastIn(_result->in_)->sin_addr = socket_op::SockaddrCastIn(res->ai_addr)->sin_addr;
         return true;
     }
 
@@ -77,17 +77,17 @@ namespace net {
         hare::detail::FillN(in_, sizeof(struct sockaddr_in6), 0);
 
         if (_ipv6) {
-            auto* in6 = socket_op::sockaddr_in6_cast(in_);
+            auto* in6 = socket_op::SockaddrCastIn6(in_);
             in6->sin6_family = AF_INET6;
             auto addr = _loopback_only ? in6addr_loopback : in6addr_any;
             in6->sin6_addr = addr;
-            in6->sin6_port = socket_op::HostToNetwork16(_port);
+            in6->sin6_port = io::HostToNetwork16(_port);
         } else {
-            auto* in = socket_op::sockaddr_in_cast(in_);
+            auto* in = socket_op::SockaddrCastIn(in_);
             in->sin_family = AF_INET;
             auto addr = _loopback_only ? INADDR_LOOPBACK : INADDR_ANY;
             in->sin_addr.s_addr = addr;
-            in->sin_port = socket_op::HostToNetwork16(_port);
+            in->sin_port = io::HostToNetwork16(_port);
         }
     }
 
@@ -97,9 +97,9 @@ namespace net {
         hare::detail::FillN(in_, sizeof(struct sockaddr_in6), 0);
 
         if (_ipv6 || (strchr(_ip.c_str(), ':') != nullptr)) {
-            socket_op::FromIpPort(_ip.c_str(), _port, socket_op::sockaddr_in6_cast(in_));
+            socket_op::FromIpPort(_ip.c_str(), _port, socket_op::SockaddrCastIn6(in_));
         } else {
-            socket_op::FromIpPort(_ip.c_str(), _port, socket_op::sockaddr_in_cast(in_));
+            socket_op::FromIpPort(_ip.c_str(), _port, socket_op::SockaddrCastIn(in_));
         }
     }
 
@@ -127,14 +127,14 @@ namespace net {
         hare::detail::FillN((clone->in_), sizeof(struct sockaddr_in6), 0);
 
         if (Family() == AF_INET6) {
-            auto* in6 = socket_op::sockaddr_in6_cast(in_);
-            auto* clone_in6 = socket_op::sockaddr_in6_cast(clone->in_);
+            auto* in6 = socket_op::SockaddrCastIn6(in_);
+            auto* clone_in6 = socket_op::SockaddrCastIn6(clone->in_);
             clone_in6->sin6_family = AF_INET6;
             clone_in6->sin6_addr = in6->sin6_addr;
             clone_in6->sin6_port = in6->sin6_port;
         } else {
-            auto* in = socket_op::sockaddr_in_cast(in_);
-            auto* clone_in = socket_op::sockaddr_in_cast(clone->in_);
+            auto* in = socket_op::SockaddrCastIn(in_);
+            auto* clone_in = socket_op::SockaddrCastIn(clone->in_);
             clone_in->sin_family = AF_INET;
             clone_in->sin_addr.s_addr = in->sin_addr.s_addr;
             clone_in->sin_port = in->sin_port;
@@ -144,7 +144,7 @@ namespace net {
 
     auto HostAddress::Family() const -> std::uint8_t
     {
-        return socket_op::sockaddr_in_cast(in_)->sin_family;
+        return socket_op::SockaddrCastIn(in_)->sin_family;
     }
 
     void HostAddress::set_sockaddr_in6(const struct sockaddr_in6* _addr_in6) const
@@ -170,20 +170,20 @@ namespace net {
 
     auto HostAddress::Ipv4NetEndian() const -> std::uint32_t
     {
-        assert(socket_op::sockaddr_in_cast(in_)->sin_family == AF_INET);
-        return socket_op::sockaddr_in_cast(in_)->sin_addr.s_addr;
+        assert(socket_op::SockaddrCastIn(in_)->sin_family == AF_INET);
+        return socket_op::SockaddrCastIn(in_)->sin_addr.s_addr;
     }
 
     auto HostAddress::PortNetEndian() const -> std::uint16_t
     {
-        return socket_op::sockaddr_in_cast(in_)->sin_port;
+        return socket_op::SockaddrCastIn(in_)->sin_port;
     }
 
     // set IPv6 ScopeID
     void HostAddress::SetScopeId(std::uint32_t _id) const
     {
-        if (socket_op::sockaddr_in_cast(in_)->sin_family == AF_INET6) {
-            socket_op::sockaddr_in6_cast(in_)->sin6_scope_id = _id;
+        if (socket_op::SockaddrCastIn(in_)->sin_family == AF_INET6) {
+            socket_op::SockaddrCastIn6(in_)->sin6_scope_id = _id;
         }
     }
 

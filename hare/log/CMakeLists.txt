@@ -1,8 +1,6 @@
 # Add hare_log's src
-file(GLOB LOG_SOURCES
+file(GLOB_RECURSE LOG_SOURCES
     "*.cc"
-    "backends/*.cc"
-    "details/*.cc"
 )
 
 if(JEMALLOC_FOUND)
@@ -17,7 +15,3 @@ else()
         SOURCES ${LOG_SOURCES}
     )
 endif()
-
-if(HARE__BUILD_TESTS)
-    add_subdirectory(tests)
-endif(HARE__BUILD_TESTS)

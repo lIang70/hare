@@ -1,6 +1,6 @@
 #include "base/fwd-inl.h"
-#include "base/io/socket_op-inl.h"
 #include "net/buffer-inl.h"
+#include "socket_op.h"
 #include <hare/base/exception.h>
 #include <hare/hare-config.h>
 

@@ -7,16 +7,16 @@ TEST(FormatMsgTest, test1)
     hare::Timezone tz { 8 * 3600, "Z" };
     hare::log::SourceLoc loc { __FILE__, __LINE__, __func__ };
 
-    hare::log::details::Msg test_msg
+    hare::log::detail::Msg test_msg
     {
         &logger, &tz, hare::log::LEVEL_TRACE, loc
     };
 
-    hare::log::details::msg_buffer_t fotmatted {};
+    hare::log::detail::msg_buffer_t fotmatted {};
 
     fmt::format_to(std::back_inserter(test_msg.raw_), "test\0");
 
-    hare::log::details::FormatMsg(test_msg, fotmatted);
+    hare::log::detail::FormatMsg(test_msg, fotmatted);
 
     std::cout << fotmatted.data() << std::endl;
 }

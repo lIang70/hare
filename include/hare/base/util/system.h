@@ -28,12 +28,6 @@ namespace util {
     HARE_API auto SetCurrentThreadName(const char* _tname) -> bool;
     HARE_API auto ErrnoStr(std::int32_t _errorno) -> const char*;
 
-    HARE_API auto FileOpen(std::FILE** _fp, const filename_t& _filename, const filename_t& _mode) -> bool;
-    HARE_API auto FileExists(const filename_t& _filepath) -> bool;
-    HARE_API auto FileRemove(const filename_t& _filepath) -> bool;
-    HARE_API auto FileSize(std::FILE* _fp) -> std::size_t;
-    HARE_API auto FileSync(std::FILE* _fp) -> bool;
-
     HARE_API auto LocalAddress(std::uint8_t _family, std::list<std::string>& _addr_list) -> std::int32_t;
 
 } // namespace util

@@ -1,8 +1,8 @@
 #include "base/fwd-inl.h"
 #include "base/io/local.h"
 #include "base/io/reactor.h"
-#include "base/io/socket_op-inl.h"
 #include <hare/base/exception.h>
+#include <hare/base/io/operation.h>
 #include <hare/base/io/timer.h>
 #include <hare/base/time/timestamp.h>
 #include <hare/base/util/count_down_latch.h>
@@ -26,6 +26,7 @@
 #include <WinSock2.h>
 #define read _read
 #define write _write
+#define close closesocket
 #endif
 
 namespace hare {
@@ -76,7 +77,7 @@ namespace io {
 
             ~EventNotify() override
             {
-                socket_op::Close(fd());
+                ::close(fd());
             }
 
             void SendNotify()
@@ -166,8 +167,7 @@ namespace io {
         mutable std::mutex functions_mutex {};
         std::list<Task> pending_functions {};
 
-        std::uint64_t cycle_index { 0 };
-    )
+        std::uint64_t cycle_index { 0 };)
 
     Cycle::Cycle(REACTOR_TYPE _type)
         : impl_(new CycleImpl)
@@ -217,7 +217,7 @@ namespace io {
         return IMPL->reactor->type();
     }
 
-#if HARE_DEBUG
+#ifdef HARE_DEBUG
 
     auto Cycle::cycle_index() const -> std::uint64_t
     {
@@ -246,7 +246,7 @@ namespace io {
 
             IMPL->reactor_time = IMPL->reactor->Poll(GetWaitTime(IMPL->reactor->ptimer_));
 
-#if HARE_DEBUG
+#ifdef HARE_DEBUG
             ++IMPL->cycle_index;
 #endif
 
@@ -342,7 +342,6 @@ namespace io {
             assert(CHECK_EVENT(timer->events(), EVENT_TIMEOUT) != 0);
             IMPL->reactor->ptimer_.emplace(timer->id(),
                 Timestamp(Timestamp::Now().microseconds_since_epoch() + timer->timeval()));
-
         });
 
         return id;
@@ -353,7 +352,7 @@ namespace io {
         if (!is_running()) {
             return -1;
         }
-        
+
         auto timer = std::make_shared<Timer>(_task, _delay, true);
         auto id = IMPL->event_id.fetch_add(1);
 
@@ -379,7 +378,7 @@ namespace io {
         }
 
         util::CountDownLatch cdl { 1 };
-        
+
         RunInCycle([&] {
             auto iter = IMPL->reactor->events_.find(_event_id);
             if (iter != IMPL->reactor->events_.end()) {

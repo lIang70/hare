@@ -12,7 +12,7 @@
 #ifndef _HARE_NET_HOST_ADDRESS_H_
 #define _HARE_NET_HOST_ADDRESS_H_
 
-#include <hare/base/io/socket_op.h>
+#include <hare/base/io/operation.h>
 #include <hare/base/util/non_copyable.h>
 
 struct sockaddr;
@@ -61,7 +61,7 @@ namespace net {
 
         auto ToIp() const -> std::string;
         auto ToIpPort() const -> std::string;
-        HARE_INLINE auto Port() const -> std::uint16_t { return socket_op::NetworkToHost16(PortNetEndian()); }
+        HARE_INLINE auto Port() const -> std::uint16_t { return io::NetworkToHost16(PortNetEndian()); }
 
         auto Ipv4NetEndian() const -> std::uint32_t;
         auto PortNetEndian() const -> std::uint16_t;

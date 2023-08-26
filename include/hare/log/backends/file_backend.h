@@ -13,16 +13,16 @@
 #ifndef _HARE_LOG_FILE_BACKEND_H_
 #define _HARE_LOG_FILE_BACKEND_H_
 
+#include <hare/base/io/file.h>
 #include <hare/base/util/queue.h>
 #include <hare/log/backends/base_backend.h>
-#include <hare/log/details/file.h>
 
 namespace hare {
 namespace log {
 
     namespace detail {
 
-        template <std::uint64_t MaxSize = detail::inline_buffer_size>
+        template <std::uint64_t MaxSize = io::file_inner::BUFFER_SIZE>
         struct RotateFileBySize {
             std::int32_t rotate_id_ { 0 };
             std::int32_t max_files_ { 0 };
@@ -39,12 +39,11 @@ namespace log {
                 if (max_files_ > 0) {
                     rotate_id_ %= max_files_;
                 }
-                return fmt::format("{}.{}.log", FilenameToStr(_basename), rotate_id_);
+                return fmt::format("{}.{}.log", FilenameToStr(_basename), tmp);
             }
 
             template <bool WithLock>
-            HARE_INLINE
-            auto ShouldRotate(Level _log_level, const detail::FileHelper<WithLock>& _file) -> bool
+            HARE_INLINE auto ShouldRotate(Level _log_level, const io::FileHelper<WithLock>& _file) -> bool
             {
                 IgnoreUnused(_log_level);
                 return _file.Length() >= MaxSize;
@@ -57,14 +56,14 @@ namespace log {
     class FileBackend final : public BaseBackend<Mutex> {
         FileNameGenerator generator_ {};
         filename_t basename_ {};
-        detail::FileHelper<false> file_ {};
+        io::FileHelper<false> file_ {};
         std::int32_t max_files_ { -1 };
         util::CircularQueue<filename_t> filename_history_ {};
 
     public:
         explicit FileBackend(filename_t _basename, std::int32_t _max_files = -1, bool _rotate = true)
-            : basename_(std::move(_basename))
-            , generator_(_max_files)
+            : generator_(_max_files)
+            , basename_(std::move(_basename))
             , max_files_(_max_files)
             , filename_history_(_max_files > 0 ? _max_files : 0)
         {
@@ -106,7 +105,7 @@ namespace log {
         {
             if (filename_history_.Full()) {
                 auto tmp = filename_history_.PopFront();
-                if (!util::FileRemove(tmp)) {
+                if (!io::file_inner::Remove(tmp)) {
                     fmt::print(stderr, "failed removing hourly file[{}]." HARE_EOL, tmp);
                 }
             }

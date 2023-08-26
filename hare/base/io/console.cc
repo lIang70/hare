@@ -16,6 +16,7 @@
 
 #if defined(H_OS_WIN32)
 #define STDIN_FILENO 0
+#define read _read
 #endif // H_OS_WIN32
 
 namespace hare {
@@ -105,11 +106,7 @@ namespace io {
 
         std::array<char, HARE_SMALL_BUFFER> console_line {};
 
-#if defined(H_OS_WIN32)
-        auto len = ::_read((int)_event->fd(), console_line.data(), HARE_SMALL_BUFFER);
-#else
         auto len = ::read(_event->fd(), console_line.data(), HARE_SMALL_BUFFER);
-#endif // H_OS_WIN32
 
         if (len < 0) {
             HARE_INTERNAL_ERROR("cannot read from STDIN.");

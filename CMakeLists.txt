@@ -16,6 +16,9 @@ project(hare
     LANGUAGES CXX
 )
 
+if(NOT HARE__BUILD_TESTS)
+    option(HARE__BUILD_TESTS "Build all of own tests." ON)
+endif()
 
 set(GNUC 0)
 set(CLANG 0)
@@ -95,10 +98,6 @@ else()
 endif()
 
 message(STATUS "HARE__LIBRARY_TYPE: ${HARE__LIBRARY_TYPE}")
-
-if(NOT HARE__BUILD_TESTS)
-    option(HARE__BUILD_TESTS "Build all of own tests." OFF)
-endif()
 
 macro(add_compiler_flags)
     foreach(flag ${ARGN})
@@ -217,3 +216,11 @@ endif()
 
 add_subdirectory(3rdparty)
 add_subdirectory(hare)
+
+if(NOT HARE__BUILD_SAMPLES)
+    option(HARE__BUILD_SAMPLES "Build all of own tests." ON)
+endif()
+
+if(HARE__BUILD_SAMPLES)
+    add_subdirectory(samples)
+endif(HARE__BUILD_SAMPLES)

@@ -1,7 +1,6 @@
 # Add hare_net's src
-file(GLOB NET_SOURCES
+file(GLOB_RECURSE NET_SOURCES
     "*.cc"
-    "tcp/*.cc"
 )
 
 find_package(OpenSSL)
@@ -25,8 +24,3 @@ else()
         SOURCES ${NET_SOURCES}
     )
 endif()
-
-if(HARE__BUILD_TESTS)
-    add_subdirectory(tests)
-    add_subdirectory(samples)
-endif(HARE__BUILD_TESTS)

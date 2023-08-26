@@ -1,6 +1,6 @@
 #include "base/fwd-inl.h"
-#include "base/io/socket_op-inl.h"
 #include "net/io_pool.h"
+#include "socket_op.h"
 #include <hare/base/io/cycle.h>
 #include <hare/base/util/count_down_latch.h>
 #include <hare/hare-config.h>

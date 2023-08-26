@@ -1,6 +1,6 @@
-#include "base/fwd-inl.h"
-#include "base/io/socket_op-inl.h"
 #include "base/io/reactor/reactor_epoll.h"
+#include "base/fwd-inl.h"
+#include <hare/base/io/operation.h>
 #include <hare/base/exception.h>
 
 #include <sstream>
@@ -104,7 +104,7 @@ namespace io {
 
     ReactorEpoll::~ReactorEpoll()
     {
-        socket_op::Close(epoll_fd_);
+        ::close(epoll_fd_);
     }
 
     auto ReactorEpoll::Poll(std::int32_t _timeout_microseconds) -> Timestamp
@@ -143,12 +143,14 @@ namespace io {
         if (event_id == -1) {
             // a new one, add with EPOLL_CTL_ADD
             auto target_fd = _event->fd();
+            IgnoreUnused(target_fd);
             assert(inverse_map_.find(target_fd) == inverse_map_.end());
             return UpdateEpoll(EPOLL_CTL_ADD, _event);
         }
 
         // update existing one with EPOLL_CTL_MOD/DEL
         auto target_fd = _event->fd();
+        IgnoreUnused(target_fd);
         assert(inverse_map_.find(target_fd) != inverse_map_.end());
         assert(events_.find(event_id) != events_.end());
         assert(events_[event_id] == _event);
@@ -159,6 +161,7 @@ namespace io {
     {
         const auto target_fd = _event->fd();
         const auto event_id = _event->id();
+        IgnoreUnused(target_fd, event_id);
 
         HARE_INTERNAL_TRACE("epoll-remove: fd={}, flags={}.", target_fd, _event->events());
         assert(inverse_map_.find(target_fd) != inverse_map_.end());
@@ -181,7 +184,7 @@ namespace io {
         }
     }
 
-    auto ReactorEpoll::UpdateEpoll(std::int32_t _operation, const Ptr<Event>& _event) const -> bool 
+    auto ReactorEpoll::UpdateEpoll(std::int32_t _operation, const Ptr<Event>& _event) const -> bool
     {
         struct epoll_event ep_event { };
         hare::detail::FillN(&ep_event, sizeof(ep_event), 0);

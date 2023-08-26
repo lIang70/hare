@@ -1,4 +1,4 @@
-include_directories(${CMAKE_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/include)
+include_directories(${HARE_INCLUDE_DIR} ${FMT_INCLUDE_DIR})
 
 file(GLOB TESTS_LIST *.cc)
 
@@ -7,10 +7,9 @@ foreach(test_path ${TESTS_LIST})
     get_filename_component(TARGET_FILE ${test_path} NAME)
     add_executable(${TARGET} ${test_path})
     if(JEMALLOC_FOUND)
-        target_link_libraries(${TARGET} GTest::gtest_main hare_log hare_base PkgConfig::Jemalloc)
+        target_link_libraries(${TARGET} GTest::gtest_main hare_base hare_log hare_net PkgConfig::Jemalloc)
     else()
-        target_link_libraries(${TARGET} GTest::gtest_main hare_log hare_base)
+        target_link_libraries(${TARGET} GTest::gtest_main hare_base hare_log hare_net)
     endif()
     gtest_discover_tests(${TARGET})
-    message( STATUS "Add test[${TARGET}] by [${TARGET_FILE}]")
 endforeach()

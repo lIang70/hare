@@ -1,7 +1,7 @@
 #include "base/fwd-inl.h"
-#include "base/io/socket_op-inl.h"
-#include <hare/hare-config.h>
+#include "socket_op.h"
 #include <hare/base/exception.h>
+#include <hare/hare-config.h>
 #include <hare/net/socket.h>
 
 #if HARE__HAVE_NETINET_IN_H
@@ -70,7 +70,7 @@ namespace net {
     {
         struct sockaddr_in6 addr { };
         hare::detail::FillN(&addr, sizeof(addr), 0);
-        auto accept_fd = socket_op::Accept(socket_, socket_op::sockaddr_cast(&addr), socket_op::AddrLen(PF_INET6));
+        auto accept_fd = socket_op::Accept(socket_, socket_op::SockaddrCast(&addr), socket_op::AddrLen(PF_INET6));
         if (accept_fd >= 0) {
             _peer_addr.set_sockaddr_in6(&addr);
         }

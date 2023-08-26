@@ -28,9 +28,6 @@ namespace io {
 
         ~Console();
 
-        /**
-         * @brief not thread-safe.
-         **/
         void RegisterDefaultHandle(DefaultHandle _default_handle);
         void RegisterHandle(std::string _handle_mask, Task _handle);
         auto Attach(Cycle* _cycle) -> bool;

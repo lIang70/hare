@@ -40,7 +40,7 @@ namespace io {
         auto is_running() const -> bool;
         auto type() const -> REACTOR_TYPE;
 
-#if HARE_DEBUG
+#ifdef HARE_DEBUG
 
         auto cycle_index() const -> std::uint64_t;
 
