@@ -47,8 +47,8 @@ namespace log {
         }
     };
 
-    using std_backend_mt = STDBackend<std::mutex>;
-    using std_backend_st = STDBackend<detail::DummyMutex>;
+    using STDBackendMT = STDBackend<std::mutex>;
+    using STDBackendST = STDBackend<detail::DummyMutex>;
 
 } // namespace log
 } // namespace hare

@@ -64,7 +64,7 @@ auto main(std::int32_t argc, char** argv) -> std::int32_t
 {
     using hare::log::Backend;
     using hare::log::FileBackendMT;
-    using hare::log::std_backend_mt;
+    using hare::log::STDBackendMT;
     using hare::log::detail::RotateFileBySize;
 
     if (argc < 4) {
@@ -77,7 +77,7 @@ auto main(std::int32_t argc, char** argv) -> std::int32_t
     auto tmp = hare::util::SystemDir();
     std::vector<hare::Ptr<Backend>> backends {
         std::make_shared<FileBackendMT<RotateFileBySize<file_size>>>(tmp + "/echo_serve"),
-        std_backend_mt::Instance()
+        STDBackendMT::Instance()
     };
     backends[0]->set_level(hare::log::LEVEL_TRACE);
     backends[1]->set_level(hare::log::LEVEL_INFO);
