@@ -67,7 +67,7 @@ auto main(std::int32_t argc, char** argv) -> std::int32_t
     using hare::log::STDBackendMT;
     using hare::log::detail::RotateFileBySize;
 
-    if (argc < 4) {
+    if (argc < 3) {
         fmt::print(USAGE);
         return (0);
     }
