@@ -1,6 +1,7 @@
 #ifndef _HARE_NET_BUFFER_INL_H_
 #define _HARE_NET_BUFFER_INL_H_
 
+#include "base/fwd-inl.h"
 #include <hare/base/util/buffer.h>
 #include <hare/net/buffer.h>
 

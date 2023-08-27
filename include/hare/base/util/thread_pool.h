@@ -38,7 +38,7 @@ namespace util {
         TaskHandle handle_ {};
 
     public:
-        HARE_INLINE 
+        HARE_INLINE
         ThreadPool(std::size_t _max_items, std::size_t _thr_n, TaskHandle _thr_task)
             : queue_(_max_items)
             , threads_(_thr_n)
