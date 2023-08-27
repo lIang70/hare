@@ -23,45 +23,42 @@ namespace hare {
 namespace log {
 
     HARE_CLASS_API
-    class HARE_API Registry : util::NonCopyable {
+    class HARE_API Registry : util::NonCopyableNorMovable {
         mutable std::mutex mutex_for_loggers_ {};
         std::unordered_map<std::string, Ptr<Logger>> loggers_ {};
 
     public:
-        static auto instance() -> Registry&;
+        static auto Instance() -> Registry&;
 
         template <typename Iter>
         HARE_INLINE
-        static auto create(const std::string& _unique_name, const Iter& begin, const Iter& end) -> Ptr<Logger>
+        static auto Create(const std::string& _unique_name, const Iter& begin, const Iter& end) -> Ptr<Logger>
         {
             auto tmp = std::make_shared<Logger>(_unique_name, begin, end);
-            instance().register_logger(tmp);
+            Instance().RegisterLogger(tmp);
             return tmp;
         }
 
         template <typename Iter>
         HARE_INLINE
-        static auto create(const std::string& _unique_name, const Iter& begin, const Iter& end, std::size_t _max_msg, std::size_t _thr_n) -> Ptr<AsyncLogger>
+        static auto Create(const std::string& _unique_name, const Iter& begin, const Iter& end, std::size_t _max_msg, std::size_t _thr_n) -> Ptr<AsyncLogger>
         {
             auto tmp = std::make_shared<AsyncLogger>(_unique_name, begin, end, _max_msg, _thr_n);
-            instance().register_logger(tmp);
+            Instance().RegisterLogger(tmp);
             return tmp;
         }
 
-        Registry(Registry&&) = delete;
-        auto operator=(Registry&&) -> Registry& = delete;
-
         HARE_INLINE
-        void register_logger(const Ptr<Logger>& _logger)
+        void RegisterLogger(const Ptr<Logger>& _logger)
         {
             std::lock_guard<std::mutex> lock(mutex_for_loggers_);
             auto logger_name = _logger->name();
-            assert_if_exists(logger_name);
+            AssertExists(logger_name);
             loggers_[logger_name] = _logger;
         }
 
         HARE_INLINE
-        auto get(const std::string& logger_name) -> Ptr<Logger>
+        auto Get(const std::string& logger_name) -> Ptr<Logger>
         {
             std::lock_guard<std::mutex> lock(mutex_for_loggers_);
             auto found = loggers_.find(logger_name);
@@ -69,14 +66,14 @@ namespace log {
         }
 
         HARE_INLINE
-        void drop(const std::string& logger_name)
+        void Drop(const std::string& logger_name)
         {
             std::lock_guard<std::mutex> lock(mutex_for_loggers_);
             loggers_.erase(logger_name);
         }
 
         HARE_INLINE
-        void drop_all()
+        void DropAll()
         {
             std::lock_guard<std::mutex> lock(mutex_for_loggers_);
             loggers_.clear();
@@ -85,7 +82,7 @@ namespace log {
     private:
         Registry() = default;
 
-        void assert_if_exists(const std::string& logger_name);
+        void AssertExists(const std::string& logger_name);
     };
 
 } // namespace log

@@ -3,7 +3,6 @@
 #include <hare/hare-config.h>
 #include <hare/net/host_address.h>
 
-#include <cassert>
 #include <cstring>
 
 #if HARE__HAVE_NETINET_IN_H
@@ -30,8 +29,8 @@ namespace net {
 
     auto HostAddress::Resolve(const std::string& _hostname, HostAddress* _result) -> bool
     {
-        assert(_result != nullptr);
-        assert(_result->Family() == AF_INET);
+        HARE_ASSERT(_result != nullptr);
+        HARE_ASSERT(_result->Family() == AF_INET);
 
         addrinfo hints {}, *res {};
         hare::detail::FillN(&hints, sizeof(addrinfo), 0);
@@ -149,8 +148,8 @@ namespace net {
 
     void HostAddress::set_sockaddr_in6(const struct sockaddr_in6* _addr_in6) const
     {
-        assert(_addr_in6 != nullptr);
-        assert(in_ != nullptr);
+        HARE_ASSERT(_addr_in6 != nullptr);
+        HARE_ASSERT(in_ != nullptr);
         std::memcpy(in_, _addr_in6, sizeof(struct sockaddr_in6));
     }
 
@@ -170,7 +169,7 @@ namespace net {
 
     auto HostAddress::Ipv4NetEndian() const -> std::uint32_t
     {
-        assert(socket_op::SockaddrCastIn(in_)->sin_family == AF_INET);
+        HARE_ASSERT(socket_op::SockaddrCastIn(in_)->sin_family == AF_INET);
         return socket_op::SockaddrCastIn(in_)->sin_addr.s_addr;
     }
 

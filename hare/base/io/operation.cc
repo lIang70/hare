@@ -1,8 +1,6 @@
 #include <hare/base/io/operation.h>
 #include <hare/hare-config.h>
 
-#include <cassert>
-
 #ifdef H_OS_WIN32
 #include <WinSock2.h>
 #include <Ws2tcpip.h>

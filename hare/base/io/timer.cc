@@ -39,7 +39,7 @@ namespace io {
     void Timer::TimerCallback(const Ptr<Event>& _event, std::uint8_t _events, const Timestamp& _ts)
     {
         IgnoreUnused(_ts);
-        assert(this->id() == _event->id());
+        HARE_ASSERT(this->id() == _event->id());
         if (CHECK_EVENT(_events, EVENT_TIMEOUT) == 0) {
             HARE_INTERNAL_ERROR("cannot check event[{}] with \'EVENT_TIMEOUT\'.", _event->id());
         }

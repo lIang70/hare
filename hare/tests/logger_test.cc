@@ -17,7 +17,7 @@ TEST(LoggerTest, bench)
         std::make_shared<FileBackendSt<RotateFileBySize<file_size>>>(tmp + "/logger_test")
     };
 
-    auto test_logger = hare::log::Registry::create("logger_test", backends.begin(), backends.end());
+    auto test_logger = hare::log::Registry::Create("logger_test", backends.begin(), backends.end());
 
     constexpr std::int32_t log_size = 250000;
 

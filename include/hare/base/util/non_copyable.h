@@ -28,6 +28,20 @@ namespace util {
         ~NonCopyable() = default;
     };
 
+    HARE_CLASS_API
+    class HARE_API NonCopyableNorMovable {
+    public:
+        NonCopyableNorMovable(const NonCopyable&) = delete;
+        NonCopyableNorMovable(NonCopyable&&) noexcept = delete;
+        auto operator=(const NonCopyableNorMovable&) -> NonCopyableNorMovable& = delete;
+        auto operator=(NonCopyableNorMovable&&) noexcept -> NonCopyableNorMovable& = delete;
+
+    protected:
+        NonCopyableNorMovable() = default;
+        ~NonCopyableNorMovable() = default;
+    };
+
+
 } // namespace util
 } // namespace hare
 

@@ -3,8 +3,6 @@
 #include <hare/base/io/operation.h>
 #include <hare/net/tcp/session.h>
 
-#include <cassert>
-
 #define DEFAULT_HIGH_WATER (64UL * 1024 * 1024)
 
 namespace hare {
@@ -65,7 +63,7 @@ namespace net {
 
     TcpSession::~TcpSession()
     {
-        assert(IMPL->state == STATE_DISCONNECTED);
+        HARE_ASSERT(IMPL->state == STATE_DISCONNECTED);
         HARE_INTERNAL_TRACE("session[{}] at {} fd={} free.", IMPL->name, (void*)this, Fd());
         delete impl_;
     }
@@ -248,7 +246,7 @@ namespace net {
     void TcpSession::HandleCallback(const Ptr<io::Event>& _event, std::uint8_t _events, const Timestamp& _receive_time)
     {
         OwnerCycle()->AssertInCycleThread();
-        assert(_event == IMPL->event);
+        HARE_ASSERT(_event == IMPL->event);
         HARE_INTERNAL_TRACE("session[{}] revents: {}.", IMPL->event->fd(), _events);
         if (CHECK_EVENT(_events, SESSION_READ)) {
             HandleRead(_receive_time);
@@ -309,7 +307,7 @@ namespace net {
     void TcpSession::HandleClose()
     {
         HARE_INTERNAL_TRACE("fd={} state={}.", Fd(), detail::StateToString(IMPL->state));
-        assert(IMPL->state == STATE_CONNECTED || IMPL->state == STATE_DISCONNECTING);
+        HARE_ASSERT(IMPL->state == STATE_CONNECTED || IMPL->state == STATE_DISCONNECTING);
         // we don't close fd, leave it to dtor, so we can find leaks easily.
         SetState(STATE_DISCONNECTED);
         IMPL->event->DisableRead();
@@ -320,7 +318,7 @@ namespace net {
             HARE_INTERNAL_ERROR("connect_callback has not been set for session[{}], session is closed.", IMPL->name);
         }
         IMPL->event->Deactivate();
-        assert(IMPL->destroy);
+        HARE_ASSERT(IMPL->destroy);
         IMPL->destroy();
     }
 
@@ -336,7 +334,7 @@ namespace net {
 
     void TcpSession::ConnectEstablished()
     {
-        assert(IMPL->state == STATE_CONNECTING);
+        HARE_ASSERT(IMPL->state == STATE_CONNECTING);
         SetState(STATE_CONNECTED);
         if (IMPL->connect) {
             IMPL->connect(shared_from_this(), SESSION_CONNECTED);

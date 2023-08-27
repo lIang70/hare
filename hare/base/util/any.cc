@@ -1,3 +1,4 @@
+#include "base/fwd-inl.h"
 #include <hare/base/util/any.h>
 #include <hare/base/exception.h>
 
@@ -6,7 +7,7 @@ namespace util {
     namespace detail {
         void ThrowBadAnyCast()
         {
-            throw Exception("bad any cast");
+            HARE_INTERNAL_FATAL("bad any cast");
         }
     } // namespace detail
 

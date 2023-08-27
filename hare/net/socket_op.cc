@@ -215,7 +215,7 @@ namespace socket_op {
             auto end = ::strlen(_buf);
             const auto* addr6 = SockaddrCastIn6(_addr);
             auto port = io::NetworkToHost16(addr6->sin6_port);
-            assert(size > end);
+            HARE_ASSERT(size > end);
             IgnoreUnused(::snprintf(_buf + end, size - end, "]:%u", port));
             return;
         }
@@ -223,18 +223,18 @@ namespace socket_op {
         auto end = ::strlen(_buf);
         const auto* addr4 = SockaddrCastIn(_addr);
         auto port = io::NetworkToHost16(addr4->sin_port);
-        assert(size > end);
+        HARE_ASSERT(size > end);
         IgnoreUnused(::snprintf(_buf + end, size - end, ":%u", port));
     }
 
     void ToIp(char* _buf, std::size_t size, const struct sockaddr* _addr)
     {
         if (_addr->sa_family == AF_INET) {
-            assert(size >= INET_ADDRSTRLEN);
+            HARE_ASSERT(size >= INET_ADDRSTRLEN);
             const auto* addr4 = SockaddrCastIn(_addr);
             ::inet_ntop(AF_INET, &addr4->sin_addr, _buf, static_cast<socklen_t>(size));
         } else if (_addr->sa_family == AF_INET6) {
-            assert(size >= INET6_ADDRSTRLEN);
+            HARE_ASSERT(size >= INET6_ADDRSTRLEN);
             const auto* addr6 = SockaddrCastIn6(_addr);
             ::inet_ntop(AF_INET6, &addr6->sin6_addr, _buf, static_cast<socklen_t>(size));
         }

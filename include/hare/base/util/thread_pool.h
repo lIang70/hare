@@ -9,8 +9,8 @@
  *
  **/
 
-#ifndef _HARE_LOG_UTIL_THREAD_POOL_H_
-#define _HARE_LOG_UTIL_THREAD_POOL_H_
+#ifndef _HARE_UTIL_THREAD_POOL_H_
+#define _HARE_UTIL_THREAD_POOL_H_
 
 #include <hare/base/exception.h>
 #include <hare/base/util/queue.h>
@@ -27,7 +27,7 @@ namespace util {
 
     HARE_CLASS_API
     template <typename T>
-    class HARE_API ThreadPool {
+    class HARE_API ThreadPool final {
     public:
         using ValueType = T;
         using TaskHandle = std::function<bool(ValueType&)>;
@@ -136,4 +136,4 @@ namespace util {
 } // namespace util
 } // namespace hare
 
-#endif // _HARE_LOG_UTIL_THREAD_POOL_H_
+#endif // _HARE_UTIL_THREAD_POOL_H_

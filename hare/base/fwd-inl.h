@@ -61,6 +61,18 @@ HARE_INLINE auto CheckNotNull(const char* _names, T* _ptr) -> T*
 #define CHECK_NULL(val) \
     ::hare::CheckNotNull("'" #val "' must be non NULL.", (val))
 
+HARE_API void Abort(const char* _errmsg);
+
+#define HARE_ASSERT(x)                                                         \
+    do {                                                                       \
+        if (HARE_PREDICT_FALSE(!(x))) {                                        \
+            fmt::print(stderr, "Assertion failed: {} ({}:{})\n", #x, __FILE__, \
+                __LINE__);                                                     \
+            IgnoreUnused(std::fflush(stderr));                                 \
+            ::hare::Abort(#x);                                                 \
+        }                                                                      \
+    } while (false)
+
 } // namespace hare
 
 #endif // _HARE_BASE_FWD_INL_H_

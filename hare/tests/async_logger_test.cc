@@ -18,7 +18,7 @@ TEST(AsyncLoggerTest, bench)
     };
 
     auto test_logger = 
-        hare::log::Registry::create("async_logger_test", backends.begin(), backends.end(), 
+        hare::log::Registry::Create("async_logger_test", backends.begin(), backends.end(), 
             5000, std::thread::hardware_concurrency());
         
     test_logger->set_policy(hare::log::Policy::BLOCK_RETRY);

@@ -92,7 +92,7 @@ namespace io {
             void EventCallback(const Ptr<Event>& _event, std::uint8_t _events, const Timestamp& _receive_time)
             {
                 IgnoreUnused(_event, _receive_time);
-                assert(_event == this->shared_from_this());
+                HARE_ASSERT(_event == this->shared_from_this());
 
                 if (CHECK_EVENT(_events, EVENT_READ) != 0) {
                     std::uint64_t one = 0;
@@ -233,7 +233,7 @@ namespace io {
 
     void Cycle::Exec()
     {
-        assert(!IMPL->is_running);
+        HARE_ASSERT(!IMPL->is_running);
         IMPL->is_running = true;
         IMPL->quit = false;
         EventUpdate(IMPL->notify_event);
@@ -333,13 +333,13 @@ namespace io {
         auto id = IMPL->event_id.fetch_add(1);
 
         RunInCycle([=] {
-            assert(timer->id() == -1);
+            HARE_ASSERT(timer->id() == -1);
 
             timer->Active(this, id);
-            assert(IMPL->reactor->events_.find(timer->id()) == IMPL->reactor->events_.end());
+            HARE_ASSERT(IMPL->reactor->events_.find(timer->id()) == IMPL->reactor->events_.end());
             IMPL->reactor->events_.insert(std::make_pair(timer->id(), timer));
 
-            assert(CHECK_EVENT(timer->events(), EVENT_TIMEOUT) != 0);
+            HARE_ASSERT(CHECK_EVENT(timer->events(), EVENT_TIMEOUT) != 0);
             IMPL->reactor->ptimer_.emplace(timer->id(),
                 Timestamp(Timestamp::Now().microseconds_since_epoch() + timer->timeval()));
         });
@@ -357,13 +357,13 @@ namespace io {
         auto id = IMPL->event_id.fetch_add(1);
 
         RunInCycle([=] {
-            assert(timer->id() == -1);
+            HARE_ASSERT(timer->id() == -1);
 
             timer->Active(this, id);
-            assert(IMPL->reactor->events_.find(timer->id()) == IMPL->reactor->events_.end());
+            HARE_ASSERT(IMPL->reactor->events_.find(timer->id()) == IMPL->reactor->events_.end());
             IMPL->reactor->events_.insert(std::make_pair(timer->id(), timer));
 
-            assert(CHECK_EVENT(timer->events(), EVENT_TIMEOUT) != 0);
+            HARE_ASSERT(CHECK_EVENT(timer->events(), EVENT_TIMEOUT) != 0);
             IMPL->reactor->ptimer_.emplace(timer->id(),
                 Timestamp(Timestamp::Now().microseconds_since_epoch() + timer->timeval()));
         });
@@ -426,7 +426,7 @@ namespace io {
             if (sevent->id() == -1) {
                 sevent->Active(this, IMPL->event_id.fetch_add(1));
 
-                assert(IMPL->reactor->events_.find(sevent->id()) == IMPL->reactor->events_.end());
+                HARE_ASSERT(IMPL->reactor->events_.find(sevent->id()) == IMPL->reactor->events_.end());
                 IMPL->reactor->events_.insert(std::make_pair(sevent->id(), sevent));
 
                 if (sevent->fd() >= 0) {
@@ -466,7 +466,7 @@ namespace io {
             if (iter == IMPL->reactor->events_.end()) {
                 HARE_INTERNAL_ERROR("cannot find event in cycle[{}]", (void*)this);
             } else {
-                assert(iter->second == sevent);
+                HARE_ASSERT(iter->second == sevent);
 
                 sevent->Reset();
 

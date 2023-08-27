@@ -82,7 +82,7 @@ auto main(std::int32_t argc, char** argv) -> std::int32_t
     backends[0]->set_level(hare::log::LEVEL_TRACE);
     backends[1]->set_level(hare::log::LEVEL_INFO);
 
-    server_logger = hare::log::Registry::create("echo_serve", backends.begin(), backends.end());
+    server_logger = hare::log::Registry::Create("echo_serve", backends.begin(), backends.end());
     server_logger->set_level(hare::log::LEVEL_TRACE);
 
     hare::RegisterLogHandler(HandleMsg);

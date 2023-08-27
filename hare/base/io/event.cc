@@ -70,7 +70,7 @@ namespace io {
 
     Event::~Event()
     {
-        assert(IMPL->cycle == nullptr);
+        HARE_ASSERT(IMPL->cycle == nullptr);
         delete impl_;
     }
 

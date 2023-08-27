@@ -41,7 +41,7 @@ namespace net {
 
     TcpServe::~TcpServe()
     {
-        assert(!IMPL->started);
+        HARE_ASSERT(!IMPL->started);
         delete impl_;
     }
 
@@ -91,7 +91,7 @@ namespace net {
 
     auto TcpServe::Exec(std::int32_t _thread_nbr) -> Error
     {
-        assert(IMPL->cycle != nullptr);
+        HARE_ASSERT(IMPL->cycle != nullptr);
 
         IMPL->io_pool = std::make_shared<IOPool<Ptr<TcpSession>>>("SERVER_WORKER");
         auto ret = IMPL->io_pool->Start(IMPL->cycle->type(), _thread_nbr);
@@ -117,14 +117,14 @@ namespace net {
 
     void TcpServe::NewSession(util_socket_t _fd, HostAddress& _address, const Timestamp& _time, Acceptor* _acceptor)
     {
-        assert(IMPL->started);
+        HARE_ASSERT(IMPL->started);
         IMPL->cycle->AssertInCycleThread();
 
         auto next_item = IMPL->io_pool->GetNextItem();
         Ptr<TcpSession> tcp_session { nullptr };
         std::string name_cache {};
 
-        assert(_fd != -1);
+        HARE_ASSERT(_fd != -1);
         auto local_addr = HostAddress::LocalAddress(_fd);
 
         name_cache = fmt::format("{}-{}#tcp{}", IMPL->name, local_addr.ToIpPort(), IMPL->session_id++);
@@ -147,13 +147,13 @@ namespace net {
 
         tcp_session->SetDestroy([=]() {
             next_item->cycle->RunInCycle([=]() mutable {
-                assert(next_item->sessions.find(sfd) != next_item->sessions.end());
+                HARE_ASSERT(next_item->sessions.find(sfd) != next_item->sessions.end());
                 next_item->sessions.erase(sfd);
             });
         });
 
         next_item->cycle->RunInCycle([=]() mutable {
-            assert(next_item->sessions.find(sfd) == next_item->sessions.end());
+            HARE_ASSERT(next_item->sessions.find(sfd) == next_item->sessions.end());
             if (!IMPL->new_session) {
                 HARE_INTERNAL_ERROR("you need register new_session_callback to serve[{}].", IMPL->name);
                 if (sfd != -1) {

@@ -1,3 +1,4 @@
+#include "base/fwd-inl.h"
 #include <hare/log/async_logger.h>
 
 namespace hare {
@@ -63,7 +64,7 @@ namespace log {
         case detail::AsyncMsg::TERMINATE:
             break;
         default:
-            assert(false);
+            HARE_ASSERT(false);
             break;
         }
         return false;

@@ -1,3 +1,4 @@
+#include "base/fwd-inl.h"
 #include "base/io/local.h"
 #include <hare/base/time/timezone.h>
 #include <hare/log/details/async_msg.h>
@@ -10,16 +11,16 @@ namespace log {
         {
             static thread_local std::int64_t t_last_time {};
             static thread_local std::string t_time {};
-            
+
             auto microseconds_since_epoch = _msg.stamp_.microseconds_since_epoch();
             auto seconds = static_cast<time_t>(microseconds_since_epoch / HARE_MICROSECONDS_PER_SECOND);
             _microseconds = static_cast<std::int32_t>(microseconds_since_epoch - seconds * HARE_MICROSECONDS_PER_SECOND);
-            
-            assert(_msg.timezone_ != nullptr);
+
+            HARE_ASSERT(_msg.timezone_ != nullptr);
 
             if (seconds != t_last_time) {
                 t_last_time = seconds;
-                struct time::DateTime dt {};
+                struct time::DateTime dt { };
                 if (bool(*_msg.timezone_)) {
                     dt = _msg.timezone_->ToLocal(seconds);
                 } else {
@@ -47,11 +48,11 @@ namespace log {
             const auto& stamp = LogTime(_msg, microseconds);
             const auto* level = ToStr(static_cast<Level>(_msg.level_));
             _msg.raw_[_msg.raw_.size()] = '\0';
-            
+
             // [LEVEL] (stamp) <tid> msg (loc)
-            fmt::format_to(std::back_inserter(_fotmatted), 
-                "({:}.{:06d}) [{:8}] <{:#x}> {} [{}:{}||{}]" HARE_EOL, 
-                stamp, microseconds, level, io::current_thread::ThreadData().tid, 
+            fmt::format_to(std::back_inserter(_fotmatted),
+                "({:}.{:06d}) [{:8}] <{:#x}> {} [{}:{}||{}]" HARE_EOL,
+                stamp, microseconds, level, io::current_thread::ThreadData().tid,
                 _msg.raw_.data(),
                 _msg.loc_.filename, _msg.loc_.line, _msg.loc_.funcname);
         }

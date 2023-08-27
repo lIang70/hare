@@ -4,7 +4,6 @@
 #include <hare/base/exception.h>
 #include <hare/hare-config.h>
 
-#include <cassert>
 #include <vector>
 
 #if HARE__HAVE_SYS_IOCTL_H
@@ -209,7 +208,7 @@ namespace net {
                 if ((*index)->Full() && index->next != read) {
                     index = index->next;
                 } else {
-                    assert(_size == 0);
+                    HARE_ASSERT(_size == 0);
                 }
             }
             write = index;
@@ -235,7 +234,7 @@ namespace net {
             } while (_size != 0 && index != End());
 
             if (_size > 0) {
-                assert(_size <= (*index)->ReadableSize());
+                HARE_ASSERT(_size <= (*index)->ReadableSize());
                 (*index)->Drain(_size);
                 _size = 0;
             }

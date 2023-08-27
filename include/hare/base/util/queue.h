@@ -9,8 +9,8 @@
  *
  **/
 
-#ifndef _HARE_LOG_UTIL_QUEUE_H_
-#define _HARE_LOG_UTIL_QUEUE_H_
+#ifndef _HARE_UTIL_QUEUE_H_
+#define _HARE_UTIL_QUEUE_H_
 
 #include <hare/base/util/non_copyable.h>
 
@@ -85,7 +85,7 @@ namespace util {
         HARE_INLINE
         auto At(SizeType i) const -> const T&
         {
-            assert(i < Size());
+            HARE_ASSERT(i < Size());
             return sequence_[(head_ + i) % max_capacity_];
         }
 
@@ -231,4 +231,4 @@ namespace util {
 } // namespace util
 } // namespace hare
 
-#endif // _HARE_LOG_UTIL_QUEUE_H_
+#endif // _HARE_UTIL_QUEUE_H_

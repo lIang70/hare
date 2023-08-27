@@ -158,7 +158,7 @@ namespace net {
                     ++node_size_;
                 }
                 write = write->next;
-                assert(write != read);
+                HARE_ASSERT(write != read);
                 return End();
             }
             

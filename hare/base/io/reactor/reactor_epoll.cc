@@ -25,7 +25,7 @@ namespace io {
             case EPOLL_CTL_MOD:
                 return "MOD";
             default:
-                assert(false);
+                HARE_ASSERT(false);
                 return "Unknown Operation";
             }
         }
@@ -144,16 +144,16 @@ namespace io {
             // a new one, add with EPOLL_CTL_ADD
             auto target_fd = _event->fd();
             IgnoreUnused(target_fd);
-            assert(inverse_map_.find(target_fd) == inverse_map_.end());
+            HARE_ASSERT(inverse_map_.find(target_fd) == inverse_map_.end());
             return UpdateEpoll(EPOLL_CTL_ADD, _event);
         }
 
         // update existing one with EPOLL_CTL_MOD/DEL
         auto target_fd = _event->fd();
         IgnoreUnused(target_fd);
-        assert(inverse_map_.find(target_fd) != inverse_map_.end());
-        assert(events_.find(event_id) != events_.end());
-        assert(events_[event_id] == _event);
+        HARE_ASSERT(inverse_map_.find(target_fd) != inverse_map_.end());
+        HARE_ASSERT(events_.find(event_id) != events_.end());
+        HARE_ASSERT(events_[event_id] == _event);
         return UpdateEpoll(EPOLL_CTL_MOD, _event);
     }
 
@@ -164,22 +164,22 @@ namespace io {
         IgnoreUnused(target_fd, event_id);
 
         HARE_INTERNAL_TRACE("epoll-remove: fd={}, flags={}.", target_fd, _event->events());
-        assert(inverse_map_.find(target_fd) != inverse_map_.end());
-        assert(event_id == -1);
+        HARE_ASSERT(inverse_map_.find(target_fd) != inverse_map_.end());
+        HARE_ASSERT(event_id == -1);
 
         return UpdateEpoll(EPOLL_CTL_DEL, _event);
     }
 
     void ReactorEpoll::FillActiveEvents(std::int32_t _num_of_events)
     {
-        assert(ImplicitCast<std::size_t>(_num_of_events) <= epoll_events_.size());
+        HARE_ASSERT(ImplicitCast<std::size_t>(_num_of_events) <= epoll_events_.size());
         for (auto i = 0; i < _num_of_events; ++i) {
             auto* event = static_cast<io::Event*>(epoll_events_[i].data.ptr);
-            assert(inverse_map_.find(event->fd()) != inverse_map_.end());
+            HARE_ASSERT(inverse_map_.find(event->fd()) != inverse_map_.end());
             auto event_id = inverse_map_[event->fd()];
-            assert(events_.find(event_id) != events_.end());
+            HARE_ASSERT(events_.find(event_id) != events_.end());
             auto revent = events_[event_id];
-            assert(event == revent.get());
+            HARE_ASSERT(event == revent.get());
             active_events_.emplace_back(revent, detail::EncodeEpoll(epoll_events_[i].events));
         }
     }

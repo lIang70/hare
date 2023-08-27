@@ -146,7 +146,7 @@ auto TimezoneImpl::FindLocalTime(std::int64_t _utc_time) const -> const Timezone
     } else {
         Transition sentry(_utc_time, 0, 0);
         auto trans_iter = std::upper_bound(transitions.begin(), transitions.end(), sentry, CompareUTCTime());
-        assert(trans_iter != transitions.begin());
+        HARE_ASSERT(trans_iter != transitions.begin());
         if (trans_iter != transitions.end()) {
             --trans_iter;
             local = &local_times[trans_iter->local_time_idx];
@@ -170,7 +170,7 @@ auto TimezoneImpl::FindLocalTime(const struct time::DateTime& _tdt, bool _post_t
 
     Transition sentry(0, local_time, 0);
     auto trans_iter = std::upper_bound(transitions.begin(), transitions.end(), sentry, CompareLocalTime());
-    assert(trans_iter != transitions.begin());
+    HARE_ASSERT(trans_iter != transitions.begin());
 
     if (trans_iter == transitions.end()) {
         // FIXME: use TZ-env
@@ -281,7 +281,7 @@ Timezone::operator bool() const
 }
 
 auto Timezone::ToLocal(std::int64_t _seconds, std::int32_t* _utc_offset) const -> struct time::DateTime {
-    assert(IMPL->valid);
+    HARE_ASSERT(IMPL->valid);
 
     struct time::DateTime local_time { };
     const auto* local = IMPL -> FindLocalTime(_seconds);
@@ -298,7 +298,7 @@ auto Timezone::ToLocal(std::int64_t _seconds, std::int32_t* _utc_offset) const -
 
 auto Timezone::FromLocal(const struct time::DateTime& _dt, bool _post_transition) const -> std::int64_t
 {
-    assert(IMPL->valid);
+    HARE_ASSERT(IMPL->valid);
     const auto* local = IMPL->FindLocalTime(_dt, _post_transition);
     const auto local_seconds = FromUtcTime(_dt);
     if (local != nullptr) {

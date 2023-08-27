@@ -40,7 +40,7 @@ namespace net {
 #ifdef H_OS_LINUX
         , idle_fd_(::open("/dev/null", O_RDONLY | O_CLOEXEC))
     {
-        assert(idle_fd_ > 0);
+        HARE_ASSERT(idle_fd_ > 0);
 #else
     {
 #endif
@@ -77,7 +77,7 @@ namespace net {
 
     void Acceptor::EventCallback(const Ptr<io::Event>& _event, std::uint8_t _events, const Timestamp& _receive_time)
     {
-        assert(this->shared_from_this() == _event);
+        HARE_ASSERT(this->shared_from_this() == _event);
         if (CHECK_EVENT(_events, io::EVENT_READ) == 0) {
             HARE_INTERNAL_ERROR("unexpected operation of acceptor.");
             return;

@@ -108,8 +108,8 @@ namespace io {
 
         if (_event->id() == -1) {
             // a new one, add to pollfd_list
-            assert(inverse_map_.find(target_fd) == inverse_map_.end());
-            assert(inverse_iter == inverse_map_.end());
+            HARE_ASSERT(inverse_map_.find(target_fd) == inverse_map_.end());
+            HARE_ASSERT(inverse_iter == inverse_map_.end());
             struct pollfd poll_fd { };
             hare::detail::FillN(&poll_fd, sizeof(poll_fd), 0);
             poll_fd.fd = target_fd;
@@ -124,13 +124,13 @@ namespace io {
         // update existing one
         auto event_id = _event->id();
         IgnoreUnused(event_id);
-        assert(events_.find(event_id) != events_.end());
-        assert(events_[event_id] == _event);
-        assert(inverse_iter != inverse_map_.end());
+        HARE_ASSERT(events_.find(event_id) != events_.end());
+        HARE_ASSERT(events_[event_id] == _event);
+        HARE_ASSERT(inverse_iter != inverse_map_.end());
         auto& index = inverse_iter->second;
-        assert(0 <= index && index < static_cast<std::int32_t>(poll_fds_.size()));
+        HARE_ASSERT(0 <= index && index < static_cast<std::int32_t>(poll_fds_.size()));
         struct pollfd& pfd = poll_fds_[index];
-        assert(pfd.fd == target_fd || pfd.fd == -target_fd - 1);
+        HARE_ASSERT(pfd.fd == target_fd || pfd.fd == -target_fd - 1);
         pfd.fd = target_fd;
         pfd.events = detail::DecodePoll(_event->events());
         pfd.revents = 0;
@@ -141,22 +141,22 @@ namespace io {
     {
         const auto target_fd = _event->fd();
         auto inverse_iter = inverse_map_.find(target_fd);
-        assert(inverse_iter != inverse_map_.end());
+        HARE_ASSERT(inverse_iter != inverse_map_.end());
         auto& index = inverse_iter->second;
 
         HARE_INTERNAL_TRACE("poll-remove: fd={}, events={}.", target_fd, _event->events());
-        assert(0 <= index && index < static_cast<std::int32_t>(poll_fds_.size()));
+        HARE_ASSERT(0 <= index && index < static_cast<std::int32_t>(poll_fds_.size()));
         
         const auto& pfd = poll_fds_[index];
         IgnoreUnused(pfd);
-        assert(pfd.events == detail::DecodePoll(_event->events()));
+        HARE_ASSERT(pfd.events == detail::DecodePoll(_event->events()));
         if (ImplicitCast<std::size_t>(index) == poll_fds_.size() - 1) {
             poll_fds_.pop_back();
         } else {
             // modify the id of event.
             auto& swap_pfd = poll_fds_.back();
             auto swap_fd = swap_pfd.fd;
-            assert(inverse_map_.find(swap_fd) != inverse_map_.end());
+            HARE_ASSERT(inverse_map_.find(swap_fd) != inverse_map_.end());
             inverse_map_[swap_fd] = index;
             std::iter_swap(poll_fds_.begin() + index, poll_fds_.end() - 1);
             poll_fds_.pop_back();
@@ -173,8 +173,8 @@ namespace io {
             if (pfd.revents > 0) {
                 --_num_of_events;
                 auto event_iter = events_.find(event_id);
-                assert(event_iter != events_.end());
-                assert(event_iter->second->fd() == pfd.fd);
+                HARE_ASSERT(event_iter != events_.end());
+                HARE_ASSERT(event_iter->second->fd() == pfd.fd);
                 active_events_.emplace_back(event_iter->second, detail::EncodePoll(pfd.revents));
             }
         }

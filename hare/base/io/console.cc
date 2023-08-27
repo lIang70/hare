@@ -56,7 +56,7 @@ namespace io {
 
     void Console::RegisterHandle(std::string _handle_mask, Task _handle)
     {
-        assert(!IMPL->attached);
+        HARE_ASSERT(!IMPL->attached);
         IMPL->handlers.emplace(_handle_mask, _handle);
     }
 
@@ -98,7 +98,7 @@ namespace io {
 
     void Console::Process(const Ptr<Event>& _event, std::uint8_t _events, const Timestamp& _receive_time)
     {
-        assert(IMPL->console_event == _event);
+        HARE_ASSERT(IMPL->console_event == _event);
         if (CHECK_EVENT(_events, EVENT_READ) == 0) {
             HARE_INTERNAL_ERROR("cannot check EVENT_READ.");
             return;
