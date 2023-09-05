@@ -1,13 +1,4 @@
-﻿find_package(PkgConfig REQUIRED)
-
-if(PKG_CONFIG_FOUND)
-    pkg_search_module(Jemalloc REQUIRED IMPORTED_TARGET jemalloc>=5.3)
-    set(JEMALLOC_FOUND ON)
-else()
-    set(JEMALLOC_FOUND OFF)
-endif(PKG_CONFIG_FOUND)
-
-# Check if header files exist
+﻿# Check if header files exist
 list(APPEND FILES_TO_CHECK
     fcntl.h
     inttypes.h
