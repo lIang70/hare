@@ -18,7 +18,7 @@
 #define HARE__VERSION "@HARE_PACKAGE_VERSION@"
 
 /* Name of package */
-#define HARE__PACKAGE "libhare"
+#define HARE__PACKAGE "hare"
 
 /* Define to 1 if you have the `accept4' function. */
 #cmakedefine HARE__HAVE_ACCEPT4 1

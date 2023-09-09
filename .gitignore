@@ -69,8 +69,8 @@ tmp/
 install_manifest.txt
 test-export/build
 Testing/
-LibhareTargets*.cmake
-LibhareConfig*.cmake
+HareTargets*.cmake
+HareConfig*.cmake
 
 # hare
 libhare*.so

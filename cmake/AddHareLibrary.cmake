@@ -10,7 +10,7 @@ endmacro()
 macro(export_install_target TYPE LIB_NAME)
     string(REPLACE "hare_" "" PURE_NAME ${LIB_NAME})
     string(TOUPPER ${TYPE} UPPER_TYPE)
-    set(LIBHARE_${UPPER_TYPE}_LIBRARIES "${PURE_NAME};${LIBHARE_${UPPER_TYPE}_LIBRARIES}" PARENT_SCOPE)
+    set(HARE_${UPPER_TYPE}_LIBRARIES "${PURE_NAME};${HARE_${UPPER_TYPE}_LIBRARIES}" PARENT_SCOPE)
     set(OUTER_INCS)
 
     if(NOT "${OUTER_INCLUDES}" STREQUAL "NONE")
@@ -25,11 +25,11 @@ macro(export_install_target TYPE LIB_NAME)
     set_target_properties("${LIB_NAME}_${TYPE}" PROPERTIES EXPORT_NAME ${PURE_NAME})
     export(TARGETS "${LIB_NAME}_${TYPE}"
         NAMESPACE ${PROJECT_NAME}::
-        FILE "${PROJECT_BINARY_DIR}/LibhareTargets-${TYPE}.cmake"
+        FILE "${PROJECT_BINARY_DIR}/HareTargets-${TYPE}.cmake"
         APPEND
     )
     install(TARGETS "${LIB_NAME}_${TYPE}"
-        EXPORT LibhareTargets-${TYPE}
+        EXPORT HareTargets-${TYPE}
         LIBRARY DESTINATION "lib" COMPONENT lib
         ARCHIVE DESTINATION "lib" COMPONENT lib
         RUNTIME DESTINATION "lib" COMPONENT lib

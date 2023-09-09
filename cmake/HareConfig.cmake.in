@@ -1,34 +1,34 @@
-# - Config file for the Libhare package
+# - Config file for the Hare package
 # It defines the following variables
-#  LIBHARE_FOUND            - true if libhare and all required components found on the system
-#  LIBHARE_xxx_FOUND        - true if component xxx(see available components) found on the system
-#  LIBHARE_VERSION          - libhare version in format Major.Minor.Patch
-#  LIBHARE_INCLUDE_DIRS     - directories where libhare header is located.
-#  LIBHARE_INCLUDE_DIR      - same as DIRS
-#  LIBHARE_LIBRARIES        - libhare library to link against.
-#  LIBHARE_LIBRARY          - same as LIBRARIES
+#  HARE_FOUND            - true if hare and all required components found on the system
+#  HARE_xxx_FOUND        - true if component xxx(see available components) found on the system
+#  HARE_VERSION          - hare version in format Major.Minor.Patch
+#  HARE_INCLUDE_DIRS     - directories where hare header is located.
+#  HARE_INCLUDE_DIR      - same as DIRS
+#  HARE_LIBRARIES        - hare library to link against.
+#  HARE_LIBRARY          - same as LIBRARIES
 #
 # These variables are deprecated, don't use them.
-#  LIBHARE_STATIC_LIBRARIES - libraries to link against (archive/static)
-#  LIBHARE_SHARED_LIBRARIES - libraries to link against (shared)
+#  HARE_STATIC_LIBRARIES - libraries to link against (archive/static)
+#  HARE_SHARED_LIBRARIES - libraries to link against (shared)
 #
-# When you try to locate the libhare libraries, you should specify which components you want to use.
+# When you try to locate the hare libraries, you should specify which components you want to use.
 # The following table lists all available components. If none is given, all imported targets will used.
-#  base        - the base module of libhare
-#  log         - the log module of libhare
-#  net         - the net module of libhare
+#  base        - the base module of hare
+#  log         - the log module of hare
+#  net         - the net module of hare
 #
 # If no component provided, all components will be used.
 # example:
-#  find_package(Libhare 0.2 REQUIRED COMPONENTS base)
-#  include_directories(${LIBHARE_INCLUDE_DIRS})  # Can be omitted
-#  target_link_libraries(myapp ${LIBHARE_LIBRARIES})
-#    or target_link_libraries(myapp libhare::base)
+#  find_package(Hare 0.2 REQUIRED COMPONENTS base)
+#  include_directories(${HARE_INCLUDE_DIRS})  # Can be omitted
+#  target_link_libraries(myapp ${HARE_LIBRARIES})
+#    or target_link_libraries(myapp hare::base)
 #
 # find_package() can handle dependencies automatically. For example, given the 'net' component,
-# all dependencies (libhare_base, libssl, libcrypto and openssl include directories) will be found.
+# all dependencies (hare_base, libssl, libcrypto and openssl include directories) will be found.
 
-set(LIBHARE_VERSION @HARE_PACKAGE_VERSION@)
+set(HARE_VERSION @HARE_PACKAGE_VERSION@)
 
 # Load the dependencies of all components. As find_dependency propagates the original
 # find_package attributes (i.e. required or not), there's no need to repeat this or filter
@@ -36,22 +36,22 @@ set(LIBHARE_VERSION @HARE_PACKAGE_VERSION@)
 include(CMakeFindDependencyMacro)
 find_dependency(OpenSSL)
 
-# IMPORTED targets from LibhareTargets.cmake
-set(LIBHARE_STATIC_LIBRARIES "@LIBHARE_STATIC_LIBRARIES@")
-set(LIBHARE_SHARED_LIBRARIES "@LIBHARE_SHARED_LIBRARIES@")
+# IMPORTED targets from HareTargets.cmake
+set(HARE_STATIC_LIBRARIES "@HARE_STATIC_LIBRARIES@")
+set(HARE_SHARED_LIBRARIES "@HARE_SHARED_LIBRARIES@")
 
-if(${LIBHARE_STATIC_LINK})
+if(${HARE_STATIC_LINK})
     set(_LIB_TYPE static)
-    set(_AVAILABLE_LIBS "${LIBHARE_STATIC_LIBRARIES}")
+    set(_AVAILABLE_LIBS "${HARE_STATIC_LIBRARIES}")
 
     # CMake before 3.15 doesn't link OpenSSL to pthread/dl, do it ourselves instead
-    if (${CMAKE_VERSION} VERSION_LESS "3.15.0" AND ${LIBHARE_STATIC_LINK} AND ${OPENSSL_FOUND} AND ${Threads_FOUND})
+    if (${CMAKE_VERSION} VERSION_LESS "3.15.0" AND ${HARE_STATIC_LINK} AND ${OPENSSL_FOUND} AND ${Threads_FOUND})
         set_property(TARGET OpenSSL::Crypto APPEND PROPERTY INTERFACE_LINK_LIBRARIES Threads::Threads)
         set_property(TARGET OpenSSL::Crypto APPEND PROPERTY INTERFACE_LINK_LIBRARIES ${CMAKE_DL_LIBS})
     endif ()
 else()
     set(_LIB_TYPE shared)
-    set(_AVAILABLE_LIBS "${LIBHARE_SHARED_LIBRARIES}")
+    set(_AVAILABLE_LIBS "${HARE_SHARED_LIBRARIES}")
 endif()
 
 macro(message_if_needed _flag _msg)
@@ -66,10 +66,10 @@ macro(no_component_msg _comp)
         if(NOT WIN32)
             set(pthreadlib ", pthreads")
         endif()
-        message(FATAL_ERROR "Your libhare library does not contain a ${_comp} component!\n"
+        message(FATAL_ERROR "Your hare library does not contain a ${_comp} component!\n"
                 "The valid components are core, extra${pthreadlib}, openssl and mbedtls.")
     else()
-        message_if_needed(WARNING "Your libhare library does not contain a ${_comp} component!")
+        message_if_needed(WARNING "Your hare library does not contain a ${_comp} component!")
     endif()
 endmacro()
 
@@ -89,7 +89,7 @@ else()
 endif()
 
 set(_POSSIBLE_PKG_NAMES)
-list(APPEND _POSSIBLE_PKG_NAMES ${CMAKE_FIND_PACKAGE_NAME} LIBHARE Libhare libhare)
+list(APPEND _POSSIBLE_PKG_NAMES ${CMAKE_FIND_PACKAGE_NAME} HARE Hare hare)
 list(REMOVE_DUPLICATES _POSSIBLE_PKG_NAMES)
 
 macro(set_case_insensitive_found _comp)
@@ -105,29 +105,29 @@ macro(set_case_insensitive_found _comp)
 endmacro()
 
 foreach(_comp ${_EVENT_COMPONENTS})
-    list(APPEND LIBHARE_LIBRARIES "libhare::${_comp}")
+    list(APPEND HARE_LIBRARIES "hare::${_comp}")
     set_case_insensitive_found(${_comp})
 endforeach()
 
-if(LIBHARE_LIBRARIES)
-    set(LIBHARE_LIBRARY ${LIBHARE_LIBRARIES})
+if(HARE_LIBRARIES)
+    set(HARE_LIBRARY ${HARE_LIBRARIES})
 
     # Avoid including targets more than once.
-    if(NOT TARGET libhare::base)
+    if(NOT TARGET hare::base)
         # Include the project Targets file, this contains definitions for IMPORTED targets.
-        include(${CMAKE_CURRENT_LIST_DIR}/LibhareTargets-${_LIB_TYPE}.cmake)
+        include(${CMAKE_CURRENT_LIST_DIR}/HareTargets-${_LIB_TYPE}.cmake)
     endif()
-    get_target_property(LIBHARE_INCLUDE_DIRS libhare::base INTERFACE_INCLUDE_DIRECTORIES)
-    get_filename_component(LIBHARE_INSTALL_PREFIX "${LIBHARE_INCLUDE_DIRS}" PATH)
-    message_if_needed(STATUS "Found libhare ${LIBHARE_VERSION} in ${LIBHARE_INSTALL_PREFIX}")
+    get_target_property(HARE_INCLUDE_DIRS hare::base INTERFACE_INCLUDE_DIRECTORIES)
+    get_filename_component(HARE_INSTALL_PREFIX "${HARE_INCLUDE_DIRS}" PATH)
+    message_if_needed(STATUS "Found hare ${HARE_VERSION} in ${HARE_INSTALL_PREFIX}")
 else()
     if(${CMAKE_FIND_PACKAGE_NAME}_FIND_REQUIRED)
-        message(FATAL_ERROR "Can not find any libraries for libhare.")
+        message(FATAL_ERROR "Can not find any libraries for hare.")
     else()
-        message_if_needed(WARNING "Can not find any libraries for libhare.")
+        message_if_needed(WARNING "Can not find any libraries for hare.")
     endif()
 endif()
-set(LIBHARE_INCLUDE_DIR ${LIBHARE_INCLUDE_DIRS})
+set(HARE_INCLUDE_DIR ${HARE_INCLUDE_DIRS})
 
 unset(_LIB_TYPE)
 unset(_AVAILABLE_LIBS)

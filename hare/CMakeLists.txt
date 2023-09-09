@@ -199,8 +199,8 @@ if(HARE__BUILD_TESTS)
     find_package(GTest CONFIG REQUIRED)
 endif(HARE__BUILD_TESTS)
 
-set(LIBHARE_SHARED_LIBRARIES "")
-set(LIBHARE_STATIC_LIBRARIES "")
+set(HARE_SHARED_LIBRARIES "")
+set(HARE_STATIC_LIBRARIES "")
 
 include(AddHareLibrary)
 
@@ -216,17 +216,17 @@ endif(HARE__BUILD_TESTS)
 # Installation preparation.
 #
 set(HARE_INSTALL_CMAKE_DIR
-    "${CMAKE_INSTALL_LIBDIR}/cmake/libhare")
+    "${CMAKE_INSTALL_LIBDIR}/cmake/hare")
 
-export(PACKAGE libhare)
+export(PACKAGE hare)
 
-configure_file(${PROJECT_SOURCE_DIR}/cmake/LibhareConfig.cmake.in
-    ${PROJECT_BINARY_DIR}/LibhareConfig.cmake
+configure_file(${PROJECT_SOURCE_DIR}/cmake/HareConfig.cmake.in
+    ${PROJECT_BINARY_DIR}/HareConfig.cmake
     @ONLY)
 
 # Generate version info for both build-tree and install-tree.
-configure_file(${PROJECT_SOURCE_DIR}/cmake/LibhareConfigVersion.cmake.in
-    ${PROJECT_BINARY_DIR}/LibhareConfigVersion.cmake
+configure_file(${PROJECT_SOURCE_DIR}/cmake/HareConfigVersion.cmake.in
+    ${PROJECT_BINARY_DIR}/HareConfigVersion.cmake
     @ONLY)
 
 # Install public headers
@@ -238,14 +238,14 @@ install(
 
 # Install the configs.
 install(FILES
-    ${PROJECT_BINARY_DIR}/LibhareConfig.cmake
-    ${PROJECT_BINARY_DIR}/LibhareConfigVersion.cmake
+    ${PROJECT_BINARY_DIR}/HareConfig.cmake
+    ${PROJECT_BINARY_DIR}/HareConfigVersion.cmake
     DESTINATION "${HARE_INSTALL_CMAKE_DIR}"
     COMPONENT dev)
 
 # Install exports for the install-tree.
 macro(install_export type)
-    install(EXPORT LibhareTargets-${type}
+    install(EXPORT HareTargets-${type}
         NAMESPACE ${PROJECT_NAME}::
         DESTINATION "${HARE_INSTALL_CMAKE_DIR}"
         COMPONENT dev)
@@ -271,7 +271,7 @@ if(NOT TARGET uninstall)
 endif()
 
 message(STATUS "")
-message(STATUS "        ---( Libhare " ${HARE_PACKAGE_VERSION} " )---")
+message(STATUS "        ---( Hare " ${HARE_PACKAGE_VERSION} " )---")
 message(STATUS "")
 message(STATUS "Available event backends: ${BACKENDS}")
 message(STATUS "CMAKE_BINARY_DIR:         ${CMAKE_BINARY_DIR}")
