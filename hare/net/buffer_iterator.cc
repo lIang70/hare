@@ -4,9 +4,7 @@
 namespace hare {
 namespace net {
 
-    HARE_INLINE
-    auto d_ptr(hare::detail::Impl* impl_)
-        -> buffer_iterator_impl* { return DownCast<buffer_iterator_impl*>(impl_); }
+    HARE_IMPL_DPTR(BufferIterator);
 
     auto BufferIterator::operator*() noexcept -> char
     {

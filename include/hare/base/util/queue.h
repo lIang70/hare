@@ -110,7 +110,7 @@ namespace util {
         HARE_INLINE auto Full() const -> bool { return max_capacity_ > 0 ? ((tail_ + 1) % max_capacity_) == head_ : false; }
 
         HARE_INLINE auto over_counter() const -> SizeType { return over_counter_; }
-        HARE_INLINE void reset_counter() { over_counter_ = 0; }
+        HARE_INLINE void ResetCounter() { over_counter_ = 0; }
 
     private:
         void Move(CircularQueue&& _other) noexcept
@@ -166,7 +166,7 @@ namespace util {
         void ResetCounter()
         {
             std::unique_lock<std::mutex> lock(mutex_);
-            circular_.reset_counter();
+            circular_.ResetCounter();
         }
 
         // try to enqueue and block if no room left

@@ -11,20 +11,19 @@
 namespace hare {
 namespace detail {
 
-#define HARE_IMPL_DEFAULT(Class, ...)                \
-    struct Class##Impl : public hare::detail::Impl { \
-        __VA_ARGS__                                  \
-        ~Class##Impl() override = default;           \
-    };                                               \
-    HARE_INLINE auto d_ptr(hare::detail::Impl* impl) \
-        ->Class##Impl* { return DownCast<Class##Impl*>(impl); }
-
 #define HARE_IMPL(Class, ...)                        \
     struct Class##Impl : public hare::detail::Impl { \
         __VA_ARGS__                                  \
-    };                                               \
+        ~Class##Impl() override = default;           \
+    };
+
+#define HARE_IMPL_DPTR(Class) \
     HARE_INLINE auto d_ptr(hare::detail::Impl* impl) \
-        ->Class##Impl* { return DownCast<Class##Impl*>(impl); }
+        ->Class##Impl* { return ::hare::DownCast<Class##Impl*>(impl); }
+
+#define HARE_IMPL_DEFAULT(Class, ...)                \
+    HARE_IMPL(Class, __VA_ARGS__)                    \
+    HARE_IMPL_DPTR(Class)
 
 #define IMPL d_ptr(impl_)
 

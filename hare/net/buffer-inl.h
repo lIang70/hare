@@ -167,26 +167,26 @@ namespace net {
         
     } // namespace detail
 
-    struct buffer_iterator_impl : public hare::detail::Impl {
+    struct BufferIteratorImpl : public hare::detail::Impl {
         const detail::CacheList* list;
         detail::CacheList::Node* iter {};
         std::size_t curr_index {};
 
         HARE_INLINE
-        explicit buffer_iterator_impl(detail::CacheList* _list)
+        explicit BufferIteratorImpl(detail::CacheList* _list)
             : list(_list)
             , iter(_list->Begin())
             , curr_index(hare::detail::ToUnsigned((*_list->Begin())->Readable() - (*_list->Begin())->Data()))
         { }
 
         HARE_INLINE
-        buffer_iterator_impl(const detail::CacheList* _list, detail::CacheList::Node* _iter)
+        BufferIteratorImpl(const detail::CacheList* _list, detail::CacheList::Node* _iter)
             : list(_list)
             , iter(_iter)
             , curr_index((*_iter)->size())
         { }
 
-        ~buffer_iterator_impl() override = default;
+        ~BufferIteratorImpl() override = default;
     };
 
 } // namespace net

@@ -225,7 +225,7 @@ namespace net {
                 (*index)->Drain(drain_size);
                 if ((*index)->Empty()) {
                     (*index)->Clear();
-                    
+
                     if (index != End()) {
                         need_drain = true;
                         index = index->next;
@@ -279,20 +279,19 @@ namespace net {
             auto* index = Begin();
             do {
                 /// | (RW|R|W|E|N) ... | [<-(w_itre|r_iter)]
-                const auto* mark = !index->cache ? "(N)" : 
-                    (*index)->ReadableSize() > 0 && (*index)->WriteableSize() > 0 ? "(RW)" :
-                    (*index)->ReadableSize() > 0 ? "(R)":
-                    (*index)->WriteableSize() > 0 ? "(W)" : "(E)";
+                const auto* mark = !index->cache ? "(N)" : (*index)->ReadableSize() > 0 && (*index)->WriteableSize() > 0 ? "(RW)"
+                    : (*index)->ReadableSize() > 0                                                                       ? "(R)"
+                    : (*index)->WriteableSize() > 0                                                                      ? "(W)"
+                                                                                                                         : "(E)";
 
-                    HARE_INTERNAL_TRACE("|{:4} {} {} {}|{}",
-                        mark,
-                        !index->cache ? 0 : (*index)->ReadableSize(),
-                        !index->cache ? 0 : (*index)->WriteableSize(),
-                        !index->cache ? 0 : (*index)->capacity(),
-                        index == read && index == write ? " <- w_iter|r_iter" :
-                            index == read ? " <- r_iter" :
-                            index == write ? " <- w_iter" : ""
-                        );
+                HARE_INTERNAL_TRACE("|{:4} {} {} {}|{}",
+                    mark,
+                    !index->cache ? 0 : (*index)->ReadableSize(),
+                    !index->cache ? 0 : (*index)->WriteableSize(),
+                    !index->cache ? 0 : (*index)->capacity(),
+                    index == read && index == write ? " <- w_iter|r_iter" : index == read ? " <- r_iter"
+                        : index == write                                                  ? " <- w_iter"
+                                                                                          : "");
                 index = index->next;
             } while (index != Begin());
 
@@ -306,22 +305,33 @@ namespace net {
         Buffer,
         detail::CacheList cache_chain {};
         std::size_t total_len { 0 };
-        std::size_t max_read { HARE_MAX_READ_DEFAULT };
-    )
+        std::size_t max_read { HARE_MAX_READ_DEFAULT };)
 
     Buffer::Buffer(std::size_t _max_read)
         : impl_(new BufferImpl)
-    { IMPL->max_read = _max_read; }
+    {
+        IMPL->max_read = _max_read;
+    }
+
     Buffer::~Buffer()
-    { delete impl_; }
-    
+    {
+        delete impl_;
+    }
+
     auto Buffer::Size() const -> std::size_t
-    { return IMPL->total_len; }
+    {
+        return IMPL->total_len;
+    }
+
     void Buffer::SetMaxRead(std::size_t _max_read)
-    { IMPL->max_read = _max_read; }
+    {
+        IMPL->max_read = _max_read;
+    }
 
     auto Buffer::ChainSize() const -> std::size_t
-    { return IMPL->cache_chain.Size(); }
+    {
+        return IMPL->cache_chain.Size();
+    }
 
     void Buffer::ClearAll()
     {
@@ -340,21 +350,21 @@ namespace net {
     }
 
     auto Buffer::Begin() -> Iterator
-    { 
+    {
         return Iterator(
-            new buffer_iterator_impl(&IMPL->cache_chain)); 
+            new BufferIteratorImpl(&IMPL->cache_chain));
     }
 
     auto Buffer::End() -> Iterator
-    { 
+    {
         return Iterator(
-            new buffer_iterator_impl(
-                &IMPL->cache_chain, IMPL->cache_chain.End())); 
+            new BufferIteratorImpl(
+                &IMPL->cache_chain, IMPL->cache_chain.End()));
     }
 
     auto Buffer::Find(const char* _begin, std::size_t _size) -> Iterator
     {
-        if (_size > IMPL->total_len ) {
+        if (_size > IMPL->total_len) {
             return End();
         }
         auto next_val = detail::get_next(_begin, _size);
@@ -410,8 +420,7 @@ namespace net {
         IMPL->cache_chain.CheckSize(_size);
         IMPL->cache_chain.End()->cache->Append(
             static_cast<const char*>(_bytes),
-            static_cast<const char*>(_bytes) + _size
-        );
+            static_cast<const char*>(_bytes) + _size);
 
 #ifdef HARE_DEBUG
         IMPL->cache_chain.PrintStatus("after add");
@@ -436,7 +445,7 @@ namespace net {
         auto* dest = static_cast<char*>(_buffer);
         while (total < _length) {
             auto copy_len = Min(_length - total, (*curr)->ReadableSize());
-            std::uninitialized_copy_n(dest + total, copy_len, 
+            std::uninitialized_copy_n(dest + total, copy_len,
                 MakeChecked((*curr)->Readable(), copy_len));
             total += copy_len;
             curr = curr->next;
@@ -485,7 +494,7 @@ namespace net {
                 DWORD flags { 0 };
                 if (::WSARecv(_fd, vecs.data(), block_size, &bytes_read, &flags, nullptr, nullptr) != 0) {
                     /* The read failed. It might be a close,
-                    * or it might be an error. */
+                     * or it might be an error. */
                     if (::WSAGetLastError() == WSAECONNABORTED) {
                         actual = 0;
                     } else {
@@ -506,7 +515,7 @@ namespace net {
 
         IMPL->cache_chain.Add(readable);
         IMPL->total_len += readable;
-        
+
 #else
 #error "cannot use IOVEC."
 #endif
@@ -573,10 +582,10 @@ namespace net {
                 return (0);
             }
         }
-        
+
         IMPL->total_len -= write_n;
         IMPL->cache_chain.Drain(write_n);
-        
+
 #else
 #error "cannot use IOVEC."
 #endif
