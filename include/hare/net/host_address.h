@@ -20,57 +20,62 @@ struct sockaddr;
 namespace hare {
 namespace net {
 
-    HARE_CLASS_API
-    class HARE_API HostAddress : public util::NonCopyable {
-        sockaddr* in_ {};
+HARE_CLASS_API
+class HARE_API HostAddress : public util::NonCopyable {
+  sockaddr* in_{};
 
-    public:
-        /**
-         * @brief resolve hostname to IP address, not changing port or sin_family.
-         *
-         *   thread-safe.
-         *
-         * @return true on success.
-         */
-        static auto Resolve(const std::string& _hostname, HostAddress* _result) -> bool;
-        static auto LocalAddress(util_socket_t _fd) -> HostAddress;
-        static auto PeerAddress(util_socket_t _fd) -> HostAddress;
+ public:
+  /**
+   * @brief resolve hostname to IP address, not changing port or sin_family.
+   *
+   *   thread-safe.
+   *
+   * @return true on success.
+   */
+  static auto Resolve(const std::string& _hostname, HostAddress* _result)
+      -> bool;
+  static auto LocalAddress(util_socket_t _fd) -> HostAddress;
+  static auto PeerAddress(util_socket_t _fd) -> HostAddress;
 
-        /**
-         * @brief Constructs an endpoint with given port number.
-         *   Mostly used in server listening.
-         */
-        explicit HostAddress(std::uint16_t _port = 0, bool _loopback_only = false, bool _ipv6 = false);
+  /**
+   * @brief Constructs an endpoint with given port number.
+   *   Mostly used in server listening.
+   */
+  explicit HostAddress(std::uint16_t _port = 0, bool _loopback_only = false,
+                       bool _ipv6 = false);
 
-        /**
-         * @brief Constructs an endpoint with given ip and port.
-         * @c ip should be "1.2.3.4"
-         */
-        HostAddress(const std::string& _ip, std::uint16_t _port, bool _ipv6 = false);
-        ~HostAddress();
+  /**
+   * @brief Constructs an endpoint with given ip and port.
+   * @c ip should be "1.2.3.4"
+   */
+  HostAddress(const std::string& _ip, std::uint16_t _port, bool _ipv6 = false);
+  ~HostAddress();
 
-        HostAddress(HostAddress&& _another) noexcept;
-        auto operator=(HostAddress&& _another) noexcept -> HostAddress&;
+  HostAddress(HostAddress&& _another) noexcept;
+  auto operator=(HostAddress&& _another) noexcept -> HostAddress&;
 
-        auto Clone() const -> hare::Ptr<HostAddress>;
+  auto Clone() const -> hare::Ptr<HostAddress>;
 
-        auto Family() const -> std::uint8_t;
+  auto Family() const -> std::uint8_t;
 
-        HARE_INLINE auto get_sockaddr() const -> sockaddr* { return in_; }
-        void set_sockaddr_in6(const struct sockaddr_in6* addr_in6) const;
+  HARE_INLINE auto get_sockaddr() const -> sockaddr* { return in_; }
 
-        auto ToIp() const -> std::string;
-        auto ToIpPort() const -> std::string;
-        HARE_INLINE auto Port() const -> std::uint16_t { return io::NetworkToHost16(PortNetEndian()); }
+  auto ToIp() const -> std::string;
+  auto ToIpPort() const -> std::string;
+  HARE_INLINE auto Port() const -> std::uint16_t {
+    return io::NetworkToHost16(PortNetEndian());
+  }
 
-        auto Ipv4NetEndian() const -> std::uint32_t;
-        auto PortNetEndian() const -> std::uint16_t;
+  auto Ipv4NetEndian() const -> std::uint32_t;
+  auto PortNetEndian() const -> std::uint16_t;
 
-        // set IPv6 ScopeID
-        void SetScopeId(std::uint32_t _id) const;
-    };
+  // set IPv6 ScopeID
+  void SetScopeId(std::uint32_t _id) const;
 
-} // namespace net
-} // namespace hare
+  friend class Socket;
+};
 
-#endif // _HARE_NET_HOST_ADDRESS_H_
+}  // namespace net
+}  // namespace hare
+
+#endif  // _HARE_NET_HOST_ADDRESS_H_

@@ -20,39 +20,41 @@
 namespace hare {
 namespace net {
 
-    HARE_CLASS_API
-    class HARE_API Acceptor : public io::Event {
-        hare::detail::Impl* impl_ {};
+HARE_CLASS_API
+class HARE_API Acceptor : public io::Event {
+  hare::detail::Impl* impl_{};
 
 #ifdef H_OS_LINUX
-        // Read the section named "The special problem of
-        // accept()ing when you can't" in libev's doc.
-        // By Marc Lehmann, author of libev.
-        util_socket_t idle_fd_ { -1 };
+  // Read the section named "The special problem of
+  // accept()ing when you can't" in libev's doc.
+  // By Marc Lehmann, author of libev.
+  util_socket_t idle_fd_{-1};
 #endif
 
-    public:
-        using NewSessionCallback = std::function<void(util_socket_t, HostAddress&, const Timestamp&, Acceptor*)>;
+ public:
+  using NewSessionCallback = std::function<void(util_socket_t, HostAddress&,
+                                                const Timestamp&, Acceptor*)>;
 
-        Acceptor(std::uint8_t _family, std::uint16_t _port, bool _reuse_port = true);
-        ~Acceptor() override;
+  Acceptor(std::uint8_t _family, std::uint16_t _port, bool _reuse_port = true);
+  ~Acceptor() override;
 
-        auto Socket() const -> util_socket_t;
-        auto Port() const -> std::uint16_t;
-        auto Family() const -> std::uint8_t;
+  auto Socket() const -> util_socket_t;
+  auto Port() const -> std::uint16_t;
+  auto Family() const -> std::uint8_t;
 
-    protected:
-        void EventCallback(const Ptr<io::Event>& _event, std::uint8_t _events, const Timestamp& _receive_time);
+ protected:
+  void EventCallback(const Ptr<io::Event>& _event, std::uint8_t _events,
+                     const Timestamp& _receive_time);
 
-    private:
-        auto Listen() -> Error;
+ private:
+  auto Listen() -> Error;
 
-        void SetNewSession(NewSessionCallback _cb);
+  void SetNewSession(NewSessionCallback _cb);
 
-        friend class TcpServe;
-    };
+  friend class TcpServe;
+};
 
-} // namespace net
-} // namespace hare
+}  // namespace net
+}  // namespace hare
 
-#endif // _HARE_NET_ACCEPTOR_H_
+#endif  // _HARE_NET_ACCEPTOR_H_

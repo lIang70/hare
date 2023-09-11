@@ -19,18 +19,19 @@
 namespace hare {
 namespace util {
 
-    HARE_API auto SystemDir() -> std::string;
-    HARE_API auto HostName() -> std::string;
-    HARE_API auto Pid() -> std::int32_t;
-    HARE_API auto PageSize() -> std::size_t;
-    HARE_API auto CpuUsage(std::int32_t _pid) -> double;
-    HARE_API auto StackTrace(bool _demangle) -> std::string;
-    HARE_API auto SetCurrentThreadName(const char* _tname) -> bool;
-    HARE_API auto ErrnoStr(std::int32_t _errorno) -> const char*;
+HARE_API auto SystemDir() -> std::string;
+HARE_API auto HostName() -> std::string;
+HARE_API auto Pid() -> std::int32_t;
+HARE_API auto PageSize() -> std::size_t;
+HARE_API auto CpuUsage(std::int32_t _pid) -> double;
+HARE_API auto StackTrace(bool _demangle) -> std::string;
+HARE_API auto SetCurrentThreadName(const char* _tname) -> bool;
+HARE_API auto ErrnoStr(std::int32_t _errorno) -> const char*;
 
-    HARE_API auto LocalAddress(std::uint8_t _family, std::list<std::string>& _addr_list) -> std::int32_t;
+HARE_API auto LocalAddress(std::uint8_t _family,
+                           std::list<std::string>& _addr_list) -> std::int32_t;
 
-} // namespace util
-} // namespace hare
+}  // namespace util
+}  // namespace hare
 
-#endif // _HARE_BASE_UTIL_SYSTEM_H_
+#endif  // _HARE_BASE_UTIL_SYSTEM_H_

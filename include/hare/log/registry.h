@@ -22,70 +22,68 @@
 namespace hare {
 namespace log {
 
-    HARE_CLASS_API
-    class HARE_API Registry : util::NonCopyableNorMovable {
-        mutable std::mutex mutex_for_loggers_ {};
-        std::unordered_map<std::string, Ptr<Logger>> loggers_ {};
+HARE_CLASS_API
+class HARE_API Registry : util::NonCopyableNorMovable {
+  mutable std::mutex mutex_for_loggers_{};
+  std::unordered_map<std::string, Ptr<Logger>> loggers_{};
 
-    public:
-        static auto Instance() -> Registry&;
+ public:
+  static auto Instance() -> Registry&;
 
-        template <typename Iter>
-        HARE_INLINE
-        static auto Create(const std::string& _unique_name, const Iter& begin, const Iter& end) -> Ptr<Logger>
-        {
-            auto tmp = std::make_shared<Logger>(_unique_name, begin, end);
-            Instance().RegisterLogger(tmp);
-            return tmp;
-        }
+  template <typename Iter>
+  HARE_INLINE static auto Create(const std::string& _unique_name,
+                                 const Iter& begin, const Iter& end)
+      -> Ptr<Logger> {
+    auto tmp = std::make_shared<Logger>(_unique_name, begin, end);
+    Instance().RegisterLogger(tmp);
+    return tmp;
+  }
 
-        template <typename Iter>
-        HARE_INLINE
-        static auto Create(const std::string& _unique_name, const Iter& begin, const Iter& end, std::size_t _max_msg, std::size_t _thr_n) -> Ptr<AsyncLogger>
-        {
-            auto tmp = std::make_shared<AsyncLogger>(_unique_name, begin, end, _max_msg, _thr_n);
-            Instance().RegisterLogger(tmp);
-            return tmp;
-        }
+  template <typename Iter>
+  HARE_INLINE static auto Create(const std::string& _unique_name,
+                                 const Iter& begin, const Iter& end,
+                                 std::size_t _max_msg, std::size_t _thr_n)
+      -> Ptr<AsyncLogger> {
+    auto tmp = std::make_shared<AsyncLogger>(_unique_name, begin, end, _max_msg,
+                                             _thr_n);
+    Instance().RegisterLogger(tmp);
+    return tmp;
+  }
 
-        HARE_INLINE
-        void RegisterLogger(const Ptr<Logger>& _logger)
-        {
-            std::lock_guard<std::mutex> lock(mutex_for_loggers_);
-            auto logger_name = _logger->name();
-            AssertExists(logger_name);
-            loggers_[logger_name] = _logger;
-        }
+  HARE_INLINE
+  void RegisterLogger(const Ptr<Logger>& _logger) {
+    std::lock_guard<std::mutex> lock(mutex_for_loggers_);
+    auto logger_name = _logger->name();
+    AssertExists(logger_name);
+    loggers_[logger_name] = _logger;
+  }
 
-        HARE_INLINE
-        auto Get(const std::string& logger_name) -> Ptr<Logger>
-        {
-            std::lock_guard<std::mutex> lock(mutex_for_loggers_);
-            auto found = loggers_.find(logger_name);
-            return found == loggers_.end() ? nullptr : found->second;
-        }
+  HARE_INLINE
+  auto Get(const std::string& logger_name) -> Ptr<Logger> {
+    std::lock_guard<std::mutex> lock(mutex_for_loggers_);
+    auto found = loggers_.find(logger_name);
+    return found == loggers_.end() ? nullptr : found->second;
+  }
 
-        HARE_INLINE
-        void Drop(const std::string& logger_name)
-        {
-            std::lock_guard<std::mutex> lock(mutex_for_loggers_);
-            loggers_.erase(logger_name);
-        }
+  HARE_INLINE
+  void Drop(const std::string& logger_name) {
+    std::lock_guard<std::mutex> lock(mutex_for_loggers_);
+    loggers_.erase(logger_name);
+  }
 
-        HARE_INLINE
-        void DropAll()
-        {
-            std::lock_guard<std::mutex> lock(mutex_for_loggers_);
-            loggers_.clear();
-        }
+  HARE_INLINE
+  void DropAll() {
+    std::lock_guard<std::mutex> lock(mutex_for_loggers_);
+    loggers_.clear();
+  }
 
-    private:
-        Registry() = default;
+ private:
+  Registry() = default;
 
-        void AssertExists(const std::string& logger_name);
-    };
+  void AssertExists(const std::string& logger_name);
+};
 
-} // namespace log
-} // namespace hare
+}  // namespace log
+}  // namespace hare
 
-#endif // _HARE_LOG_REGISTRY_H_
+#endif  // _HARE_LOG_REGISTRY_H_

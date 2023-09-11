@@ -17,31 +17,32 @@
 namespace hare {
 namespace io {
 
-    HARE_CLASS_API
-    class HARE_API Console : public util::NonCopyable {
-        hare::detail::Impl* impl_ {};
+HARE_CLASS_API
+class HARE_API Console : public util::NonCopyable {
+  hare::detail::Impl* impl_{};
 
-    public:
-        using DefaultHandle = void(*)(const std::string& command_line);
+ public:
+  using DefaultHandle = void (*)(const std::string& command_line);
 
-        static auto Instance() -> Console&;
+  static auto Instance() -> Console&;
 
-        ~Console();
+  ~Console();
 
-        void RegisterDefaultHandle(DefaultHandle _default_handle);
-        void RegisterHandle(std::string _handle_mask, Task _handle);
-        auto Attach(Cycle* _cycle) -> bool;
+  void RegisterDefaultHandle(DefaultHandle _default_handle);
+  void RegisterHandle(std::string _handle_mask, Task _handle);
+  auto Attach(Cycle* _cycle) -> bool;
 
-        Console(Console&&) = delete;
-        auto operator=(Console&&) -> Console = delete;
+  Console(Console&&) = delete;
+  auto operator=(Console&&) -> Console = delete;
 
-    private:
-        Console();
+ private:
+  Console();
 
-        void Process(const Ptr<Event>& _event, std::uint8_t _events, const Timestamp& _receive_time);
-    };
+  void Process(const Ptr<Event>& _event, std::uint8_t _events,
+               const Timestamp& _receive_time);
+};
 
-} // namespace io
-} // namespace hare
+}  // namespace io
+}  // namespace hare
 
-#endif // _HARE_BASE_IO_CONSOLE_H_
+#endif  // _HARE_BASE_IO_CONSOLE_H_

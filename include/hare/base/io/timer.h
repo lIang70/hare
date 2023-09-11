@@ -17,22 +17,22 @@
 namespace hare {
 namespace io {
 
-    HARE_CLASS_API
-    class HARE_API Timer final : public Event {
-        hare::detail::Impl* impl_ {};
+HARE_CLASS_API
+class HARE_API Timer final : public Event {
+  hare::detail::Impl* impl_{};
 
-    public:
-        Timer(Task _task, std::int64_t _timeval, bool is_persist = false);
-        ~Timer() final;
+ public:
+  Timer(Task _task, std::int64_t _timeval, bool is_persist = false);
+  ~Timer() final;
 
-        void Cancel();
+  void Cancel();
 
-    private:
-        void TimerCallback(const Ptr<Event>& _event, std::uint8_t _events, const Timestamp& _ts);
+ private:
+  void TimerCallback(const Ptr<Event>& _event, std::uint8_t _events,
+                     const Timestamp& _ts);
+};
 
-    };
+}  // namespace io
+}  // namespace hare
 
-} // namespace io
-} // namespace hare
-
-#endif // _HARE_BASE_IO_TIMER_H_
+#endif  // _HARE_BASE_IO_TIMER_H_

@@ -17,98 +17,97 @@
 namespace hare {
 namespace io {
 
-    HARE_CLASS_API
-    class HARE_API Cycle : public util::NonCopyable {
-        hare::detail::Impl* impl_ {};
+HARE_CLASS_API
+class HARE_API Cycle : public util::NonCopyable {
+  hare::detail::Impl* impl_{};
 
-    public:
-        using REACTOR_TYPE = enum {
-            REACTOR_TYPE_EPOLL,
-            REACTOR_TYPE_POLL,
+ public:
+  using REACTOR_TYPE = enum {
+    REACTOR_TYPE_EPOLL,
+    REACTOR_TYPE_POLL,
 
-            REACTOR_TYPE_NBRS
-        };
+    REACTOR_TYPE_NBRS
+  };
 
-        explicit Cycle(REACTOR_TYPE _type);
-        virtual ~Cycle();
+  explicit Cycle(REACTOR_TYPE _type);
+  virtual ~Cycle();
 
-        /**
-         * @brief Time when reactor returns, usually means data arrival.
-         **/
-        auto ReactorReturnTime() const -> Timestamp;
-        auto EventHandling() const -> bool;
-        auto is_running() const -> bool;
-        auto type() const -> REACTOR_TYPE;
+  /**
+   * @brief Time when reactor returns, usually means data arrival.
+   **/
+  auto ReactorReturnTime() const -> Timestamp;
+  auto EventHandling() const -> bool;
+  auto is_running() const -> bool;
+  auto type() const -> REACTOR_TYPE;
 
 #ifdef HARE_DEBUG
 
-        auto cycle_index() const -> std::uint64_t;
+  auto cycle_index() const -> std::uint64_t;
 
 #endif
 
-        HARE_INLINE
-        void AssertInCycleThread()
-        {
-            if (!InCycleThread()) {
-                AbortNotCycleThread();
-            }
-        }
+  HARE_INLINE
+  void AssertInCycleThread() {
+    if (!InCycleThread()) {
+      AbortNotCycleThread();
+    }
+  }
 
-        auto InCycleThread() const -> bool;
+  auto InCycleThread() const -> bool;
 
-        /**
-         * @brief Loops forever.
-         *   Must be called in the same thread as creation of the object.
-         **/
-        void Exec();
+  /**
+   * @brief Loops forever.
+   *   Must be called in the same thread as creation of the object.
+   **/
+  void Exec();
 
-        /**
-         * @brief Quits cycle.
-         *   This is not 100% thread safe, if you call through a raw pointer,
-         *   better to call through std::shared_ptr<Cycle> for 100% safety.
-         **/
-        void Exit();
+  /**
+   * @brief Quits cycle.
+   *   This is not 100% thread safe, if you call through a raw pointer,
+   *   better to call through std::shared_ptr<Cycle> for 100% safety.
+   **/
+  void Exit();
 
-        /**
-         * @brief Runs callback immediately in the cycle thread.
-         *   It wakes up the cycle, and run the cb.
-         *   If in the same cycle thread, cb is run within the function.
-         *   Safe to call from other threads.
-         **/
-        void RunInCycle(Task _task);
+  /**
+   * @brief Runs callback immediately in the cycle thread.
+   *   It wakes up the cycle, and run the cb.
+   *   If in the same cycle thread, cb is run within the function.
+   *   Safe to call from other threads.
+   **/
+  void RunInCycle(Task _task);
 
-        /**
-         * @brief Queues callback in the cycle thread.
-         *   Runs after finish pooling.
-         *   Safe to call from other threads.
-         **/
-        void QueueInCycle(Task _task);
+  /**
+   * @brief Queues callback in the cycle thread.
+   *   Runs after finish pooling.
+   *   Safe to call from other threads.
+   **/
+  void QueueInCycle(Task _task);
 
-        auto QueueSize() const -> std::size_t;
+  auto QueueSize() const -> std::size_t;
 
-        auto RunAfter(const Task& _task, std::int64_t _delay) -> Event::Id;
-        auto RunEvery(const Task& _task, std::int64_t _delay) -> Event::Id;
+  auto RunAfter(const Task& _task, std::int64_t _delay) -> Event::Id;
+  auto RunEvery(const Task& _task, std::int64_t _delay) -> Event::Id;
 
-        void Cancel(Event::Id _event_id);
+  void Cancel(Event::Id _event_id);
 
-        void EventUpdate(const hare::Ptr<Event>& _event);
-        void EventRemove(const hare::Ptr<Event>& _event);
+  void EventUpdate(const hare::Ptr<Event>& _event);
+  void EventRemove(const hare::Ptr<Event>& _event);
 
-        /**
-         * @brief Detects whether the event is in the reactor.
-         *   Must be called in the cycle thread.
-         **/
-        auto EventCheck(const hare::Ptr<Event>& _event) -> bool;
+  /**
+   * @brief Detects whether the event is in the reactor.
+   *   Must be called in the cycle thread.
+   **/
+  auto EventCheck(const hare::Ptr<Event>& _event) -> bool;
 
-    private:
-        void Notify();
-        void AbortNotCycleThread();
+ private:
+  void Notify();
+  void AbortNotCycleThread();
 
-        void NotifyTimer();
-        void DoPendingFunctions();
-    };
+  void NotifyTimer();
+  void DoPendingFunctions();
+};
 
-} // namespace io
-} // namespace hare
+}  // namespace io
+}  // namespace hare
 
-#endif // _HARE_BASE_IO_CYCLE_H_
+#endif  // _HARE_BASE_IO_CYCLE_H_

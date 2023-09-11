@@ -17,87 +17,81 @@
 namespace hare {
 namespace io {
 
-    namespace detail {
-        struct EventElem {
-            Ptr<Event> event { nullptr };
-            std::uint8_t revents { io::EVENT_DEFAULT };
+namespace reactor_inner {
 
-            EventElem(Ptr<Event> _event, std::uint8_t _revents)
-                : event(std::move(_event))
-                , revents(_revents)
-            { }
-        };
+struct EventElem {
+  Ptr<Event> event{nullptr};
+  std::uint8_t revents{io::EVENT_DEFAULT};
 
-        struct TimerElem {
-            Event::Id id { 0 };
-            Timestamp stamp { 0 };
+  EventElem(Ptr<Event> _event, std::uint8_t _revents)
+      : event(std::move(_event)), revents(_revents) {}
+};
 
-            TimerElem(Event::Id _id, Timestamp _stamp)
-                : id(_id)
-                , stamp(_stamp)
-            {
-            }
-        };
+struct TimerElem {
+  Event::Id id{0};
+  Timestamp stamp{0};
 
-        struct TimerPriority {
-            auto operator()(const TimerElem& _elem_x, const TimerElem& _elem_y) -> bool
-            {
-                return _elem_x.stamp < _elem_y.stamp;
-            }
-        };
+  TimerElem(Event::Id _id, Timestamp _stamp) : id(_id), stamp(_stamp) {}
+};
 
-    } // namespace detail
+struct TimerPriority {
+  auto operator()(const TimerElem& _elem_x, const TimerElem& _elem_y) -> bool {
+    return _elem_x.stamp < _elem_y.stamp;
+  }
+};
 
-    using EventsList = std::list<detail::EventElem>;
-    using EventMap = std::map<Event::Id, Ptr<Event>>;
-    using PriorityTimer = std::priority_queue<
-        detail::TimerElem,
-        std::vector<detail::TimerElem>,
-        detail::TimerPriority>;
+}  // namespace reactor_inner
 
-    class Reactor : public util::NonCopyable {
-        Cycle::REACTOR_TYPE type_ {};
-        Cycle* owner_cycle_ { nullptr };
+using EventsList = std::list<reactor_inner::EventElem>;
+using EventMap = std::map<Event::Id, Ptr<Event>>;
+using PriorityTimer = std::priority_queue<reactor_inner::TimerElem,
+                                          std::vector<reactor_inner::TimerElem>,
+                                          reactor_inner::TimerPriority>;
 
-    protected:
-        EventMap events_ {};
-        std::map<util_socket_t, io::Event::Id> inverse_map_ {};
-        PriorityTimer ptimer_ {};
-        EventsList active_events_ {};
+class Reactor : public util::NonCopyable {
+  Cycle::REACTOR_TYPE type_{};
+  Cycle* owner_cycle_{nullptr};
 
-    public:
-        static auto CreateByType(Cycle::REACTOR_TYPE _type, Cycle* _cycle) -> Reactor*;
+ protected:
+  EventMap events_{};
+  std::map<util_socket_t, io::Event::Id> inverse_map_{};
+  PriorityTimer ptimer_{};
+  EventsList active_events_{};
 
-        virtual ~Reactor() = default;
+ public:
+  static auto CreateByType(Cycle::REACTOR_TYPE _type, Cycle* _cycle)
+      -> Reactor*;
 
-        HARE_INLINE
-        auto type() -> Cycle::REACTOR_TYPE { return type_; }
+  virtual ~Reactor() = default;
 
-        /**
-         * @brief Polls the I/O events.
-         *   Must be called in the cycle thread.
-         */
-        virtual auto Poll(std::int32_t _timeout_microseconds) -> Timestamp = 0;
+  HARE_INLINE
+  auto type() -> Cycle::REACTOR_TYPE { return type_; }
 
-        /**
-         *  @brief Changes the interested I/O events.
-         *   Must be called in the cycle thread.
-         */
-        virtual auto EventUpdate(const Ptr<Event>& _event) -> bool = 0;
+  /**
+   * @brief Polls the I/O events.
+   *   Must be called in the cycle thread.
+   */
+  virtual auto Poll(std::int32_t _timeout_microseconds) -> Timestamp = 0;
 
-        /**
-         *  @brief Remove the event, when it destructs.
-         *   Must be called in the cycle thread.
-         */
-        virtual auto EventRemove(const Ptr<Event>& _event) -> bool = 0;
+  /**
+   *  @brief Changes the interested I/O events.
+   *   Must be called in the cycle thread.
+   */
+  virtual auto EventUpdate(const Ptr<Event>& _event) -> bool = 0;
 
-    protected:
-        explicit Reactor(Cycle* cycle, Cycle::REACTOR_TYPE _type);
+  /**
+   *  @brief Remove the event, when it destructs.
+   *   Must be called in the cycle thread.
+   */
+  virtual auto EventRemove(const Ptr<Event>& _event) -> bool = 0;
 
-        friend class io::Cycle;
-    };
+ protected:
+  explicit Reactor(Cycle* cycle, Cycle::REACTOR_TYPE _type);
 
-} // namespace io
-} // namespace hare
+  friend class io::Cycle;
+};
 
-#endif // _HARE_BASE_IO_REACTOR_H_
+}  // namespace io
+}  // namespace hare
+
+#endif  // _HARE_BASE_IO_REACTOR_H_

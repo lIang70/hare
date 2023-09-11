@@ -20,20 +20,20 @@ namespace hare {
 
 HARE_CLASS_API
 class HARE_API Exception : public std::exception {
-    hare::detail::Impl *impl_ {};
+  hare::detail::Impl* impl_{};
 
-public:
-    explicit Exception(std::string what) noexcept;
-    ~Exception() noexcept override;
-    Exception(const Exception&) = default;
-    Exception& operator=(const Exception&) = default;
-    Exception(Exception&&) = default;
-    Exception& operator=(Exception&&) = default;
+ public:
+  explicit Exception(std::string what) noexcept;
+  ~Exception() noexcept override;
+  Exception(const Exception&) = default;
+  Exception& operator=(const Exception&) = default;
+  Exception(Exception&&) = default;
+  Exception& operator=(Exception&&) = default;
 
-    auto what() const noexcept -> const char* override;
-    auto StackTrace() const noexcept -> const char*;
+  auto what() const noexcept -> const char* override;
+  auto StackTrace() const noexcept -> const char*;
 };
 
-} // namespace hare
+}  // namespace hare
 
-#endif // _HARE_BASE_EXCEPTION_H_
+#endif  // _HARE_BASE_EXCEPTION_H_

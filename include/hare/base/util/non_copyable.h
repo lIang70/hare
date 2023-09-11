@@ -17,32 +17,33 @@
 namespace hare {
 namespace util {
 
-    HARE_CLASS_API
-    class HARE_API NonCopyable {
-    public:
-        NonCopyable(const NonCopyable&) = delete;
-        auto operator=(const NonCopyable&) -> NonCopyable& = delete;
+HARE_CLASS_API
+class HARE_API NonCopyable {
+ public:
+  NonCopyable(const NonCopyable&) = delete;
+  auto operator=(const NonCopyable&) -> NonCopyable& = delete;
 
-    protected:
-        NonCopyable() = default;
-        ~NonCopyable() = default;
-    };
+ protected:
+  NonCopyable() = default;
+  ~NonCopyable() = default;
+};
 
-    HARE_CLASS_API
-    class HARE_API NonCopyableNorMovable {
-    public:
-        NonCopyableNorMovable(const NonCopyable&) = delete;
-        NonCopyableNorMovable(NonCopyable&&) noexcept = delete;
-        auto operator=(const NonCopyableNorMovable&) -> NonCopyableNorMovable& = delete;
-        auto operator=(NonCopyableNorMovable&&) noexcept -> NonCopyableNorMovable& = delete;
+HARE_CLASS_API
+class HARE_API NonCopyableNorMovable {
+ public:
+  NonCopyableNorMovable(const NonCopyable&) = delete;
+  NonCopyableNorMovable(NonCopyable&&) noexcept = delete;
+  auto operator=(const NonCopyableNorMovable&)
+      -> NonCopyableNorMovable& = delete;
+  auto operator=(NonCopyableNorMovable&&) noexcept
+      -> NonCopyableNorMovable& = delete;
 
-    protected:
-        NonCopyableNorMovable() = default;
-        ~NonCopyableNorMovable() = default;
-    };
+ protected:
+  NonCopyableNorMovable() = default;
+  ~NonCopyableNorMovable() = default;
+};
 
+}  // namespace util
+}  // namespace hare
 
-} // namespace util
-} // namespace hare
-
-#endif // _HARE_BASE_UTIL_NON_COPYABLE_H_
+#endif  // _HARE_BASE_UTIL_NON_COPYABLE_H_

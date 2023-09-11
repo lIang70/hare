@@ -20,106 +20,96 @@
 namespace hare {
 namespace log {
 
-    namespace detail {
+namespace detail {
 
-        template <std::uint64_t MaxSize = io::file_inner::BUFFER_SIZE>
-        struct RotateFileBySize {
-            std::int32_t rotate_id_ { 0 };
-            std::int32_t max_files_ { 0 };
+template <std::uint64_t MaxSize = io::file_inner::BUFFER_SIZE>
+struct RotateFileBySize {
+  std::int32_t rotate_id_{0};
+  std::int32_t max_files_{0};
 
-            explicit RotateFileBySize(std::int32_t _max_files)
-                : max_files_(_max_files)
-            {
-            }
+  explicit RotateFileBySize(std::int32_t _max_files) : max_files_(_max_files) {}
 
-            HARE_INLINE
-            auto GetName(const filename_t& _basename) -> filename_t
-            {
-                auto tmp = rotate_id_++;
-                if (max_files_ > 0) {
-                    rotate_id_ %= max_files_;
-                }
-                return fmt::format("{}.{}.log", FilenameToStr(_basename), tmp);
-            }
+  HARE_INLINE
+  auto GetName(const filename_t& _basename) -> filename_t {
+    auto tmp = rotate_id_++;
+    if (max_files_ > 0) {
+      rotate_id_ %= max_files_;
+    }
+    return fmt::format("{}.{}.log", FilenameToStr(_basename), tmp);
+  }
 
-            template <bool WithLock>
-            HARE_INLINE auto ShouldRotate(Level _log_level, const io::FileHelper<WithLock>& _file) -> bool
-            {
-                IgnoreUnused(_log_level);
-                return _file.Length() >= MaxSize;
-            }
-        };
+  template <bool WithLock>
+  HARE_INLINE auto ShouldRotate(Level _log_level,
+                                const io::FileHelper<WithLock>& _file) -> bool {
+    IgnoreUnused(_log_level);
+    return _file.Length() >= MaxSize;
+  }
+};
 
-    } // detail
+}  // namespace detail
 
-    template <typename Mutex, typename FileNameGenerator>
-    class FileBackend final : public BaseBackend<Mutex> {
-        FileNameGenerator generator_ {};
-        filename_t basename_ {};
-        io::FileHelper<false> file_ {};
-        std::int32_t max_files_ { -1 };
-        util::CircularQueue<filename_t> filename_history_ {};
+template <typename Mutex, typename FileNameGenerator>
+class FileBackend final : public BaseBackend<Mutex> {
+  FileNameGenerator generator_{};
+  filename_t basename_{};
+  io::FileHelper<false> file_{};
+  std::int32_t max_files_{-1};
+  util::CircularQueue<filename_t> filename_history_{};
 
-    public:
-        explicit FileBackend(filename_t _basename, std::int32_t _max_files = -1, bool _rotate = true)
-            : generator_(_max_files)
-            , basename_(std::move(_basename))
-            , max_files_(_max_files)
-            , filename_history_(_max_files > 0 ? _max_files : 0)
-        {
-            file_.Open(generator_.GetName(basename_));
-            if (_max_files > 0) {
-                filename_history_.PushBack(file_.filename());
-            }
-        }
+ public:
+  explicit FileBackend(filename_t _basename, std::int32_t _max_files = -1,
+                       bool _rotate = true)
+      : generator_(_max_files),
+        basename_(std::move(_basename)),
+        max_files_(_max_files),
+        filename_history_(_max_files > 0 ? _max_files : 0) {
+    file_.Open(generator_.GetName(basename_));
+    if (_max_files > 0) {
+      filename_history_.PushBack(file_.filename());
+    }
+  }
 
-        HARE_INLINE
-        auto filename() const -> filename_t
-        {
-            std::lock_guard<Mutex> lock(BaseBackend<Mutex>::mutex_);
-            return file_.filename();
-        }
+  HARE_INLINE
+  auto filename() const -> filename_t {
+    std::lock_guard<Mutex> lock(BaseBackend<Mutex>::mutex_);
+    return file_.filename();
+  }
 
-    private:
-        void InnerSinkIt(detail::msg_buffer_t& _msg, Level _log_level) final
-        {
-            file_.Append(_msg);
+ private:
+  void InnerSinkIt(detail::msg_buffer_t& _msg, Level _log_level) final {
+    file_.Append(_msg);
 
-            auto should_rotation = generator_.ShouldRotate(_log_level, file_);
-            if (should_rotation) {
-                auto filename = generator_.GetName(basename_);
-                file_.Open(filename);
-            }
+    auto should_rotation = generator_.ShouldRotate(_log_level, file_);
+    if (should_rotation) {
+      auto filename = generator_.GetName(basename_);
+      file_.Open(filename);
+    }
 
-            if (should_rotation && max_files_ > 0) {
-                DeleteOld();
-            }
-        }
+    if (should_rotation && max_files_ > 0) {
+      DeleteOld();
+    }
+  }
 
-        void InnerFlush() final
-        {
-            file_.Flush();
-        }
+  void InnerFlush() final { file_.Flush(); }
 
-        void DeleteOld()
-        {
-            if (filename_history_.Full()) {
-                auto tmp = filename_history_.PopFront();
-                if (!io::file_inner::Remove(tmp)) {
-                    fmt::print(stderr, "failed removing hourly file[{}]." HARE_EOL, tmp);
-                }
-            }
-            filename_history_.PushBack(file_.filename());
-        }
-    };
+  void DeleteOld() {
+    if (filename_history_.Full()) {
+      auto tmp = filename_history_.PopFront();
+      if (!io::file_inner::Remove(tmp)) {
+        fmt::print(stderr, "failed removing hourly file[{}]." HARE_EOL, tmp);
+      }
+    }
+    filename_history_.PushBack(file_.filename());
+  }
+};
 
-    template <typename FileNameGenerator>
-    using FileBackendMT = FileBackend<std::mutex, FileNameGenerator>;
+template <typename FileNameGenerator>
+using FileBackendMT = FileBackend<std::mutex, FileNameGenerator>;
 
-    template <typename FileNameGenerator>
-    using FileBackendSt = FileBackend<detail::DummyMutex, FileNameGenerator>;
+template <typename FileNameGenerator>
+using FileBackendSt = FileBackend<detail::DummyMutex, FileNameGenerator>;
 
-} // namespace log
-} // namespace hare
+}  // namespace log
+}  // namespace hare
 
-#endif // _HARE_LOG_FILE_BACKEND_H_
+#endif  // _HARE_LOG_FILE_BACKEND_H_

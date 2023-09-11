@@ -19,87 +19,87 @@
 namespace hare {
 namespace net {
 
-    class Buffer;
+class Buffer;
 
-    HARE_CLASS_API
-    class HARE_API BufferIterator : public util::NonCopyable {
-        hare::detail::Impl* impl_ {};
+HARE_CLASS_API
+class HARE_API BufferIterator : public util::NonCopyable {
+  hare::detail::Impl* impl_{};
 
-    public:
-        HARE_INLINE
-        BufferIterator(BufferIterator&& _other) noexcept
-        { Move(_other); }
+ public:
+  HARE_INLINE
+  BufferIterator(BufferIterator&& _other) noexcept { Move(_other); }
 
-        HARE_INLINE
-        auto operator=(BufferIterator&& _other) noexcept -> BufferIterator&
-        { Move(_other); return (*this); }
+  HARE_INLINE
+  auto operator=(BufferIterator&& _other) noexcept -> BufferIterator& {
+    Move(_other);
+    return (*this);
+  }
 
-        HARE_INLINE
-        auto Valid() const -> bool
-        { return impl_ != nullptr; }
+  HARE_INLINE
+  auto Valid() const -> bool { return impl_ != nullptr; }
 
-        auto operator*() noexcept -> char;
-        auto operator++() noexcept -> BufferIterator&;
-        auto operator--() noexcept -> BufferIterator&;
+  auto operator*() noexcept -> char;
+  auto operator++() noexcept -> BufferIterator&;
+  auto operator--() noexcept -> BufferIterator&;
 
-        friend auto operator==(const BufferIterator& _x, const BufferIterator& _y) noexcept -> bool;
-        friend auto operator!=(const BufferIterator& _x, const BufferIterator& _y) noexcept -> bool;
+  friend auto operator==(const BufferIterator& _x,
+                         const BufferIterator& _y) noexcept -> bool;
+  friend auto operator!=(const BufferIterator& _x,
+                         const BufferIterator& _y) noexcept -> bool;
 
-    private:
-        HARE_INLINE
-        explicit BufferIterator(hare::detail::Impl* _impl)
-            : impl_(_impl)
-        { }
+ private:
+  HARE_INLINE
+  explicit BufferIterator(hare::detail::Impl* _impl) : impl_(_impl) {}
 
-        HARE_INLINE
-        void Move(BufferIterator& _other) noexcept
-        { std::swap(impl_, _other.impl_); }
+  HARE_INLINE
+  void Move(BufferIterator& _other) noexcept { std::swap(impl_, _other.impl_); }
 
-        friend class net::Buffer;
-    };
+  friend class net::Buffer;
+};
 
-    HARE_CLASS_API
-    class HARE_API Buffer : public util::NonCopyable {
-        hare::detail::Impl* impl_ {};
+HARE_CLASS_API
+class HARE_API Buffer : public util::NonCopyable {
+  hare::detail::Impl* impl_{};
 
-    public:
-        using Iterator = BufferIterator;
+ public:
+  using Iterator = BufferIterator;
 
-        explicit Buffer(std::size_t _max_read = HARE_MAX_READ_DEFAULT);
-        ~Buffer();
+  explicit Buffer(std::size_t _max_read = HARE_MAX_READ_DEFAULT);
+  ~Buffer();
 
-        HARE_INLINE
-        Buffer(Buffer&& _other) noexcept
-        { Move(_other); }
+  HARE_INLINE
+  Buffer(Buffer&& _other) noexcept { Move(_other); }
 
-        HARE_INLINE
-        auto operator=(Buffer&& _other) noexcept -> Buffer&
-        { Move(_other); return (*this); }
+  HARE_INLINE
+  auto operator=(Buffer&& _other) noexcept -> Buffer& {
+    Move(_other);
+    return (*this);
+  }
 
-        auto Size() const -> std::size_t;
-        void SetMaxRead(std::size_t _max_read);
-        auto ChainSize() const -> std::size_t;
-        void ClearAll();
-        void Skip(std::size_t _size);
+  auto Size() const -> std::size_t;
+  void SetMaxRead(std::size_t _max_read);
+  auto ChainSize() const -> std::size_t;
+  void ClearAll();
+  void Skip(std::size_t _size);
 
-        auto Begin() -> Iterator;
-        auto End() -> Iterator;
-        auto Find(const char* _begin, std::size_t _size) -> Iterator;
+  auto Begin() -> Iterator;
+  auto End() -> Iterator;
+  auto Find(const char* _begin, std::size_t _size) -> Iterator;
 
-        // read-write
-        void Append(Buffer& _other);
+  // read-write
+  void Append(Buffer& _other);
 
-        auto Add(const void* _bytes, std::size_t _size) -> bool;
-        auto Remove(void* _buffer, std::size_t _length) -> std::size_t;
-        
-        auto Read(util_socket_t _fd, std::size_t _howmuch) -> std::size_t;
-        auto Write(util_socket_t _fd, std::size_t _howmuch = 0) -> std::size_t;
+  auto Add(const void* _bytes, std::size_t _size) -> bool;
+  auto Remove(void* _buffer, std::size_t _length) -> std::size_t;
 
-    private:
-        void Move(Buffer& _other) noexcept;
-    };
+  auto Read(util_socket_t _fd, std::size_t _howmuch) -> std::size_t;
+  auto Write(util_socket_t _fd, std::size_t _howmuch = 0) -> std::size_t;
 
-} // namespace net
-} // namespace hare
+ private:
+  void Move(Buffer& _other) noexcept;
+};
 
-#endif // _HARE_NET_BUFFER_H_
+}  // namespace net
+}  // namespace hare
+
+#endif  // _HARE_NET_BUFFER_H_

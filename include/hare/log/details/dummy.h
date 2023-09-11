@@ -17,46 +17,38 @@
 
 namespace hare {
 namespace log {
-    namespace detail {
+namespace detail {
 
-        HARE_CLASS_API
-        struct HARE_API DummyMutex {
-            virtual ~DummyMutex() = default;
-            void lock() { }
-            void unlock() { }
-            virtual auto try_lock() -> bool
-            {
-                return true;
-            }
-        };
+HARE_CLASS_API
+struct HARE_API DummyMutex {
+  virtual ~DummyMutex() = default;
+  void lock() {}
+  void unlock() {}
+  virtual auto try_lock() -> bool { return true; }
+};
 
-        HARE_CLASS_API
-        template <typename T>
-        struct HARE_API DummyAtomic {
-            using value = T;
+HARE_CLASS_API
+template <typename T>
+struct HARE_API DummyAtomic {
+  using value = T;
 
-            T value_store {};
+  T value_store{};
 
-            DummyAtomic() = default;
+  DummyAtomic() = default;
 
-            explicit DummyAtomic(T _value)
-                : value_store(_value)
-            {
-            }
+  explicit DummyAtomic(T _value) : value_store(_value) {}
 
-            auto load(std::memory_order = std::memory_order_relaxed) const -> T
-            {
-                return value_store;
-            }
+  auto load(std::memory_order = std::memory_order_relaxed) const -> T {
+    return value_store;
+  }
 
-            void store(T _value, std::memory_order = std::memory_order_relaxed)
-            {
-                value_store = _value;
-            }
-        };
+  void store(T _value, std::memory_order = std::memory_order_relaxed) {
+    value_store = _value;
+  }
+};
 
-    } // namespace detail
-} // namespace log
-} // namespace hare
+}  // namespace detail
+}  // namespace log
+}  // namespace hare
 
-#endif // _HARE_LOG_DETAILS_DUMMY_H_
+#endif  // _HARE_LOG_DETAILS_DUMMY_H_

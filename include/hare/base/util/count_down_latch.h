@@ -17,20 +17,20 @@
 namespace hare {
 namespace util {
 
-    HARE_CLASS_API
-    class HARE_API CountDownLatch {
-        hare::detail::Impl* impl_ {};
+HARE_CLASS_API
+class HARE_API CountDownLatch {
+  hare::detail::Impl* impl_{};
 
-    public:
-        explicit CountDownLatch(std::uint32_t count);
-        ~CountDownLatch();
+ public:
+  explicit CountDownLatch(std::uint32_t count);
+  ~CountDownLatch();
 
-        void CountDown();
-        void Await(std::int32_t milliseconds = 0);
-        auto Count() -> std::uint32_t;
-    };
+  void CountDown();
+  void Await(std::int32_t milliseconds = 0);
+  auto Count() -> std::uint32_t;
+};
 
-} // namespace util
-} // namespace hare
+}  // namespace util
+}  // namespace hare
 
-#endif // _HARE_BASE_COUNT_DOWN_LATCH_H_
+#endif  // _HARE_BASE_COUNT_DOWN_LATCH_H_

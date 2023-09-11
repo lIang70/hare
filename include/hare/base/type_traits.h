@@ -19,12 +19,12 @@
 namespace hare {
 namespace detail {
 
-    template <typename... Ts>
-    struct VoidImpl {
-        using type = void;
-    };
+template <typename... Ts>
+struct VoidImpl {
+  using type = void;
+};
 
-} // namespace detail
+}  // namespace detail
 
 // void_t()
 //
@@ -41,14 +41,14 @@ using void_t = typename detail::VoidImpl<Ts...>::type;
 // encounters any `false` members (and does not compare the `::value` members
 // of any remaining arguments).
 template <typename... Ts>
-struct conjunction : std::true_type { };
+struct conjunction : std::true_type {};
 
 template <typename T, typename... Ts>
 struct conjunction<T, Ts...>
-    : std::conditional<T::value, conjunction<Ts...>, T>::type { };
+    : std::conditional<T::value, conjunction<Ts...>, T>::type {};
 
 template <typename T>
-struct conjunction<T> : T { };
+struct conjunction<T> : T {};
 
 // disjunction
 //
@@ -57,21 +57,21 @@ struct conjunction<T> : T { };
 // encounters any `true` members (and does not compare the `::value` members
 // of any remaining arguments).
 template <typename... Ts>
-struct disjunction : std::false_type { };
+struct disjunction : std::false_type {};
 
 template <typename T, typename... Ts>
 struct disjunction<T, Ts...>
-    : std::conditional<T::value, T, disjunction<Ts...>>::type { };
+    : std::conditional<T::value, T, disjunction<Ts...>>::type {};
 
 template <typename T>
-struct disjunction<T> : T { };
+struct disjunction<T> : T {};
 
 // negation
 //
 // Performs a compile-time logical NOT operation on the passed type (which
 // must have  `::value` members convertible to `bool`.
 template <typename T>
-struct negation : std::integral_constant<bool, !T::value> { };
+struct negation : std::integral_constant<bool, !T::value> {};
 
 // is_copy_assignable()
 // is_move_assignable()
@@ -103,8 +103,8 @@ using std::is_trivially_move_constructible;
 // C++20.
 template <typename T>
 struct remove_cvref {
-    using type =
-        typename std::remove_cv<typename std::remove_reference<T>::type>::type;
+  using type =
+      typename std::remove_cv<typename std::remove_reference<T>::type>::type;
 };
 
 template <typename T>
@@ -174,6 +174,6 @@ using common_type_t = typename std::common_type<T...>::type;
 template <typename T>
 using underlying_type_t = typename std::underlying_type<T>::type;
 
-} // namespace hare
+}  // namespace hare
 
-#endif // _HARE_BASE_TYPE_TRAITS_H_
+#endif  // _HARE_BASE_TYPE_TRAITS_H_

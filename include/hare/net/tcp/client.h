@@ -18,32 +18,35 @@
 namespace hare {
 namespace net {
 
-    static const std::int64_t kRetryDelay = 1L * HARE_MICROSECONDS_PER_SECOND; // 1s
+static const std::int64_t kRetryDelay =
+    1L * HARE_MICROSECONDS_PER_SECOND;  // 1s
 
-    HARE_CLASS_API
-    class HARE_API TcpClient : public util::NonCopyable {
-        hare::detail::Impl* impl_ {};
+HARE_CLASS_API
+class HARE_API TcpClient : public util::NonCopyable {
+  hare::detail::Impl* impl_{};
 
-    public:
-        explicit TcpClient(io::Cycle* _cycle, std::string _name = "HARE_CLIENT");
-        virtual ~TcpClient();
+ public:
+  explicit TcpClient(io::Cycle* _cycle, std::string _name = "HARE_CLIENT");
+  virtual ~TcpClient();
 
-        auto MainCycle() const -> io::Cycle*;
-        auto IsRunning() const -> bool;
-        void SetConnectCallback(TcpSession::ConnectCallback _connect);
+  auto MainCycle() const -> io::Cycle*;
+  auto IsRunning() const -> bool;
+  void SetConnectCallback(TcpSession::ConnectCallback _connect);
 
-        auto Connected() -> bool;
-        void ConnectTo(const HostAddress& _address, bool _retry = true, std::int32_t _retry_times = 30, std::int64_t _delay = kRetryDelay);
-        void Close();
+  auto Connected() -> bool;
+  void ConnectTo(const HostAddress& _address, bool _retry = true,
+                 std::int32_t _retry_times = 30,
+                 std::int64_t _delay = kRetryDelay);
+  void Close();
 
-        auto Send(const void* _buffer, std::size_t _len) -> bool;
-        auto Append(Buffer& _buffer) -> bool;
+  auto Send(const void* _buffer, std::size_t _len) -> bool;
+  auto Append(Buffer& _buffer) -> bool;
 
-    private:
-        void DestroySession();
-    };
+ private:
+  void DestroySession();
+};
 
-} // namespace net
-} // namespace hare
+}  // namespace net
+}  // namespace hare
 
-#endif // _HARE_NET_TCP_CLIENT_H_
+#endif  // _HARE_NET_TCP_CLIENT_H_
