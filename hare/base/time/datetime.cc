@@ -4,9 +4,8 @@
 #include <fmt/format.h>
 
 namespace hare {
-namespace time {
 
-namespace detail {
+namespace time_inner {
 
 // algorithm and explanation see:
 //   http://www.faqs.org/faqs/calendars/faq/part2/
@@ -31,7 +30,7 @@ static auto GetYMD(std::int32_t _julian_day_number) -> Date::YMD {
           e - ((153 * m + 2) / 5) + 1};
 }
 
-}  // namespace detail
+}  // namespace time_inner
 
 DateTime::DateTime() = default;
 
@@ -55,8 +54,7 @@ auto Date::ToFmt() const -> std::string {
 }
 
 auto Date::Detail() const -> Date::YMD {
-  return detail::GetYMD(julian_day_number_);
+  return time_inner::GetYMD(julian_day_number_);
 }
 
-}  // namespace time
 }  // namespace hare

@@ -93,13 +93,13 @@ class HARE_API Date {
    **/
   auto ToFmt() const -> std::string;
 
-  auto time_inner() const -> Date::YMD;
+  auto Detail() const -> Date::YMD;
 
-  auto Year() const -> std::int32_t { return time_inner().year; }
+  auto Year() const -> std::int32_t { return Detail().year; }
 
-  auto Month() const -> std::int32_t { return time_inner().month; }
+  auto Month() const -> std::int32_t { return Detail().month; }
 
-  auto Day() const -> std::int32_t { return time_inner().day; }
+  auto Day() const -> std::int32_t { return Detail().day; }
 
   /**
    * @brief [0, 1, ..., 6] => [Sunday, Monday, ..., Saturday ]
