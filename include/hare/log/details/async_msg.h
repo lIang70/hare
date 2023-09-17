@@ -10,14 +10,13 @@
  *
  **/
 
-#ifndef _HARE_LOG_ASYNC_MSG_H_
-#define _HARE_LOG_ASYNC_MSG_H_
+#ifndef _HARE_LOG_DETAILS_ASYNC_MSG_H_
+#define _HARE_LOG_DETAILS_ASYNC_MSG_H_
 
 #include <hare/log/details/msg.h>
 
 namespace hare {
 namespace log {
-namespace detail {
 
 HARE_CLASS_API
 struct HARE_API AsyncMsg : public Msg {
@@ -53,8 +52,7 @@ struct HARE_API AsyncMsg : public Msg {
   }
 };
 
-}  // namespace detail
 }  // namespace log
 }  // namespace hare
 
-#endif  // _HARE_LOG_ASYNC_MSG_H_
+#endif  // _HARE_LOG_DETAILS_ASYNC_MSG_H_

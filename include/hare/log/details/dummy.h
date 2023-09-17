@@ -17,7 +17,6 @@
 
 namespace hare {
 namespace log {
-namespace detail {
 
 HARE_CLASS_API
 struct HARE_API DummyMutex {
@@ -47,7 +46,6 @@ struct HARE_API DummyAtomic {
   }
 };
 
-}  // namespace detail
 }  // namespace log
 }  // namespace hare
 

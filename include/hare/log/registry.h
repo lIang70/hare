@@ -23,7 +23,7 @@ namespace hare {
 namespace log {
 
 HARE_CLASS_API
-class HARE_API Registry : util::NonCopyableNorMovable {
+class HARE_API Registry : public ::hare::NonCopyableNorMovable {
   mutable std::mutex mutex_for_loggers_{};
   std::unordered_map<std::string, Ptr<Logger>> loggers_{};
 

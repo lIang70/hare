@@ -25,8 +25,8 @@ namespace log {
 
 HARE_CLASS_API
 class HARE_API AsyncLogger : public Logger {
-  util::ThreadPool<detail::AsyncMsg> thread_pool_;
-  Policy msg_policy_{util::Policy::BLOCK_RETRY};
+  ::hare::ThreadPool<AsyncMsg> thread_pool_;
+  Policy msg_policy_{::hare::Policy::BLOCK_RETRY};
 
  public:
   template <typename Iter>
@@ -59,9 +59,9 @@ class HARE_API AsyncLogger : public Logger {
   void Flush() override;
 
  private:
-  void SinkIt(detail::Msg& _msg) override;
+  void SinkIt(Msg& _msg) override;
 
-  auto HandleMsg(detail::AsyncMsg& _msg) -> bool;
+  auto HandleMsg(AsyncMsg& _msg) -> bool;
 };
 
 }  // namespace log

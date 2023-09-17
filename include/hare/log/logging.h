@@ -21,12 +21,8 @@
 namespace hare {
 namespace log {
 
-namespace detail {
-HARE_API void HandleLoggerError(std::uint8_t, const std::string& error_msg);
-}  // namespace detail
-
 HARE_CLASS_API
-class HARE_API Logger : public util::NonCopyable {
+class HARE_API Logger : public ::hare::NonCopyable {
  public:
   using BackendList = std::vector<Ptr<Backend>>;
 
@@ -73,10 +69,10 @@ class HARE_API Logger : public util::NonCopyable {
     }
 
     try {
-      detail::Msg msg(&name_, &timezone_, _level, _loc);
+      Msg msg(&name_, &timezone_, _level, _loc);
       fmt::format_to(std::back_inserter(msg.raw_), _fmt, _args...);
       SinkIt(msg);
-    } catch (const hare::Exception& e) {
+    } catch (const ::hare::Exception& e) {
       error_handle_(ERROR_MSG, e.what());
     } catch (const std::exception& e) {
       error_handle_(ERROR_MSG, e.what());
@@ -125,7 +121,6 @@ class HARE_API Logger : public util::NonCopyable {
   HARE_INLINE Logger(std::string _unique_name, const Iter& begin,
                      const Iter& end)
       : name_(std::move(_unique_name)),
-        error_handle_(detail::HandleLoggerError),
         backends_(begin, end)  // message counter will start from 1. 0-message
                                // id will be reserved for controll messages
   {}
@@ -145,7 +140,7 @@ class HARE_API Logger : public util::NonCopyable {
       for (auto& backend : backends_) {
         backend->Flush();
       }
-    } catch (const hare::Exception& e) {
+    } catch (const ::hare::Exception& e) {
       error_handle_(ERROR_MSG, e.what());
     } catch (const std::exception& e) {
       error_handle_(ERROR_MSG, e.what());
@@ -156,21 +151,21 @@ class HARE_API Logger : public util::NonCopyable {
 
  protected:
   HARE_INLINE
-  void IncreaseMsgId(detail::Msg& _msg) {
+  void IncreaseMsgId(Msg& _msg) {
     _msg.id_ = msg_id_.fetch_add(1, std::memory_order_relaxed);
   }
 
   HARE_INLINE
-  auto ShouldFlushOn(const detail::Msg& _msg) -> bool {
+  auto ShouldFlushOn(const Msg& _msg) -> bool {
     const auto flush_level = flush_level_.load(std::memory_order_relaxed);
     return (_msg.level_ >= flush_level) && (_msg.level_ < LEVEL_NBRS);
   }
 
-  virtual void SinkIt(detail::Msg& _msg) {
+  virtual void SinkIt(Msg& _msg) {
     IncreaseMsgId(_msg);
 
-    detail::msg_buffer_t formatted{};
-    detail::FormatMsg(_msg, formatted);
+    msg_buffer_t formatted{};
+    FormatMsg(_msg, formatted);
 
     for (auto& backend : backends_) {
       if (backend->Check(_msg.level_)) {
@@ -182,6 +177,10 @@ class HARE_API Logger : public util::NonCopyable {
       Flush();
     }
   }
+
+ private:
+  static void HandleLoggerError(std::uint8_t _msg_type,
+                                const std::string& _error_msg);
 };
 
 }  // namespace log

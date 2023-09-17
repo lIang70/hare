@@ -33,7 +33,7 @@ class STDBackend final : public BaseBackend<Mutex> {
  private:
   STDBackend() = default;
 
-  void InnerSinkIt(detail::msg_buffer_t& _msg, Level _log_level) final {
+  void InnerSinkIt(msg_buffer_t& _msg, Level _log_level) final {
     IgnoreUnused(std::fwrite(_msg.data(), 1, _msg.size(),
                              _log_level <= LEVEL_INFO ? stdout : stderr));
     InnerFlush();
@@ -45,7 +45,7 @@ class STDBackend final : public BaseBackend<Mutex> {
 };
 
 using STDBackendMT = STDBackend<std::mutex>;
-using STDBackendST = STDBackend<detail::DummyMutex>;
+using STDBackendST = STDBackend<DummyMutex>;
 
 }  // namespace log
 }  // namespace hare

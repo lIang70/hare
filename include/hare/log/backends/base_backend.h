@@ -22,7 +22,7 @@
 namespace hare {
 namespace log {
 
-using Policy = hare::util::Policy;
+using Policy = hare::Policy;
 
 HARE_CLASS_API
 class HARE_API Backend {
@@ -31,7 +31,7 @@ class HARE_API Backend {
  public:
   virtual ~Backend() = default;
 
-  virtual void Log(detail::msg_buffer_t& _msg, Level _log_level) = 0;
+  virtual void Log(msg_buffer_t& _msg, Level _log_level) = 0;
   virtual void Flush() = 0;
 
   HARE_INLINE
@@ -48,15 +48,15 @@ class HARE_API Backend {
   }
 };
 
-template <typename Mutex = detail::DummyMutex>
-class BaseBackend : public Backend, public util::NonCopyable {
+template <typename Mutex = DummyMutex>
+class BaseBackend : public Backend, public hare::NonCopyable {
  protected:
   mutable Mutex mutex_{};
 
  public:
   BaseBackend() = default;
 
-  void Log(detail::msg_buffer_t& _msg, Level _log_level) final {
+  void Log(msg_buffer_t& _msg, Level _log_level) final {
     std::lock_guard<Mutex> lock(mutex_);
     InnerSinkIt(_msg, _log_level);
   }
@@ -67,7 +67,7 @@ class BaseBackend : public Backend, public util::NonCopyable {
   }
 
  protected:
-  virtual void InnerSinkIt(detail::msg_buffer_t& _msg, Level _log_level) = 0;
+  virtual void InnerSinkIt(msg_buffer_t& _msg, Level _log_level) = 0;
   virtual void InnerFlush() = 0;
 };
 

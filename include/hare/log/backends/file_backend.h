@@ -20,9 +20,9 @@
 namespace hare {
 namespace log {
 
-namespace detail {
+namespace log_inner {
 
-template <std::uint64_t MaxSize = io::file_inner::BUFFER_SIZE>
+template <std::uint64_t MaxSize = io_inner::BUFFER_SIZE>
 struct RotateFileBySize {
   std::int32_t rotate_id_{0};
   std::int32_t max_files_{0};
@@ -40,21 +40,21 @@ struct RotateFileBySize {
 
   template <bool WithLock>
   HARE_INLINE auto ShouldRotate(Level _log_level,
-                                const io::FileHelper<WithLock>& _file) -> bool {
+                                const FileHelper<WithLock>& _file) -> bool {
     IgnoreUnused(_log_level);
     return _file.Length() >= MaxSize;
   }
 };
 
-}  // namespace detail
+}  // namespace log_inner
 
 template <typename Mutex, typename FileNameGenerator>
 class FileBackend final : public BaseBackend<Mutex> {
   FileNameGenerator generator_{};
   filename_t basename_{};
-  io::FileHelper<false> file_{};
+  FileHelper<false> file_{};
   std::int32_t max_files_{-1};
-  util::CircularQueue<filename_t> filename_history_{};
+  CircularQueue<filename_t> filename_history_{};
 
  public:
   explicit FileBackend(filename_t _basename, std::int32_t _max_files = -1,
@@ -76,7 +76,7 @@ class FileBackend final : public BaseBackend<Mutex> {
   }
 
  private:
-  void InnerSinkIt(detail::msg_buffer_t& _msg, Level _log_level) final {
+  void InnerSinkIt(msg_buffer_t& _msg, Level _log_level) final {
     file_.Append(_msg);
 
     auto should_rotation = generator_.ShouldRotate(_log_level, file_);
@@ -95,7 +95,7 @@ class FileBackend final : public BaseBackend<Mutex> {
   void DeleteOld() {
     if (filename_history_.Full()) {
       auto tmp = filename_history_.PopFront();
-      if (!io::file_inner::Remove(tmp)) {
+      if (!io_inner::Remove(tmp)) {
         fmt::print(stderr, "failed removing hourly file[{}]." HARE_EOL, tmp);
       }
     }
@@ -107,7 +107,7 @@ template <typename FileNameGenerator>
 using FileBackendMT = FileBackend<std::mutex, FileNameGenerator>;
 
 template <typename FileNameGenerator>
-using FileBackendSt = FileBackend<detail::DummyMutex, FileNameGenerator>;
+using FileBackendSt = FileBackend<DummyMutex, FileNameGenerator>;
 
 }  // namespace log
 }  // namespace hare

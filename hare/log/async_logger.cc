@@ -8,28 +8,26 @@ namespace log {
 AsyncLogger::~AsyncLogger() {
   auto thr_cnt = thread_pool_.ThreadSize();
   for (decltype(thr_cnt) i = 0; i < thr_cnt; ++i) {
-    thread_pool_.Post(detail::AsyncMsg(detail::AsyncMsg::TERMINATE),
-                      Policy::BLOCK_RETRY);
+    thread_pool_.Post(AsyncMsg(AsyncMsg::TERMINATE), Policy::BLOCK_RETRY);
   }
   thread_pool_.Join();
 }
 
 void AsyncLogger::Flush() {
-  thread_pool_.Post(detail::AsyncMsg(detail::AsyncMsg::FLUSH),
-                    Policy::BLOCK_RETRY);
+  thread_pool_.Post(AsyncMsg(AsyncMsg::FLUSH), Policy::BLOCK_RETRY);
 }
 
-void AsyncLogger::SinkIt(detail::Msg& _msg) {
-  thread_pool_.Post({_msg, detail::AsyncMsg::LOG}, msg_policy_);
+void AsyncLogger::SinkIt(Msg& _msg) {
+  thread_pool_.Post({_msg, AsyncMsg::LOG}, msg_policy_);
 }
 
-auto AsyncLogger::HandleMsg(detail::AsyncMsg& _msg) -> bool {
+auto AsyncLogger::HandleMsg(AsyncMsg& _msg) -> bool {
   switch (_msg.type_) {
-    case detail::AsyncMsg::LOG: {
+    case AsyncMsg::LOG: {
       IncreaseMsgId(_msg);
 
-      detail::msg_buffer_t formatted{};
-      detail::FormatMsg(_msg, formatted);
+      msg_buffer_t formatted{};
+      FormatMsg(_msg, formatted);
 
       for (auto& backend : backends_) {
         if (backend->Check(_msg.level_)) {
@@ -42,7 +40,7 @@ auto AsyncLogger::HandleMsg(detail::AsyncMsg& _msg) -> bool {
       }
       return true;
     }
-    case detail::AsyncMsg::FLUSH:
+    case AsyncMsg::FLUSH:
       try {
         for (auto& backend : backends_) {
           backend->Flush();
@@ -56,7 +54,7 @@ auto AsyncLogger::HandleMsg(detail::AsyncMsg& _msg) -> bool {
       }
       return true;
       break;
-    case detail::AsyncMsg::TERMINATE:
+    case AsyncMsg::TERMINATE:
       break;
     default:
       HARE_ASSERT(false);

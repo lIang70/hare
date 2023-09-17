@@ -42,7 +42,7 @@ using Level = enum : std::int8_t {
 };
 
 #ifndef HARELOG_USING_ATOMIC_LEVELS
-using level_t = detail::DummyAtomic<std::int8_t>;
+using level_t = ::hare::log::DummyAtomic<std::int8_t>;
 #else
 using level_t = std::atomic<std::int8_t>;
 #endif
@@ -91,12 +91,10 @@ struct HARE_API SourceLoc {
   auto Empty() const noexcept -> bool { return line == 0; }
 };
 
-namespace detail {
-
 using msg_buffer_t = fmt::basic_memory_buffer<char, 256>;
 
 HARE_CLASS_API
-struct HARE_API Msg : public util::NonCopyable {
+struct HARE_API Msg : public ::hare::NonCopyable {
   const std::string* name_{};
   const Timezone* timezone_{};
   std::int8_t level_{LEVEL_NBRS};
@@ -109,7 +107,7 @@ struct HARE_API Msg : public util::NonCopyable {
   Msg() = default;
   virtual ~Msg() = default;
 
-  Msg(const std::string* _name, const hare::Timezone* _tz, Level _level,
+  Msg(const std::string* _name, const ::hare::Timezone* _tz, Level _level,
       SourceLoc& _loc);
 
   HARE_INLINE
@@ -136,7 +134,6 @@ struct HARE_API Msg : public util::NonCopyable {
 
 HARE_API void FormatMsg(Msg& _msg, msg_buffer_t& _fotmatted);
 
-}  // namespace detail
 }  // namespace log
 }  // namespace hare
 

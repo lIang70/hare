@@ -2,11 +2,10 @@
 #include <hare/log/details/async_msg.h>
 
 #include "base/fwd-inl.h"
-#include "base/io/local.h"
+#include "base/thread/store.h"
 
 namespace hare {
 namespace log {
-namespace detail {
 
 static auto LogTime(const Msg& _msg, std::int32_t& _microseconds)
     -> const std::string& {
@@ -23,7 +22,7 @@ static auto LogTime(const Msg& _msg, std::int32_t& _microseconds)
 
   if (seconds != t_last_time) {
     t_last_time = seconds;
-    struct time::DateTime dt {};
+    struct DateTime dt {};
     if (bool(*_msg.timezone_)) {
       dt = _msg.timezone_->ToLocal(seconds);
     } else {
@@ -41,7 +40,7 @@ Msg::Msg(const std::string* _name, const hare::Timezone* _tz, Level _level,
     : name_(_name),
       timezone_(_tz),
       level_(_level),
-      tid_(io::current_thread::ThreadData().tid),
+      tid_(::hare::ThreadStoreData().tid),
       loc_(_loc) {}
 
 void FormatMsg(Msg& _msg, msg_buffer_t& _fotmatted) {
@@ -53,11 +52,10 @@ void FormatMsg(Msg& _msg, msg_buffer_t& _fotmatted) {
   // [LEVEL] (stamp) <tid> msg (loc)
   fmt::format_to(std::back_inserter(_fotmatted),
                  "({:}.{:06d}) [{:8}] <{:#x}> {} [{}:{}||{}]" HARE_EOL, stamp,
-                 microseconds, level, io::current_thread::ThreadData().tid,
+                 microseconds, level, ::hare::ThreadStoreData().tid,
                  _msg.raw_.data(), _msg.loc_.filename, _msg.loc_.line,
                  _msg.loc_.funcname);
 }
 
-}  // namespace detail
 }  // namespace log
 }  // namespace hare
