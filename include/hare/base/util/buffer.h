@@ -19,9 +19,8 @@
 #endif
 
 namespace hare {
-namespace util {
 
-namespace detail {
+namespace util_inner {
 #if defined(_SECURE_SCL) && _SECURE_SCL
 // Make a checked iterator to avoid MSVC warnings.
 template <typename T>
@@ -38,7 +37,7 @@ constexpr auto MakeChecked(T* p, std::size_t) -> T* {
   return p;
 }
 #endif
-}  // namespace detail
+}  // namespace util_inner
 
 HARE_CLASS_API
 template <typename T>
@@ -135,20 +134,19 @@ template <typename T>
 template <typename U>
 void Buffer<T>::Append(const U* begin, const U* end) {
   while (begin != end) {
-    auto count = hare::detail::ToUnsigned(end - begin);
+    auto count = ::hare::detail::ToUnsigned(end - begin);
     TryReserve(size_ + count);
     auto free_cap = capacity_ - size_;
     if (free_cap < count) {
       count = free_cap;
     }
     std::uninitialized_copy_n(begin, count,
-                              detail::MakeChecked(ptr_ + size_, count));
+                              util_inner::MakeChecked(ptr_ + size_, count));
     size_ += count;
     begin += count;
   }
 }
 
-}  // namespace util
 }  // namespace hare
 
 #endif  // _HARE_BASE_UTIL_BUFFER_H_

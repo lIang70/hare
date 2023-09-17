@@ -1,4 +1,4 @@
-#include <hare/base/util/system.h>
+#include <hare/base/system.h>
 
 #include "base/fwd-inl.h"
 
@@ -36,7 +36,7 @@ void Abort(const char* _errmsg) {
   IgnoreUnused(_errmsg);
 
 #ifdef HARE_DEBUG
-  fmt::print(stderr, "{}\n", util::StackTrace(true));
+  fmt::print(stderr, "{}\n", ::hare::StackTrace(true));
 #endif
 
   std::abort();

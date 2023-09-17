@@ -19,7 +19,6 @@
 #include <vector>
 
 namespace hare {
-namespace util {
 
 HARE_CLASS_API
 template <typename T, typename Sequence = std::vector<T>>
@@ -206,7 +205,6 @@ class HARE_API BlockingQueue {
   }
 };
 
-}  // namespace util
 }  // namespace hare
 
 #endif  // _HARE_UTIL_QUEUE_H_

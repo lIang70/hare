@@ -15,11 +15,10 @@
 #include <hare/base/io/event.h>
 
 namespace hare {
-namespace io {
 
 HARE_CLASS_API
-class HARE_API Cycle : public util::NonCopyable {
-  hare::detail::Impl* impl_{};
+class HARE_API Cycle : public NonCopyable {
+  ::hare::detail::Impl* impl_{};
 
  public:
   using REACTOR_TYPE = enum {
@@ -90,14 +89,14 @@ class HARE_API Cycle : public util::NonCopyable {
 
   void Cancel(Event::Id _event_id);
 
-  void EventUpdate(const hare::Ptr<Event>& _event);
-  void EventRemove(const hare::Ptr<Event>& _event);
+  void EventUpdate(const ::hare::Ptr<Event>& _event);
+  void EventRemove(const ::hare::Ptr<Event>& _event);
 
   /**
    * @brief Detects whether the event is in the reactor.
    *   Must be called in the cycle thread.
    **/
-  auto EventCheck(const hare::Ptr<Event>& _event) -> bool;
+  auto EventCheck(const ::hare::Ptr<Event>& _event) -> bool;
 
  private:
   void Notify();
@@ -107,7 +106,6 @@ class HARE_API Cycle : public util::NonCopyable {
   void DoPendingFunctions();
 };
 
-}  // namespace io
 }  // namespace hare
 
 #endif  // _HARE_BASE_IO_CYCLE_H_

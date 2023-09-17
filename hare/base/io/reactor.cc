@@ -5,30 +5,22 @@
 #include <hare/hare-config.h>
 
 #include "base/fwd-inl.h"
-
-#if HARE__HAVE_EPOLL
-#include "base/io/reactor/reactor_epoll.h"
-#endif
-
-#if HARE__HAVE_POLL
-#include "base/io/reactor/reactor_poll.h"
-#endif
+#include "base/platforms/linux/reactor/reactor_epoll.h"
+#include "base/platforms/linux/reactor/reactor_poll.h"
 
 namespace hare {
-namespace io {
 
-auto Reactor::CreateByType(Cycle::REACTOR_TYPE _type, Cycle* _cycle)
-    -> Reactor* {
+auto Reactor::CreateByType(Cycle::REACTOR_TYPE _type) -> Reactor* {
   switch (_type) {
     case Cycle::REACTOR_TYPE_EPOLL:
 #if HARE__HAVE_POLL
-      return new ReactorEpoll(_cycle);
+      return new ReactorEpoll();
 #else
       HARE_INTERNAL_FATAL("epoll reactor was not supported.");
 #endif
     case Cycle::REACTOR_TYPE_POLL:
 #if HARE__HAVE_POLL
-      return new ReactorPoll(_cycle);
+      return new ReactorPoll();
 #else
       HARE_INTERNAL_FATAL("poll reactor was not supported.");
 #endif
@@ -38,8 +30,6 @@ auto Reactor::CreateByType(Cycle::REACTOR_TYPE _type, Cycle* _cycle)
   }
 }
 
-Reactor::Reactor(Cycle* _cycle, Cycle::REACTOR_TYPE _type)
-    : type_(_type), owner_cycle_(_cycle) {}
+Reactor::Reactor(Cycle::REACTOR_TYPE _type) : type_(_type) {}
 
-}  // namespace io
 }  // namespace hare

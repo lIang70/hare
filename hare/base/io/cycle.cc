@@ -1,6 +1,7 @@
 #include <hare/base/exception.h>
 #include <hare/base/io/operation.h>
 #include <hare/base/io/timer.h>
+#include <hare/base/system.h>
 #include <hare/base/time/timestamp.h>
 #include <hare/base/util/count_down_latch.h>
 #include <hare/hare-config.h>
@@ -14,8 +15,8 @@
 #include <utility>
 
 #include "base/fwd-inl.h"
-#include "base/io/local.h"
 #include "base/io/reactor.h"
+#include "base/thread/store.h"
 
 #if HARE__HAVE_EVENTFD
 #include <sys/eventfd.h>
@@ -31,7 +32,6 @@
 #endif
 
 namespace hare {
-namespace io {
 
 namespace cycle_inner {
 
@@ -46,7 +46,7 @@ static auto CreateNotifier() -> util_socket_t {
 #else
 static auto CreateNotifier(util_socket_t& _write_fd) -> util_socket_t {
   util_socket_t fd[2];
-  auto ret = socket_op::socketpair(AF_INET, SOCK_STREAM, 0, fd);
+  auto ret = io::Socketpair(AF_INET, SOCK_STREAM, 0, fd);
   if (ret < 0) {
     HARE_INTERNAL_FATAL("fail to create socketpair for notify_fd.");
   }
@@ -145,36 +145,41 @@ static void PrintActiveEvents(const EventsList& _active_events) {
 }
 }  // namespace cycle_inner
 
-HARE_IMPL_DEFAULT(Cycle, Timestamp reactor_time{}; std::uint64_t tid{0};
-                  bool is_running{false}; bool quit{false};
-                  bool event_handling{false};
-                  bool calling_pending_functions{false};
+// clang-format off
+HARE_IMPL_DEFAULT(Cycle, 
+  Timestamp reactor_time{}; 
+  std::uint64_t tid{0};
+  bool is_running{false};
+  bool quit{false};
+  bool event_handling{false};
+  bool calling_pending_functions{false};
 
-                  Ptr<cycle_inner::EventNotify> notify_event{nullptr};
-                  Ptr<Reactor> reactor{nullptr};
-                  Ptr<Event> current_active_event{nullptr};
-                  std::atomic<Event::Id> event_id{0};
+  Ptr<cycle_inner::EventNotify> notify_event{nullptr};
+  Ptr<Reactor> reactor{nullptr};
+  Ptr<Event> current_active_event{nullptr};
+  std::atomic<Event::Id> event_id{0};
 
-                  mutable std::mutex functions_mutex{};
-                  std::list<Task> pending_functions{};
+  mutable std::mutex functions_mutex{};
+  std::list<Task> pending_functions{};
 
-                  std::uint64_t cycle_index{0};)
+  std::uint64_t cycle_index{0};
+)
+// clang-format on
 
 Cycle::Cycle(REACTOR_TYPE _type) : impl_(new CycleImpl) {
   static cycle_inner::GlobalInit s_total_init{};
 
-  IMPL->tid = current_thread::ThreadData().tid;
+  IMPL->tid = ThreadStoreData().tid;
   IMPL->notify_event.reset(new cycle_inner::EventNotify());
-  IMPL->reactor.reset(CHECK_NULL(Reactor::CreateByType(_type, this)));
+  IMPL->reactor.reset(CHECK_NULL(Reactor::CreateByType(_type)));
 
-  if (current_thread::ThreadData().cycle != nullptr) {
+  if (ThreadStoreData().cycle != nullptr) {
     HARE_INTERNAL_FATAL("another cycle[{}] exists in this thread[{:#x}]",
-                        (void*)current_thread::ThreadData().cycle,
-                        current_thread::ThreadData().tid);
+                        (void*)ThreadStoreData().cycle, ThreadStoreData().tid);
   } else {
-    current_thread::ThreadData().cycle = this;
+    ThreadStoreData().cycle = this;
     HARE_INTERNAL_TRACE("cycle[{}] is being initialized in thread[{:#x}].",
-                        (void*)this, current_thread::ThreadData().tid);
+                        (void*)this, ThreadStoreData().tid);
   }
 }
 
@@ -183,7 +188,7 @@ Cycle::~Cycle() {
   AssertInCycleThread();
   IMPL->pending_functions.clear();
   IMPL->notify_event.reset();
-  current_thread::ThreadData().cycle = nullptr;
+  ThreadStoreData().cycle = nullptr;
   delete impl_;
 }
 
@@ -206,7 +211,7 @@ auto Cycle::cycle_index() const -> std::uint64_t { return IMPL->cycle_index; }
 #endif
 
 auto Cycle::InCycleThread() const -> bool {
-  return IMPL->tid == current_thread::ThreadData().tid;
+  return IMPL->tid == ThreadStoreData().tid;
 }
 
 void Cycle::Exec() {
@@ -354,7 +359,7 @@ void Cycle::Cancel(Event::Id _event_id) {
     return;
   }
 
-  util::CountDownLatch cdl{1};
+  CountDownLatch cdl{1};
 
   RunInCycle([&] {
     auto iter = IMPL->reactor->events_.find(_event_id);
@@ -479,7 +484,7 @@ void Cycle::Notify() { IMPL->notify_event->SendNotify(); }
 void Cycle::AbortNotCycleThread() {
   HARE_INTERNAL_FATAL(
       "cycle[{}] was created in thread[{:#x}], current thread is: {:#x}",
-      (void*)this, IMPL->tid, current_thread::ThreadData().tid);
+      (void*)this, IMPL->tid, ThreadStoreData().tid);
 }
 
 void Cycle::DoPendingFunctions() {
@@ -532,5 +537,4 @@ void Cycle::NotifyTimer() {
   }
 }
 
-}  // namespace io
 }  // namespace hare

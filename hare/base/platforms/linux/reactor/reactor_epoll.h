@@ -11,7 +11,6 @@
 #include <sys/epoll.h>
 
 namespace hare {
-namespace io {
 
 class ReactorEpoll : public Reactor {
   using ep_event_list = std::vector<struct epoll_event>;
@@ -20,7 +19,7 @@ class ReactorEpoll : public Reactor {
   ep_event_list epoll_events_{};
 
  public:
-  explicit ReactorEpoll(Cycle* cycle);
+  explicit ReactorEpoll();
   ~ReactorEpoll() override;
 
   auto Poll(std::int32_t _timeout_microseconds) -> Timestamp override;
@@ -33,7 +32,6 @@ class ReactorEpoll : public Reactor {
       -> bool;
 };
 
-}  // namespace io
 }  // namespace hare
 
 #endif  // HARE__HAVE_EPOLL

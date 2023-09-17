@@ -18,7 +18,7 @@ namespace hare {
 
 HARE_CLASS_API
 class HARE_API Timezone {
-  hare::detail::Impl* impl_{};
+  ::hare::detail::Impl* impl_{};
 
  public:
   Timezone();  // an invalid timezone
@@ -31,15 +31,15 @@ class HARE_API Timezone {
 
   static auto UTC() -> Timezone;
   // gmtime(3)
-  static auto ToUtcTime(std::int64_t _seconds_since_epoch) -> time::DateTime;
+  static auto ToUtcTime(std::int64_t _seconds_since_epoch) -> DateTime;
   // timegm(3)
-  static auto FromUtcTime(const time::DateTime& _dt) -> std::int64_t;
+  static auto FromUtcTime(const DateTime& _dt) -> std::int64_t;
 
   explicit operator bool() const;
 
   auto ToLocal(std::int64_t _seconds_since_epoch,
-               std::int32_t* _utc_offset = nullptr) const -> time::DateTime;
-  auto FromLocal(const time::DateTime& _dt, bool _post_transition = false) const
+               std::int32_t* _utc_offset = nullptr) const -> DateTime;
+  auto FromLocal(const DateTime& _dt, bool _post_transition = false) const
       -> std::int64_t;
 };
 

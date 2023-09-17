@@ -16,7 +16,6 @@
 #include <hare/base/util/non_copyable.h>
 
 namespace hare {
-namespace io {
 
 using Events = enum : std::uint8_t {
   EVENT_DEFAULT = 0x00,
@@ -60,9 +59,9 @@ template class HARE_API std::weak_ptr<Event>;
 
 class Cycle;
 HARE_CLASS_API
-class HARE_API Event : public util::NonCopyable,
+class HARE_API Event : public NonCopyable,
                        public std::enable_shared_from_this<Event> {
-  hare::detail::Impl* impl_{};
+  ::hare::detail::Impl* impl_{};
 
  public:
   using Id = std::int64_t;
@@ -94,7 +93,7 @@ class HARE_API Event : public util::NonCopyable,
    * @brief Tie this event to the owner object managed by shared_ptr,
    *   prevent the owner object being destroyed in handle_event.
    */
-  void Tie(const hare::Ptr<void>& _obj);
+  void Tie(const ::hare::Ptr<void>& _obj);
   auto TiedObject() -> WPtr<void>;
 
  private:
@@ -105,7 +104,6 @@ class HARE_API Event : public util::NonCopyable,
   friend class Cycle;
 };
 
-}  // namespace io
 }  // namespace hare
 
 #endif  // _HARE_BASE_IO_EVENT_H_

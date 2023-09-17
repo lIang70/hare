@@ -4,7 +4,6 @@
 #include "base/io/reactor.h"
 
 namespace hare {
-namespace io {
 
 HARE_IMPL_DEFAULT(Timer, Task task{};)
 
@@ -40,5 +39,4 @@ void Timer::TimerCallback(const Ptr<Event>& _event, std::uint8_t _events,
   IMPL->task();
 }
 
-}  // namespace io
 }  // namespace hare

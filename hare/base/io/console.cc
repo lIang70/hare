@@ -21,22 +21,25 @@
 #endif  // H_OS_WIN32
 
 namespace hare {
-namespace io {
 
-namespace detail {
+namespace io_inner {
 static void GlobalConsoleHandle(const std::string& _command_line) {
   HARE_INTERNAL_ERROR(
       "unregistered command[{}], you can register \"default handle\" to "
       "console for handling all command.",
       _command_line);
 }
-}  // namespace detail
+}  // namespace io_inner
 
-HARE_IMPL_DEFAULT(Console, Ptr<Event> console_event{nullptr};
-                  std::map<std::string, Task> handlers{};
-                  util::AtomicHook<Console::DefaultHandle> default_handle{
-                      detail::GlobalConsoleHandle};
-                  bool attached{false};)
+// clang-format off
+HARE_IMPL_DEFAULT(Console,
+  Ptr<Event> console_event{nullptr};
+  std::map<std::string, Task> handlers{};
+  AtomicHook<Console::DefaultHandle> default_handle{
+    io_inner::GlobalConsoleHandle};
+  bool attached{false};
+)
+// clang-format on
 
 auto Console::Instance() -> Console& {
   static Console static_console{};
@@ -63,7 +66,7 @@ auto Console::Attach(Cycle* _cycle) -> bool {
   }
   if (_cycle->is_running()) {
     auto in_cycle_thread = _cycle->InCycleThread();
-    auto cdl = std::make_shared<util::CountDownLatch>(1);
+    auto cdl = std::make_shared<CountDownLatch>(1);
     _cycle->RunInCycle([=] {
       _cycle->EventUpdate(IMPL->console_event);
       cdl->CountDown();
@@ -88,7 +91,7 @@ Console::Console() : impl_(new ConsoleImpl) {
                 std::bind(&Console::Process, this, std::placeholders::_1,
                           std::placeholders::_2, std::placeholders::_3),
                 EVENT_READ | EVENT_PERSIST | EVENT_ET, 0));
-  IMPL->default_handle.Store(detail::GlobalConsoleHandle);
+  IMPL->default_handle.Store(io_inner::GlobalConsoleHandle);
 }
 
 void Console::Process(const Ptr<Event>& _event, std::uint8_t _events,
@@ -123,5 +126,4 @@ void Console::Process(const Ptr<Event>& _event, std::uint8_t _events,
   }
 }
 
-}  // namespace io
 }  // namespace hare

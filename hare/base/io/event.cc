@@ -6,9 +6,8 @@
 #include "base/io/reactor.h"
 
 namespace hare {
-namespace io {
 
-namespace detail {
+namespace in_inner {
 
 static auto EventsToString(util_socket_t _fd, std::uint8_t _events)
     -> std::string {
@@ -38,15 +37,23 @@ static auto EventsToString(util_socket_t _fd, std::uint8_t _events)
   }
   return oss.str();
 }
-}  // namespace detail
+}  // namespace in_inner
 
-HARE_IMPL_DEFAULT(Event, util_socket_t fd{-1};
-                  std::uint8_t events{EVENT_DEFAULT};
-                  Event::Callback callback{}; std::int64_t timeval{0};
+// clang-format off
+HARE_IMPL_DEFAULT(Event,
+  util_socket_t fd{-1};
+  std::uint8_t events{EVENT_DEFAULT};
+  Event::Callback callback{};
+  std::int64_t timeval{0};
 
-                  Cycle * cycle{}; Event::Id id{-1}; std::int64_t timeout{0};
+  Cycle * cycle{};
+  Event::Id id{-1};
+  std::int64_t timeout{0};
 
-                  bool tied{false}; WPtr<void> tie_object{};)
+  bool tied{false};
+  WPtr<void> tie_object{};
+)
+// clang-format on
 
 Event::Event(util_socket_t _fd, Callback _cb, std::uint8_t _events,
              std::int64_t _timeval)
@@ -132,7 +139,7 @@ void Event::Deactivate() {
 }
 
 auto Event::EventToString() const -> std::string {
-  return detail::EventsToString(IMPL->fd, IMPL->events);
+  return in_inner::EventsToString(IMPL->fd, IMPL->events);
 }
 
 void Event::Tie(const hare::Ptr<void>& _obj) {
@@ -165,5 +172,4 @@ void Event::Reset() {
   IMPL->id = -1;
 }
 
-}  // namespace io
 }  // namespace hare

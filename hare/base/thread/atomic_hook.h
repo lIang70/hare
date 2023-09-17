@@ -1,5 +1,5 @@
 /**
- * @file atomic_hook.h
+ * @file hare/base/thread/atomic_hook.h
  * @author l1ang70 (gog_017@outlook.com)
  * @brief Taken from [abseil-cpp](https://github.com/abseil/abseil-cpp).
  * @version 0.2-beta
@@ -9,15 +9,14 @@
  *
  **/
 
-#ifndef _HARE_BASE_UTIL_ATOMIC_HOOK_H_
-#define _HARE_BASE_UTIL_ATOMIC_HOOK_H_
+#ifndef _HARE_BASE_THREAD_ATOMIC_HOOK_H_
+#define _HARE_BASE_THREAD_ATOMIC_HOOK_H_
 
 #include <hare/base/fwd.h>
 
 #include <atomic>
 
 namespace hare {
-namespace util {
 
 template <typename T>
 class AtomicHook;
@@ -120,7 +119,6 @@ HARE_CLASS_API class HARE_API AtomicHook<ReturnType (*)(Args...)> {
   const FnPtr default_fn_;
 };
 
-}  // namespace util
 }  // namespace hare
 
-#endif  // _HARE_BASE_UTIL_ATOMIC_HOOK_H_
+#endif  // _HARE_BASE_THREAD_ATOMIC_HOOK_H_

@@ -39,9 +39,8 @@
 #endif
 
 namespace hare {
-namespace io {
 
-namespace file_inner {
+namespace io_inner {
 
 enum { BUFFER_SIZE = 64 * 1024 };
 
@@ -70,12 +69,12 @@ HARE_API auto Size(std::FILE* _fp) -> std::uint64_t;
 
 HARE_API auto Sync(std::FILE* _fp) -> bool;
 
-}  // namespace file_inner
+}  // namespace io_inner
 
-template <bool WithLock = false, std::size_t Size = file_inner::BUFFER_SIZE>
-HARE_CLASS_API class HARE_API FileHelper : public util::NonCopyable {
-  using InnerWrite = typename std::conditional<WithLock, file_inner::Write,
-                                               file_inner::WriteUnlock>::type;
+template <bool WithLock = false, std::size_t Size = io_inner::BUFFER_SIZE>
+HARE_CLASS_API class HARE_API FileHelper : public NonCopyable {
+  using InnerWrite = typename std::conditional<WithLock, io_inner::Write,
+                                               io_inner::WriteUnlock>::type;
 
   std::FILE* fp_{};
   std::size_t written_bytes_{0};
@@ -95,13 +94,13 @@ HARE_CLASS_API class HARE_API FileHelper : public util::NonCopyable {
   void Open(const filename_t& _file, bool truncate = false) {
     Close();
     const auto* mode = truncate ? HARE_FILENAME_T("wb") : HARE_FILENAME_T("ab");
-    if (!file_inner::Open(&fp_, _file, mode)) {
+    if (!io_inner::Open(&fp_, _file, mode)) {
       throw Exception("failed opening file " + FilenameToStr(_file) +
                       " for writing");
     } else {
       filename_ = _file;
       IgnoreUnused(std::setvbuf(fp_, buffer_.data(), _IOFBF, Size));
-      size_ = file_inner::Size(fp_);
+      size_ = io_inner::Size(fp_);
     }
   }
 
@@ -126,9 +125,9 @@ HARE_CLASS_API class HARE_API FileHelper : public util::NonCopyable {
 
   void Flush() { IgnoreUnused(std::fflush(fp_)); }
 
-  auto Sync() -> bool { return file_inner::Sync(fp_); }
+  auto Sync() -> bool { return io_inner::Sync(fp_); }
 
-  template <std::size_t BufferSize = file_inner::BUFFER_SIZE>
+  template <std::size_t BufferSize = io_inner::BUFFER_SIZE>
   void Append(const fmt::basic_memory_buffer<char, BufferSize>& _buffer) {
     const auto buffer_size = _buffer.size();
 
@@ -139,7 +138,6 @@ HARE_CLASS_API class HARE_API FileHelper : public util::NonCopyable {
   }
 };
 
-}  // namespace io
 }  // namespace hare
 
 #endif  // _HARE_BASE_IO_FILE_H_

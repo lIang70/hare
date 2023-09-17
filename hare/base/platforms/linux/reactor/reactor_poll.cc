@@ -1,4 +1,4 @@
-#include "base/io/reactor/reactor_poll.h"
+#include "reactor_poll.h"
 
 #include <algorithm>
 #include <sstream>
@@ -8,9 +8,8 @@
 #if HARE__HAVE_POLL
 
 namespace hare {
-namespace io {
 
-namespace detail {
+namespace io_inner {
 static const std::int32_t kInitEventsCnt = 16;
 
 static auto DecodePoll(std::uint8_t events) -> decltype(pollfd::events) {
@@ -67,11 +66,10 @@ static auto EventsToString(decltype(pollfd::events) event) -> std::string {
   return oss.str();
 }
 
-}  // namespace detail
+}  // namespace io_inner
 
-ReactorPoll::ReactorPoll(Cycle* _cycle)
-    : Reactor(_cycle, Cycle::REACTOR_TYPE_POLL),
-      poll_fds_(detail::kInitEventsCnt) {}
+ReactorPoll::ReactorPoll()
+    : Reactor(Cycle::REACTOR_TYPE_POLL), poll_fds_(io_inner::kInitEventsCnt) {}
 
 ReactorPoll::~ReactorPoll() = default;
 
@@ -109,7 +107,7 @@ auto ReactorPoll::EventUpdate(const Ptr<Event>& _event) -> bool {
     struct pollfd poll_fd {};
     hare::detail::FillN(&poll_fd, sizeof(poll_fd), 0);
     poll_fd.fd = target_fd;
-    poll_fd.events = detail::DecodePoll(_event->events());
+    poll_fd.events = io_inner::DecodePoll(_event->events());
     poll_fd.revents = 0;
     poll_fds_.push_back(poll_fd);
     auto index = static_cast<std::int32_t>(poll_fds_.size()) - 1;
@@ -129,7 +127,7 @@ auto ReactorPoll::EventUpdate(const Ptr<Event>& _event) -> bool {
   struct pollfd& pfd = poll_fds_[index];
   HARE_ASSERT(pfd.fd == target_fd || pfd.fd == -target_fd - 1);
   pfd.fd = target_fd;
-  pfd.events = detail::DecodePoll(_event->events());
+  pfd.events = io_inner::DecodePoll(_event->events());
   pfd.revents = 0;
   return true;
 }
@@ -147,7 +145,7 @@ auto ReactorPoll::EventRemove(const Ptr<Event>& _event) -> bool {
 
   const auto& pfd = poll_fds_[index];
   IgnoreUnused(pfd);
-  HARE_ASSERT(pfd.events == detail::DecodePoll(_event->events()));
+  HARE_ASSERT(pfd.events == io_inner::DecodePoll(_event->events()));
   if (ImplicitCast<std::size_t>(index) == poll_fds_.size() - 1) {
     poll_fds_.pop_back();
   } else {
@@ -174,12 +172,11 @@ void ReactorPoll::FillActiveEvents(std::int32_t _num_of_events) {
       HARE_ASSERT(event_iter != events_.end());
       HARE_ASSERT(event_iter->second->fd() == pfd.fd);
       active_events_.emplace_back(event_iter->second,
-                                  detail::EncodePoll(pfd.revents));
+                                  io_inner::EncodePoll(pfd.revents));
     }
   }
 }
 
-}  // namespace io
 }  // namespace hare
 
 #endif  // HARE__HAVE_POLL

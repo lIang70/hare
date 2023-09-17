@@ -12,7 +12,6 @@
 #include <sys/poll.h>
 
 namespace hare {
-namespace io {
 
 class ReactorPoll : public Reactor {
   using pollfd_list = std::vector<struct pollfd>;
@@ -21,7 +20,7 @@ class ReactorPoll : public Reactor {
   std::map<util_socket_t, std::int32_t> inverse_map_{};
 
  public:
-  explicit ReactorPoll(Cycle* _cycle);
+  explicit ReactorPoll();
   ~ReactorPoll() override;
 
   auto Poll(std::int32_t _timeout_microseconds) -> Timestamp override;
@@ -32,7 +31,6 @@ class ReactorPoll : public Reactor {
   void FillActiveEvents(std::int32_t _num_of_events);
 };
 
-}  // namespace io
 }  // namespace hare
 
 #endif  // HARE__HAVE_POLL

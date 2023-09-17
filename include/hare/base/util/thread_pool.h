@@ -18,7 +18,6 @@
 #include <thread>
 
 namespace hare {
-namespace util {
 
 enum class Policy {
   BLOCK_RETRY,  // Block / yield / sleep until message can be enqueued
@@ -111,7 +110,6 @@ class HARE_API ThreadPool final {
   }
 };
 
-}  // namespace util
 }  // namespace hare
 
 #endif  // _HARE_UTIL_THREAD_POOL_H_

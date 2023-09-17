@@ -15,11 +15,10 @@
 #include <hare/base/io/event.h>
 
 namespace hare {
-namespace io {
 
 HARE_CLASS_API
-class HARE_API Console : public util::NonCopyable {
-  hare::detail::Impl* impl_{};
+class HARE_API Console final : public NonCopyable {
+  ::hare::detail::Impl* impl_{};
 
  public:
   using DefaultHandle = void (*)(const std::string& command_line);
@@ -42,7 +41,6 @@ class HARE_API Console : public util::NonCopyable {
                const Timestamp& _receive_time);
 };
 
-}  // namespace io
 }  // namespace hare
 
 #endif  // _HARE_BASE_IO_CONSOLE_H_

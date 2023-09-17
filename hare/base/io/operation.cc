@@ -6,59 +6,10 @@
 #include <Ws2tcpip.h>
 #define socklen_t int
 #define close closesocket
-
-#if BYTE_ORDER == LITTLE_ENDIAN
-
-#define htobe16(x) htons(x)
-#define htole16(x) (x)
-#define be16toh(x) ntohs(x)
-#define le16toh(x) (x)
-
-#define htobe32(x) htonl(x)
-#define htole32(x) (x)
-#define be32toh(x) ntohl(x)
-#define le32toh(x) (x)
-
-#define htobe64(x) htonll(x)
-#define htole64(x) (x)
-#define be64toh(x) ntohll(x)
-#define le64toh(x) (x)
-
-#elif BYTE_ORDER == BIG_ENDIAN
-
-#define htobe16(x) (x)
-#define htole16(x) __builtin_bswap16(x)
-#define be16toh(x) (x)
-#define le16toh(x) __builtin_bswap16(x)
-
-#define htobe32(x) (x)
-#define htole32(x) __builtin_bswap32(x)
-#define be32toh(x) (x)
-#define le32toh(x) __builtin_bswap32(x)
-
-#define htobe64(x) (x)
-#define htole64(x) __builtin_bswap64(x)
-#define be64toh(x) (x)
-#define le64toh(x) __builtin_bswap64(x)
-
-#endif
-
 #else
-
-#include <endian.h>
-
-#endif
-
-#if HARE__HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-
-#if HARE__HAVE_SYS_SOCKET_H
-#include <sys/socket.h>
-#endif
-
-#if HARE__HAVE_ARPA_INET_H
 #include <arpa/inet.h>
+#include <sys/socket.h>
+#include <unistd.h>
 #endif
 
 #define MAX_READ_DEFAULT 4096
@@ -66,7 +17,7 @@
 namespace hare {
 namespace io {
 
-namespace detail {
+namespace io_inner {
 
 HARE_INLINE auto SockaddrCast(const struct sockaddr_in6* _addr) -> const
     struct sockaddr* {
@@ -208,26 +159,7 @@ tidy_up_and_fail:
 #undef ERR
 #undef SET_SOCKET_ERROR
 }
-}  // namespace detail
-
-auto HostToNetwork64(std::uint64_t host64) -> std::uint64_t {
-  return htobe64(host64);
-}
-auto HostToNetwork32(std::uint32_t host32) -> std::uint32_t {
-  return htobe32(host32);
-}
-auto HostToNetwork16(std::uint16_t host16) -> std::uint16_t {
-  return htobe16(host16);
-}
-auto NetworkToHost64(std::uint64_t net64) -> std::uint64_t {
-  return be64toh(net64);
-}
-auto NetworkToHost32(std::uint32_t net32) -> std::uint32_t {
-  return be32toh(net32);
-}
-auto NetworkToHost16(std::uint16_t net16) -> std::uint16_t {
-  return be16toh(net16);
-}
+}  // namespace io_inner
 
 auto SocketErrorInfo(util_socket_t _fd) -> std::string {
   std::array<char, HARE_SMALL_BUFFER> error_str{};
@@ -245,7 +177,7 @@ auto Socketpair(std::uint8_t _family, std::int32_t _type,
 #ifndef H_OS_WIN32
   return ::socketpair(_family, _type, _protocol, _sockets);
 #else
-  return detail::CreatePair(_family, _type, _protocol, _sockets);
+  return io_inner::CreatePair(_family, _type, _protocol, _sockets);
 #endif
 }
 

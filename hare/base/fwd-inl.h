@@ -4,7 +4,7 @@
 #include <hare/base/exception.h>
 #include <hare/base/time/timestamp.h>
 
-#include "base/util/atomic_hook.h"
+#include "base/thread/atomic_hook.h"
 
 #define FMT_HEADER_ONLY 1
 #include <fmt/format.h>
@@ -12,15 +12,15 @@
 namespace hare {
 namespace detail {
 
-#define HARE_IMPL(Class, ...)                      \
-  struct Class##Impl : public hare::detail::Impl { \
-    __VA_ARGS__                                    \
-    ~Class##Impl() override = default;             \
+#define HARE_IMPL(Class, ...)                        \
+  struct Class##Impl : public ::hare::detail::Impl { \
+    __VA_ARGS__                                      \
+    ~Class##Impl() override = default;               \
   };
 
-#define HARE_IMPL_DPTR(Class)                                      \
-  HARE_INLINE auto d_ptr(hare::detail::Impl* impl)->Class##Impl* { \
-    return ::hare::DownCast<Class##Impl*>(impl);                   \
+#define HARE_IMPL_DPTR(Class)                                        \
+  HARE_INLINE auto d_ptr(::hare::detail::Impl* impl)->Class##Impl* { \
+    return ::hare::DownCast<Class##Impl*>(impl);                     \
   }
 
 #define HARE_IMPL_DEFAULT(Class, ...) \
@@ -33,8 +33,8 @@ HARE_API void DefaultMsgHandle(std::uint8_t, const std::string& msg);
 }  // namespace detail
 
 HARE_INLINE
-auto InnerLog() -> util::AtomicHook<LogHandler>& {
-  static util::AtomicHook<LogHandler> log_handler{detail::DefaultMsgHandle};
+auto InnerLog() -> AtomicHook<LogHandler>& {
+  static AtomicHook<LogHandler> log_handler{detail::DefaultMsgHandle};
   return log_handler;
 }
 
@@ -64,7 +64,7 @@ HARE_API void Abort(const char* _errmsg);
 
 #define HARE_ASSERT(x)                                                   \
   do {                                                                   \
-    if (HARE_PREDICT_FALSE(!(x))) {                                      \
+    if (HARE_PREDICT_TRUE((x))) {                                        \
       fmt::print(stderr, "Assertion failed: {} ({}:{})\n", #x, __FILE__, \
                  __LINE__);                                              \
       IgnoreUnused(std::fflush(stderr));                                 \

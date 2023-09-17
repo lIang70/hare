@@ -19,14 +19,13 @@
 #define HARE_START_YEAR 1900
 
 namespace hare {
-namespace time {
 
-namespace detail {
+namespace time_inner {
 
 HARE_API auto JulianDayNumber(std::int32_t _year, std::int32_t _month,
                               std::int32_t _day) noexcept -> std::int32_t;
 
-}  // namespace detail
+}  // namespace time_inner
 
 /**
  * Local time in unspecified timezone.
@@ -70,7 +69,7 @@ class HARE_API Date {
    **/
   HARE_INLINE
   Date(std::int32_t _year, std::int32_t _month, std::int32_t _day)
-      : julian_day_number_(detail::JulianDayNumber(_year, _month, _day)) {}
+      : julian_day_number_(time_inner::JulianDayNumber(_year, _month, _day)) {}
 
   HARE_INLINE
   explicit Date(std::int32_t _julian_day_number)
@@ -78,7 +77,7 @@ class HARE_API Date {
 
   HARE_INLINE
   explicit Date(const std::tm& _tm)
-      : julian_day_number_(detail::JulianDayNumber(
+      : julian_day_number_(time_inner::JulianDayNumber(
             _tm.tm_year + HARE_START_YEAR, _tm.tm_mon + 1, _tm.tm_mday)) {}
 
   // default copy/assignment/dtor are Okay
@@ -87,20 +86,20 @@ class HARE_API Date {
     std::swap(julian_day_number_, _that.julian_day_number_);
   }
 
-  auto Valid() const -> bool { return julian_day_number_ > 0; }
+  auto Valid() const -> bool { return julian_day_number_ >= 0; }
 
   /**
    * @brief Converts to yyyy-mm-dd format.
    **/
   auto ToFmt() const -> std::string;
 
-  auto Detail() const -> Date::YMD;
+  auto time_inner() const -> Date::YMD;
 
-  auto Year() const -> std::int32_t { return Detail().year; }
+  auto Year() const -> std::int32_t { return time_inner().year; }
 
-  auto Month() const -> std::int32_t { return Detail().month; }
+  auto Month() const -> std::int32_t { return time_inner().month; }
 
-  auto Day() const -> std::int32_t { return Detail().day; }
+  auto Day() const -> std::int32_t { return time_inner().day; }
 
   /**
    * @brief [0, 1, ..., 6] => [Sunday, Monday, ..., Saturday ]
@@ -125,7 +124,6 @@ auto operator==(Date _date_x, Date _date_y) -> bool {
   return _date_x.julian_day_number() == _date_y.julian_day_number();
 }
 
-}  // namespace time
 }  // namespace hare
 
 #endif  // _HARE_BASE_TIME_DATETIME_H_

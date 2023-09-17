@@ -1,9 +1,7 @@
-#include "base/io/reactor/reactor_epoll.h"
+#include "reactor_epoll.h"
 
 #include <hare/base/exception.h>
 #include <hare/base/io/operation.h>
-
-#include <sstream>
 
 #include "base/fwd-inl.h"
 
@@ -11,10 +9,11 @@
 
 #include <unistd.h>
 
-namespace hare {
-namespace io {
+#include <sstream>
 
-namespace detail {
+namespace hare {
+
+namespace io_inner {
 const std::int32_t kInitEventsCnt = 16;
 
 static auto OperationToString(std::int32_t _op) -> std::string {
@@ -91,12 +90,12 @@ static auto EpollToString(decltype(epoll_event::events) _epoll_event)
   return oss.str();
 }
 
-}  // namespace detail
+}  // namespace io_inner
 
-ReactorEpoll::ReactorEpoll(Cycle* cycle)
-    : Reactor(cycle, Cycle::REACTOR_TYPE_EPOLL),
+ReactorEpoll::ReactorEpoll()
+    : Reactor(Cycle::REACTOR_TYPE_EPOLL),
       epoll_fd_(::epoll_create1(EPOLL_CLOEXEC)),
-      epoll_events_(detail::kInitEventsCnt) {
+      epoll_events_(io_inner::kInitEventsCnt) {
   if (epoll_fd_ < 0) {
     HARE_INTERNAL_FATAL("cannot create a epoll fd.");
   }
@@ -170,39 +169,38 @@ void ReactorEpoll::FillActiveEvents(std::int32_t _num_of_events) {
   HARE_ASSERT(ImplicitCast<std::size_t>(_num_of_events) <=
               epoll_events_.size());
   for (auto i = 0; i < _num_of_events; ++i) {
-    auto* event = static_cast<io::Event*>(epoll_events_[i].data.ptr);
+    auto* event = static_cast<Event*>(epoll_events_[i].data.ptr);
     HARE_ASSERT(inverse_map_.find(event->fd()) != inverse_map_.end());
     auto event_id = inverse_map_[event->fd()];
     HARE_ASSERT(events_.find(event_id) != events_.end());
     auto revent = events_[event_id];
     HARE_ASSERT(event == revent.get());
     active_events_.emplace_back(revent,
-                                detail::EncodeEpoll(epoll_events_[i].events));
+                                io_inner::EncodeEpoll(epoll_events_[i].events));
   }
 }
 
 auto ReactorEpoll::UpdateEpoll(std::int32_t _operation,
                                const Ptr<Event>& _event) const -> bool {
   struct epoll_event ep_event {};
-  hare::detail::FillN(&ep_event, sizeof(ep_event), 0);
-  ep_event.events = detail::DecodeEpoll(_event->events());
+  ::hare::detail::FillN(&ep_event, sizeof(ep_event), 0);
+  ep_event.events = io_inner::DecodeEpoll(_event->events());
   ep_event.data.ptr = _event.get();
   auto target_fd = _event->fd();
 
   HARE_INTERNAL_TRACE(
       "epoll_ctl op={} fd={} event=[{}].",
-      detail::OperationToString(_operation), target_fd,
-      detail::EpollToString(detail::DecodeEpoll(_event->events())));
+      io_inner::OperationToString(_operation), target_fd,
+      io_inner::EpollToString(io_inner::DecodeEpoll(_event->events())));
 
   if (::epoll_ctl(epoll_fd_, _operation, target_fd, &ep_event) < 0) {
     HARE_INTERNAL_ERROR("epoll_ctl error op = {} fd = {}",
-                        detail::OperationToString(_operation), target_fd);
+                        io_inner::OperationToString(_operation), target_fd);
     return false;
   }
   return true;
 }
 
-}  // namespace io
 }  // namespace hare
 
 #endif  // HARE__HAVE_EPOLL

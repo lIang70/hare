@@ -15,7 +15,6 @@
 #include <hare/base/fwd.h>
 
 namespace hare {
-namespace util {
 
 HARE_CLASS_API
 class HARE_API NonCopyable {
@@ -43,7 +42,6 @@ class HARE_API NonCopyableNorMovable {
   ~NonCopyableNorMovable() = default;
 };
 
-}  // namespace util
 }  // namespace hare
 
 #endif  // _HARE_BASE_UTIL_NON_COPYABLE_H_

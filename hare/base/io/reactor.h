@@ -15,13 +15,12 @@
 #define CLEAR_EVENT(event, val) ((event) &= ~(val))
 
 namespace hare {
-namespace io {
 
-namespace reactor_inner {
+namespace io_inner {
 
 struct EventElem {
   Ptr<Event> event{nullptr};
-  std::uint8_t revents{io::EVENT_DEFAULT};
+  std::uint8_t revents{EVENT_DEFAULT};
 
   EventElem(Ptr<Event> _event, std::uint8_t _revents)
       : event(std::move(_event)), revents(_revents) {}
@@ -40,27 +39,25 @@ struct TimerPriority {
   }
 };
 
-}  // namespace reactor_inner
+}  // namespace io_inner
 
-using EventsList = std::list<reactor_inner::EventElem>;
+using EventsList = std::list<io_inner::EventElem>;
 using EventMap = std::map<Event::Id, Ptr<Event>>;
-using PriorityTimer = std::priority_queue<reactor_inner::TimerElem,
-                                          std::vector<reactor_inner::TimerElem>,
-                                          reactor_inner::TimerPriority>;
+using PriorityTimer =
+    std::priority_queue<io_inner::TimerElem, std::vector<io_inner::TimerElem>,
+                        io_inner::TimerPriority>;
 
-class Reactor : public util::NonCopyable {
+class Reactor : public NonCopyable {
   Cycle::REACTOR_TYPE type_{};
-  Cycle* owner_cycle_{nullptr};
 
  protected:
   EventMap events_{};
-  std::map<util_socket_t, io::Event::Id> inverse_map_{};
+  std::map<util_socket_t, Event::Id> inverse_map_{};
   PriorityTimer ptimer_{};
   EventsList active_events_{};
 
  public:
-  static auto CreateByType(Cycle::REACTOR_TYPE _type, Cycle* _cycle)
-      -> Reactor*;
+  static auto CreateByType(Cycle::REACTOR_TYPE _type) -> Reactor*;
 
   virtual ~Reactor() = default;
 
@@ -86,12 +83,11 @@ class Reactor : public util::NonCopyable {
   virtual auto EventRemove(const Ptr<Event>& _event) -> bool = 0;
 
  protected:
-  explicit Reactor(Cycle* cycle, Cycle::REACTOR_TYPE _type);
+  explicit Reactor(Cycle::REACTOR_TYPE _type);
 
-  friend class io::Cycle;
+  friend class Cycle;
 };
 
-}  // namespace io
 }  // namespace hare
 
 #endif  // _HARE_BASE_IO_REACTOR_H_

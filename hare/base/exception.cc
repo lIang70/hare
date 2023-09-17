@@ -1,5 +1,5 @@
 #include <hare/base/exception.h>
-#include <hare/base/util/system.h>
+#include <hare/base/system.h>
 
 #include "base/fwd-inl.h"
 
@@ -19,7 +19,7 @@ static auto ThreadException() -> ExceptionImpl* {
 Exception::Exception(std::string what) noexcept
     : impl_(detail::ThreadException()) {
   IMPL->what = std::move(what);
-  IMPL->stack_trace = util::StackTrace(false);
+  IMPL->stack_trace = ::hare::StackTrace(false);
 }
 
 Exception::~Exception() noexcept { delete impl_; }

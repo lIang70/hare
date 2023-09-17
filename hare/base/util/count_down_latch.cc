@@ -6,10 +6,14 @@
 #include "base/fwd-inl.h"
 
 namespace hare {
-namespace util {
 
-HARE_IMPL_DEFAULT(CountDownLatch, mutable std::mutex mutex{};
-                  std::uint32_t count{0}; std::condition_variable cv{};)
+// clang-format off
+HARE_IMPL_DEFAULT(CountDownLatch,
+  mutable std::mutex mutex{};
+  std::uint32_t count{0};
+  std::condition_variable cv{};
+)
+// clang-format on
 
 CountDownLatch::CountDownLatch(std::uint32_t count)
     : impl_(new CountDownLatchImpl) {
@@ -45,5 +49,4 @@ auto CountDownLatch::Count() -> std::uint32_t {
   return IMPL->count;
 }
 
-}  // namespace util
 }  // namespace hare

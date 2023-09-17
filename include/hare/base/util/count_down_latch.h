@@ -15,11 +15,10 @@
 #include <hare/base/fwd.h>
 
 namespace hare {
-namespace util {
 
 HARE_CLASS_API
 class HARE_API CountDownLatch {
-  hare::detail::Impl* impl_{};
+  ::hare::detail::Impl* impl_{};
 
  public:
   explicit CountDownLatch(std::uint32_t count);
@@ -30,7 +29,6 @@ class HARE_API CountDownLatch {
   auto Count() -> std::uint32_t;
 };
 
-}  // namespace util
 }  // namespace hare
 
 #endif  // _HARE_BASE_COUNT_DOWN_LATCH_H_

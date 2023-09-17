@@ -17,9 +17,8 @@
 #include <utility>
 
 namespace hare {
-namespace util {
 
-namespace detail {
+namespace util_inner {
 
 template <typename Type>
 struct FastTypeTag {
@@ -35,7 +34,7 @@ constexpr inline FastTypeIdType FastTypeId() {
 
 HARE_NORETURN void ThrowBadAnyCast();
 
-}  // namespace detail
+}  // namespace util_inner
 
 class Any;
 
@@ -74,11 +73,11 @@ class HARE_API Any {
     T value;
 
     template <typename... Args>
-    explicit Derived(hare::detail::in_place_t /*tag*/, Args&&... args)
+    explicit Derived(::hare::detail::in_place_t /*tag*/, Args&&... args)
         : value(std::forward<Args>(args)...) {}
 
     auto Clone() const -> UPtr<Base> final {
-      return UPtr<Base>(new Derived(hare::in_place, value));
+      return UPtr<Base>(new Derived(::hare::in_place, value));
     }
 
     auto ObjTypeId() const noexcept -> const void* final {
@@ -101,19 +100,19 @@ class HARE_API Any {
   Any(Any&& other) noexcept = default;
 
   template <
-      typename T, typename VT = hare::decay_t<T>,
-      hare::enable_if_t<!hare::disjunction<
+      typename T, typename VT = ::hare::decay_t<T>,
+      ::hare::enable_if_t<!::hare::disjunction<
           std::is_same<Any, VT>, IsInPlaceType<VT>,
-          hare::negation<std::is_copy_constructible<VT>>>::value>* = nullptr>
+          ::hare::negation<std::is_copy_constructible<VT>>>::value>* = nullptr>
   Any(T&& value) : ptr_(new Derived<VT>(in_place, std::forward<T>(value))) {}
 
-  template <
-      typename T, typename U, typename... Args, typename VT = hare::decay_t<T>,
-      hare::enable_if_t<
-          hare::conjunction<std::is_copy_constructible<VT>,
-                            std::is_constructible<VT, std::initializer_list<U>&,
-                                                  Args...>>::value>* = nullptr>
-  explicit Any(hare::detail::in_place_type_t<T> /*tag*/,
+  template <typename T, typename U, typename... Args,
+            typename VT = ::hare::decay_t<T>,
+            ::hare::enable_if_t<::hare::conjunction<
+                std::is_copy_constructible<VT>,
+                std::is_constructible<VT, std::initializer_list<U>&,
+                                      Args...>>::value>* = nullptr>
+  explicit Any(::hare::detail::in_place_type_t<T> /*tag*/,
                std::initializer_list<U> ilist, Args&&... args)
       : ptr_(new Derived<VT>(in_place, ilist, std::forward<Args>(args)...)) {}
 
@@ -127,20 +126,20 @@ class HARE_API Any {
     return *this;
   }
 
-  template <typename T, typename VT = hare::decay_t<T>,
-            hare::enable_if_t<hare::conjunction<
-                hare::negation<std::is_same<VT, Any>>,
+  template <typename T, typename VT = ::hare::decay_t<T>,
+            ::hare::enable_if_t<::hare::conjunction<
+                ::hare::negation<std::is_same<VT, Any>>,
                 std::is_copy_constructible<VT>>::value>* = nullptr>
   auto operator=(T&& rhs) -> Any& {
-    Any tmp(hare::detail::in_place_type_t<VT>(), std::forward<T>(rhs));
+    Any tmp(::hare::detail::in_place_type_t<VT>(), std::forward<T>(rhs));
     tmp.Swap(*this);
     return *this;
   }
 
   template <
-      typename T, typename... Args, typename VT = hare::decay_t<T>,
-      hare::enable_if_t<std::is_copy_constructible<VT>::value &&
-                        std::is_constructible<VT, Args...>::value>* = nullptr>
+      typename T, typename... Args, typename VT = ::hare::decay_t<T>,
+      ::hare::enable_if_t<std::is_copy_constructible<VT>::value &&
+                          std::is_constructible<VT, Args...>::value>* = nullptr>
   auto emplace(Args&&... args) HARE_ATTRIBUTE_LIFETIME_BOUND->VT& {
     Reset();  // NOTE: reset() is required here even in the world of exceptions.
     Derived<VT>* const object_ptr =
@@ -180,11 +179,11 @@ class HARE_API Any {
     using NormalizedType =
         typename std::remove_cv<typename std::remove_reference<T>::type>::type;
 
-    return detail::FastTypeId<NormalizedType>();
+    return util_inner::FastTypeId<NormalizedType>();
   }
 
   auto GetObjTypeId() const -> const void* {
-    return ptr_ ? ptr_->ObjTypeId() : detail::FastTypeId<void>();
+    return ptr_ ? ptr_->ObjTypeId() : util_inner::FastTypeId<void>();
   }
 
   template <typename ValueType>
@@ -211,7 +210,7 @@ auto AnyCast(const Any& operand) -> ValueType {
                 "Invalid ValueType");
   auto* const result = (AnyCast<U>)(&operand);
   if (result == nullptr) {
-    detail::ThrowBadAnyCast();
+    util_inner::ThrowBadAnyCast();
   }
   return static_cast<ValueType>(*result);
 }
@@ -224,7 +223,7 @@ auto AnyCast(Any& operand) -> ValueType {
                 "Invalid ValueType");
   auto* result = (AnyCast<U>)(&operand);
   if (result == nullptr) {
-    detail::ThrowBadAnyCast();
+    util_inner::ThrowBadAnyCast();
   }
   return static_cast<ValueType>(*result);
 }
@@ -259,7 +258,6 @@ auto AnyCast(Any* operand) noexcept -> T* {
              : nullptr;
 }
 
-}  // namespace util
 }  // namespace hare
 
 #endif  // _HARE_BASE_UTIL_ANY_H_

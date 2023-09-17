@@ -1,5 +1,5 @@
 /**
- * @file hare/base/util/system.h
+ * @file hare/base/system.h
  * @author l1ang70 (gog_017@outlook.com)
  * @brief Describe the functions associated with system.h
  * @version 0.1-beta
@@ -9,15 +9,14 @@
  *
  **/
 
-#ifndef _HARE_BASE_UTIL_SYSTEM_H_
-#define _HARE_BASE_UTIL_SYSTEM_H_
+#ifndef _HARE_BASE_SYSTEM_H_
+#define _HARE_BASE_SYSTEM_H_
 
 #include <hare/base/fwd.h>
 
 #include <list>
 
 namespace hare {
-namespace util {
 
 HARE_API auto SystemDir() -> std::string;
 HARE_API auto HostName() -> std::string;
@@ -29,9 +28,8 @@ HARE_API auto SetCurrentThreadName(const char* _tname) -> bool;
 HARE_API auto ErrnoStr(std::int32_t _errorno) -> const char*;
 
 HARE_API auto LocalAddress(std::uint8_t _family,
-                           std::list<std::string>& _addr_list) -> std::int32_t;
+                           std::list<std::string>& _addr_list) -> bool;
 
-}  // namespace util
 }  // namespace hare
 
-#endif  // _HARE_BASE_UTIL_SYSTEM_H_
+#endif  // _HARE_BASE_SYSTEM_H_
