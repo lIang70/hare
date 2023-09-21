@@ -1,6 +1,6 @@
 #include <hare/log/async_logger.h>
 
-#include "base/fwd-inl.h"
+#include "base/fwd_inl.h"
 
 namespace hare {
 namespace log {

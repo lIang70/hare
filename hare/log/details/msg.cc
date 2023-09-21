@@ -1,7 +1,7 @@
 #include <hare/base/time/timezone.h>
 #include <hare/log/details/async_msg.h>
 
-#include "base/fwd-inl.h"
+#include "base/fwd_inl.h"
 #include "base/thread/store.h"
 
 namespace hare {

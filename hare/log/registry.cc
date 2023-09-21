@@ -1,7 +1,7 @@
 #include <hare/base/exception.h>
 #include <hare/log/registry.h>
 
-#include "base/fwd-inl.h"
+#include "base/fwd_inl.h"
 
 namespace hare {
 namespace log {
