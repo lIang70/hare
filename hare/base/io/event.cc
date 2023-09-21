@@ -142,7 +142,7 @@ auto Event::EventToString() const -> std::string {
   return in_inner::EventsToString(IMPL->fd, IMPL->events);
 }
 
-void Event::Tie(const hare::Ptr<void>& _obj) {
+void Event::Tie(const ::hare::Ptr<void>& _obj) {
   IMPL->tie_object = _obj;
   IMPL->tied = true;
 }
@@ -150,7 +150,7 @@ void Event::Tie(const hare::Ptr<void>& _obj) {
 auto Event::TiedObject() -> WPtr<void> { return IMPL->tie_object; }
 
 void Event::HandleEvent(std::uint8_t _flag, Timestamp& _receive_time) {
-  hare::Ptr<void> object;
+  ::hare::Ptr<void> object;
   if (IMPL->tied) {
     object = IMPL->tie_object.lock();
     if (!object) {

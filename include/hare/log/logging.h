@@ -24,7 +24,7 @@ namespace log {
 HARE_CLASS_API
 class HARE_API Logger : public ::hare::NonCopyable {
  public:
-  using BackendList = std::vector<Ptr<Backend>>;
+  using BackendList = std::vector<::hare::Ptr<Backend>>;
 
  protected:
   level_t level_{LEVEL_TRACE};
@@ -130,7 +130,7 @@ class HARE_API Logger : public ::hare::NonCopyable {
       : Logger(std::move(_unique_name), _backends.begin(), _backends.end()) {}
 
   HARE_INLINE
-  Logger(std::string _unique_name, Ptr<Backend> _backend)
+  Logger(std::string _unique_name, ::hare::Ptr<Backend> _backend)
       : Logger(std::move(_unique_name), BackendList{std::move(_backend)}) {}
 
   virtual ~Logger() = default;

@@ -34,9 +34,9 @@ class HARE_API AsyncLogger : public Logger {
                           const Iter& end, std::size_t _max_msg,
                           std::size_t _thr_n)
       : Logger(std::move(_unique_name), begin, end),
-        thread_pool_(
-            _max_msg, _thr_n,
-            std::bind(&AsyncLogger::HandleMsg, this, std::placeholders::_1)) {
+        thread_pool_(_max_msg, _thr_n, [this](auto& PH1) {
+          return this->HandleMsg(std::forward<decltype(PH1)>(PH1));
+        }) {
     thread_pool_.Start([] {}, [] {});
   }
 
@@ -47,7 +47,7 @@ class HARE_API AsyncLogger : public Logger {
                     _max_msg, _thr_n) {}
 
   HARE_INLINE
-  AsyncLogger(std::string _unique_name, Ptr<Backend> _backend,
+  AsyncLogger(std::string _unique_name, ::hare::Ptr<Backend> _backend,
               std::size_t _max_msg, std::size_t _thr_n)
       : AsyncLogger(std::move(_unique_name), BackendList{std::move(_backend)},
                     _max_msg, _thr_n) {}

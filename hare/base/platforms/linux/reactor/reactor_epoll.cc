@@ -130,7 +130,7 @@ auto ReactorEpoll::Poll(std::int32_t _timeout_microseconds) -> Timestamp {
   return now;
 }
 
-auto ReactorEpoll::EventUpdate(const Ptr<Event>& _event) -> bool {
+auto ReactorEpoll::EventUpdate(const ::hare::Ptr<Event>& _event) -> bool {
   auto event_id = _event->id();
   HARE_INTERNAL_TRACE("epoll-update: fd={}, flags={}.", _event->fd(),
                       _event->events());
@@ -152,7 +152,7 @@ auto ReactorEpoll::EventUpdate(const Ptr<Event>& _event) -> bool {
   return UpdateEpoll(EPOLL_CTL_MOD, _event);
 }
 
-auto ReactorEpoll::EventRemove(const Ptr<Event>& _event) -> bool {
+auto ReactorEpoll::EventRemove(const ::hare::Ptr<Event>& _event) -> bool {
   const auto target_fd = _event->fd();
   const auto event_id = _event->id();
   IgnoreUnused(target_fd, event_id);
@@ -181,7 +181,7 @@ void ReactorEpoll::FillActiveEvents(std::int32_t _num_of_events) {
 }
 
 auto ReactorEpoll::UpdateEpoll(std::int32_t _operation,
-                               const Ptr<Event>& _event) const -> bool {
+                               const ::hare::Ptr<Event>& _event) const -> bool {
   struct epoll_event ep_event {};
   ::hare::detail::FillN(&ep_event, sizeof(ep_event), 0);
   ep_event.events = io_inner::DecodeEpoll(_event->events());

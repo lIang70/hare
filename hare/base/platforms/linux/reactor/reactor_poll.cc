@@ -93,7 +93,7 @@ auto ReactorPoll::Poll(std::int32_t _timeout_microseconds) -> Timestamp {
   return now;
 }
 
-auto ReactorPoll::EventUpdate(const Ptr<Event>& _event) -> bool {
+auto ReactorPoll::EventUpdate(const ::hare::Ptr<Event>& _event) -> bool {
   HARE_INTERNAL_TRACE("poll-update: fd={}, events={}.", _event->fd(),
                       _event->events());
 
@@ -132,7 +132,7 @@ auto ReactorPoll::EventUpdate(const Ptr<Event>& _event) -> bool {
   return true;
 }
 
-auto ReactorPoll::EventRemove(const Ptr<Event>& _event) -> bool {
+auto ReactorPoll::EventRemove(const ::hare::Ptr<Event>& _event) -> bool {
   const auto target_fd = _event->fd();
   auto inverse_iter = inverse_map_.find(target_fd);
   HARE_ASSERT(inverse_iter != inverse_map_.end());

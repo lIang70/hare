@@ -27,7 +27,7 @@ class HARE_API Timer final : public Event {
   void Cancel();
 
  private:
-  void TimerCallback(const Ptr<Event>& _event, std::uint8_t _events,
+  void TimerCallback(const ::hare::Ptr<Event>& _event, std::uint8_t _events,
                      const Timestamp& _ts);
 };
 

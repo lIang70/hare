@@ -19,10 +19,10 @@ namespace hare {
 namespace io_inner {
 
 struct EventElem {
-  Ptr<Event> event{nullptr};
+  ::hare::Ptr<Event> event{nullptr};
   std::uint8_t revents{EVENT_DEFAULT};
 
-  EventElem(Ptr<Event> _event, std::uint8_t _revents)
+  EventElem(::hare::Ptr<Event> _event, std::uint8_t _revents)
       : event(std::move(_event)), revents(_revents) {}
 };
 
@@ -42,7 +42,7 @@ struct TimerPriority {
 }  // namespace io_inner
 
 using EventsList = std::list<io_inner::EventElem>;
-using EventMap = std::map<Event::Id, Ptr<Event>>;
+using EventMap = std::map<Event::Id, ::hare::Ptr<Event>>;
 using PriorityTimer =
     std::priority_queue<io_inner::TimerElem, std::vector<io_inner::TimerElem>,
                         io_inner::TimerPriority>;
@@ -74,13 +74,13 @@ class Reactor : public NonCopyable {
    *  @brief Changes the interested I/O events.
    *   Must be called in the cycle thread.
    */
-  virtual auto EventUpdate(const Ptr<Event>& _event) -> bool = 0;
+  virtual auto EventUpdate(const ::hare::Ptr<Event>& _event) -> bool = 0;
 
   /**
    *  @brief Remove the event, when it destructs.
    *   Must be called in the cycle thread.
    */
-  virtual auto EventRemove(const Ptr<Event>& _event) -> bool = 0;
+  virtual auto EventRemove(const ::hare::Ptr<Event>& _event) -> bool = 0;
 
  protected:
   explicit Reactor(Cycle::REACTOR_TYPE _type);

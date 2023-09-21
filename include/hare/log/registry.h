@@ -25,7 +25,7 @@ namespace log {
 HARE_CLASS_API
 class HARE_API Registry : public ::hare::NonCopyableNorMovable {
   mutable std::mutex mutex_for_loggers_{};
-  std::unordered_map<std::string, Ptr<Logger>> loggers_{};
+  std::unordered_map<std::string, ::hare::Ptr<Logger>> loggers_{};
 
  public:
   static auto Instance() -> Registry&;
@@ -33,7 +33,7 @@ class HARE_API Registry : public ::hare::NonCopyableNorMovable {
   template <typename Iter>
   HARE_INLINE static auto Create(const std::string& _unique_name,
                                  const Iter& begin, const Iter& end)
-      -> Ptr<Logger> {
+      -> ::hare::Ptr<Logger> {
     auto tmp = std::make_shared<Logger>(_unique_name, begin, end);
     Instance().RegisterLogger(tmp);
     return tmp;
@@ -43,7 +43,7 @@ class HARE_API Registry : public ::hare::NonCopyableNorMovable {
   HARE_INLINE static auto Create(const std::string& _unique_name,
                                  const Iter& begin, const Iter& end,
                                  std::size_t _max_msg, std::size_t _thr_n)
-      -> Ptr<AsyncLogger> {
+      -> ::hare::Ptr<AsyncLogger> {
     auto tmp = std::make_shared<AsyncLogger>(_unique_name, begin, end, _max_msg,
                                              _thr_n);
     Instance().RegisterLogger(tmp);
@@ -51,7 +51,7 @@ class HARE_API Registry : public ::hare::NonCopyableNorMovable {
   }
 
   HARE_INLINE
-  void RegisterLogger(const Ptr<Logger>& _logger) {
+  void RegisterLogger(const ::hare::Ptr<Logger>& _logger) {
     std::lock_guard<std::mutex> lock(mutex_for_loggers_);
     auto logger_name = _logger->name();
     AssertExists(logger_name);
@@ -59,7 +59,7 @@ class HARE_API Registry : public ::hare::NonCopyableNorMovable {
   }
 
   HARE_INLINE
-  auto Get(const std::string& logger_name) -> Ptr<Logger> {
+  auto Get(const std::string& logger_name) -> ::hare::Ptr<Logger> {
     std::lock_guard<std::mutex> lock(mutex_for_loggers_);
     auto found = loggers_.find(logger_name);
     return found == loggers_.end() ? nullptr : found->second;

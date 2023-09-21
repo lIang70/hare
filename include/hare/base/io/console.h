@@ -37,7 +37,7 @@ class HARE_API Console final : public NonCopyable {
  private:
   Console();
 
-  void Process(const Ptr<Event>& _event, std::uint8_t _events,
+  void Process(const ::hare::Ptr<Event>& _event, std::uint8_t _events,
                const Timestamp& _receive_time);
 };
 

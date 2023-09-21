@@ -21,7 +21,7 @@ static void GlobalConsoleHandle(const std::string& _command_line) {
 
 // clang-format off
 HARE_IMPL_DEFAULT(Console,
-  Ptr<Event> console_event{nullptr};
+  ::hare::Ptr<Event> console_event{nullptr};
   std::map<std::string, Task> handlers{};
   AtomicHook<Console::DefaultHandle> default_handle{
     io_inner::GlobalConsoleHandle};
@@ -82,7 +82,7 @@ Console::Console() : impl_(new ConsoleImpl) {
   IMPL->default_handle.Store(io_inner::GlobalConsoleHandle);
 }
 
-void Console::Process(const Ptr<Event>& _event, std::uint8_t _events,
+void Console::Process(const ::hare::Ptr<Event>& _event, std::uint8_t _events,
                       const Timestamp& _receive_time) {
   HARE_ASSERT(IMPL->console_event == _event);
   if (CHECK_EVENT(_events, EVENT_READ) == 0) {

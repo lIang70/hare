@@ -80,7 +80,7 @@ class EventNotify : public Event {
     }
   }
 
-  void EventCallback(const Ptr<Event>& _event, std::uint8_t _events,
+  void EventCallback(const ::hare::Ptr<Event>& _event, std::uint8_t _events,
                      const Timestamp& _receive_time) {
     IgnoreUnused(_event, _receive_time);
     HARE_ASSERT(_event == this->shared_from_this());
@@ -128,9 +128,9 @@ HARE_IMPL_DEFAULT(Cycle,
   bool event_handling{false};
   bool calling_pending_functions{false};
 
-  Ptr<cycle_inner::EventNotify> notify_event{nullptr};
-  Ptr<Reactor> reactor{nullptr};
-  Ptr<Event> current_active_event{nullptr};
+  ::hare::Ptr<cycle_inner::EventNotify> notify_event{nullptr};
+  ::hare::Ptr<Reactor> reactor{nullptr};
+  ::hare::Ptr<Event> current_active_event{nullptr};
   std::atomic<Event::Id> event_id{0};
 
   mutable std::mutex functions_mutex{};
@@ -355,7 +355,7 @@ void Cycle::Cancel(Event::Id _event_id) {
   }
 }
 
-void Cycle::EventUpdate(const hare::Ptr<Event>& _event) {
+void Cycle::EventUpdate(const ::hare::Ptr<Event>& _event) {
   if (_event->cycle() != this && _event->id() != -1) {
     HARE_INTERNAL_ERROR("cannot add event from other cycle[{}].",
                         (void*)_event->cycle());
@@ -402,7 +402,7 @@ void Cycle::EventUpdate(const hare::Ptr<Event>& _event) {
       _event));
 }
 
-void Cycle::EventRemove(const hare::Ptr<Event>& _event) {
+void Cycle::EventRemove(const ::hare::Ptr<Event>& _event) {
   if (!_event) {
     return;
   }
@@ -442,7 +442,7 @@ void Cycle::EventRemove(const hare::Ptr<Event>& _event) {
       _event));
 }
 
-auto Cycle::EventCheck(const hare::Ptr<Event>& _event) -> bool {
+auto Cycle::EventCheck(const ::hare::Ptr<Event>& _event) -> bool {
   if (!_event || _event->id() < 0) {
     return false;
   }

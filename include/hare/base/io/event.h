@@ -65,8 +65,8 @@ class HARE_API Event : public NonCopyable,
 
  public:
   using Id = std::int64_t;
-  using Callback =
-      std::function<void(const Ptr<Event>&, std::uint8_t, const Timestamp&)>;
+  using Callback = std::function<void(const ::hare::Ptr<Event>&, std::uint8_t,
+                                      const Timestamp&)>;
 
   Event(util_socket_t _fd, Callback _cb, std::uint8_t _events,
         std::int64_t _timeval);

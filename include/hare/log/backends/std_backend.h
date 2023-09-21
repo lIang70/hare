@@ -24,9 +24,9 @@ class STDBackend final : public BaseBackend<Mutex> {
  public:
   using CurrentBackend = STDBackend<Mutex>;
 
-  static auto Instance() -> Ptr<CurrentBackend> {
+  static auto Instance() -> ::hare::Ptr<CurrentBackend> {
     // not thread-safe
-    static Ptr<CurrentBackend> static_std_backend{new CurrentBackend};
+    static ::hare::Ptr<CurrentBackend> static_std_backend{new CurrentBackend};
     return static_std_backend;
   }
 

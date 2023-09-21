@@ -28,8 +28,8 @@ void Timer::Cancel() {
   }
 }
 
-void Timer::TimerCallback(const Ptr<Event>& _event, std::uint8_t _events,
-                          const Timestamp& _ts) {
+void Timer::TimerCallback(const ::hare::Ptr<Event>& _event,
+                          std::uint8_t _events, const Timestamp& _ts) {
   IgnoreUnused(_ts);
   HARE_ASSERT(this->id() == _event->id());
   if (CHECK_EVENT(_events, EVENT_TIMEOUT) == 0) {
