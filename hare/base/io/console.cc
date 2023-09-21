@@ -2,23 +2,11 @@
 #include <hare/base/util/count_down_latch.h>
 #include <hare/hare-config.h>
 
-#include <map>
-
-#include "base/fwd-inl.h"
+#include "base/fwd_inl.h"
+#include "base/io/operation_inl.h"
 #include "base/io/reactor.h"
 
-#if HARE__HAVE_UNISTD_H
-#include <unistd.h>
-#endif  // HARE__HAVE_UNISTD_H
-
-#if HARE__HAVE_SYS_SOCKET_H
-#include <sys/socket.h>
-#endif  // HARE__HAVE_SYS_SOCKET_H
-
-#if defined(H_OS_WIN32)
 #define STDIN_FILENO 0
-#define read _read
-#endif  // H_OS_WIN32
 
 namespace hare {
 
@@ -104,7 +92,7 @@ void Console::Process(const Ptr<Event>& _event, std::uint8_t _events,
 
   std::array<char, HARE_SMALL_BUFFER> console_line{};
 
-  auto len = ::read(_event->fd(), console_line.data(), HARE_SMALL_BUFFER);
+  auto len = ::hare::io::Read(_event->fd(), console_line.data(), HARE_SMALL_BUFFER);
 
   if (len < 0) {
     HARE_INTERNAL_ERROR("cannot read from STDIN.");

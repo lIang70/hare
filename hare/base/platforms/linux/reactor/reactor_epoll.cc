@@ -3,7 +3,7 @@
 #include <hare/base/exception.h>
 #include <hare/base/io/operation.h>
 
-#include "base/fwd-inl.h"
+#include "base/fwd_inl.h"
 
 #if HARE__HAVE_EPOLL && HARE__HAVE_UNISTD_H
 

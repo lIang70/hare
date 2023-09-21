@@ -9,7 +9,6 @@
 namespace hare {
 
 class Cycle;
-class Event;
 
 namespace thread_inner {
 

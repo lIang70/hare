@@ -4,7 +4,7 @@
 #include <hare/base/io/event.h>
 #include <hare/hare-config.h>
 
-#include "base/fwd-inl.h"
+#include "base/fwd_inl.h"
 #include "base/platforms/linux/reactor/reactor_epoll.h"
 #include "base/platforms/linux/reactor/reactor_poll.h"
 

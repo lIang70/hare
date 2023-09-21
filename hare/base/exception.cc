@@ -1,7 +1,7 @@
 #include <hare/base/exception.h>
 #include <hare/base/system.h>
 
-#include "base/fwd-inl.h"
+#include "base/fwd_inl.h"
 
 namespace hare {
 

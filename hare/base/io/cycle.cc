@@ -1,34 +1,19 @@
 #include <hare/base/exception.h>
-#include <hare/base/io/operation.h>
 #include <hare/base/io/timer.h>
 #include <hare/base/system.h>
 #include <hare/base/time/timestamp.h>
 #include <hare/base/util/count_down_latch.h>
 #include <hare/hare-config.h>
 
-#include <algorithm>
-#include <atomic>
-#include <cerrno>
-#include <csignal>
-#include <list>
 #include <mutex>
-#include <utility>
 
-#include "base/fwd-inl.h"
+#include "base/fwd_inl.h"
+#include "base/io/operation_inl.h"
 #include "base/io/reactor.h"
 #include "base/thread/store.h"
 
 #if HARE__HAVE_EVENTFD
 #include <sys/eventfd.h>
-#endif
-
-#ifdef H_OS_UNIX
-#include <sys/socket.h>
-#elif defined(H_OS_WIN)
-#include <WinSock2.h>
-#define read _read
-#define write _write
-#define close closesocket
 #endif
 
 namespace hare {
@@ -74,11 +59,22 @@ class EventNotify : public Event {
             EVENT_READ | EVENT_PERSIST, 0) {
   }
 
-  ~EventNotify() override { ::close(fd()); }
+#if HARE__HAVE_EVENTFD
+  ~EventNotify() override { ::hare::io::Close(fd()); }
+#else
+  ~EventNotify() override {
+    ::hare::io::Close(write_fd_);
+    ::hare::io::Close(fd());
+  }
+#endif
 
   void SendNotify() {
     std::uint64_t one = 1;
-    auto write_n = ::write((int)fd(), &one, sizeof(one));
+#if HARE__HAVE_EVENTFD
+    auto write_n = ::hare::io::Write(fd(), &one, sizeof(one));
+#else
+    auto write_n = ::hare::io::Write(write_fd_, &one, sizeof(one));
+#endif
     if (write_n != sizeof(one)) {
       HARE_INTERNAL_ERROR("write[{} B] instead of {} B", write_n, sizeof(one));
     }
@@ -91,7 +87,7 @@ class EventNotify : public Event {
 
     if (CHECK_EVENT(_events, EVENT_READ) != 0) {
       std::uint64_t one = 0;
-      auto read_n = ::read((int)fd(), &one, sizeof(one));
+      auto read_n = ::hare::io::Read((int)fd(), &one, sizeof(one));
       if (read_n != sizeof(one) && one != static_cast<std::uint64_t>(1)) {
         HARE_INTERNAL_ERROR("read notify[{} B] instead of {} B", read_n,
                             sizeof(one));
@@ -101,28 +97,6 @@ class EventNotify : public Event {
                           fd());
     }
   }
-};
-
-struct GlobalInit {
-  GlobalInit() {
-#if !defined(H_OS_WIN)
-    HARE_INTERNAL_TRACE("ignore signal[SIGPIPE].");
-    auto ret = ::signal(SIGPIPE, SIG_IGN);
-    IgnoreUnused(ret);
-  }
-#else
-    WSADATA wsa_data{};
-    if (::WSAStartup(MAKEWORD(2, 2), &wsa_data) == SOCKET_ERROR) {
-      HARE_INTERNAL_FATAL("fail to ::WSAStartup.");
-    }
-    HARE_INTERNAL_TRACE("::WSAStartup success.");
-  }
-
-  ~total_init() {
-    ignore_unused(::WSACleanup());
-    HARE_INTERNAL_TRACE("::WSACleanup success.");
-  }
-#endif
 };
 
 static auto GetWaitTime(const PriorityTimer& _ptimer) -> std::int32_t {
@@ -167,8 +141,6 @@ HARE_IMPL_DEFAULT(Cycle,
 // clang-format on
 
 Cycle::Cycle(REACTOR_TYPE _type) : impl_(new CycleImpl) {
-  static cycle_inner::GlobalInit s_total_init{};
-
   IMPL->tid = ThreadStoreData().tid;
   IMPL->notify_event.reset(new cycle_inner::EventNotify());
   IMPL->reactor.reset(CHECK_NULL(Reactor::CreateByType(_type)));
@@ -273,8 +245,8 @@ void Cycle::Exit() {
   IMPL->quit = true;
 
   /**
-   * @brief There is a chance that loop() just executes while(!quit_) and exits,
-   *   then Cycle destructs, then we are accessing an invalid object.
+   * @brief There is a chance that `Exit()` just executes while(!quit_) and
+   * exits, then Cycle destructs, then we are accessing an invalid object.
    */
   if (!InCycleThread()) {
     Notify();

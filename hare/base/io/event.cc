@@ -2,7 +2,7 @@
 
 #include <sstream>
 
-#include "base/fwd-inl.h"
+#include "base/fwd_inl.h"
 #include "base/io/reactor.h"
 
 namespace hare {

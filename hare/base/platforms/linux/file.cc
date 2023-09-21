@@ -1,6 +1,6 @@
 #include <hare/base/io/file.h>
 
-#include "base/fwd-inl.h"
+#include "base/fwd_inl.h"
 
 #ifndef H_OS_WIN
 #include <sys/prctl.h>

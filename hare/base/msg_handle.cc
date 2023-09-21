@@ -1,6 +1,6 @@
 #include <hare/base/system.h>
 
-#include "base/fwd-inl.h"
+#include "base/fwd_inl.h"
 
 #if !defined(HARE_EOL)
 #ifdef H_OS_WIN32
