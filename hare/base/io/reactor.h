@@ -2,7 +2,6 @@
 #define _HARE_BASE_IO_REACTOR_H_
 
 #include <hare/base/io/cycle.h>
-#include <hare/base/io/event.h>
 
 #include <list>
 #include <map>
@@ -19,17 +18,25 @@ namespace hare {
 namespace io_inner {
 
 struct EventElem {
-  ::hare::Ptr<Event> event{nullptr};
+  Event::Id id{};
+  Event* event{};
   std::uint8_t revents{EVENT_DEFAULT};
+  bool need_free{false};
 
-  EventElem(::hare::Ptr<Event> _event, std::uint8_t _revents)
-      : event(std::move(_event)), revents(_revents) {}
+  EventElem(Event::Id _id, Event* _event, std::uint8_t _revents,
+            bool _need_free = false)
+      : id(_id), event(_event), revents(_revents), need_free(_need_free) {}
+
+  ~EventElem() {
+    if (need_free) {
+      delete event;
+    }
+  }
 };
 
 struct TimerElem {
-  Event::Id id{0};
-  Timestamp stamp{0};
-
+  Event::Id id{};
+  Timestamp stamp{};
   TimerElem(Event::Id _id, Timestamp _stamp) : id(_id), stamp(_stamp) {}
 };
 
@@ -42,7 +49,7 @@ struct TimerPriority {
 }  // namespace io_inner
 
 using EventsList = std::list<io_inner::EventElem>;
-using EventMap = std::map<Event::Id, ::hare::Ptr<Event>>;
+using EventsMap = std::map<Event::Id, io_inner::EventElem>;
 using PriorityTimer =
     std::priority_queue<io_inner::TimerElem, std::vector<io_inner::TimerElem>,
                         io_inner::TimerPriority>;
@@ -51,10 +58,8 @@ class Reactor : public NonCopyable {
   Cycle::REACTOR_TYPE type_{};
 
  protected:
-  EventMap events_{};
-  std::map<util_socket_t, Event::Id> inverse_map_{};
+  EventsMap events_{};
   PriorityTimer ptimer_{};
-  EventsList active_events_{};
 
  public:
   static auto CreateByType(Cycle::REACTOR_TYPE _type) -> Reactor*;
@@ -64,23 +69,32 @@ class Reactor : public NonCopyable {
   HARE_INLINE
   auto type() -> Cycle::REACTOR_TYPE { return type_; }
 
+  HARE_INLINE
+  auto Check(const Event* _event) const -> bool {
+    auto iter = events_.find(_event->id());
+    return iter != events_.end() && iter->second.event == _event;
+  }
+
+  void AddEvent(Event* event, bool need_free = false);
+
   /**
    * @brief Polls the I/O events.
    *   Must be called in the cycle thread.
    */
-  virtual auto Poll(std::int32_t _timeout_microseconds) -> Timestamp = 0;
+  virtual auto Poll(std::int32_t _timeout_microseconds, EventsList& _events)
+      -> Timestamp = 0;
 
   /**
    *  @brief Changes the interested I/O events.
    *   Must be called in the cycle thread.
    */
-  virtual auto EventUpdate(const ::hare::Ptr<Event>& _event) -> bool = 0;
+  virtual auto EventUpdate(Event* _event) -> bool = 0;
 
   /**
    *  @brief Remove the event, when it destructs.
    *   Must be called in the cycle thread.
    */
-  virtual auto EventRemove(const ::hare::Ptr<Event>& _event) -> bool = 0;
+  virtual auto EventRemove(Event* _event) -> bool = 0;
 
  protected:
   explicit Reactor(Cycle::REACTOR_TYPE _type);

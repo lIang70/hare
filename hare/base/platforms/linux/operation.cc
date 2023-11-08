@@ -1,15 +1,25 @@
+#include "base/fwd_inl.h"
 #include "base/io/operation_inl.h"
 
 #ifdef H_OS_LINUX
 #include <arpa/inet.h>
+#include <sys/fcntl.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
 #include <unistd.h>
+
+#define MAX_READ_DEFAULT 4096
+
+#define EINTR_LOOP(ret, call) \
+  do {                        \
+    ret = call;               \
+  } while (ret == -1 && errno == EINTR)
 
 namespace hare {
 namespace io {
 
 namespace io_inner {
+
 #if defined(NO_ACCEPT4)
 static void SetForNotAccept4(util_socket_t _fd) {
   // non-block
@@ -27,6 +37,7 @@ static void SetForNotAccept4(util_socket_t _fd) {
   IgnoreUnused(ret);
 }
 #endif
+
 }  // namespace io_inner
 
 auto SocketErrorInfo(util_socket_t _fd) -> std::string {
@@ -46,15 +57,19 @@ auto Socketpair(std::uint8_t _family, std::int32_t _type,
 }
 
 auto CreateNonblockingOrDie(std::uint8_t _family) -> util_socket_t {
-  auto _fd = ::socket(_family, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0);
-  if (_fd < 0) {
+  util_socket_t fd{};
+
+  EINTR_LOOP(fd,
+             ::socket(_family, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0));
+  if (fd < 0) {
     HARE_INTERNAL_FATAL("cannot create non-blocking socket");
   }
-  return _fd;
+  return fd;
 }
 
 auto Close(util_socket_t _fd) -> std::int32_t {
-  auto ret = ::close(_fd);
+  std::int32_t ret{};
+  EINTR_LOOP(ret, ::close(_fd));
   if (ret < 0) {
     HARE_INTERNAL_ERROR("close fd[{}], detail:{}.", _fd,
                         io::SocketErrorInfo(_fd));
@@ -64,40 +79,52 @@ auto Close(util_socket_t _fd) -> std::int32_t {
 
 auto Write(util_socket_t _fd, const void* _buf, std::size_t size)
     -> std::int64_t {
-  return ::write(_fd, _buf, size);
+  std::int64_t ret{};
+  EINTR_LOOP(ret, ::write(_fd, _buf, size));
+  return ret;
 }
 
 auto Read(util_socket_t _fd, void* _buf, std::size_t size) -> std::int64_t {
-  return ::read(_fd, _buf, size);
+  std::int64_t ret{};
+  EINTR_LOOP(ret, ::read(_fd, _buf, size));
+  return ret;
 }
 
 auto Bind(util_socket_t _fd, const struct sockaddr* _addr,
           std::size_t _addr_len) -> bool {
-  return ::bind(_fd, _addr, _addr_len) != -1;
+  std::int32_t ret{};
+  EINTR_LOOP(ret, ::bind(_fd, _addr, _addr_len));
+  return ret != -1;
 }
 
-auto Listen(util_socket_t _fd) -> bool { return ::listen(_fd, SOMAXCONN) >= 0; }
+auto Listen(util_socket_t _fd) -> bool {
+  std::int32_t ret{};
+  EINTR_LOOP(ret, ::listen(_fd, SOMAXCONN));
+  return ret >= 0;
+}
 
 auto Connect(util_socket_t _fd, const struct sockaddr* _addr,
              std::size_t _addr_len) -> bool {
-  return ::connect(_fd, _addr, _addr_len) >= 0;
+  std::int32_t ret{};
+  EINTR_LOOP(ret, ::connect(_fd, _addr, _addr_len));
+  return ret >= 0;
 }
 
 auto Accept(util_socket_t _fd, struct sockaddr* _addr, std::size_t _addr_len)
     -> util_socket_t {
+  util_socket_t accept_fd{};
 #if defined(NO_ACCEPT4)
-  auto accept_fd = ::accept(_fd, _addr, (socklen_t*)&_addr_len);
+  EINTR_LOOP(accept_fd, ::accept(_fd, _addr, (socklen_t*)&_addr_len));
   io_inner::SetForNotAccept4(accept_fd);
 #else
-  auto accept_fd = ::accept4(_fd, _addr, (socklen_t*)&_addr_len,
-                             SOCK_NONBLOCK | SOCK_CLOEXEC);
+  EINTR_LOOP(accept_fd, ::accept4(_fd, _addr, (socklen_t*)&_addr_len,
+                                  SOCK_NONBLOCK | SOCK_CLOEXEC));
 #endif
   if (accept_fd < 0) {
     auto saved_errno = errno;
     switch (saved_errno) {
       case EAGAIN:
       case ECONNABORTED:
-      case EINTR:
       case EPROTO:  // ???
       case EPERM:
       case EMFILE:  // per-process lmit of open file desctiptor ???

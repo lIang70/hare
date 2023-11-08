@@ -22,14 +22,14 @@ class ReactorEpoll : public Reactor {
   explicit ReactorEpoll();
   ~ReactorEpoll() override;
 
-  auto Poll(std::int32_t _timeout_microseconds) -> Timestamp override;
-  auto EventUpdate(const ::hare::Ptr<Event>& _event) -> bool override;
-  auto EventRemove(const ::hare::Ptr<Event>& _event) -> bool override;
+  auto Poll(std::int32_t _timeout_microseconds, EventsList& _events)
+      -> Timestamp override;
+  auto EventUpdate(Event* _event) -> bool override;
+  auto EventRemove(Event* _event) -> bool override;
 
  private:
-  void FillActiveEvents(std::int32_t _num_of_events);
-  auto UpdateEpoll(std::int32_t _operation,
-                   const ::hare::Ptr<Event>& _event) const -> bool;
+  void FillActiveEvents(std::int32_t _num_of_events, EventsList& _events);
+  auto UpdateEpoll(std::int32_t _operation, Event* _event) const -> bool;
 };
 
 }  // namespace hare

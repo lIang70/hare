@@ -30,6 +30,7 @@ namespace detail {
 #define IMPL d_ptr(impl_)
 
 HARE_API void DefaultMsgHandle(std::uint8_t, const std::string& msg);
+
 }  // namespace detail
 
 HARE_INLINE

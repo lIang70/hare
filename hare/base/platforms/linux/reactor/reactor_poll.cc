@@ -73,7 +73,8 @@ ReactorPoll::ReactorPoll()
 
 ReactorPoll::~ReactorPoll() = default;
 
-auto ReactorPoll::Poll(std::int32_t _timeout_microseconds) -> Timestamp {
+auto ReactorPoll::Poll(std::int32_t _timeout_microseconds, EventsList& _events)
+    -> Timestamp {
   auto event_num = ::poll(&*poll_fds_.begin(), poll_fds_.size(),
                           _timeout_microseconds / 1000);
   auto saved_errno = errno;
@@ -81,7 +82,7 @@ auto ReactorPoll::Poll(std::int32_t _timeout_microseconds) -> Timestamp {
 
   if (event_num > 0) {
     HARE_INTERNAL_TRACE("{} events happened.", event_num);
-    FillActiveEvents(event_num);
+    FillActiveEvents(event_num, _events);
   } else if (event_num == 0) {
     HARE_INTERNAL_TRACE("nothing happened.");
   } else {
@@ -93,59 +94,52 @@ auto ReactorPoll::Poll(std::int32_t _timeout_microseconds) -> Timestamp {
   return now;
 }
 
-auto ReactorPoll::EventUpdate(const ::hare::Ptr<Event>& _event) -> bool {
+auto ReactorPoll::EventUpdate(Event* _event) -> bool {
   HARE_INTERNAL_TRACE("poll-update: fd={}, events={}.", _event->fd(),
                       _event->events());
 
-  auto target_fd = _event->fd();
-  auto inverse_iter = inverse_map_.find(target_fd);
+  auto fd = _event->fd();
+  auto inverse_iter = inverse_map_.find(fd);
 
-  if (_event->id() == -1) {
+  if (!Check(_event)) {
     // a new one, add to pollfd_list
-    HARE_ASSERT(inverse_map_.find(target_fd) == inverse_map_.end());
     HARE_ASSERT(inverse_iter == inverse_map_.end());
     struct pollfd poll_fd {};
     hare::detail::FillN(&poll_fd, sizeof(poll_fd), 0);
-    poll_fd.fd = target_fd;
+    poll_fd.fd = fd;
     poll_fd.events = io_inner::DecodePoll(_event->events());
     poll_fd.revents = 0;
     poll_fds_.push_back(poll_fd);
-    auto index = static_cast<std::int32_t>(poll_fds_.size()) - 1;
-    inverse_map_.emplace(target_fd, index);
+    auto index = poll_fds_.size() - 1;
+    inverse_map_.emplace(fd, PollData{_event->id(), index});
     return true;
   }
 
   // update existing one
-  auto event_id = _event->id();
-  IgnoreUnused(event_id);
-  HARE_ASSERT(events_.find(event_id) != events_.end());
-  HARE_ASSERT(events_[event_id] == _event);
+  HARE_ASSERT(Check(_event));
   HARE_ASSERT(inverse_iter != inverse_map_.end());
-  auto& index = inverse_iter->second;
-  HARE_ASSERT(0 <= index &&
-              index < static_cast<std::int32_t>(poll_fds_.size()));
+  auto& index = inverse_iter->second.index;
+  HARE_ASSERT(0 <= index && index < poll_fds_.size());
   struct pollfd& pfd = poll_fds_[index];
-  HARE_ASSERT(pfd.fd == target_fd || pfd.fd == -target_fd - 1);
-  pfd.fd = target_fd;
+  HARE_ASSERT(pfd.fd == fd || pfd.fd == -fd - 1);
+  pfd.fd = fd;
   pfd.events = io_inner::DecodePoll(_event->events());
   pfd.revents = 0;
   return true;
 }
 
-auto ReactorPoll::EventRemove(const ::hare::Ptr<Event>& _event) -> bool {
+auto ReactorPoll::EventRemove(Event* _event) -> bool {
   const auto target_fd = _event->fd();
   auto inverse_iter = inverse_map_.find(target_fd);
   HARE_ASSERT(inverse_iter != inverse_map_.end());
-  auto& index = inverse_iter->second;
+  auto& index = inverse_iter->second.index;
 
   HARE_INTERNAL_TRACE("poll-remove: fd={}, events={}.", target_fd,
                       _event->events());
-  HARE_ASSERT(0 <= index &&
-              index < static_cast<std::int32_t>(poll_fds_.size()));
+  HARE_ASSERT(0 <= index && index < poll_fds_.size());
 
-  const auto& pfd = poll_fds_[index];
-  IgnoreUnused(pfd);
-  HARE_ASSERT(pfd.events == io_inner::DecodePoll(_event->events()));
+  HARE_ASSERT(poll_fds_[index].events ==
+              io_inner::DecodePoll(_event->events()));
   if (ImplicitCast<std::size_t>(index) == poll_fds_.size() - 1) {
     poll_fds_.pop_back();
   } else {
@@ -153,26 +147,31 @@ auto ReactorPoll::EventRemove(const ::hare::Ptr<Event>& _event) -> bool {
     auto& swap_pfd = poll_fds_.back();
     auto swap_fd = swap_pfd.fd;
     HARE_ASSERT(inverse_map_.find(swap_fd) != inverse_map_.end());
-    inverse_map_[swap_fd] = index;
-    std::iter_swap(poll_fds_.begin() + index, poll_fds_.end() - 1);
+    inverse_map_[swap_fd].index = index;
+    std::iter_swap(poll_fds_.begin() + static_cast<long>(index),
+                   poll_fds_.end() - 1);
     poll_fds_.pop_back();
   }
   inverse_map_.erase(inverse_iter);
   return true;
 }
 
-void ReactorPoll::FillActiveEvents(std::int32_t _num_of_events) {
-  const Event::Id size = static_cast<std::uint32_t>(poll_fds_.size());
-  for (Event::Id event_id = 0; event_id < size && _num_of_events > 0;
-       ++event_id) {
-    const auto& pfd = poll_fds_[event_id];
-    if (pfd.revents > 0) {
+void ReactorPoll::FillActiveEvents(std::int32_t _num_of_events,
+                                   EventsList& _events) {
+  auto size = poll_fds_.size();
+  for (decltype(size) index = 0; index < size && _num_of_events > 0; ++index) {
+    const auto& pfd = poll_fds_[index];
+    auto iter = inverse_map_.find(pfd.fd);
+    if (pfd.revents > 0 && iter != inverse_map_.end()) {
       --_num_of_events;
-      auto event_iter = events_.find(event_id);
-      HARE_ASSERT(event_iter != events_.end());
-      HARE_ASSERT(event_iter->second->fd() == pfd.fd);
-      active_events_.emplace_back(event_iter->second,
-                                  io_inner::EncodePoll(pfd.revents));
+      auto event_iter = events_.find(iter->second.id);
+      if (event_iter == events_.end()) {
+        HARE_INTERNAL_ERROR("cannot find event[{}].", iter->second.id);
+        continue;
+      } else {
+        _events.emplace_back(iter->second.id, event_iter->second.event,
+                             io_inner::EncodePoll(pfd.revents));
+      }
     }
   }
 }

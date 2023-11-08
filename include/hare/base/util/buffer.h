@@ -41,20 +41,20 @@ constexpr auto MakeChecked(T* p, std::size_t) -> T* {
 
 HARE_CLASS_API
 template <typename T>
-class HARE_API Buffer : public NonCopyable {
+class HARE_API BaseBuffer : public NonCopyable {
  protected:
   T* ptr_{};
   std::size_t size_{};
   std::size_t capacity_{};
 
   // Don't initialize ptr_ since it is not accessed to save a few cycles.
-  explicit Buffer(std::size_t sz) noexcept : size_(sz), capacity_(sz) {}
+  explicit BaseBuffer(std::size_t sz) noexcept : size_(sz), capacity_(sz) {}
 
-  explicit Buffer(T* p = nullptr, std::size_t sz = 0,
-                  std::size_t cap = 0) noexcept
+  explicit BaseBuffer(T* p = nullptr, std::size_t sz = 0,
+                      std::size_t cap = 0) noexcept
       : ptr_(p), size_(sz), capacity_(cap) {}
 
-  Buffer(Buffer&&) noexcept = default;
+  BaseBuffer(BaseBuffer&&) noexcept = default;
 
   /** Sets the buffer data and capacity. */
   HARE_INLINE
@@ -70,7 +70,7 @@ class HARE_API Buffer : public NonCopyable {
   using ValueType = T;
   using ConstReference = const T&;
 
-  virtual ~Buffer() = default;
+  virtual ~BaseBuffer() = default;
 
   HARE_INLINE auto Begin() noexcept -> T* { return ptr_; }
   HARE_INLINE auto End() noexcept -> T* { return ptr_ + size_; }
@@ -132,7 +132,7 @@ class HARE_API Buffer : public NonCopyable {
 
 template <typename T>
 template <typename U>
-void Buffer<T>::Append(const U* begin, const U* end) {
+void BaseBuffer<T>::Append(const U* begin, const U* end) {
   while (begin != end) {
     auto count = ::hare::detail::ToUnsigned(end - begin);
     TryReserve(size_ + count);

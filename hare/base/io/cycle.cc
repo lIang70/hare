@@ -1,103 +1,17 @@
 #include <hare/base/exception.h>
 #include <hare/base/io/timer.h>
-#include <hare/base/system.h>
-#include <hare/base/time/timestamp.h>
 #include <hare/base/util/count_down_latch.h>
-#include <hare/hare-config.h>
 
 #include <mutex>
 
 #include "base/fwd_inl.h"
-#include "base/io/operation_inl.h"
+#include "base/io/cycle_notify.h"
 #include "base/io/reactor.h"
 #include "base/thread/store.h"
-
-#if HARE__HAVE_EVENTFD
-#include <sys/eventfd.h>
-#endif
 
 namespace hare {
 
 namespace cycle_inner {
-
-#if HARE__HAVE_EVENTFD
-static auto CreateNotifier() -> util_socket_t {
-  auto evtfd = ::eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
-  if (evtfd < 0) {
-    HARE_INTERNAL_FATAL("failed to get event fd in ::eventfd.");
-  }
-  return evtfd;
-}
-#else
-static auto CreateNotifier(util_socket_t& _write_fd) -> util_socket_t {
-  util_socket_t fd[2];
-  auto ret = io::Socketpair(AF_INET, SOCK_STREAM, 0, fd);
-  if (ret < 0) {
-    HARE_INTERNAL_FATAL("fail to create socketpair for notify_fd.");
-  }
-  _write_fd = fd[0];
-  return fd[1];
-}
-#endif
-
-class EventNotify : public Event {
-#if HARE__HAVE_EVENTFD
- public:
-  EventNotify()
-      : Event(
-            CreateNotifier(),
-#else
-  util_socket_t write_fd_{};
-
- public:
-  event_notify()
-      : event(
-            CreateNotifier(write_fd_),
-#endif
-            std::bind(&EventNotify::EventCallback, this, std::placeholders::_1,
-                      std::placeholders::_2, std::placeholders::_3),
-            EVENT_READ | EVENT_PERSIST, 0) {
-  }
-
-#if HARE__HAVE_EVENTFD
-  ~EventNotify() override { ::hare::io::Close(fd()); }
-#else
-  ~EventNotify() override {
-    ::hare::io::Close(write_fd_);
-    ::hare::io::Close(fd());
-  }
-#endif
-
-  void SendNotify() {
-    std::uint64_t one = 1;
-#if HARE__HAVE_EVENTFD
-    auto write_n = ::hare::io::Write(fd(), &one, sizeof(one));
-#else
-    auto write_n = ::hare::io::Write(write_fd_, &one, sizeof(one));
-#endif
-    if (write_n != sizeof(one)) {
-      HARE_INTERNAL_ERROR("write[{} B] instead of {} B", write_n, sizeof(one));
-    }
-  }
-
-  void EventCallback(const ::hare::Ptr<Event>& _event, std::uint8_t _events,
-                     const Timestamp& _receive_time) {
-    IgnoreUnused(_event, _receive_time);
-    HARE_ASSERT(_event == this->shared_from_this());
-
-    if (CHECK_EVENT(_events, EVENT_READ) != 0) {
-      std::uint64_t one = 0;
-      auto read_n = ::hare::io::Read((int)fd(), &one, sizeof(one));
-      if (read_n != sizeof(one) && one != static_cast<std::uint64_t>(1)) {
-        HARE_INTERNAL_ERROR("read notify[{} B] instead of {} B", read_n,
-                            sizeof(one));
-      }
-    } else {
-      HARE_INTERNAL_FATAL("an error occurred while accepting notify in fd[{}]",
-                          fd());
-    }
-  }
-};
 
 static auto GetWaitTime(const PriorityTimer& _ptimer) -> std::int32_t {
   if (_ptimer.empty()) {
@@ -110,13 +24,12 @@ static auto GetWaitTime(const PriorityTimer& _ptimer) -> std::int32_t {
   return time <= 0 ? 1 : Min(time, POLL_TIME_MICROSECONDS);
 }
 
-static void PrintActiveEvents(const EventsList& _active_events) {
-  for (const auto& event_elem : _active_events) {
-    HARE_INTERNAL_TRACE("event[{}] debug info: {}.", event_elem.event->fd(),
-                        event_elem.event->EventToString());
-    IgnoreUnused(event_elem);
-  }
+static void PrintActiveEvents(const Event* _active_event) {
+  HARE_INTERNAL_TRACE("event[{}] debug info: {}.", _active_event->fd(),
+                      _active_event->EventToString());
+  IgnoreUnused(_active_event);
 }
+
 }  // namespace cycle_inner
 
 // clang-format off
@@ -128,10 +41,9 @@ HARE_IMPL_DEFAULT(Cycle,
   bool event_handling{false};
   bool calling_pending_functions{false};
 
-  ::hare::Ptr<cycle_inner::EventNotify> notify_event{nullptr};
   ::hare::Ptr<Reactor> reactor{nullptr};
-  ::hare::Ptr<Event> current_active_event{nullptr};
-  std::atomic<Event::Id> event_id{0};
+  CycleNotify notify_event{};
+  std::atomic<Event::Id> event_id{1};
 
   mutable std::mutex functions_mutex{};
   std::list<Task> pending_functions{};
@@ -142,7 +54,6 @@ HARE_IMPL_DEFAULT(Cycle,
 
 Cycle::Cycle(REACTOR_TYPE _type) : impl_(new CycleImpl) {
   IMPL->tid = ThreadStoreData().tid;
-  IMPL->notify_event.reset(new cycle_inner::EventNotify());
   IMPL->reactor.reset(CHECK_NULL(Reactor::CreateByType(_type)));
 
   if (ThreadStoreData().cycle != nullptr) {
@@ -159,7 +70,6 @@ Cycle::~Cycle() {
   // clear thread local data.
   AssertInCycleThread();
   IMPL->pending_functions.clear();
-  IMPL->notify_event.reset();
   ThreadStoreData().cycle = nullptr;
   delete impl_;
 }
@@ -190,36 +100,34 @@ void Cycle::Exec() {
   HARE_ASSERT(!IMPL->is_running);
   IMPL->is_running = true;
   IMPL->quit = false;
-  EventUpdate(IMPL->notify_event);
-  IMPL->notify_event->Tie(IMPL->notify_event);
+  EventUpdate(&(IMPL->notify_event));
 
   HARE_INTERNAL_TRACE("cycle[{}] start running...", (void*)this);
 
   while (!IMPL->quit) {
-    IMPL->reactor->active_events_.clear();
+    EventsList active_events{};
 
-    IMPL->reactor_time =
-        IMPL->reactor->Poll(cycle_inner::GetWaitTime(IMPL->reactor->ptimer_));
+    IMPL->reactor_time = IMPL->reactor->Poll(
+        cycle_inner::GetWaitTime(IMPL->reactor->ptimer_), active_events);
 
 #ifdef HARE_DEBUG
     ++IMPL->cycle_index;
 #endif
 
-    cycle_inner::PrintActiveEvents(IMPL->reactor->active_events_);
-
     /// TODO(l1ang70): sort event by priority
     IMPL->event_handling = true;
 
-    for (auto& event_elem : IMPL->reactor->active_events_) {
-      IMPL->current_active_event = event_elem.event;
-      IMPL->current_active_event->HandleEvent(event_elem.revents,
-                                              IMPL->reactor_time);
-      if (CHECK_EVENT(IMPL->current_active_event->events(), EVENT_PERSIST) ==
-          0) {
-        EventRemove(IMPL->current_active_event);
+    for (auto& event_elem : active_events) {
+      auto* current_active_event = event_elem.event;
+      if (EventCheck(current_active_event)) {
+        cycle_inner::PrintActiveEvents(current_active_event);
+        current_active_event->HandleEvent(event_elem.revents,
+                                          IMPL->reactor_time);
+        if (CHECK_EVENT(current_active_event->events(), EVENT_PERSIST) == 0) {
+          EventRemove(current_active_event);
+        }
       }
     }
-    IMPL->current_active_event.reset();
 
     IMPL->event_handling = false;
 
@@ -227,13 +135,11 @@ void Cycle::Exec() {
     DoPendingFunctions();
   }
 
-  IMPL->notify_event->Deactivate();
-  IMPL->notify_event->Tie(nullptr);
+  IMPL->notify_event.Deactivate();
   IMPL->is_running = false;
 
-  IMPL->reactor->active_events_.clear();
   for (const auto& event : IMPL->reactor->events_) {
-    event.second->Reset();
+    event.second.event->Reset();
   }
   IMPL->reactor->events_.clear();
   PriorityTimer().swap(IMPL->reactor->ptimer_);
@@ -281,21 +187,16 @@ auto Cycle::RunAfter(const Task& _task, std::int64_t _delay) -> Event::Id {
   if (!is_running()) {
     return -1;
   }
-  auto timer = std::make_shared<Timer>(_task, _delay);
+
+  Event* timer = new Timer(_task, _delay);
   auto id = IMPL->event_id.fetch_add(1);
 
-  RunInCycle([=] {
-    HARE_ASSERT(timer->id() == -1);
+  RunInCycle([timer, id, this] {
+    HARE_ASSERT(timer->id() == 0);
 
     timer->Active(this, id);
-    HARE_ASSERT(IMPL->reactor->events_.find(timer->id()) ==
-                IMPL->reactor->events_.end());
-    IMPL->reactor->events_.insert(std::make_pair(timer->id(), timer));
 
-    HARE_ASSERT(CHECK_EVENT(timer->events(), EVENT_TIMEOUT) != 0);
-    IMPL->reactor->ptimer_.emplace(
-        timer->id(), Timestamp(Timestamp::Now().microseconds_since_epoch() +
-                               timer->timeval()));
+    IMPL->reactor->AddEvent(timer, true);
   });
 
   return id;
@@ -306,21 +207,15 @@ auto Cycle::RunEvery(const Task& _task, std::int64_t _delay) -> Event::Id {
     return -1;
   }
 
-  auto timer = std::make_shared<Timer>(_task, _delay, true);
+  Event* timer = new Timer(_task, _delay, true);
   auto id = IMPL->event_id.fetch_add(1);
 
-  RunInCycle([=] {
-    HARE_ASSERT(timer->id() == -1);
+  RunInCycle([this, timer, id] {
+    HARE_ASSERT(timer->id() == 0);
 
     timer->Active(this, id);
-    HARE_ASSERT(IMPL->reactor->events_.find(timer->id()) ==
-                IMPL->reactor->events_.end());
-    IMPL->reactor->events_.insert(std::make_pair(timer->id(), timer));
 
-    HARE_ASSERT(CHECK_EVENT(timer->events(), EVENT_TIMEOUT) != 0);
-    IMPL->reactor->ptimer_.emplace(
-        timer->id(), Timestamp(Timestamp::Now().microseconds_since_epoch() +
-                               timer->timeval()));
+    IMPL->reactor->AddEvent(timer, true);
   });
 
   return id;
@@ -336,9 +231,9 @@ void Cycle::Cancel(Event::Id _event_id) {
   RunInCycle([&] {
     auto iter = IMPL->reactor->events_.find(_event_id);
     if (iter != IMPL->reactor->events_.end()) {
-      auto event = iter->second;
-      if (event->fd() < 0) {
-        event->Reset();
+      auto event_elem = iter->second;
+      if (event_elem.event->fd() < 0) {
+        event_elem.event->Reset();
         IMPL->reactor->events_.erase(iter);
       } else {
         HARE_INTERNAL_ERROR(
@@ -355,105 +250,87 @@ void Cycle::Cancel(Event::Id _event_id) {
   }
 }
 
-void Cycle::EventUpdate(const ::hare::Ptr<Event>& _event) {
-  if (_event->cycle() != this && _event->id() != -1) {
+void Cycle::EventUpdate(Event* _event) {
+  if (_event->cycle() != this && _event->id() != 0) {
     HARE_INTERNAL_ERROR("cannot add event from other cycle[{}].",
                         (void*)_event->cycle());
     return;
   }
 
-  RunInCycle(std::bind(
-      [=](const WPtr<Event>& wevent) {
-        auto sevent = wevent.lock();
-        if (!sevent) {
-          return;
-        }
+  CountDownLatch cdl{1};
 
-        bool ret = true;
+  RunInCycle([&cdl, _event, this] {
+    if (_event->id() == 0) {
+      _event->Active(this, IMPL->event_id.fetch_add(1));
+    }
 
-        if (sevent->fd() >= 0) {
-          ret = IMPL->reactor->EventUpdate(sevent);
-        }
+    if (_event->fd() >= 0 && !IMPL->reactor->EventUpdate(_event)) {
+      cdl.CountDown();
+      return;
+    }
 
-        if (!ret) {
-          return;
-        }
+    IMPL->reactor->AddEvent(_event);
 
-        if (sevent->id() == -1) {
-          sevent->Active(this, IMPL->event_id.fetch_add(1));
+    cdl.CountDown();
+  });
 
-          HARE_ASSERT(IMPL->reactor->events_.find(sevent->id()) ==
-                      IMPL->reactor->events_.end());
-          IMPL->reactor->events_.insert(std::make_pair(sevent->id(), sevent));
-
-          if (sevent->fd() >= 0) {
-            IMPL->reactor->inverse_map_.insert(
-                std::make_pair(sevent->fd(), sevent->id()));
-          }
-        }
-
-        if (CHECK_EVENT(sevent->events(), EVENT_TIMEOUT) != 0) {
-          IMPL->reactor->ptimer_.emplace(
-              sevent->id(),
-              Timestamp(Timestamp::Now().microseconds_since_epoch() +
-                        sevent->timeval()));
-        }
-      },
-      _event));
+  if (!InCycleThread()) {
+    cdl.Await();
+  }
 }
 
-void Cycle::EventRemove(const ::hare::Ptr<Event>& _event) {
-  if (!_event) {
-    return;
-  }
-
-  if (_event->cycle() != this || _event->id() == -1) {
+void Cycle::EventRemove(Event* _event) {
+  if (_event->cycle() != this || _event->id() == 0) {
     HARE_INTERNAL_ERROR("the event is not part of the cycle[{}].",
                         (void*)_event->cycle());
     return;
   }
 
-  RunInCycle(std::bind(
-      [=](const WPtr<Event>& wevent) {
-        auto sevent = wevent.lock();
-        if (!sevent) {
-          HARE_INTERNAL_ERROR("event is empty before it was released.");
-          return;
-        }
-        auto event_id = sevent->id();
-        auto socket = sevent->fd();
+  CountDownLatch cdl{1};
 
-        auto iter = IMPL->reactor->events_.find(event_id);
-        if (iter == IMPL->reactor->events_.end()) {
-          HARE_INTERNAL_ERROR("cannot find event in cycle[{}]", (void*)this);
-        } else {
-          HARE_ASSERT(iter->second == sevent);
+  RunInCycle([&cdl, _event, this] {
+    if (!EventCheck(_event)) {
+      HARE_INTERNAL_ERROR("event is empty before it was released.");
+      cdl.CountDown();
+      return;
+    }
+    auto event_id = _event->id();
+    auto fd = _event->fd();
 
-          sevent->Reset();
+    auto iter = IMPL->reactor->events_.find(event_id);
+    if (iter == IMPL->reactor->events_.end()) {
+      HARE_INTERNAL_ERROR("cannot find event in cycle[{}]", (void*)this);
+    } else {
+      HARE_ASSERT(iter->second.event == _event);
 
-          if (socket >= 0) {
-            IMPL->reactor->EventRemove(sevent);
-            IMPL->reactor->inverse_map_.erase(socket);
-          }
+      _event->Reset();
 
-          IMPL->reactor->events_.erase(iter);
-        }
-      },
-      _event));
+      if (fd >= 0) {
+        IMPL->reactor->EventRemove(_event);
+      }
+
+      IMPL->reactor->events_.erase(iter);
+    }
+
+    cdl.CountDown();
+  });
+
+  if (!InCycleThread()) {
+    cdl.Await();
+  }
 }
 
-auto Cycle::EventCheck(const ::hare::Ptr<Event>& _event) -> bool {
-  if (!_event || _event->id() < 0) {
+auto Cycle::EventCheck(const Event* _event) const -> bool {
+  if (_event->id() < 0) {
     return false;
   }
   AssertInCycleThread();
-  return IMPL->reactor->events_.find(_event->id()) !=
-         IMPL->reactor->events_.end();
+  return IMPL->reactor->Check(_event);
 }
 
-void Cycle::Notify() { IMPL->notify_event->SendNotify(); }
+void Cycle::Notify() { IMPL->notify_event.SendNotify(); }
 
-void Cycle::AbortNotCycleThread() {
+void Cycle::AbortNotCycleThread() const {
   HARE_INTERNAL_FATAL(
       "cycle[{}] was created in thread[{:#x}], current thread is: {:#x}",
       (void*)this, IMPL->tid, ThreadStoreData().tid);
@@ -478,29 +355,25 @@ void Cycle::DoPendingFunctions() {
 void Cycle::NotifyTimer() {
   auto& priority_event = IMPL->reactor->ptimer_;
   auto& events = IMPL->reactor->events_;
-  const auto revent = EVENT_TIMEOUT;
   auto now = Timestamp::Now();
 
   while (!priority_event.empty()) {
-    auto top = priority_event.top();
+    const auto& top = priority_event.top();
     if (IMPL->reactor_time < top.stamp) {
       break;
     }
     auto iter = events.find(top.id);
     if (iter != events.end()) {
-      auto& event = iter->second;
-      if (event) {
-        HARE_INTERNAL_TRACE("event[{}] trigged.", (void*)iter->second.get());
-        event->HandleEvent(revent, now);
-        if ((event->events() & EVENT_PERSIST) != 0) {
-          priority_event.emplace(
-              top.id, Timestamp(IMPL->reactor_time.microseconds_since_epoch() +
-                                event->timeval()));
-        } else {
-          EventRemove(event);
-        }
+      auto* event = iter->second.event;
+      HARE_INTERNAL_TRACE("event[{}] trigged.", (void*)event);
+      event->HandleEvent(EVENT_TIMEOUT, now);
+      if (CHECK_EVENT(event->events(), EVENT_PERSIST) != 0) {
+        priority_event.emplace(
+            event->id(),
+            Timestamp(IMPL->reactor_time.microseconds_since_epoch() +
+                      event->timeval()));
       } else {
-        events.erase(iter);
+        EventRemove(event);
       }
     } else {
       HARE_INTERNAL_TRACE("event[{}] deleted.", top.id);

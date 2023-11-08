@@ -30,6 +30,19 @@ auto Reactor::CreateByType(Cycle::REACTOR_TYPE _type) -> Reactor* {
   }
 }
 
+void Reactor::AddEvent(Event* event, bool need_free) {
+  HARE_ASSERT(!this->Check(event));
+  if (Check(event)) {
+    events_.insert(std::make_pair(
+        event->id(), io_inner::EventElem{event->id(), event, 0, need_free}));
+  }
+  if (CHECK_EVENT(event->events(), EVENT_TIMEOUT) != 0) {
+    ptimer_.emplace(event->id(),
+                    Timestamp(Timestamp::Now().microseconds_since_epoch() +
+                              event->timeval()));
+  }
+}
+
 Reactor::Reactor(Cycle::REACTOR_TYPE _type) : type_(_type) {}
 
 }  // namespace hare

@@ -46,7 +46,7 @@ class HARE_API Cycle : public NonCopyable {
 #endif
 
   HARE_INLINE
-  void AssertInCycleThread() {
+  void AssertInCycleThread() const {
     if (!InCycleThread()) {
       AbortNotCycleThread();
     }
@@ -89,18 +89,18 @@ class HARE_API Cycle : public NonCopyable {
 
   void Cancel(Event::Id _event_id);
 
-  void EventUpdate(const ::hare::Ptr<Event>& _event);
-  void EventRemove(const ::hare::Ptr<Event>& _event);
+  void EventUpdate(Event* _event);
+  void EventRemove(Event* _event);
 
   /**
    * @brief Detects whether the event is in the reactor.
    *   Must be called in the cycle thread.
    **/
-  auto EventCheck(const ::hare::Ptr<Event>& _event) -> bool;
+  auto EventCheck(const Event* _event) const -> bool;
 
  private:
   void Notify();
-  void AbortNotCycleThread();
+  void AbortNotCycleThread() const;
 
   void NotifyTimer();
   void DoPendingFunctions();

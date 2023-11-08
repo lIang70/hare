@@ -3,10 +3,6 @@
 
 #include <hare/base/io/operation.h>
 
-#include "base/fwd_inl.h"
-
-#define MAX_READ_DEFAULT 4096
-
 struct sockaddr;
 
 namespace hare {

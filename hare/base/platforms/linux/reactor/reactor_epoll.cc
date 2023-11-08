@@ -103,8 +103,9 @@ ReactorEpoll::ReactorEpoll()
 
 ReactorEpoll::~ReactorEpoll() { ::close(epoll_fd_); }
 
-auto ReactorEpoll::Poll(std::int32_t _timeout_microseconds) -> Timestamp {
-  HARE_INTERNAL_TRACE("active events total count: {}.", active_events_.size());
+auto ReactorEpoll::Poll(std::int32_t _timeout_microseconds, EventsList& _events)
+    -> Timestamp {
+  HARE_INTERNAL_TRACE("active events total count: {}.", _events.size());
 
   auto event_num = ::epoll_wait(epoll_fd_, &*epoll_events_.begin(),
                                 static_cast<std::int32_t>(epoll_events_.size()),
@@ -114,7 +115,7 @@ auto ReactorEpoll::Poll(std::int32_t _timeout_microseconds) -> Timestamp {
   auto now{Timestamp::Now()};
   if (event_num > 0) {
     HARE_INTERNAL_TRACE("{} events happened.", event_num);
-    FillActiveEvents(event_num);
+    FillActiveEvents(event_num, _events);
     if (ImplicitCast<std::size_t>(event_num) == epoll_events_.size()) {
       epoll_events_.resize(epoll_events_.size() * 2);
     }
@@ -130,62 +131,54 @@ auto ReactorEpoll::Poll(std::int32_t _timeout_microseconds) -> Timestamp {
   return now;
 }
 
-auto ReactorEpoll::EventUpdate(const ::hare::Ptr<Event>& _event) -> bool {
+auto ReactorEpoll::EventUpdate(Event* _event) -> bool {
   auto event_id = _event->id();
   HARE_INTERNAL_TRACE("epoll-update: fd={}, flags={}.", _event->fd(),
                       _event->events());
 
-  if (event_id == -1) {
+  if (event_id == 0) {
     // a new one, add with EPOLL_CTL_ADD
     auto target_fd = _event->fd();
     IgnoreUnused(target_fd);
-    HARE_ASSERT(inverse_map_.find(target_fd) == inverse_map_.end());
     return UpdateEpoll(EPOLL_CTL_ADD, _event);
   }
 
   // update existing one with EPOLL_CTL_MOD/DEL
-  auto target_fd = _event->fd();
-  IgnoreUnused(target_fd);
-  HARE_ASSERT(inverse_map_.find(target_fd) != inverse_map_.end());
-  HARE_ASSERT(events_.find(event_id) != events_.end());
-  HARE_ASSERT(events_[event_id] == _event);
+  HARE_ASSERT(Check(_event));
   return UpdateEpoll(EPOLL_CTL_MOD, _event);
 }
 
-auto ReactorEpoll::EventRemove(const ::hare::Ptr<Event>& _event) -> bool {
+auto ReactorEpoll::EventRemove(Event* _event) -> bool {
   const auto target_fd = _event->fd();
   const auto event_id = _event->id();
   IgnoreUnused(target_fd, event_id);
 
   HARE_INTERNAL_TRACE("epoll-remove: fd={}, flags={}.", target_fd,
                       _event->events());
-  HARE_ASSERT(inverse_map_.find(target_fd) != inverse_map_.end());
-  HARE_ASSERT(event_id == -1);
+  HARE_ASSERT(event_id == 0);
 
   return UpdateEpoll(EPOLL_CTL_DEL, _event);
 }
 
-void ReactorEpoll::FillActiveEvents(std::int32_t _num_of_events) {
+void ReactorEpoll::FillActiveEvents(std::int32_t _num_of_events,
+                                    EventsList& _events) {
   HARE_ASSERT(ImplicitCast<std::size_t>(_num_of_events) <=
               epoll_events_.size());
   for (auto i = 0; i < _num_of_events; ++i) {
     auto* event = static_cast<Event*>(epoll_events_[i].data.ptr);
-    HARE_ASSERT(inverse_map_.find(event->fd()) != inverse_map_.end());
-    auto event_id = inverse_map_[event->fd()];
-    HARE_ASSERT(events_.find(event_id) != events_.end());
-    auto revent = events_[event_id];
-    HARE_ASSERT(event == revent.get());
-    active_events_.emplace_back(revent,
-                                io_inner::EncodeEpoll(epoll_events_[i].events));
+    Event::Id event_id = epoll_events_[i].data.u64;
+    _events.emplace_back(event_id, event,
+                         io_inner::EncodeEpoll(epoll_events_[i].events));
   }
 }
 
-auto ReactorEpoll::UpdateEpoll(std::int32_t _operation,
-                               const ::hare::Ptr<Event>& _event) const -> bool {
+auto ReactorEpoll::UpdateEpoll(std::int32_t _operation, Event* _event) const
+    -> bool {
   struct epoll_event ep_event {};
   ::hare::detail::FillN(&ep_event, sizeof(ep_event), 0);
   ep_event.events = io_inner::DecodeEpoll(_event->events());
-  ep_event.data.ptr = _event.get();
+  ep_event.data.ptr = _event;
+  ep_event.data.u64 = _event->id();
   auto target_fd = _event->fd();
 
   HARE_INTERNAL_TRACE(

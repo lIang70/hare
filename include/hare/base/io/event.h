@@ -17,6 +17,8 @@
 
 namespace hare {
 
+class Cycle;
+
 using Events = enum : std::uint8_t {
   EVENT_DEFAULT = 0x00,
   /**
@@ -52,21 +54,14 @@ using Events = enum : std::uint8_t {
   EVENT_CLOSED = 0x20,
 };
 
-#if defined(HARE_SHARED) && defined(H_OS_WIN)
-class Event;
-template class HARE_API std::weak_ptr<Event>;
-#endif
-
-class Cycle;
 HARE_CLASS_API
-class HARE_API Event : public NonCopyable,
-                       public std::enable_shared_from_this<Event> {
+class HARE_API Event : public NonCopyable {
   ::hare::detail::Impl* impl_{};
 
  public:
-  using Id = std::int64_t;
-  using Callback = std::function<void(const ::hare::Ptr<Event>&, std::uint8_t,
-                                      const Timestamp&)>;
+  using Id = std::uint64_t;
+  using Callback =
+      std::function<void(const Event*, std::uint8_t, const Timestamp&)>;
 
   Event(util_socket_t _fd, Callback _cb, std::uint8_t _events,
         std::int64_t _timeval);
@@ -97,7 +92,7 @@ class HARE_API Event : public NonCopyable,
   auto TiedObject() -> WPtr<void>;
 
  private:
-  void HandleEvent(std::uint8_t _flag, Timestamp& _receive_time);
+  void HandleEvent(std::uint8_t _flag, Timestamp& _receive_time) const;
   void Active(Cycle* _cycle, Event::Id _id);
   void Reset();
 

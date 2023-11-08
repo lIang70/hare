@@ -46,8 +46,8 @@ HARE_IMPL_DEFAULT(Event,
   Event::Callback callback{};
   std::int64_t timeval{0};
 
-  Cycle * cycle{};
-  Event::Id id{-1};
+  Cycle* cycle{};
+  Event::Id id{0};
   std::int64_t timeout{0};
 
   bool tied{false};
@@ -57,7 +57,7 @@ HARE_IMPL_DEFAULT(Event,
 
 Event::Event(util_socket_t _fd, Callback _cb, std::uint8_t _events,
              std::int64_t _timeval)
-    : impl_(new EventImpl) {
+    : impl_(new EventImpl()) {
   IMPL->fd = _fd;
   IMPL->events = _events;
   IMPL->callback = std::move(_cb);
@@ -89,7 +89,7 @@ auto Event::id() const -> Id { return IMPL->id; }
 void Event::EnableRead() {
   SET_EVENT(IMPL->events, EVENT_READ);
   if (IMPL->cycle) {
-    IMPL->cycle->EventUpdate(shared_from_this());
+    IMPL->cycle->EventUpdate(this);
   } else {
     HARE_INTERNAL_ERROR("event[{}] need to be added to cycle.", (void*)this);
   }
@@ -98,7 +98,7 @@ void Event::EnableRead() {
 void Event::DisableRead() {
   CLEAR_EVENT(IMPL->events, EVENT_READ);
   if (IMPL->cycle) {
-    IMPL->cycle->EventUpdate(shared_from_this());
+    IMPL->cycle->EventUpdate(this);
   } else {
     HARE_INTERNAL_ERROR("event[{}] need to be added to cycle.", (void*)this);
   }
@@ -111,7 +111,7 @@ auto Event::Reading() -> bool {
 void Event::EnableWrite() {
   SET_EVENT(IMPL->events, EVENT_WRITE);
   if (IMPL->cycle) {
-    IMPL->cycle->EventUpdate(shared_from_this());
+    IMPL->cycle->EventUpdate(this);
   } else {
     HARE_INTERNAL_ERROR("event[{}] need to be added to cycle.", (void*)this);
   }
@@ -120,7 +120,7 @@ void Event::EnableWrite() {
 void Event::DisableWrite() {
   CLEAR_EVENT(IMPL->events, EVENT_WRITE);
   if (IMPL->cycle) {
-    IMPL->cycle->EventUpdate(shared_from_this());
+    IMPL->cycle->EventUpdate(this);
   } else {
     HARE_INTERNAL_ERROR("event[{}] need to be added to cycle.", (void*)this);
   }
@@ -132,7 +132,7 @@ auto Event::Writing() -> bool {
 
 void Event::Deactivate() {
   if (IMPL->cycle != nullptr) {
-    IMPL->cycle->EventRemove(shared_from_this());
+    IMPL->cycle->EventRemove(this);
   } else {
     HARE_INTERNAL_ERROR("event[{}] need to be added to cycle.", (void*)this);
   }
@@ -149,7 +149,7 @@ void Event::Tie(const ::hare::Ptr<void>& _obj) {
 
 auto Event::TiedObject() -> WPtr<void> { return IMPL->tie_object; }
 
-void Event::HandleEvent(std::uint8_t _flag, Timestamp& _receive_time) {
+void Event::HandleEvent(std::uint8_t _flag, Timestamp& _receive_time) const {
   ::hare::Ptr<void> object;
   if (IMPL->tied) {
     object = IMPL->tie_object.lock();
@@ -157,8 +157,10 @@ void Event::HandleEvent(std::uint8_t _flag, Timestamp& _receive_time) {
       return;
     }
     if (IMPL->callback) {
-      IMPL->callback(shared_from_this(), _flag, _receive_time);
+      IMPL->callback(this, _flag, _receive_time);
     }
+  } else if (IMPL->callback) {
+    IMPL->callback(this, _flag, _receive_time);
   }
 }
 
@@ -169,7 +171,7 @@ void Event::Active(Cycle* _cycle, Event::Id _id) {
 
 void Event::Reset() {
   IMPL->cycle = nullptr;
-  IMPL->id = -1;
+  IMPL->id = 0;
 }
 
 }  // namespace hare
